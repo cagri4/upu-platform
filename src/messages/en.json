@@ -1,0 +1,15 @@
+{
+  "common": {
+    "login": "Login",
+    "register": "Register",
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "logout": "Logout",
+    "loading": "Loading..."
+  },
+  "marketing": {
+    "hero_title": "Your Virtual Team is Ready",
+    "hero_subtitle": "Grow your business with AI-powered virtual employees",
+    "cta": "Try Free"
+  }
+}

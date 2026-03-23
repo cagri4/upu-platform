@@ -1,0 +1,15 @@
+{
+  "common": {
+    "login": "Inloggen",
+    "register": "Registreren",
+    "dashboard": "Dashboard",
+    "settings": "Instellingen",
+    "logout": "Uitloggen",
+    "loading": "Laden..."
+  },
+  "marketing": {
+    "hero_title": "Uw Virtuele Team is Klaar",
+    "hero_subtitle": "Laat uw bedrijf groeien met AI-aangedreven virtuele medewerkers",
+    "cta": "Gratis Proberen"
+  }
+}

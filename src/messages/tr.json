@@ -1,0 +1,15 @@
+{
+  "common": {
+    "login": "Giriş Yap",
+    "register": "Kayıt Ol",
+    "dashboard": "Panel",
+    "settings": "Ayarlar",
+    "logout": "Çıkış",
+    "loading": "Yükleniyor..."
+  },
+  "marketing": {
+    "hero_title": "Sanal Eleman Ekibiniz Hazır",
+    "hero_subtitle": "AI destekli sanal çalışanlar ile işinizi büyütün",
+    "cta": "Ücretsiz Deneyin"
+  }
+}
