@@ -107,7 +107,7 @@ const DOMAIN_MAP: Record<string, string> = {
   "accountai.upudev.nl": "muhasebe",
   "hotelai.upudev.nl": "otel",
   "residenceai.upudev.nl": "siteyonetim",
-  "panel.upudev.nl": "admin",
+  "adminpanel.upudev.nl": "admin",
   // Localhost development
   "localhost:3000": "emlak",
   // Custom domains (add as purchased)
