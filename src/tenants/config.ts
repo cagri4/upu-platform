@@ -57,7 +57,16 @@ const TENANTS: Record<string, TenantConfig> = {
     icon: "📦",
     color: "#059669",
     description: "Bayi ağı yönetimi için AI destekli sanal ekip",
-    employees: [],
+    employees: [
+      { key: "asistan", name: "Asistan", icon: "📊", description: "Günlük özet, takvim ve hatırlatmalar", commands: ["ozet", "takvim", "hatirlatma", "rapor"] },
+      { key: "satisMuduru", name: "Satış Müdürü", icon: "💰", description: "Kampanya, teklif ve performans analizi", commands: ["kampanyaolustur", "kampanyalar", "teklifver", "performans", "segment"] },
+      { key: "satisTemsilcisi", name: "Satış Temsilcisi", icon: "🤝", description: "Sipariş alma, ürün önerisi, ziyaret yönetimi", commands: ["siparisOlustur", "siparisler", "bayidurum", "ziyaretnotu", "ziyaretler"] },
+      { key: "muhasebeci", name: "Muhasebeci", icon: "💳", description: "Bakiye, fatura takibi ve hesap ekstresi", commands: ["bakiye", "faturalar", "borcdurum", "ekstre", "odeme"] },
+      { key: "tahsildar", name: "Tahsildar", icon: "📋", description: "Vadesi gelen ödemeler ve tahsilat takibi", commands: ["vadeler", "tahsilat", "hatirlatgonder"] },
+      { key: "depocu", name: "Depocu", icon: "📦", description: "Stok durumu, kritik stok ve tedarik yönetimi", commands: ["stok", "kritikstok", "stokhareketleri", "tedarikciler", "satinalma"] },
+      { key: "lojistikci", name: "Lojistikçi", icon: "🚛", description: "Teslimat planlaması ve kargo takibi", commands: ["teslimatlar", "rota", "kargotakip"] },
+      { key: "urunYoneticisi", name: "Ürün Yöneticisi", icon: "🏷", description: "Ürün kataloğu ve fiyat listesi", commands: ["urunler", "fiyatliste", "yeniurun", "fiyatguncelle"] },
+    ],
     commandMap: {},
   },
   muhasebe: {
@@ -69,7 +78,12 @@ const TENANTS: Record<string, TenantConfig> = {
     icon: "📊",
     color: "#7C3AED",
     description: "Muhasebe büroları için AI destekli sanal ekip",
-    employees: [],
+    employees: [
+      { key: "faturaUzmani", name: "Fatura İşleme Uzmanı", icon: "📄", description: "e-Fatura yükleme, arama ve hesap kodu önerisi", commands: ["fatura_yukle", "son_faturalar", "fatura_ara", "fatura_detay", "fatura_rapor"] },
+      { key: "sekreter", name: "Sekreter", icon: "📅", description: "Beyanname takvimi, randevu ve mükellefl yönetimi", commands: ["mukellefler", "mukellef_ekle", "takvim", "yaklasan", "randevular", "brifing"] },
+      { key: "vergiUzmani", name: "Vergi Uzmanı", icon: "🧮", description: "KDV hesaplama, vergi raporu ve beyanname kontrol", commands: ["kdv", "gelir_vergisi", "kurumlar", "vergi_raporu", "kontrol", "oranlar"] },
+      { key: "tahsilatUzmani", name: "Tahsilat Uzmanı", icon: "💰", description: "Alacak takibi, geciken ödemeler ve nakit akış", commands: ["alacaklar", "geciken", "hatirlatma_gonder", "odeme_ekle", "nakit_akis", "risk"] },
+    ],
     commandMap: {},
   },
   otel: {
@@ -81,7 +95,12 @@ const TENANTS: Record<string, TenantConfig> = {
     icon: "🏨",
     color: "#DC2626",
     description: "Oteller için AI destekli sanal ekip",
-    employees: [],
+    employees: [
+      { key: "resepsiyon", name: "Resepsiyon", icon: "🛎️", description: "Misafir karşılama, mesaj yönetimi ve eskalasyon", commands: ["misafirler", "mesajlar", "yanitla", "eskalasyon"] },
+      { key: "rezervasyon", name: "Rezervasyon Uzmanı", icon: "📅", description: "Müsaitlik, fiyat sorgulama ve check-in/out", commands: ["rezervasyonlar", "checkin", "checkout", "musaitlik", "fiyat", "rezervasyonekle"] },
+      { key: "katHizmetleri", name: "Kat Hizmetleri", icon: "🧹", description: "Oda durumu, temizlik ve görev atama", commands: ["odalar", "temizlik", "odaguncelle", "gorevata"] },
+      { key: "misafirDeneyimi", name: "Misafir Deneyimi", icon: "⭐", description: "Bilgi bankası, tavsiye ve yorum yönetimi", commands: ["faq", "odabilgi", "tavsiye", "yorumlar", "brifing"] },
+    ],
     commandMap: {},
   },
   siteyonetim: {
@@ -93,7 +112,12 @@ const TENANTS: Record<string, TenantConfig> = {
     icon: "🏢",
     color: "#0891B2",
     description: "Konut ve site yönetimi için AI destekli sanal ekip",
-    employees: [],
+    employees: [
+      { key: "muhasebeci", name: "Muhasebeci", icon: "💰", description: "Aidat, borç durumu, gelir-gider ve tahakkuk", commands: ["borcum", "rapor", "aidat", "gelir_gider"] },
+      { key: "sekreter", name: "Sekreter", icon: "📝", description: "Duyuru, toplantı çağrısı ve sakin iletişimi", commands: ["duyuru", "toplanti", "mesaj"] },
+      { key: "teknisyen", name: "Teknisyen", icon: "🔧", description: "Arıza bildirimi, bakım ve onarım takibi", commands: ["ariza", "bakim", "durum"] },
+      { key: "hukukMusaviri", name: "Hukuk Müşaviri", icon: "⚖️", description: "KMK mevzuatı, hak ve yükümlülükler", commands: ["hukuk", "mevzuat"] },
+    ],
     commandMap: {},
   },
 };
