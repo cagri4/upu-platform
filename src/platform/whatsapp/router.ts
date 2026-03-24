@@ -4,7 +4,7 @@
 
 import type { WaContext, TenantCommandRegistry } from "./types";
 import { getSession } from "./session";
-import { sendText, sendButtons } from "./send";
+import { sendText, sendButtons, sendList } from "./send";
 import { emlakCommands } from "@/tenants/emlak/commands";
 import { bayiCommands } from "@/tenants/bayi/commands";
 import { muhasebeCommands } from "@/tenants/muhasebe/commands";
@@ -71,6 +71,13 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       }
     }
 
+    // Employee selection callback
+    if (ctx.interactiveId.startsWith("emp:")) {
+      const empKey = ctx.interactiveId.replace("emp:", "");
+      await showEmployeeCommands(ctx, tenant, empKey);
+      return;
+    }
+
     // Tenant-specific callbacks
     for (const [prefix, handler] of Object.entries(registry.callbackPrefixes)) {
       if (ctx.interactiveId.startsWith(prefix)) {
@@ -104,26 +111,61 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
   await sendText(ctx.phone, `Komutu anlamadım. Yardım için "menu" yazın.`);
 }
 
-// ── Help menu ────────────────────────────────────────────────────────────
+// ── Help menu — List message with employees ─────────────────────────────
 
 async function showMenu(
   ctx: WaContext,
   tenant: ReturnType<typeof getTenantByKey>,
   _registry: TenantCommandRegistry,
 ) {
-  if (!tenant) {
+  if (!tenant || !tenant.employees.length) {
     await sendText(ctx.phone, "Yardım için yöneticinize başvurun.");
     return;
   }
 
-  let text = `${tenant.icon} *${tenant.name}*\n\nSanal ekibiniz:\n\n`;
-  for (const emp of tenant.employees) {
-    text += `${emp.icon} *${emp.name}*\n`;
-    text += `   ${emp.commands.slice(0, 3).join(", ")}${emp.commands.length > 3 ? "..." : ""}\n\n`;
-  }
-  text += `💡 Komut adını yazarak kullanabilirsiniz.`;
+  const rows = tenant.employees.map((emp) => ({
+    id: `emp:${emp.key}`,
+    title: `${emp.icon} ${emp.name}`.substring(0, 24),
+    description: emp.description.substring(0, 72),
+  }));
 
-  await sendButtons(ctx.phone, text, [
-    { id: "cmd:brifing", title: "Brifing" },
-  ]);
+  await sendList(ctx.phone,
+    `${tenant.icon} *${tenant.name}*\n\nBir eleman seçerek komutlarına ulaşın.`,
+    "Ekibi Çağır",
+    [{ title: "Sanal Elemanlar", rows }],
+  );
+}
+
+// ── Employee commands — show commands for selected employee ──────────────
+
+async function showEmployeeCommands(
+  ctx: WaContext,
+  tenant: ReturnType<typeof getTenantByKey>,
+  employeeKey: string,
+) {
+  if (!tenant) return;
+
+  const emp = tenant.employees.find(e => e.key === employeeKey);
+  if (!emp) {
+    await showMenu(ctx, tenant, {} as TenantCommandRegistry);
+    return;
+  }
+
+  const rows = emp.commands.map((cmd) => ({
+    id: `cmd:${cmd}`,
+    title: cmd.substring(0, 24),
+  }));
+
+  if (rows.length <= 3) {
+    await sendButtons(ctx.phone,
+      `${emp.icon} *${emp.name}*\n\n${emp.description}\n\nBir komut seçin:`,
+      rows.map(r => ({ id: r.id, title: r.title })),
+    );
+  } else {
+    await sendList(ctx.phone,
+      `${emp.icon} *${emp.name}*\n\n${emp.description}\n\nBir komut seçin:`,
+      "Komutlar",
+      [{ title: emp.name, rows }],
+    );
+  }
 }
