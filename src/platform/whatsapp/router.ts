@@ -123,16 +123,27 @@ async function showMenu(
     return;
   }
 
-  const rows = tenant.employees.map((emp) => ({
+  const empRows = tenant.employees.map((emp) => ({
     id: `emp:${emp.key}`,
     title: `${emp.icon} ${emp.name}`.substring(0, 24),
     description: emp.description.substring(0, 72),
   }));
 
+  const favoriteCommands = [
+    { id: "cmd:brifing", title: "📋 Brifing", description: "Günlük özet" },
+    { id: "cmd:portfoyum", title: "🗂 Portföyüm", description: "Mülk listesi" },
+    { id: "cmd:fiyatsor", title: "📊 Fiyat Sor", description: "Pazar analizi" },
+  ];
+
+  // TODO: load user's custom favorites from DB
+
   await sendList(ctx.phone,
-    `${tenant.icon} *${tenant.name}*\n\nBir eleman seçerek komutlarına ulaşın.`,
+    `${tenant.icon} *${tenant.name}*\n\nBir eleman veya sık kullanılan komut seçin.`,
     "Ekibi Çağır",
-    [{ title: "Sanal Elemanlar", rows }],
+    [
+      { title: "⭐ Sık Kullanılanlar", rows: favoriteCommands },
+      { title: "Sanal Elemanlar", rows: empRows },
+    ],
   );
 }
 
