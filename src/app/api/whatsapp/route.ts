@@ -73,8 +73,66 @@ export async function POST(req: NextRequest) {
     // Mark as read + typing indicator
     if (messageId) markAsRead(messageId, phone);
 
-    // Resolve user
     const supabase = getServiceClient();
+
+    // ── Check invite code BEFORE resolving user ──
+    const codeMatch = text
+      ? text.toUpperCase().match(/KOD(?:U|UM)?[:\s]+([A-Z0-9]{6})\b/) ||
+        text.toUpperCase().match(/^([A-Z0-9]{6})$/)
+      : null;
+
+    if (codeMatch) {
+      const inviteCode = codeMatch[1];
+      console.log(`[wa-platform] Invite code detected: ${inviteCode}`);
+
+      const { data: invite } = await supabase
+        .from("invite_codes")
+        .select("user_id, tenant_id, status")
+        .eq("code", inviteCode)
+        .single();
+
+      if (invite && invite.status === "pending") {
+        // Clear old phone binding if exists
+        const { data: oldProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("whatsapp_phone", phone)
+          .maybeSingle();
+
+        if (oldProfile && oldProfile.id !== invite.user_id) {
+          await supabase.from("profiles").update({ whatsapp_phone: null }).eq("id", oldProfile.id);
+        }
+
+        // Link phone to user
+        await supabase.from("profiles").update({ whatsapp_phone: phone }).eq("id", invite.user_id);
+
+        // Mark invite as used
+        await supabase.from("invite_codes").update({ status: "used" }).eq("code", inviteCode);
+
+        // Get user info
+        const { data: invitedUser } = await supabase
+          .from("profiles")
+          .select("display_name, tenant_id")
+          .eq("id", invite.user_id)
+          .single();
+
+        // Get tenant info
+        let tenantName = "Platform";
+        if (invitedUser?.tenant_id) {
+          const { data: t } = await supabase.from("tenants").select("name").eq("id", invitedUser.tenant_id).single();
+          if (t) tenantName = t.name;
+        }
+
+        await sendText(phone,
+          `Hoş geldiniz ${invitedUser?.display_name || ""}! 🎉\n\n` +
+          `${tenantName} sistemine başarıyla kaydoldunuz.\n\n` +
+          `💡 "menu" yazarak komutlara ulaşabilirsiniz.`
+        );
+        return NextResponse.json({ status: "ok" });
+      }
+    }
+
+    // ── Resolve user by phone ──
     const { data: user } = await supabase
       .from("profiles")
       .select("id, tenant_id, display_name, preferred_locale")
