@@ -166,13 +166,32 @@ export default function AdminPage() {
                     </button>
 
                     {lastResult && (
-                      <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
-                        <p className="text-sm text-green-400 mb-1">{lastResult.name} oluşturuldu!</p>
+                      <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 space-y-2">
+                        <p className="text-sm text-green-400">{lastResult.name} oluşturuldu!</p>
                         <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-400">Kod:</span>
                           <span className="font-mono text-lg font-bold text-green-300">{lastResult.code}</span>
                           <button onClick={() => copyToClipboard(lastResult.code)} className="text-green-400 hover:text-green-300">
                             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                           </button>
+                        </div>
+                        <div>
+                          <span className="text-xs text-slate-400">WhatsApp Davet Linki:</span>
+                          <div className="flex items-center gap-2 mt-1">
+                            <a
+                              href={`https://wa.me/31644967207?text=${encodeURIComponent(`Kayit Kodu: ${lastResult.code}`)}`}
+                              target="_blank"
+                              className="text-sm text-indigo-400 hover:text-indigo-300 underline break-all"
+                            >
+                              wa.me link
+                            </a>
+                            <button
+                              onClick={() => copyToClipboard(`https://wa.me/31644967207?text=${encodeURIComponent(`Kayit Kodu: ${lastResult.code}`)}`)}
+                              className="text-indigo-400 hover:text-indigo-300"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
