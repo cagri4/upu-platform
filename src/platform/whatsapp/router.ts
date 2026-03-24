@@ -11,6 +11,7 @@ import { muhasebeCommands } from "@/tenants/muhasebe/commands";
 import { otelCommands } from "@/tenants/otel/commands";
 import { siteyonetimCommands } from "@/tenants/siteyonetim/commands";
 import { getTenantByKey } from "@/tenants/config";
+import { getServiceClient } from "@/platform/auth/supabase";
 
 // ── Registry per tenant ──────────────────────────────────────────────────
 
@@ -97,6 +98,18 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     return;
   }
 
+  // System commands (shared across all tenants)
+  if (firstWord === "profil") {
+    await showProfile(ctx);
+    return;
+  }
+  if (firstWord === "favoriler") {
+    await sendButtons(ctx.phone, "⭐ Favori düzenleme yakında aktif olacak.\n\nŞimdilik varsayılan favoriler gösterilmektedir.", [
+      { id: "cmd:menu", title: "Ana Menü" },
+    ]);
+    return;
+  }
+
   // Check aliases
   const resolved = registry.aliases[firstWord] || firstWord;
 
@@ -137,14 +150,53 @@ async function showMenu(
 
   // TODO: load user's custom favorites from DB
 
+  const systemCommands = [
+    { id: "cmd:webpanel", title: "🖥 Web Panel", description: "Dashboard'a giriş linki" },
+    { id: "cmd:profil", title: "👤 Profil Bilgileri", description: "Hesap bilgileriniz" },
+    { id: "cmd:favoriler", title: "⭐ Favori Düzenle", description: "Sık kullanılanları düzenle" },
+  ];
+
   await sendList(ctx.phone,
-    `${tenant.icon} *${tenant.name}*\n\nBir eleman veya sık kullanılan komut seçin.`,
+    `${tenant.icon} *${tenant.name}*\n\nBir eleman, komut veya sistem işlemi seçin.`,
     "Ekibi Çağır",
     [
       { title: "⭐ Sık Kullanılanlar", rows: favoriteCommands },
       { title: "Sanal Elemanlar", rows: empRows },
+      { title: "⚙️ Sistem", rows: systemCommands },
     ],
   );
+}
+
+// ── Employee commands — show commands for selected employee ──────────────
+
+// ── Profile command (shared) ─────────────────────────────────────────────
+
+async function showProfile(ctx: WaContext) {
+  const supabase = getServiceClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, email, phone, whatsapp_phone, preferred_locale, created_at")
+    .eq("id", ctx.userId)
+    .single();
+
+  if (!profile) {
+    await sendButtons(ctx.phone, "Profil bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
+    return;
+  }
+
+  const tenant = getTenantByKey(ctx.tenantKey);
+  const dateStr = new Date(profile.created_at).toLocaleDateString("tr-TR");
+
+  let text = `👤 *Profil Bilgileri*\n\n`;
+  text += `Ad: ${profile.display_name || "-"}\n`;
+  text += `E-posta: ${profile.email || "-"}\n`;
+  text += `Telefon: ${profile.phone || "-"}\n`;
+  text += `WhatsApp: ${profile.whatsapp_phone || "-"}\n`;
+  text += `Dil: ${profile.preferred_locale || "tr"}\n`;
+  text += `SaaS: ${tenant?.name || "-"}\n`;
+  text += `Kayıt: ${dateStr}`;
+
+  await sendButtons(ctx.phone, text, [{ id: "cmd:menu", title: "Ana Menü" }]);
 }
 
 // ── Employee commands — show commands for selected employee ──────────────
