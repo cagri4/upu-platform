@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { UserPlus, ExternalLink, Copy, Check, Users, Layers, Activity } from 'lucide-react';
+import { UserPlus, ExternalLink, Copy, Check, Users, Layers, Activity, Trash2 } from 'lucide-react';
 
 interface Tenant {
   id: string;
@@ -12,10 +12,21 @@ interface Tenant {
   created_at: string;
 }
 
+interface UserProfile {
+  id: string;
+  display_name: string;
+  email: string;
+  phone: string;
+  whatsapp_phone: string;
+  tenant_id: string;
+  created_at: string;
+}
+
 interface Stats {
   tenants: Tenant[];
   userCounts: Record<string, number>;
   totalUsers: number;
+  users: UserProfile[];
 }
 
 export default function AdminPage() {
@@ -35,6 +46,14 @@ export default function AdminPage() {
       if (res.ok) setStats(await res.json());
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
+  }
+
+  async function deleteUser(userId: string, name: string) {
+    if (!confirm(`"${name}" silinecek. Emin misiniz?`)) return;
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
+      if (res.ok) fetchStats();
+    } catch (err) { console.error(err); }
   }
 
   async function createInvite(tenantId: string) {
@@ -200,6 +219,56 @@ export default function AdminPage() {
               )}
             </div>
           ))}
+        </div>
+
+        {/* All Users Table */}
+        <h2 className="text-lg font-semibold mt-10 mb-4">Tüm Kullanıcılar ({stats?.users?.length || 0})</h2>
+        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-750 border-b border-slate-700">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-slate-400">Ad</th>
+                  <th className="text-left px-4 py-3 font-medium text-slate-400">E-posta</th>
+                  <th className="text-left px-4 py-3 font-medium text-slate-400">WhatsApp</th>
+                  <th className="text-left px-4 py-3 font-medium text-slate-400">SaaS</th>
+                  <th className="text-left px-4 py-3 font-medium text-slate-400">Kayıt</th>
+                  <th className="text-right px-4 py-3 font-medium text-slate-400">İşlem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(!stats?.users || stats.users.length === 0) ? (
+                  <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">Henüz kullanıcı yok</td></tr>
+                ) : (
+                  stats.users.map((u) => {
+                    const tenantName = stats.tenants.find(t => t.id === u.tenant_id)?.name || '-';
+                    return (
+                      <tr key={u.id} className="border-b border-slate-700 hover:bg-slate-750">
+                        <td className="px-4 py-3 font-medium text-white">{u.display_name || '-'}</td>
+                        <td className="px-4 py-3 text-slate-400">{u.email || '-'}</td>
+                        <td className="px-4 py-3">
+                          {u.whatsapp_phone ? (
+                            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">{u.whatsapp_phone}</span>
+                          ) : <span className="text-slate-600">-</span>}
+                        </td>
+                        <td className="px-4 py-3 text-slate-400">{tenantName}</td>
+                        <td className="px-4 py-3 text-slate-500">{new Date(u.created_at).toLocaleDateString('tr-TR')}</td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => deleteUser(u.id, u.display_name || 'Kullanıcı')}
+                            className="text-red-400 hover:text-red-300 p-1"
+                            title="Sil"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </main>
     </div>
