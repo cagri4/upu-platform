@@ -3,7 +3,7 @@
  */
 
 import type { WaContext, TenantCommandRegistry } from "./types";
-import { getSession } from "./session";
+import { getSession, endSession } from "./session";
 import { sendText, sendButtons, sendList } from "./send";
 import { emlakCommands } from "@/tenants/emlak/commands";
 import { bayiCommands } from "@/tenants/bayi/commands";
@@ -40,7 +40,6 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     // Cancel keywords
     const lower = ctx.text.toLowerCase().trim();
     if (lower === "iptal" || lower === "vazgeç" || lower === "vazgec") {
-      const { endSession } = await import("./session");
       await endSession(ctx.userId);
       await sendButtons(ctx.phone, "❌ İşlem iptal edildi.", [
         { id: "cmd:menu", title: "Ana Menü" },

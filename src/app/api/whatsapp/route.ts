@@ -172,10 +172,16 @@ export async function POST(req: NextRequest) {
 
     // Route to tenant command handler
     try {
+      console.log("[wa-platform] Before routeCommand, tenantKey:", tenantKey, "userId:", user.id);
       await routeCommand(ctx);
+      console.log("[wa-platform] After routeCommand — success");
     } catch (routeErr) {
       console.error("[wa-platform] routeCommand error:", routeErr);
-      await sendText(phone, "Bir hata oluştu. Lütfen tekrar deneyin.\n\nHata: " + (routeErr instanceof Error ? routeErr.message : String(routeErr)));
+      try {
+        await sendText(phone, "Bir hata oluştu.\n\nHata: " + (routeErr instanceof Error ? routeErr.message : String(routeErr)));
+      } catch (sendErr) {
+        console.error("[wa-platform] sendText in catch also failed:", sendErr);
+      }
     }
 
     return NextResponse.json({ status: "ok" });
