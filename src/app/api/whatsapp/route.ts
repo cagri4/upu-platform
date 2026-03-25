@@ -170,6 +170,9 @@ export async function POST(req: NextRequest) {
       interactiveId,
     };
 
+    // DEBUG: send a test message before routeCommand to verify pipeline
+    await sendText(phone, `[DEBUG] User: ${user.display_name}, Tenant: ${tenantKey}, Text: ${text}`);
+
     // Route to tenant command handler
     try {
       console.log("[wa-platform] Before routeCommand, tenantKey:", tenantKey, "userId:", user.id);
