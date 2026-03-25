@@ -159,9 +159,9 @@ async function showMenu(
     `${tenant.icon} *${tenant.name}*\n\nBir eleman, komut veya sistem işlemi seçin.`,
     "Ekibi Çağır",
     [
-      { title: "⭐ Sık Kullanılanlar", rows: favoriteCommands },
+      { title: "Sık Kullanılanlar", rows: favoriteCommands },
       { title: "Sanal Elemanlar", rows: empRows },
-      { title: "⚙️ Sistem", rows: systemCommands },
+      { title: "Sistem", rows: systemCommands },
     ],
   );
 }

@@ -60,18 +60,29 @@ export async function sendList(
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
 
-  await fetch(`${WA_API}/${phoneId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messaging_product: "whatsapp", to: phone, type: "interactive",
-      interactive: {
-        type: "list",
-        body: { text },
-        action: { button: buttonText, sections },
-      },
-    }),
-  }).catch(err => console.error("[wa:send] list error:", err));
+  try {
+    const resp = await fetch(`${WA_API}/${phoneId}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messaging_product: "whatsapp", to: phone, type: "interactive",
+        interactive: {
+          type: "list",
+          body: { text },
+          action: { button: buttonText, sections },
+        },
+      }),
+    });
+    if (!resp.ok) {
+      const err = await resp.text();
+      console.error("[wa:send] list API error:", resp.status, err);
+      // Fallback to text message
+      const fallback = sections.map(s => `*${s.title}*\n` + s.rows.map(r => `  ${r.title}`).join("\n")).join("\n\n");
+      await sendText(phone, text + "\n\n" + fallback);
+    }
+  } catch (err) {
+    console.error("[wa:send] list error:", err);
+  }
 }
 
 export async function sendDocument(
