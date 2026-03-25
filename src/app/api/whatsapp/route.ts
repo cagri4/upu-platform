@@ -171,11 +171,16 @@ export async function POST(req: NextRequest) {
     };
 
     // Route to tenant command handler
-    await routeCommand(ctx);
+    try {
+      await routeCommand(ctx);
+    } catch (routeErr) {
+      console.error("[wa-platform] routeCommand error:", routeErr);
+      await sendText(phone, "Bir hata oluştu. Lütfen tekrar deneyin.\n\nHata: " + (routeErr instanceof Error ? routeErr.message : String(routeErr)));
+    }
 
     return NextResponse.json({ status: "ok" });
   } catch (err) {
-    console.error("[wa-platform] Error:", err);
+    console.error("[wa-platform] Webhook error:", err);
     return NextResponse.json({ status: "ok" });
   }
 }
