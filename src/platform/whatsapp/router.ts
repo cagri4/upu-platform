@@ -141,27 +141,34 @@ async function showMenu(
     description: emp.description.substring(0, 72),
   }));
 
-  const favoriteCommands = [
-    { id: "cmd:brifing", title: "📋 Brifing", description: "Günlük özet" },
-    { id: "cmd:portfoyum", title: "🗂 Portföyüm", description: "Mülk listesi" },
-  ];
-
-  // TODO: load user's custom favorites from DB
-
   const systemCommands = [
     { id: "cmd:webpanel", title: "🖥 Web Panel", description: "Dashboard'a giriş linki" },
     { id: "cmd:profil", title: "👤 Profil Bilgileri", description: "Hesap bilgileriniz" },
-    { id: "cmd:favoriler", title: "⭐ Favori Düzenle", description: "Sık kullanılanları düzenle" },
   ];
+
+  // WhatsApp List max 10 rows — adjust sections dynamically
+  const totalRows = empRows.length + systemCommands.length;
+  const maxFavorites = Math.max(0, 10 - totalRows);
+
+  const allFavorites = [
+    { id: "cmd:brifing", title: "📋 Brifing", description: "Günlük özet" },
+    { id: "cmd:menu", title: "⭐ Favori Düzenle", description: "Sık kullanılanları düzenle" },
+  ];
+  const favoriteCommands = allFavorites.slice(0, maxFavorites);
+
+  // TODO: load user's custom favorites from DB
+
+  const sections = [];
+  if (favoriteCommands.length > 0) {
+    sections.push({ title: "Sık Kullanılanlar", rows: favoriteCommands });
+  }
+  sections.push({ title: "Sanal Elemanlar", rows: empRows });
+  sections.push({ title: "Sistem", rows: systemCommands });
 
   await sendList(ctx.phone,
     `${tenant.icon} *${tenant.name}*\n\nBir eleman, komut veya sistem işlemi seçin.`,
     "Ekibi Çağır",
-    [
-      { title: "Sık Kullanılanlar", rows: favoriteCommands },
-      { title: "Sanal Elemanlar", rows: empRows },
-      { title: "Sistem", rows: systemCommands },
-    ],
+    sections,
   );
 }
 
