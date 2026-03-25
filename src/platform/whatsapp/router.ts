@@ -144,7 +144,6 @@ async function showMenu(
   const favoriteCommands = [
     { id: "cmd:brifing", title: "📋 Brifing", description: "Günlük özet" },
     { id: "cmd:portfoyum", title: "🗂 Portföyüm", description: "Mülk listesi" },
-    { id: "cmd:fiyatsor", title: "📊 Fiyat Sor", description: "Pazar analizi" },
   ];
 
   // TODO: load user's custom favorites from DB
