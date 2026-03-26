@@ -148,26 +148,12 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
   await sendText(ctx.phone, `Komutu anlamadım. Yardım için "menu" yazın.`);
 }
 
-// ── Guide command (shared) ───────────────────────────────────────────────
+// ── Guide command (tenant-specific) ──────────────────────────────────────
 
 async function showGuide(ctx: WaContext, tenant: ReturnType<typeof getTenantByKey>) {
   if (!tenant) return;
 
-  let text = `📖 *${tenant.name} — Kullanım Kılavuzu*\n\n`;
-  text += `Bu sistem WhatsApp üzerinden çalışır. İşte temel bilgiler:\n\n`;
-  text += `*1. Menü*\n"menu" yazarak tüm komutlara ulaşabilirsiniz.\n\n`;
-  text += `*2. Sanal Elemanlar*\nMenüden bir eleman seçin, komutlarını görün, tıklayın.\n\n`;
-  text += `*3. Komut Yazma*\nKomut adını doğrudan yazabilirsiniz. Örnek: brifing\n\n`;
-  text += `*4. İptal*\nBir işlem sırasında "iptal" yazarak vazgeçebilirsiniz.\n\n`;
-  text += `*5. SaaS Değiştirme*\n"degistir" yazarak farklı bir sisteme geçebilirsiniz.\n\n`;
-  text += `*6. Web Panel*\n"webpanel" yazarak tarayıcıdan giriş yapabilirsiniz.\n\n`;
-
-  text += `*Ekibiniz:*\n`;
-  for (const emp of tenant.employees) {
-    text += `${emp.icon} ${emp.name} — ${emp.description}\n`;
-  }
-
-  await sendButtons(ctx.phone, text, [
+  await sendButtons(ctx.phone, tenant.guide, [
     { id: "cmd:menu", title: "Ana Menü" },
   ]);
 }
@@ -184,6 +170,20 @@ async function showMenu(
     return;
   }
 
+  // Message 1: Favorites as buttons (always shown, max 3)
+  const favCmds = tenant.defaultFavorites || [];
+  if (favCmds.length > 0) {
+    const favButtons = favCmds.slice(0, 3).map(cmd => ({
+      id: `cmd:${cmd}`,
+      title: cmd.substring(0, 20),
+    }));
+    await sendButtons(ctx.phone,
+      `${tenant.icon} *${tenant.name}*\n\n⭐ Sık kullanılanlar:`,
+      favButtons,
+    );
+  }
+
+  // Message 2: List with employees + system
   const empRows = tenant.employees.map((emp) => ({
     id: `emp:${emp.key}`,
     title: `${emp.icon} ${emp.name}`.substring(0, 24),
@@ -192,35 +192,16 @@ async function showMenu(
 
   const systemCommands = [
     { id: "cmd:kilavuz", title: "📖 Kılavuz", description: "Sistemi nasıl kullanırım?" },
-    { id: "cmd:webpanel", title: "🖥 Web Panel", description: "Dashboard'a giriş linki" },
-    { id: "cmd:profil", title: "👤 Profil Bilgileri", description: "Hesap bilgileriniz" },
+    { id: "cmd:webpanel", title: "🖥 Web Panel", description: "Dashboard linki" },
   ];
-
-  // WhatsApp List max 10 rows — adjust dynamically
-  const totalFixed = empRows.length + systemCommands.length;
-  const maxFavorites = Math.max(0, 10 - totalFixed);
-
-  // Default favorites per tenant (first employee's top command + brifing)
-  const firstEmpCmd = tenant.employees[0]?.commands[0];
-  const allFavorites = [
-    { id: "cmd:brifing", title: "📋 Brifing", description: "Günlük özet" },
-    ...(firstEmpCmd ? [{ id: `cmd:${firstEmpCmd}`, title: `⭐ ${firstEmpCmd}`, description: tenant.employees[0]?.name || "" }] : []),
-  ];
-  const favoriteCommands = allFavorites.slice(0, maxFavorites);
-
-  // TODO: load user's custom favorites from DB
-
-  const sections = [];
-  if (favoriteCommands.length > 0) {
-    sections.push({ title: "Sık Kullanılanlar", rows: favoriteCommands });
-  }
-  sections.push({ title: "Sanal Elemanlar", rows: empRows });
-  sections.push({ title: "Sistem", rows: systemCommands });
 
   await sendList(ctx.phone,
-    `${tenant.icon} *${tenant.name}*\n\nBir eleman, komut veya sistem işlemi seçin.`,
+    "Bir eleman veya sistem komutu seçin:",
     "Ekibi Çağır",
-    sections,
+    [
+      { title: "Sanal Elemanlar", rows: empRows },
+      { title: "Sistem", rows: systemCommands },
+    ],
   );
 }
 
