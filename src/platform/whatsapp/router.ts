@@ -119,6 +119,10 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
   }
 
   // System commands (shared across all tenants)
+  if (firstWord === "kilavuz" || firstWord === "kılavuz") {
+    await showGuide(ctx, tenant);
+    return;
+  }
   if (firstWord === "profil") {
     await showProfile(ctx);
     return;
@@ -144,6 +148,30 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
   await sendText(ctx.phone, `Komutu anlamadım. Yardım için "menu" yazın.`);
 }
 
+// ── Guide command (shared) ───────────────────────────────────────────────
+
+async function showGuide(ctx: WaContext, tenant: ReturnType<typeof getTenantByKey>) {
+  if (!tenant) return;
+
+  let text = `📖 *${tenant.name} — Kullanım Kılavuzu*\n\n`;
+  text += `Bu sistem WhatsApp üzerinden çalışır. İşte temel bilgiler:\n\n`;
+  text += `*1. Menü*\n"menu" yazarak tüm komutlara ulaşabilirsiniz.\n\n`;
+  text += `*2. Sanal Elemanlar*\nMenüden bir eleman seçin, komutlarını görün, tıklayın.\n\n`;
+  text += `*3. Komut Yazma*\nKomut adını doğrudan yazabilirsiniz. Örnek: brifing\n\n`;
+  text += `*4. İptal*\nBir işlem sırasında "iptal" yazarak vazgeçebilirsiniz.\n\n`;
+  text += `*5. SaaS Değiştirme*\n"degistir" yazarak farklı bir sisteme geçebilirsiniz.\n\n`;
+  text += `*6. Web Panel*\n"webpanel" yazarak tarayıcıdan giriş yapabilirsiniz.\n\n`;
+
+  text += `*Ekibiniz:*\n`;
+  for (const emp of tenant.employees) {
+    text += `${emp.icon} ${emp.name} — ${emp.description}\n`;
+  }
+
+  await sendButtons(ctx.phone, text, [
+    { id: "cmd:menu", title: "Ana Menü" },
+  ]);
+}
+
 // ── Help menu — List message with employees ─────────────────────────────
 
 async function showMenu(
@@ -163,17 +191,20 @@ async function showMenu(
   }));
 
   const systemCommands = [
+    { id: "cmd:kilavuz", title: "📖 Kılavuz", description: "Sistemi nasıl kullanırım?" },
     { id: "cmd:webpanel", title: "🖥 Web Panel", description: "Dashboard'a giriş linki" },
     { id: "cmd:profil", title: "👤 Profil Bilgileri", description: "Hesap bilgileriniz" },
   ];
 
-  // WhatsApp List max 10 rows — adjust sections dynamically
-  const totalRows = empRows.length + systemCommands.length;
-  const maxFavorites = Math.max(0, 10 - totalRows);
+  // WhatsApp List max 10 rows — adjust dynamically
+  const totalFixed = empRows.length + systemCommands.length;
+  const maxFavorites = Math.max(0, 10 - totalFixed);
 
+  // Default favorites per tenant (first employee's top command + brifing)
+  const firstEmpCmd = tenant.employees[0]?.commands[0];
   const allFavorites = [
     { id: "cmd:brifing", title: "📋 Brifing", description: "Günlük özet" },
-    { id: "cmd:menu", title: "⭐ Favori Düzenle", description: "Sık kullanılanları düzenle" },
+    ...(firstEmpCmd ? [{ id: `cmd:${firstEmpCmd}`, title: `⭐ ${firstEmpCmd}`, description: tenant.employees[0]?.name || "" }] : []),
   ];
   const favoriteCommands = allFavorites.slice(0, maxFavorites);
 
