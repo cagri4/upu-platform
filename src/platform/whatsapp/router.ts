@@ -102,6 +102,10 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         await sendButtons(ctx.phone, "⭐ Favori düzenleme yakında aktif olacak.", [{ id: "cmd:menu", title: "Ana Menü" }]);
         return;
       }
+      if (cmd === "hakkimizda") {
+        await showAbout(ctx);
+        return;
+      }
       const handler = registry.commands[cmd];
       if (handler) {
         await handler(ctx);
@@ -150,6 +154,10 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     ]);
     return;
   }
+  if (firstWord === "hakkimizda" || firstWord === "hakkımızda") {
+    await showAbout(ctx);
+    return;
+  }
 
   // Check aliases
   const resolved = registry.aliases[firstWord] || firstWord;
@@ -165,12 +173,39 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
   await sendText(ctx.phone, `Komutu anlamadım. Yardım için "menu" yazın.`);
 }
 
-// ── Guide command (tenant-specific) ──────────────────────────────────────
+// ── Guide command (generic — same structure for all SaaS) ────────────────
 
 async function showGuide(ctx: WaContext, tenant: ReturnType<typeof getTenantByKey>) {
   if (!tenant) return;
 
-  await sendButtons(ctx.phone, tenant.guide, [
+  let text = `📖 *${tenant.name} — Kullanım Kılavuzu*\n\n`;
+  text += `Bu sistem WhatsApp üzerinden çalışan AI destekli bir sanal eleman platformudur.\n\n`;
+  text += `*Nasıl Kullanılır:*\n\n`;
+  text += `1️⃣ *Menüyü açın*\n"menu" yazın veya aşağıdaki Ana Menü butonuna tıklayın.\n\n`;
+  text += `2️⃣ *Ekip üyenizi seçin*\nMenüden "Ekibi Çağır" butonuna tıklayın. Sanal elemanlarınız listelenecek.\n\n`;
+  text += `3️⃣ *Komutları görün*\nBir eleman seçtiğinizde, o elemanın yapabileceği işlemler görünür.\n\n`;
+  text += `4️⃣ *Komutu seçin*\nUygun komutu tıklayın — sistem sizi adım adım yönlendirecek.\n\n`;
+  text += `*Diğer bilgiler:*\n`;
+  text += `• İşlem sırasında "iptal" yazarak vazgeçebilirsiniz\n`;
+  text += `• "degistir" yazarak farklı bir sisteme geçebilirsiniz\n`;
+  text += `• "webpanel" ile tarayıcıdan giriş yapabilirsiniz`;
+
+  await sendButtons(ctx.phone, text, [
+    { id: "cmd:menu", title: "Ana Menü" },
+  ]);
+}
+
+// ── About command (shared) ───────────────────────────────────────────────
+
+async function showAbout(ctx: WaContext) {
+  const text = `ℹ️ *Hakkımızda*\n\n` +
+    `Bu platform UPU Dev tarafından geliştirilmiştir.\n\n` +
+    `UPU Dev, işletmelere AI destekli sanal eleman çözümleri sunan bir teknoloji şirketidir. ` +
+    `Her sektör için özelleştirilmiş sanal çalışan ekipleri oluşturuyoruz — emlak, bayi yönetimi, muhasebe, otel ve site yönetimi.\n\n` +
+    `Sanal elemanlarımız WhatsApp üzerinden 7/24 çalışır, komutlarınızı anlar ve işlerinizi kolaylaştırır.\n\n` +
+    `🌐 Daha fazla bilgi: upudev.nl`;
+
+  await sendButtons(ctx.phone, text, [
     { id: "cmd:menu", title: "Ana Menü" },
   ]);
 }
@@ -210,6 +245,7 @@ async function showMenu(
   const systemCommands = [
     { id: "cmd:kilavuz", title: "📖 Kılavuz", description: "Sistemi nasıl kullanırım?" },
     { id: "cmd:webpanel", title: "🖥 Web Panel", description: "Dashboard linki" },
+    { id: "cmd:hakkimizda", title: "ℹ️ Hakkımızda", description: "UPU Dev hakkında" },
   ];
 
   await sendList(ctx.phone,

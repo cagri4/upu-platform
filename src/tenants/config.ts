@@ -49,7 +49,7 @@ const TENANTS: Record<string, TenantConfig> = {
       { key: "sekreter", name: "Sekreter", icon: "📋", description: "Brifing ve görevler", commands: ["brifing", "gorevler", "sozlesme", "sozlesmelerim", "hediyeler"] },
     ],
     commandMap: {},
-    guide: "📖 *Emlak Ofisi Kılavuzu*\n\n🏠 Bu sistem emlak danışmanları için tasarlanmıştır.\n\n*Nasıl kullanılır:*\n1. \"menu\" yazarak ekibinizi görün\n2. Bir eleman seçip komutlarına ulaşın\n3. Mülk eklemek için: mulkekle\n4. Pazar fiyatı sorgulamak için: fiyatsor Bodrum\n5. Müşteri eklemek için: musteriEkle\n6. Günlük özetiniz için: brifing\n\n*İpuçları:*\n• Sahibinden linkini yapıştırarak mülk ekleyebilirsiniz\n• \"iptal\" yazarak işlemi durdurabilirsiniz\n• \"degistir\" ile başka sisteme geçebilirsiniz",
+    guide: "",
     defaultFavorites: ["brifing", "portfoyum", "fiyatsor"],
   },
   bayi: {
@@ -72,7 +72,7 @@ const TENANTS: Record<string, TenantConfig> = {
       { key: "urunYoneticisi", name: "Ürün Yöneticisi", icon: "🏷", description: "Ürün kataloğu ve fiyat listesi", commands: ["urunler", "fiyatliste", "yeniurun", "fiyatguncelle"] },
     ],
     commandMap: {},
-    guide: "📖 *Bayi Yönetimi Kılavuzu*\n\n📦 Bu sistem bayi ağı yönetimi için tasarlanmıştır.\n\n*Nasıl kullanılır:*\n1. \"menu\" yazarak 8 departman elemanınızı görün\n2. Sipariş oluşturmak için: siparisolustur\n3. Stok durumu için: stok\n4. Bayi bakiyesi için: bakiye\n5. Günlük özet için: ozet\n6. Kampanya oluşturmak için: kampanyaolustur\n\n*İpuçları:*\n• Kritik stok uyarıları için: kritikstok\n• Vadesi gelen ödemeler için: vadeler\n• \"iptal\" ile işlemi durdurun",
+    guide: "",
     defaultFavorites: ["ozet", "siparisler", "stok"],
   },
   muhasebe: {
@@ -91,7 +91,7 @@ const TENANTS: Record<string, TenantConfig> = {
       { key: "tahsilatUzmani", name: "Tahsilat Uzmanı", icon: "💰", description: "Alacak takibi, geciken ödemeler ve nakit akış", commands: ["alacaklar", "geciken", "hatirlatma_gonder", "odeme_ekle", "nakit_akis", "risk"] },
     ],
     commandMap: {},
-    guide: "📖 *Muhasebe Asistanı Kılavuzu*\n\n📊 Bu sistem muhasebe büroları için tasarlanmıştır.\n\n*Nasıl kullanılır:*\n1. \"menu\" yazarak 4 uzman elemanınızı görün\n2. Fatura yüklemek için: fatura_yukle (web panelden)\n3. Son faturaları görmek için: son_faturalar\n4. KDV hesaplamak için: kdv\n5. Mükellef eklemek için: mukellef_ekle\n6. Beyanname takvimi için: takvim\n\n*İpuçları:*\n• Geciken ödemeler için: geciken\n• Nakit akış durumu için: nakit_akis\n• Günlük brifing için: brifing",
+    guide: "",
     defaultFavorites: ["brifing", "son_faturalar", "alacaklar"],
   },
   otel: {
@@ -110,7 +110,7 @@ const TENANTS: Record<string, TenantConfig> = {
       { key: "misafirDeneyimi", name: "Misafir Deneyimi", icon: "⭐", description: "Bilgi bankası, tavsiye ve yorum yönetimi", commands: ["faq", "odabilgi", "tavsiye", "yorumlar", "brifing"] },
     ],
     commandMap: {},
-    guide: "📖 *Otel Yönetimi Kılavuzu*\n\n🏨 Bu sistem otel operasyonları için tasarlanmıştır.\n\n*Nasıl kullanılır:*\n1. \"menu\" yazarak 4 departman elemanınızı görün\n2. Günlük durum için: durum\n3. Bugünkü check-in'ler: checkin\n4. Oda müsaitliği: musaitlik\n5. Misafir listesi: misafirler\n6. Oda durumları: odalar\n\n*İpuçları:*\n• Sabah brifing için: brifing\n• Temizlik görevleri: temizlik\n• Gelen mesajlar: mesajlar",
+    guide: "",
     defaultFavorites: ["brifing", "durum", "rezervasyonlar"],
   },
   siteyonetim: {
@@ -129,7 +129,7 @@ const TENANTS: Record<string, TenantConfig> = {
       { key: "hukukMusaviri", name: "Hukuk Müşaviri", icon: "⚖️", description: "KMK mevzuatı, hak ve yükümlülükler", commands: ["hukuk", "mevzuat"] },
     ],
     commandMap: {},
-    guide: "📖 *Site Yönetimi Kılavuzu*\n\n🏢 Bu sistem konut/site yöneticileri ve sakinleri için tasarlanmıştır.\n\n*Yöneticiler için:*\n1. Finansal rapor: rapor\n2. Aidat durumu: aidat\n3. Duyuru gönder: duyuru\n4. Bina kodu: binakodu\n\n*Sakinler için:*\n1. Borç sorgulama: borcum\n2. Arıza bildirimi: ariza\n3. Bina kaydı: kayit + bina kodu\n\n*İpuçları:*\n• Arıza bildirimi kategori ve öncelik seçimi ile yapılır\n• \"iptal\" ile işlemi durdurun",
+    guide: "",
     defaultFavorites: ["borcum", "rapor", "ariza"],
   },
 };
