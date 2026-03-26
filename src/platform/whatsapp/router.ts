@@ -57,6 +57,12 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
 
   // ── Check for callback (interactive button/list reply) ──
   if (ctx.interactiveId) {
+    // SaaS switch callback (from gateway) — show menu
+    if (ctx.interactiveId.startsWith("saas:")) {
+      await showMenu(ctx, tenant, registry);
+      return;
+    }
+
     // Platform-level callbacks
     if (ctx.interactiveId.startsWith("cmd:")) {
       const cmd = ctx.interactiveId.replace("cmd:", "");
