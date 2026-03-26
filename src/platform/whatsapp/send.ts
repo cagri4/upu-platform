@@ -33,22 +33,38 @@ export async function sendButtons(
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
 
-  await fetch(`${WA_API}/${phoneId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messaging_product: "whatsapp", to: phone, type: "interactive",
-      interactive: {
-        type: "button",
-        body: { text },
-        action: {
-          buttons: buttons.slice(0, 3).map(b => ({
-            type: "reply", reply: { id: b.id, title: b.title.substring(0, 20) },
-          })),
+  const validButtons = buttons.slice(0, 3).filter(b => b.id && b.title);
+  if (validButtons.length === 0) {
+    // No valid buttons — fallback to text
+    await sendText(phone, text);
+    return;
+  }
+
+  try {
+    const resp = await fetch(`${WA_API}/${phoneId}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messaging_product: "whatsapp", to: phone, type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text },
+          action: {
+            buttons: validButtons.map(b => ({
+              type: "reply", reply: { id: b.id, title: b.title.substring(0, 20) },
+            })),
+          },
         },
-      },
-    }),
-  }).catch(err => console.error("[wa:send] buttons error:", err));
+      }),
+    });
+    if (!resp.ok) {
+      const err = await resp.text();
+      console.error("[wa:send] buttons API error:", resp.status, err);
+      await sendText(phone, text);
+    }
+  } catch (err) {
+    console.error("[wa:send] buttons error:", err);
+  }
 }
 
 export async function sendList(

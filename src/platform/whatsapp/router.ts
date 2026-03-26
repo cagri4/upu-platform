@@ -85,6 +85,23 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         await showMenu(ctx, tenant, registry);
         return;
       }
+      // Platform system commands (shared across all tenants)
+      if (cmd === "kilavuz") {
+        await showGuide(ctx, tenant);
+        return;
+      }
+      if (cmd === "profil") {
+        await showProfile(ctx);
+        return;
+      }
+      if (cmd === "webpanel" && registry.commands["webpanel"]) {
+        await registry.commands["webpanel"](ctx);
+        return;
+      }
+      if (cmd === "favoriler") {
+        await sendButtons(ctx.phone, "⭐ Favori düzenleme yakında aktif olacak.", [{ id: "cmd:menu", title: "Ana Menü" }]);
+        return;
+      }
       const handler = registry.commands[cmd];
       if (handler) {
         await handler(ctx);
