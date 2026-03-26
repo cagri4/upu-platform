@@ -146,9 +146,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "ok" });
     }
 
-    // Resolve tenant key from user's tenant_id
+    // Resolve tenant key — check active SaaS session first, then profile
     let tenantKey = "emlak";
-    if (user.tenant_id) {
+    const { data: activeSession } = await supabase
+      .from("saas_active_session")
+      .select("active_saas_key")
+      .eq("phone", phone)
+      .maybeSingle();
+
+    if (activeSession?.active_saas_key) {
+      tenantKey = activeSession.active_saas_key;
+    } else if (user.tenant_id) {
       const { data: tenant } = await supabase
         .from("tenants")
         .select("saas_type")

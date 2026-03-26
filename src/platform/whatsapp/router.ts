@@ -57,9 +57,24 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
 
   // ── Check for callback (interactive button/list reply) ──
   if (ctx.interactiveId) {
-    // SaaS switch callback (from gateway) — show menu
+    // SaaS switch callback (from gateway) — switch tenant + show menu
     if (ctx.interactiveId.startsWith("saas:")) {
-      await showMenu(ctx, tenant, registry);
+      const switchedKey = ctx.interactiveId.replace("saas:", "");
+      // Save active session to platform DB
+      const supabase = getServiceClient();
+      await supabase.from("saas_active_session").upsert({
+        phone: ctx.phone,
+        active_saas_key: switchedKey,
+        updated_at: new Date().toISOString(),
+      });
+      // Show switched tenant's menu
+      const switchedTenant = getTenantByKey(switchedKey);
+      const switchedRegistry = REGISTRIES[switchedKey];
+      if (switchedTenant && switchedRegistry) {
+        await showMenu({ ...ctx, tenantKey: switchedKey }, switchedTenant, switchedRegistry);
+      } else {
+        await sendText(ctx.phone, `${switchedKey} sistemi henüz aktif değil.`);
+      }
       return;
     }
 
