@@ -10,6 +10,7 @@ import { bayiCommands } from "@/tenants/bayi/commands";
 import { muhasebeCommands } from "@/tenants/muhasebe/commands";
 import { otelCommands } from "@/tenants/otel/commands";
 import { siteyonetimCommands } from "@/tenants/siteyonetim/commands";
+import { marketCommands } from "@/tenants/market/commands";
 import { getTenantByKey } from "@/tenants/config";
 import { getServiceClient } from "@/platform/auth/supabase";
 
@@ -21,6 +22,7 @@ const REGISTRIES: Record<string, TenantCommandRegistry> = {
   muhasebe: muhasebeCommands,
   otel: otelCommands,
   siteyonetim: siteyonetimCommands,
+  market: marketCommands,
 };
 
 // ── Main router ──────────────────────────────────────────────────────────

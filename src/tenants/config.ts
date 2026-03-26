@@ -132,6 +132,24 @@ const TENANTS: Record<string, TenantConfig> = {
     guide: "",
     defaultFavorites: ["borcum", "rapor", "ariza"],
   },
+  market: {
+    key: "market",
+    name: "Market Yönetimi",
+    slug: "marketai",
+    tenantId: "af1f27b0-2ec1-4423-9b93-2aa29979b73a",
+    saasType: "market",
+    icon: "🛒",
+    color: "#F59E0B",
+    description: "Marketler için AI destekli stok ve satış yönetimi",
+    employees: [
+      { key: "stokSorumlusu", name: "Stok Sorumlusu", icon: "📦", description: "Ürün ekleme, stok güncelleme ve sorgulama", commands: ["stokekle", "stokguncelle", "stoksil", "stoksorgula"] },
+      { key: "siparisYoneticisi", name: "Sipariş Yöneticisi", icon: "📋", description: "Tedarikçi ve sipariş yönetimi", commands: ["tedarikciekle", "tedarikciler", "siparisolustur", "siparisekle", "siparisler", "siparisdetay", "siparisonayla", "siparisiptal"] },
+      { key: "finansAnalisti", name: "Finans Analisti", icon: "💰", description: "Fiyat, kampanya ve satış raporları", commands: ["fiyatguncelle", "fiyatkampanya", "fiyatsorgula", "satiskaydet", "raporgunluk", "raporhaftalik", "topsatan"] },
+    ],
+    commandMap: {},
+    guide: "",
+    defaultFavorites: ["stoksorgula", "raporgunluk", "siparisler"],
+  },
 };
 
 // ─── Domain → Tenant mapping ─────────────────────────────────────────────
@@ -143,6 +161,7 @@ const DOMAIN_MAP: Record<string, string> = {
   "accountai.upudev.nl": "muhasebe",
   "hotelai.upudev.nl": "otel",
   "residenceai.upudev.nl": "siteyonetim",
+  "marketai.upudev.nl": "market",
   "adminpanel.upudev.nl": "admin",
   // Localhost development
   "localhost:3000": "emlak",
