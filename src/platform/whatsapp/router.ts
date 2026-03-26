@@ -94,8 +94,8 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         await showProfile(ctx);
         return;
       }
-      if (cmd === "webpanel" && registry.commands["webpanel"]) {
-        await registry.commands["webpanel"](ctx);
+      if (cmd === "webpanel") {
+        await handleWebpanelShared(ctx, tenant);
         return;
       }
       if (cmd === "favoriler") {
@@ -158,6 +158,10 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     await showAbout(ctx);
     return;
   }
+  if (firstWord === "webpanel" || firstWord === "panel" || firstWord === "dashboard") {
+    await handleWebpanelShared(ctx, tenant);
+    return;
+  }
 
   // Check aliases
   const resolved = registry.aliases[firstWord] || firstWord;
@@ -171,6 +175,37 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
 
   // Unrecognized
   await sendText(ctx.phone, `Komutu anlamadım. Yardım için "menu" yazın.`);
+}
+
+// ── Web panel command (shared — uses tenant subdomain) ───────────────────
+
+async function handleWebpanelShared(ctx: WaContext, tenant: ReturnType<typeof getTenantByKey>) {
+  const subdomain = tenant?.slug || "estateai";
+  const appUrl = `https://${subdomain}.upudev.nl`;
+
+  try {
+    const supabase = getServiceClient();
+    const { randomBytes } = await import("crypto");
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+    await supabase.from("magic_link_tokens").insert({
+      user_id: ctx.userId,
+      token,
+      expires_at: expiresAt,
+    });
+
+    const magicUrl = `${appUrl}/auth/magic?token=${token}`;
+    await sendButtons(ctx.phone,
+      `🖥 Web Panel\n\nAşağıdaki linke tıklayarak giriş yapın:\n\n${magicUrl}\n\n⏱ 15 dakika geçerli.`,
+      [{ id: "cmd:menu", title: "Ana Menü" }],
+    );
+  } catch {
+    await sendButtons(ctx.phone,
+      `🖥 Web Panel\n\n${appUrl}/tr/login`,
+      [{ id: "cmd:menu", title: "Ana Menü" }],
+    );
+  }
 }
 
 // ── Guide command (generic — same structure for all SaaS) ────────────────
