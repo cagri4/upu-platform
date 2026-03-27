@@ -1,7 +1,7 @@
 import type { WaContext } from "@/platform/whatsapp/types";
 import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession } from "@/platform/whatsapp/session";
-import { sendText, sendButtons } from "@/platform/whatsapp/send";
+import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 
 // ── Command: start mulkekle flow ────────────────────────────────────────
@@ -51,10 +51,18 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
         return;
       }
       await updateSession(ctx.userId, "rooms", { m2 });
-      await sendButtons(ctx.phone, "🛏 Oda sayısını seçin:", [
-        { id: "mulkekle:rooms:2+1", title: "2+1" },
-        { id: "mulkekle:rooms:3+1", title: "3+1" },
-        { id: "mulkekle:rooms:4+1", title: "4+1" },
+      await sendList(ctx.phone, "🛏 Oda sayısını seçin:", "Oda Sayısı", [
+        { title: "Oda Seçenekleri", rows: [
+          { id: "mulkekle:rooms:1+0", title: "1+0 (Stüdyo)" },
+          { id: "mulkekle:rooms:1+1", title: "1+1" },
+          { id: "mulkekle:rooms:2+1", title: "2+1" },
+          { id: "mulkekle:rooms:3+1", title: "3+1" },
+          { id: "mulkekle:rooms:3+2", title: "3+2" },
+          { id: "mulkekle:rooms:4+1", title: "4+1" },
+          { id: "mulkekle:rooms:4+2", title: "4+2" },
+          { id: "mulkekle:rooms:5+1", title: "5+1" },
+          { id: "mulkekle:rooms:6+", title: "6+" },
+        ]},
       ]);
       return;
     }

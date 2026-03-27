@@ -34,30 +34,9 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     return;
   }
 
-  const tenant = getTenantByKey(ctx.tenantKey);
+  let tenant = getTenantByKey(ctx.tenantKey);
 
-  // ── Check for active session (multi-step command) ──
-  const session = await getSession(ctx.userId);
-  if (session) {
-    // Cancel keywords
-    const lower = ctx.text.toLowerCase().trim();
-    if (lower === "iptal" || lower === "vazgeç" || lower === "vazgec") {
-      await endSession(ctx.userId);
-      await sendButtons(ctx.phone, "❌ İşlem iptal edildi.", [
-        { id: "cmd:menu", title: "Ana Menü" },
-      ]);
-      return;
-    }
-
-    // Route to step handler
-    const stepHandler = registry.stepHandlers[session.command];
-    if (stepHandler) {
-      await stepHandler(ctx, session);
-      return;
-    }
-  }
-
-  // ── Check for callback (interactive button/list reply) ──
+  // ── Check for callback FIRST (before session — saas switch must work even during active session) ──
   if (ctx.interactiveId) {
     // SaaS switch callback (from gateway) — switch tenant + show menu
     if (ctx.interactiveId.startsWith("saas:")) {
@@ -128,6 +107,24 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         await handler(ctx, ctx.interactiveId);
         return;
       }
+    }
+  }
+
+  // ── Check for active session (multi-step command) ──
+  const session = await getSession(ctx.userId);
+  if (session) {
+    const lower = ctx.text.toLowerCase().trim();
+    if (lower === "iptal" || lower === "vazgeç" || lower === "vazgec") {
+      await endSession(ctx.userId);
+      await sendButtons(ctx.phone, "❌ İşlem iptal edildi.", [
+        { id: "cmd:menu", title: "Ana Menü" },
+      ]);
+      return;
+    }
+    const stepHandler = registry.stepHandlers[session.command];
+    if (stepHandler) {
+      await stepHandler(ctx, session);
+      return;
     }
   }
 
