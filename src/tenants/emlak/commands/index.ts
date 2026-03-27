@@ -3,17 +3,31 @@
  */
 
 import type { TenantCommandRegistry } from "@/platform/whatsapp/types";
-import { createPlaceholderHandler } from "@/platform/whatsapp/placeholder";
+
+// ── Active commands (already ported) ────────────────────────────────
 import { handlePortfoyum } from "./portfoyum";
 import { handleMulkEkle, handleMulkEkleStep, handleMulkEkleCallback } from "./mulk-ekle";
 import { handleFiyatSor } from "./fiyat-sor";
 import { handleBrifing } from "./brifing";
 import { handleMusteriler } from "./musteriler";
 import { handleGorevler } from "./gorevler";
-import { handleSozlesmelerim, handleWebpanel } from "./sozlesme";
-import { handleAnaliz, handleRapor, handleTrend } from "./analiz";
+import { handleSozlesmelerim, handleWebpanel, handleSozlesme, handleSozlesmeStep, handleSozlesmeCallback } from "./sozlesme";
+import { handleAnaliz, handleRapor } from "./analiz";
 
-const ph = createPlaceholderHandler("emlak");
+// ── Newly ported commands ────────────────────────────────────────────
+import { handleMulkDetay, handleMulkDetayCallback, handleMulkDuzenle, handleMulkDuzenleCallback, handleMulkEditFieldCallback, handleMulkDuzenleStep, handleMulkSil, handleMulkSilCallback } from "./mulk-yonetim";
+import { handleTara, handleTaraStep, handleEkle } from "./portfolio";
+import { handleMusteriEkle, handleMusteriEkleStep, handleMusteriEkleCallback } from "./musteri-ekle";
+import { handleMusteriDuzenle, handleMusteriDuzenleCallback, handleMusteriDuzenleStep } from "./musteri-duzenle";
+import { handleEslestir, handleEslestirCallback } from "./eslestir";
+import { handleHatirlatma, handleHatirlatmaStep, handleHatirlatmaCallback } from "./hatirlatma";
+import { handleTakipEt, handleTakipEtStep, handleTakipEtCallback } from "./takip-et";
+import { handleSatisTavsiye, handleSatisTavsiyeCallback } from "./satis-tavsiye";
+import { handleOrtakPazar, handleOrtakPazarCallback } from "./ortak-pazar";
+import { handleFotograf, handleFotografCallback, handlePaylas, handlePaylasCallback, handleYayinla, handleYayinlaCallback, handleWebsitem } from "./medya";
+import { handleDegerle, handleDegerleCallback, handleMulkOner, handleMulkOnerStep } from "./degerle";
+import { handleTrend } from "./trend";
+import { handleHediyeler, handleHediyelerCallback } from "./hediyeler";
 
 export const emlakCommands: TenantCommandRegistry = {
   commands: {
@@ -21,32 +35,32 @@ export const emlakCommands: TenantCommandRegistry = {
     portfoyum: handlePortfoyum,
     portfoy: handlePortfoyum,
     mulkekle: handleMulkEkle,
-    mulkdetay: ph("mulkdetay", "Portföy Sorumlusu", "Mülk detayı"),
-    mulkduzenle: ph("mulkduzenle", "Portföy Sorumlusu", "Mülk düzenle"),
-    mulksil: ph("mulksil", "Portföy Sorumlusu", "Mülk sil"),
-    tara: ph("tara", "Portföy Sorumlusu", "Sahibinden'den otomatik ekle"),
-    ekle: ph("ekle", "Portföy Sorumlusu", "Hızlı mülk ekle"),
+    mulkdetay: handleMulkDetay,
+    mulkduzenle: handleMulkDuzenle,
+    mulksil: handleMulkSil,
+    tara: handleTara,
+    ekle: handleEkle,
 
     // Satış Destek
     musterilerim: handleMusteriler,
-    musteriEkle: ph("musteriEkle", "Satış Destek", "Müşteri ekle"),
-    musteriDuzenle: ph("musteriDuzenle", "Satış Destek", "Müşteri düzenle"),
-    eslestir: ph("eslestir", "Satış Destek", "Otomatik eşleştirme"),
-    hatirlatma: ph("hatirlatma", "Satış Destek", "Hatırlatma kur"),
-    takipEt: ph("takipEt", "Satış Destek", "Piyasa takibi"),
-    satistavsiye: ph("satistavsiye", "Satış Destek", "Satış tavsiyesi"),
-    ortakpazar: ph("ortakpazar", "Satış Destek", "Ortak pazar"),
+    musteriEkle: handleMusteriEkle,
+    musteriDuzenle: handleMusteriDuzenle,
+    eslestir: handleEslestir,
+    hatirlatma: handleHatirlatma,
+    takipEt: handleTakipEt,
+    satistavsiye: handleSatisTavsiye,
+    ortakpazar: handleOrtakPazar,
 
     // Medya Uzmanı
-    fotograf: ph("fotograf", "Medya Uzmanı", "Fotoğraf yükle"),
-    yayinla: ph("yayinla", "Medya Uzmanı", "Portale yayınla"),
-    paylas: ph("paylas", "Medya Uzmanı", "Sosyal medya paylaşımı"),
-    websitem: ph("websitem", "Medya Uzmanı", "Kişisel web sitesi"),
+    fotograf: handleFotograf,
+    yayinla: handleYayinla,
+    paylas: handlePaylas,
+    websitem: handleWebsitem,
 
     // Pazar Analisti
     fiyatsor: handleFiyatSor,
-    degerle: ph("degerle", "Pazar Analisti", "Mülk değerleme"),
-    mulkoner: ph("mulkoner", "Pazar Analisti", "Mülk önerisi"),
+    degerle: handleDegerle,
+    mulkoner: handleMulkOner,
     analiz: handleAnaliz,
     rapor: handleRapor,
     trend: handleTrend,
@@ -54,16 +68,43 @@ export const emlakCommands: TenantCommandRegistry = {
     // Sekreter
     brifing: handleBrifing,
     gorevler: handleGorevler,
-    sozlesme: ph("sozlesme", "Sekreter", "Yetkilendirme sözleşmesi"),
+    sozlesme: handleSozlesme,
     sozlesmelerim: handleSozlesmelerim,
-    hediyeler: ph("hediyeler", "Sekreter", "Hediyeler & Kampanya"),
+    hediyeler: handleHediyeler,
     webpanel: handleWebpanel,
   },
   stepHandlers: {
     mulkekle: handleMulkEkleStep,
+    tara: handleTaraStep,
+    musteriEkle: handleMusteriEkleStep,
+    musteriDuzenle: handleMusteriDuzenleStep,
+    mulkduzenle: handleMulkDuzenleStep,
+    hatirlatma: handleHatirlatmaStep,
+    takipEt: handleTakipEtStep,
+    mulkoner: handleMulkOnerStep,
+    sozlesme: handleSozlesmeStep,
   },
   callbackPrefixes: {
     "mulkekle:": handleMulkEkleCallback,
+    "mulkdetay:": handleMulkDetayCallback,
+    "mulkduzenle:": handleMulkDuzenleCallback,
+    "mulkedit:": handleMulkEditFieldCallback,
+    "mulksil:": handleMulkSilCallback,
+    "mulksil_ok:": handleMulkSilCallback,
+    "mustekle:": handleMusteriEkleCallback,
+    "md_select:": handleMusteriDuzenleCallback,
+    "md_edit:": handleMusteriDuzenleCallback,
+    "esles:": handleEslestirCallback,
+    "htrt:": handleHatirlatmaCallback,
+    "tkp:": handleTakipEtCallback,
+    "st:": handleSatisTavsiyeCallback,
+    "op:": handleOrtakPazarCallback,
+    "foto_select:": handleFotografCallback,
+    "paylas_select:": handlePaylasCallback,
+    "pub:": handleYayinlaCallback,
+    "dg:": handleDegerleCallback,
+    "hdy:": handleHediyelerCallback,
+    "szl:": handleSozlesmeCallback,
   },
   aliases: {
     "portföy": "portfoyum",

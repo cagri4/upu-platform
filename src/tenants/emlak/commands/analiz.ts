@@ -59,10 +59,3 @@ export async function handleRapor(ctx: WaContext): Promise<void> {
     { id: "cmd:menu", title: "Ana Menü" },
   ]);
 }
-
-export async function handleTrend(ctx: WaContext): Promise<void> {
-  await sendButtons(ctx.phone,
-    "📈 *Trend Analizi*\n\nBu özellik AI destekli pazar trend analizi sunar.\n\nYakında aktif olacak.",
-    [{ id: "cmd:analiz", title: "Pazar Analizi" }, { id: "cmd:menu", title: "Ana Menü" }],
-  );
-}
