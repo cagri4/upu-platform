@@ -13,6 +13,7 @@ import { siteyonetimCommands } from "@/tenants/siteyonetim/commands";
 import { marketCommands } from "@/tenants/market/commands";
 import { getTenantByKey } from "@/tenants/config";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { COMMAND_LABELS } from "./command-labels";
 
 // ── Registry per tenant ──────────────────────────────────────────────────
 
@@ -343,7 +344,8 @@ async function showEmployeeCommands(
 
   const rows = emp.commands.map((cmd) => ({
     id: `cmd:${cmd}`,
-    title: cmd.substring(0, 24),
+    title: (COMMAND_LABELS[cmd] || cmd).substring(0, 24),
+    description: COMMAND_LABELS[cmd] ? cmd : "",
   }));
 
   if (rows.length <= 3) {
