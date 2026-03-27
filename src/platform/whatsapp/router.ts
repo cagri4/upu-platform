@@ -221,7 +221,6 @@ async function showGuide(ctx: WaContext, tenant: ReturnType<typeof getTenantByKe
   text += `4️⃣ *Komutu seçin*\nUygun komutu tıklayın — sistem sizi adım adım yönlendirecek.\n\n`;
   text += `*Diğer bilgiler:*\n`;
   text += `• İşlem sırasında "iptal" yazarak vazgeçebilirsiniz\n`;
-  text += `• "degistir" yazarak farklı bir sisteme geçebilirsiniz\n`;
   text += `• "webpanel" ile tarayıcıdan giriş yapabilirsiniz`;
 
   await sendButtons(ctx.phone, text, [
