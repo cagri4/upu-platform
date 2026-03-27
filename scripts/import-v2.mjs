@@ -11,11 +11,17 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const INPUT_FILE = path.join(__dirname, 'output', 'v2-bodrum.json');
 
-// UPU Platform — Unified Supabase
-const SUPABASE_URL = 'https://eodjowwdhsircwebxcmh.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvZGpvd3dkaHNpcmN3ZWJ4Y21oIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDI5MTUzNywiZXhwIjoyMDg5ODY3NTM3fQ.wyBKr9n1ut9jid3dLXP9Md7VveSzshSQA0XBto5cjtQ';
-const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000002';
-const TENANT_ID = '3f3598fc-a93e-4c73-bd33-7c4217f6c089'; // emlak tenant
+// UPU Platform — reads from environment variables
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SYSTEM_USER_ID = process.env.SCRAPER_USER_ID || '00000000-0000-0000-0000-000000000002';
+const TENANT_ID = process.env.EMLAK_TENANT_ID || '3f3598fc-a93e-4c73-bd33-7c4217f6c089';
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error('SUPABASE_URL ve SUPABASE_SERVICE_ROLE_KEY env değişkenleri gerekli.');
+  console.error('Kullanım: SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/import-v2.mjs');
+  process.exit(1);
+}
 
 // Türkçe ay → sayı
 const TR_MONTHS = {

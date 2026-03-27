@@ -276,11 +276,14 @@ async function showMenu(
     description: emp.description.substring(0, 72),
   }));
 
-  const systemCommands = [
+  // WhatsApp List max 10 rows — adjust system commands dynamically
+  const allSystemCommands = [
     { id: "cmd:kilavuz", title: "📖 Kılavuz", description: "Sistemi nasıl kullanırım?" },
     { id: "cmd:webpanel", title: "🖥 Web Panel", description: "Dashboard linki" },
     { id: "cmd:hakkimizda", title: "ℹ️ Hakkımızda", description: "UPU Dev hakkında" },
   ];
+  const maxSystem = Math.max(1, 10 - empRows.length);
+  const systemCommands = allSystemCommands.slice(0, maxSystem);
 
   await sendList(ctx.phone,
     "Bir eleman veya sistem komutu seçin:",

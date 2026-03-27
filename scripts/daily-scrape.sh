@@ -6,6 +6,12 @@
 export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
 
 PROJECT_DIR="/home/cagr/Masaüstü/upu-platform"
+
+# Supabase credentials (env file)
+if [ -f "$PROJECT_DIR/.env.local" ]; then
+  export SUPABASE_URL=$(grep NEXT_PUBLIC_SUPABASE_URL "$PROJECT_DIR/.env.local" | cut -d= -f2)
+  export SUPABASE_SERVICE_ROLE_KEY=$(grep SUPABASE_SERVICE_ROLE_KEY "$PROJECT_DIR/.env.local" | cut -d= -f2)
+fi
 LOG_FILE="$PROJECT_DIR/scrape-log.txt"
 SCRAPE_DETAIL="$PROJECT_DIR/scripts/output/scrape-detail.log"
 NODE=$(which node)

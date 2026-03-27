@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Scraper
+scripts/cookies.json
+scripts/output/
+scrape-log.txt
