@@ -46,7 +46,7 @@ export const COMMAND_LABELS: Record<string, string> = {
   performans: "Bayi performans analizi",
   segment: "Bayi segmentasyonu",
   siparisolustur: "Yeni sipariş oluştur",
-  siparisOlustur: "Yeni sipariş oluştur",
+  siparisolustur: "Yeni sipariş oluştur",
   siparisler: "Sipariş listesi",
   bayidurum: "Bayi durum sorgula",
   ziyaretnotu: "Ziyaret notu ekle",

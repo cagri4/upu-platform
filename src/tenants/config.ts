@@ -64,7 +64,7 @@ const TENANTS: Record<string, TenantConfig> = {
     employees: [
       { key: "asistan", name: "Asistan", icon: "📊", description: "Günlük özet, takvim ve hatırlatmalar", commands: ["ozet", "takvim", "hatirlatma", "rapor"] },
       { key: "satisMuduru", name: "Satış Müdürü", icon: "💰", description: "Kampanya, teklif ve performans analizi", commands: ["kampanyaolustur", "kampanyalar", "teklifver", "performans", "segment"] },
-      { key: "satisTemsilcisi", name: "Satış Temsilcisi", icon: "🤝", description: "Sipariş alma, ürün önerisi, ziyaret yönetimi", commands: ["siparisOlustur", "siparisler", "bayidurum", "ziyaretnotu", "ziyaretler"] },
+      { key: "satisTemsilcisi", name: "Satış Temsilcisi", icon: "🤝", description: "Sipariş alma, ürün önerisi, ziyaret yönetimi", commands: ["siparisolustur", "siparisler", "bayidurum", "ziyaretnotu", "ziyaretler"] },
       { key: "muhasebeci", name: "Muhasebeci", icon: "💳", description: "Bakiye, fatura takibi ve hesap ekstresi", commands: ["bakiye", "faturalar", "borcdurum", "ekstre", "odeme"] },
       { key: "tahsildar", name: "Tahsildar", icon: "📋", description: "Vadesi gelen ödemeler ve tahsilat takibi", commands: ["vadeler", "tahsilat", "hatirlatgonder"] },
       { key: "depocu", name: "Depocu", icon: "📦", description: "Stok durumu, kritik stok ve tedarik yönetimi", commands: ["stok", "kritikstok", "stokhareketleri", "tedarikciler", "satinalma"] },
