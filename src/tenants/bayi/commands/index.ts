@@ -17,7 +17,15 @@ import { handleTakvim, handleHatirlatma } from "./takvim";
 import { handleKampanyalar, handleKampanyaOlustur, handleTeklifVer, handlePerformans, handleSegment } from "./kampanya";
 
 // Satis — Temsilci
-import { handleSiparisler, handleSiparisOlustur } from "./siparis";
+import {
+  handleSiparisler,
+  handleSiparisOlustur,
+  handleSiparisBayiCallback,
+  handleSiparisUrunCallback,
+  handleSiparisDevamCallback,
+  handleSiparisOnayCallback,
+  handleSiparisStep,
+} from "./siparis";
 import { handleBayiDurum, handleZiyaretler, handleZiyaretNotu } from "./bayi-durum";
 
 // Finans — Muhasebeci
@@ -93,8 +101,15 @@ export const bayiCommands: TenantCommandRegistry = {
     // ── Ozel ─────────────────────────────────────────
     kullaniciekle: ph("kullaniciekle", "Yonetici", "Kullanici ekle"),
   },
-  stepHandlers: {},
-  callbackPrefixes: {},
+  stepHandlers: {
+    siparisolustur: handleSiparisStep,
+  },
+  callbackPrefixes: {
+    "siparis_bayi:": handleSiparisBayiCallback,
+    "siparis_urun:": handleSiparisUrunCallback,
+    "siparis_devam:": handleSiparisDevamCallback,
+    "siparis_onay:": handleSiparisOnayCallback,
+  },
   aliases: {
     "sipariş": "siparisler",
     "siparislerim": "siparisler",

@@ -234,11 +234,11 @@ export async function POST(req: NextRequest) {
       await routeCommand(ctx);
       console.log("[wa-platform] After routeCommand — success");
     } catch (routeErr) {
-      console.error("[wa-platform] routeCommand error:", routeErr);
+      console.error("[wa-platform] routeCommand error:", routeErr instanceof Error ? routeErr.message : routeErr);
       try {
-        await sendText(phone, "Bir hata oluştu.\n\nHata: " + (routeErr instanceof Error ? routeErr.message : String(routeErr)));
-      } catch (sendErr) {
-        console.error("[wa-platform] sendText in catch also failed:", sendErr);
+        await sendText(phone, "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin veya \"menu\" yazın.");
+      } catch {
+        // Last resort — can't send to user
       }
     }
 
