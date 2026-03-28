@@ -121,6 +121,9 @@ export async function POST(req: NextRequest) {
         // Mark invite as used
         await supabase.from("invite_codes").update({ status: "used" }).eq("code", inviteCode);
 
+        // Clear stale saas_active_session for this phone (prevents wrong tenant after re-registration)
+        await supabase.from("saas_active_session").delete().eq("phone", phone);
+
         // Get user info
         const { data: invitedUser } = await supabase
           .from("profiles")
