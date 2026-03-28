@@ -1,15 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { Header } from '@/components/header';
-import { getTenantByKey } from '@/tenants/config';
+import { getTenantByDomain, getTenantByKey, type TenantConfig } from '@/tenants/config';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [tenant, setTenant] = useState<TenantConfig | null>(null);
 
-  // For now, default to emlak tenant (will be dynamic from auth context later)
-  const tenant = getTenantByKey('emlak');
+  useEffect(() => {
+    const hostname = window.location.host;
+    const resolved = getTenantByDomain(hostname) || getTenantByKey('emlak');
+    setTenant(resolved);
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">

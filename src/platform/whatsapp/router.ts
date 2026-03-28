@@ -269,28 +269,28 @@ async function showMenu(
     );
   }
 
-  // Message 2: List with employees + system
+  // Message 2: List with employees (max 10 rows)
   const empRows = tenant.employees.map((emp) => ({
     id: `emp:${emp.key}`,
     title: `${emp.icon} ${emp.name}`.substring(0, 24),
     description: emp.description.substring(0, 72),
-  }));
-
-  // WhatsApp List max 10 rows — adjust system commands dynamically
-  const allSystemCommands = [
-    { id: "cmd:kilavuz", title: "📖 Kılavuz", description: "Sistemi nasıl kullanırım?" },
-    { id: "cmd:webpanel", title: "🖥 Web Panel", description: "Dashboard linki" },
-    { id: "cmd:hakkimizda", title: "ℹ️ Hakkımızda", description: "UPU Dev hakkında" },
-  ];
-  const maxSystem = Math.max(1, 10 - empRows.length);
-  const systemCommands = allSystemCommands.slice(0, maxSystem);
+  })).slice(0, 10);
 
   await sendList(ctx.phone,
-    "Bir eleman veya sistem komutu seçin:",
+    "Bir sanal eleman seçin:",
     "Ekibi Çağır",
     [
       { title: "Sanal Elemanlar", rows: empRows },
-      { title: "Sistem", rows: systemCommands },
+    ],
+  );
+
+  // Message 3: System commands as buttons (always shown, max 3)
+  await sendButtons(ctx.phone,
+    "⚙️ Sistem:",
+    [
+      { id: "cmd:kilavuz", title: "📖 Kılavuz" },
+      { id: "cmd:webpanel", title: "🖥 Web Panel" },
+      { id: "cmd:hakkimizda", title: "ℹ️ Hakkımızda" },
     ],
   );
 }

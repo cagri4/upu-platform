@@ -5,13 +5,13 @@
 import type { WaContext } from "@/platform/whatsapp/types";
 import { sendText, sendButtons } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { getManagerContext, generateAccessCode } from "./helpers";
+import { getStaffContext, generateAccessCode } from "./helpers";
 
 export async function handleBinaKodu(ctx: WaContext): Promise<void> {
   try {
-    const mc = await getManagerContext(ctx.userId);
+    const mc = await getStaffContext(ctx.userId);
     if (!mc) {
-      await sendButtons(ctx.phone, "Bu komut sadece yoneticiler icindir.", [
+      await sendButtons(ctx.phone, "Bir binaya baglanmaniz gerekiyor. Yoneticinize basvurun.", [
         { id: "cmd:menu", title: "Ana Menu" },
       ]);
       return;

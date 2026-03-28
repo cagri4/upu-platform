@@ -1,5 +1,12 @@
 /**
  * Site Yonetim command helpers — shared context lookups and formatting
+ *
+ * Role model:
+ *   - SiteYonetim SaaS users are building managers/staff by definition.
+ *   - getStaffContext() is the primary context function — tries manager_id,
+ *     then resident link, then first building in tenant. All paths grant
+ *     management-level access to building data.
+ *   - getResidentContext() is only for resident-specific views (single unit).
  */
 
 import { getServiceClient } from "@/platform/auth/supabase";
@@ -11,14 +18,91 @@ export interface ResidentContext {
   unit: { id: string; unit_number: string };
 }
 
-export interface ManagerContext {
+export interface StaffContext {
   userId: string;
-  role: string;
-  building: { id: string; name: string; access_code: string | null; manager_id: string | null };
+  role: "manager" | "staff";
+  building: { id: string; name: string; access_code: string | null };
+  unit?: { id: string; unit_number: string };
+}
+
+/**
+ * Get building context for any SiteYonetim user.
+ * Tries (in order):
+ *   1. sy_buildings.manager_id = userId → role: manager
+ *   2. sy_user_residents link → role: staff (+ unit info)
+ *   3. First building in tenant → role: staff (fallback for new users)
+ */
+export async function getStaffContext(userId: string): Promise<StaffContext | null> {
+  const supabase = getServiceClient();
+
+  // 1. Direct manager link
+  const { data: managed } = await supabase
+    .from("sy_buildings")
+    .select("id, name, access_code")
+    .eq("manager_id", userId)
+    .eq("tenant_id", TENANT_ID)
+    .limit(1)
+    .maybeSingle();
+
+  if (managed) {
+    return { userId, role: "manager", building: managed };
+  }
+
+  // 2. Resident link (staff associated with a building)
+  const { data: link } = await supabase
+    .from("sy_user_residents")
+    .select("building_id, resident_id")
+    .eq("user_id", userId)
+    .limit(1)
+    .maybeSingle();
+
+  if (link) {
+    const { data: building } = await supabase
+      .from("sy_buildings")
+      .select("id, name, access_code")
+      .eq("id", link.building_id)
+      .single();
+
+    if (building) {
+      // Try to get unit info
+      const { data: resident } = await supabase
+        .from("sy_residents")
+        .select("unit_id")
+        .eq("id", link.resident_id)
+        .single();
+
+      let unit: { id: string; unit_number: string } | undefined;
+      if (resident?.unit_id) {
+        const { data: u } = await supabase
+          .from("sy_units")
+          .select("id, unit_number")
+          .eq("id", resident.unit_id)
+          .single();
+        if (u) unit = u;
+      }
+
+      return { userId, role: "staff", building, unit };
+    }
+  }
+
+  // 3. Fallback: first building in tenant (for new managers not yet linked)
+  const { data: anyBuilding } = await supabase
+    .from("sy_buildings")
+    .select("id, name, access_code")
+    .eq("tenant_id", TENANT_ID)
+    .limit(1)
+    .maybeSingle();
+
+  if (anyBuilding) {
+    return { userId, role: "staff", building: anyBuilding };
+  }
+
+  return null;
 }
 
 /**
  * Get resident's building + unit context via sy_user_residents join chain.
+ * Only used for resident-specific views (single unit debt, etc.)
  */
 export async function getResidentContext(userId: string): Promise<ResidentContext | null> {
   const supabase = getServiceClient();
@@ -40,7 +124,6 @@ export async function getResidentContext(userId: string): Promise<ResidentContex
 
   if (!building) return null;
 
-  // Get unit from resident
   const { data: resident } = await supabase
     .from("sy_residents")
     .select("unit_id")
@@ -58,32 +141,6 @@ export async function getResidentContext(userId: string): Promise<ResidentContex
   if (!unit) return null;
 
   return { building, unit };
-}
-
-/**
- * Get manager context — checks if user is the manager of a building.
- * In the UPU platform, the profile's metadata.sy_role stores 'manager' | 'resident'.
- * Alternatively, we check if the user is sy_buildings.manager_id.
- */
-export async function getManagerContext(userId: string): Promise<ManagerContext | null> {
-  const supabase = getServiceClient();
-
-  // Check if user is manager of any building
-  const { data: building } = await supabase
-    .from("sy_buildings")
-    .select("id, name, access_code, manager_id")
-    .eq("manager_id", userId)
-    .eq("tenant_id", TENANT_ID)
-    .limit(1)
-    .maybeSingle();
-
-  if (!building) return null;
-
-  return {
-    userId,
-    role: "manager",
-    building,
-  };
 }
 
 /**

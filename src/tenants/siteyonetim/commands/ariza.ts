@@ -11,7 +11,7 @@ import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession } from "@/platform/whatsapp/session";
 import { sendText, sendButtons } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { getResidentContext } from "./helpers";
+import { getStaffContext } from "./helpers";
 
 /**
  * /ariza — entry point: show category selection
@@ -63,10 +63,10 @@ export const handleArizaStep: StepHandler = async (ctx: WaContext, session: Comm
 
   const { category, priority } = session.data as { category: string; priority: string };
 
-  const rc = await getResidentContext(ctx.userId);
-  if (!rc) {
+  const sc = await getStaffContext(ctx.userId);
+  if (!sc) {
     await endSession(ctx.userId);
-    await sendButtons(ctx.phone, "Bina bilginiz bulunamadi. Yoneticinize basvurun.", [
+    await sendButtons(ctx.phone, "Bir binaya baglanmaniz gerekiyor. Yoneticinize basvurun.", [
       { id: "cmd:menu", title: "Ana Menu" },
     ]);
     return;
@@ -74,17 +74,20 @@ export const handleArizaStep: StepHandler = async (ctx: WaContext, session: Comm
 
   const supabase = getServiceClient();
 
+  const insertData: Record<string, unknown> = {
+    building_id: sc.building.id,
+    reported_by_user_id: ctx.userId,
+    category,
+    priority: priority || "normal",
+    description: ctx.text,
+    status: "acik",
+  };
+  // unit_id is optional — managers may not have a unit
+  if (sc.unit) insertData.unit_id = sc.unit.id;
+
   const { data: ticket, error } = await supabase
     .from("sy_maintenance_tickets")
-    .insert({
-      building_id: rc.building.id,
-      reported_by_user_id: ctx.userId,
-      unit_id: rc.unit.id,
-      category,
-      priority: priority || "normal",
-      description: ctx.text,
-      status: "acik",
-    })
+    .insert(insertData)
     .select("id")
     .single();
 
