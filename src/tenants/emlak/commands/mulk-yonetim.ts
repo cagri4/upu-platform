@@ -23,13 +23,46 @@ const TYPE_LABELS: Record<string, string> = {
   dukkan: "Dukkan", bina: "Bina", depo: "Depo",
 };
 
-const EDITABLE_FIELDS = [
-  { key: "title", label: "Baslik", dbColumn: "title", hint: "Ilan basligi" },
-  { key: "price", label: "Fiyat", dbColumn: "price", hint: "Ornek: 4.5M, 25 bin" },
-  { key: "area", label: "Alan (m2)", dbColumn: "area", hint: "Ornek: 120" },
-  { key: "rooms", label: "Oda", dbColumn: "rooms", hint: "Ornek: 3+1" },
-  { key: "description", label: "Aciklama", dbColumn: "description", hint: "Ilan aciklamasi" },
+// Page 1: Temel bilgiler (ilk gösterilen)
+const FIELDS_PAGE_1 = [
+  { key: "title", label: "Başlık", dbColumn: "title", hint: "İlan başlığı" },
+  { key: "price", label: "Fiyat", dbColumn: "price", hint: "Örnek: 4.5M, 25 bin" },
+  { key: "area", label: "Alan (m²)", dbColumn: "area", hint: "Örnek: 120" },
+  { key: "rooms", label: "Oda Sayısı", dbColumn: "rooms", hint: "Örnek: 3+1" },
+  { key: "description", label: "Açıklama", dbColumn: "description", hint: "İlan açıklaması" },
+  { key: "listing_type", label: "İlan Türü", dbColumn: "listing_type", hint: "satilik / kiralik" },
+  { key: "type", label: "Mülk Tipi", dbColumn: "type", hint: "daire/villa/arsa vb." },
+  { key: "floor", label: "Kat", dbColumn: "floor", hint: "Örnek: 3" },
+  { key: "building_age", label: "Bina Yaşı", dbColumn: "building_age", hint: "Örnek: 5" },
 ];
+
+// Page 2: Konum + detaylar (ikinci sayfa)
+const FIELDS_PAGE_2 = [
+  { key: "location_city", label: "Şehir", dbColumn: "location_city", hint: "Örnek: Muğla" },
+  { key: "location_district", label: "İlçe", dbColumn: "location_district", hint: "Örnek: Bodrum" },
+  { key: "location_neighborhood", label: "Mahalle", dbColumn: "location_neighborhood", hint: "Örnek: Yalıkavak" },
+  { key: "net_area", label: "Net Alan (m²)", dbColumn: "net_area", hint: "Örnek: 110" },
+  { key: "total_floors", label: "Toplam Kat", dbColumn: "total_floors", hint: "Örnek: 5" },
+  { key: "heating", label: "Isınma", dbColumn: "heating", hint: "Doğalgaz/Klima/Soba" },
+  { key: "parking", label: "Otopark", dbColumn: "parking", hint: "Açık/Kapalı/Yok" },
+  { key: "facade", label: "Cephe", dbColumn: "facade", hint: "Güney/Kuzey/Doğu/Batı" },
+  { key: "deed_type", label: "Tapu Durumu", dbColumn: "deed_type", hint: "Kat mülkiyeti/irtifak" },
+];
+
+// Page 3: Boolean + diğer
+const FIELDS_PAGE_3 = [
+  { key: "elevator", label: "Asansör", dbColumn: "elevator", hint: "Evet / Hayır" },
+  { key: "balcony", label: "Balkon", dbColumn: "balcony", hint: "Evet / Hayır" },
+  { key: "swap", label: "Takas", dbColumn: "swap", hint: "Evet / Hayır" },
+  { key: "bathroom_count", label: "Banyo Sayısı", dbColumn: "bathroom_count", hint: "Örnek: 2" },
+  { key: "kitchen_type", label: "Mutfak Tipi", dbColumn: "kitchen_type", hint: "Açık/Kapalı/Amerikan" },
+  { key: "housing_type", label: "Yapı Tipi", dbColumn: "housing_type", hint: "Apartman/Site içi/Müstakil" },
+  { key: "usage_status", label: "Kullanım Durumu", dbColumn: "usage_status", hint: "Boş/Kiracılı/Sahibi" },
+  { key: "network_commission_note", label: "Komisyon Notu", dbColumn: "network_commission_note", hint: "Ortak pazar için not" },
+];
+
+const ALL_EDITABLE_FIELDS = [...FIELDS_PAGE_1, ...FIELDS_PAGE_2, ...FIELDS_PAGE_3];
+const EDITABLE_FIELDS = ALL_EDITABLE_FIELDS; // backward compat
 
 function parsePrice(text: string): number | null {
   const cleaned = text.replace(/TL/gi, "").replace(/-/g, "").trim();
@@ -185,18 +218,51 @@ export async function handleMulkDuzenleCallback(ctx: WaContext, data: string): P
   await startSession(ctx.userId, ctx.tenantId, "mulkduzenle", "select_field");
   await updateSession(ctx.userId, "select_field", { propertyId: propId, propertyTitle: prop.title });
 
-  const rows = EDITABLE_FIELDS.map(f => ({
+  // Page system — show page 1 by default, with "Devam" for more
+  const page = (data.match(/mulkduzenle:(.+)/)?.[1] === propId) ? 1 : 1;
+  await showEditFieldPage(ctx.phone, propId, prop.title, 1);
+}
+
+// Show edit fields with pagination (max 10 rows per list)
+async function showEditFieldPage(phone: string, propId: string, title: string, page: number) {
+  const pages = [FIELDS_PAGE_1, FIELDS_PAGE_2, FIELDS_PAGE_3];
+  const totalPages = pages.length;
+  const fields = pages[page - 1] || FIELDS_PAGE_1;
+
+  const rows = fields.map(f => ({
     id: `mulkedit:${f.key}:${propId}`,
-    title: f.label,
-    description: f.hint,
+    title: f.label.substring(0, 24),
+    description: f.hint.substring(0, 72),
   }));
 
-  await sendList(ctx.phone, `"${prop.title}" — Hangi alani duzenlemek istiyorsunuz?`, "Alan Sec", [
-    { title: "Duzenlenecek Alanlar", rows },
-  ]);
+  // Add navigation row if not last page
+  if (page < totalPages) {
+    rows.push({
+      id: `mulkeditpage:${page + 1}:${propId}`,
+      title: `▶ Sayfa ${page + 1}/${totalPages}`,
+      description: "Daha fazla alan göster",
+    });
+  }
+
+  await sendList(phone,
+    `"${title}" — Düzenlenecek alan seçin (${page}/${totalPages}):`,
+    "Alan Seç",
+    [{ title: `Alanlar (${page}/${totalPages})`, rows }],
+  );
 }
 
 export async function handleMulkEditFieldCallback(ctx: WaContext, data: string): Promise<void> {
+  // mulkeditpage:pageNum:propId — page navigation
+  if (data.startsWith("mulkeditpage:")) {
+    const parts = data.split(":");
+    const page = parseInt(parts[1], 10);
+    const propId = parts.slice(2).join(":");
+    const supabase = getServiceClient();
+    const { data: prop } = await supabase.from("emlak_properties").select("title").eq("id", propId).single();
+    await showEditFieldPage(ctx.phone, propId, prop?.title || "", page);
+    return;
+  }
+
   // mulkedit:field:propId
   const parts = data.split(":");
   if (parts.length < 3) return;
@@ -227,20 +293,31 @@ export async function handleMulkDuzenleStep(ctx: WaContext, session: CommandSess
   const { propertyId, field, dbColumn } = session.data as { propertyId: string; field: string; dbColumn: string };
   let parsedValue: unknown = text;
 
+  const booleanFields = ["elevator", "balcony", "swap"];
+  const numericFields = ["price", "area", "net_area"];
+
   if (field === "price") {
     const price = parsePrice(text);
     if (!price) {
-      await sendText(ctx.phone, "Gecerli bir fiyat yazin. Ornek: 4.5M, 25 bin");
+      await sendText(ctx.phone, "Geçerli bir fiyat yazın. Örnek: 4.5M, 25 bin");
       return;
     }
     parsedValue = price;
-  } else if (field === "area") {
-    const area = parseInt(text.replace(/[^\d]/g, ""), 10);
-    if (!area || area < 1) {
-      await sendText(ctx.phone, "Gecerli bir metrekare yazin. Ornek: 120");
+  } else if (numericFields.includes(field)) {
+    const num = parseInt(text.replace(/[^\d]/g, ""), 10);
+    if (!num || num < 1) {
+      await sendText(ctx.phone, "Geçerli bir sayı yazın.");
       return;
     }
-    parsedValue = area;
+    parsedValue = num;
+  } else if (booleanFields.includes(field)) {
+    const lower = text.toLowerCase();
+    if (["evet", "var", "1", "e"].includes(lower)) parsedValue = true;
+    else if (["hayır", "hayir", "yok", "0", "h"].includes(lower)) parsedValue = false;
+    else {
+      await sendText(ctx.phone, "Evet veya Hayır yazın.");
+      return;
+    }
   }
 
   const supabase = getServiceClient();
