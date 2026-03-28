@@ -10,8 +10,20 @@ import { getServiceClient } from "@/platform/auth/supabase";
 import { routeCommand } from "@/platform/whatsapp/router";
 import { markAsRead, sendText } from "@/platform/whatsapp/send";
 import type { WaContext } from "@/platform/whatsapp/types";
+import {
+  registerOnboardingFlow,
+  getOnboardingState,
+  getOnboardingFlow,
+  initOnboarding,
+  sendOnboardingStep,
+  handleOnboardingInput,
+} from "@/platform/whatsapp/onboarding";
+import { emlakOnboardingFlow } from "@/tenants/emlak/onboarding-flow";
 
 export const dynamic = "force-dynamic";
+
+// ─── Register onboarding flows ────────────────────────────────────────────
+registerOnboardingFlow(emlakOnboardingFlow);
 
 // ─── Parse Meta webhook payload ────────────────────────────────────────────
 
@@ -118,16 +130,39 @@ export async function POST(req: NextRequest) {
 
         // Get tenant info
         let tenantName = "Platform";
+        let tenantKey = "emlak";
         if (invitedUser?.tenant_id) {
-          const { data: t } = await supabase.from("tenants").select("name").eq("id", invitedUser.tenant_id).single();
-          if (t) tenantName = t.name;
+          const { data: t } = await supabase.from("tenants").select("name, saas_type").eq("id", invitedUser.tenant_id).single();
+          if (t) { tenantName = t.name; tenantKey = t.saas_type; }
         }
 
-        await sendText(phone,
-          `Hoş geldiniz ${invitedUser?.display_name || ""}! 🎉\n\n` +
-          `${tenantName} sistemine başarıyla kaydoldunuz.\n\n` +
-          `💡 "menu" yazarak komutlara ulaşabilirsiniz.`
-        );
+        // Check if onboarding flow exists for this tenant
+        const onbFlow = getOnboardingFlow(tenantKey);
+        if (onbFlow) {
+          await sendText(phone,
+            `Hoş geldiniz ${invitedUser?.display_name || ""}! 🎉\n\n` +
+            `${tenantName} sistemine başarıyla kaydoldunuz.\n\n` +
+            `Sisteminizi hızlıca kuralım — birkaç kısa soru soracağım.`
+          );
+
+          // Init onboarding and send first step
+          await initOnboarding(invite.user_id, invite.tenant_id, tenantKey);
+          const state = await getOnboardingState(invite.user_id);
+          if (state) {
+            const ctx: WaContext = {
+              phone, userId: invite.user_id, tenantId: invite.tenant_id,
+              tenantKey, userName: invitedUser?.display_name || "", locale: "tr",
+              messageId: "", text: "", interactiveId: "",
+            };
+            await sendOnboardingStep(ctx, state);
+          }
+        } else {
+          await sendText(phone,
+            `Hoş geldiniz ${invitedUser?.display_name || ""}! 🎉\n\n` +
+            `${tenantName} sistemine başarıyla kaydoldunuz.\n\n` +
+            `💡 "menu" yazarak komutlara ulaşabilirsiniz.`
+          );
+        }
         return NextResponse.json({ status: "ok" });
       }
     }
@@ -177,6 +212,18 @@ export async function POST(req: NextRequest) {
       text,
       interactiveId,
     };
+
+    // ── Check onboarding state — intercept if not completed ──
+    const onbState = await getOnboardingState(user.id);
+    if (onbState && !onbState.completed_at) {
+      try {
+        await handleOnboardingInput(ctx, onbState);
+      } catch (onbErr) {
+        console.error("[wa-platform] onboarding error:", onbErr);
+        await sendText(phone, "Kurulum sırasında hata oluştu. \"menu\" yazarak devam edebilirsiniz.");
+      }
+      return NextResponse.json({ status: "ok" });
+    }
 
     // Route to tenant command handler
     try {
