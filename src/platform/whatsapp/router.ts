@@ -95,6 +95,25 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       }
     }
 
+    // Agent proposal approval/rejection
+    if (ctx.interactiveId.startsWith("agent_ok:") || ctx.interactiveId.startsWith("agent_no:")) {
+      const approved = ctx.interactiveId.startsWith("agent_ok:");
+      const proposalId = ctx.interactiveId.replace(/^agent_(ok|no):/, "");
+      // Dynamic import to avoid circular deps
+      const { handleAgentApproval } = await import("@/platform/agents/engine");
+      // Load tenant agents
+      let agents: Record<string, import("@/platform/agents/types").AgentDefinition> = {};
+      if (ctx.tenantKey === "emlak") {
+        const { emlakAgents } = await import("@/tenants/emlak/agents");
+        agents = emlakAgents;
+      }
+      await handleAgentApproval(
+        { userId: ctx.userId, tenantId: ctx.tenantId, phone: ctx.phone, userName: ctx.userName },
+        proposalId, approved, agents
+      );
+      return;
+    }
+
     // Employee selection callback
     if (ctx.interactiveId.startsWith("emp:")) {
       const empKey = ctx.interactiveId.replace("emp:", "");
