@@ -6,14 +6,15 @@ import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession } from "@/platform/whatsapp/session";
 import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 
 const EDITABLE_FIELDS = [
   { key: "phone", label: "Telefon", dbColumn: "phone", hint: "Telefon numarasi" },
   { key: "email", label: "Email", dbColumn: "email", hint: "Email adresi" },
-  { key: "budget_min", label: "Butce Min", dbColumn: "budget_min", hint: "Minimum butce (TL veya 2.5M)" },
-  { key: "budget_max", label: "Butce Max", dbColumn: "budget_max", hint: "Maximum butce (TL veya 5M)" },
-  { key: "location", label: "Lokasyon", dbColumn: "location", hint: "Bolge (virgul ile)" },
-  { key: "notes", label: "Not", dbColumn: "notes", hint: "Musteri notu" },
+  { key: "budget_min", label: "Bütçe Min", dbColumn: "budget_min", hint: "Minimum bütçe (TL veya 2.5M)" },
+  { key: "budget_max", label: "Bütçe Max", dbColumn: "budget_max", hint: "Maximum bütçe (TL veya 5M)" },
+  { key: "location", label: "Lokasyon", dbColumn: "location", hint: "Bölge (virgül ile)" },
+  { key: "notes", label: "Not", dbColumn: "notes", hint: "Müşteri notu" },
 ];
 
 export async function handleMusteriDuzenle(ctx: WaContext): Promise<void> {
@@ -28,21 +29,21 @@ export async function handleMusteriDuzenle(ctx: WaContext): Promise<void> {
     .limit(10);
 
   if (!customers || customers.length === 0) {
-    await sendButtons(ctx.phone, "Henuz musteriniz yok.", [
-      { id: "cmd:musteriEkle", title: "Musteri Ekle" },
-      { id: "cmd:menu", title: "Ana Menu" },
+    await sendButtons(ctx.phone, "Henüz müşteriniz yok.", [
+      { id: "cmd:musteriEkle", title: "Müşteri Ekle" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
 
   const rows = customers.map(c => ({
     id: `md_select:${c.id}`,
-    title: ((c.name || "Isimsiz") as string).substring(0, 24),
+    title: ((c.name || "İsimsiz") as string).substring(0, 24),
     description: (c.phone as string) || "",
   }));
 
-  await sendList(ctx.phone, "Duzenlemek istediginiz musteriyi secin:", "Musteri Sec", [
-    { title: "Musteriler", rows },
+  await sendList(ctx.phone, "Düzenlemek istediğiniz müşteriyi seçin:", "Müşteri Seç", [
+    { title: "Müşteriler", rows },
   ]);
 }
 
@@ -60,7 +61,7 @@ export async function handleMusteriDuzenleCallback(ctx: WaContext, data: string)
       .single();
 
     if (!customer) {
-      await sendButtons(ctx.phone, "Musteri bulunamadi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+      await sendButtons(ctx.phone, "Müşteri bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
       return;
     }
 
@@ -73,7 +74,7 @@ export async function handleMusteriDuzenleCallback(ctx: WaContext, data: string)
       description: f.hint,
     }));
 
-    await sendList(ctx.phone, `"${customer.name}" — Hangi alani duzenlemek istiyorsunuz?`, "Alan Sec", [
+    await sendList(ctx.phone, `"${customer.name}" — Hangi alanı düzenlemek istiyorsunuz?`, "Alan Seç", [
       { title: "Alanlar", rows },
     ]);
     return;
@@ -92,7 +93,7 @@ export async function handleMusteriDuzenleCallback(ctx: WaContext, data: string)
     await startSession(ctx.userId, ctx.tenantId, "musteriDuzenle", "waiting_value");
     await updateSession(ctx.userId, "waiting_value", { customerId, field, dbColumn: fieldDef.dbColumn });
 
-    await sendText(ctx.phone, `${fieldDef.label} icin yeni degeri yazin:\n\n${fieldDef.hint}`);
+    await sendText(ctx.phone, `${fieldDef.label} için yeni değeri yazın:\n\n${fieldDef.hint}`);
     return;
   }
 }
@@ -100,12 +101,12 @@ export async function handleMusteriDuzenleCallback(ctx: WaContext, data: string)
 export async function handleMusteriDuzenleStep(ctx: WaContext, session: CommandSession): Promise<void> {
   const text = ctx.text.trim();
   if (!text) {
-    await sendText(ctx.phone, "Lutfen bir deger yazin.");
+    await sendText(ctx.phone, "Lütfen bir değer yazın.");
     return;
   }
 
   if (session.current_step !== "waiting_value") {
-    await sendText(ctx.phone, "Lutfen yukaridaki butonlardan birini secin.");
+    await sendText(ctx.phone, "Lütfen yukarıdaki butonlardan birini seçin.");
     return;
   }
 
@@ -118,7 +119,7 @@ export async function handleMusteriDuzenleStep(ctx: WaContext, session: CommandS
       ? parseFloat(mMatch[1].replace(",", ".")) * 1_000_000
       : parseFloat(text.replace(/[.,]/g, ""));
     if (isNaN(parsedValue as number)) {
-      await sendText(ctx.phone, "Gecerli bir butce yazin. Ornek: 5M, 3000000");
+      await sendText(ctx.phone, "Geçerli bir bütçe yazın. Ornek: 5M, 3000000");
       return;
     }
   }
@@ -133,13 +134,13 @@ export async function handleMusteriDuzenleStep(ctx: WaContext, session: CommandS
   await endSession(ctx.userId);
 
   if (error) {
-    await sendButtons(ctx.phone, "Guncelleme hatasi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "Güncelleme hatası.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
   const fieldLabel = EDITABLE_FIELDS.find(f => f.key === field)?.label || field;
-  await sendButtons(ctx.phone, `✅ ${fieldLabel} guncellendi.`, [
-    { id: "cmd:musterilerim", title: "Musterilerim" },
-    { id: "cmd:menu", title: "Ana Menu" },
+  await sendButtons(ctx.phone, `✅ ${fieldLabel} güncellendi.`, [
+    { id: "cmd:musterilerim", title: "Müşterilerim" },
+    { id: "cmd:menu", title: "Ana Menü" },
   ]);
 }

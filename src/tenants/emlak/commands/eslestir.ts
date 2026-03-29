@@ -4,10 +4,11 @@
 import type { WaContext } from "@/platform/whatsapp/types";
 import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 
 const TYPE_LABELS: Record<string, string> = {
-  daire: "Daire", villa: "Villa", mustakil: "Mustakil", rezidans: "Rezidans",
-  arsa: "Arsa", isyeri: "Isyeri", dukkan: "Dukkan",
+  daire: "Daire", villa: "Villa", mustakil: "Müstakil", rezidans: "Rezidans",
+  arsa: "Arsa", isyeri: "İşyeri", dukkan: "Dükkan",
 };
 
 function fmtPrice(price: number): string {
@@ -17,6 +18,7 @@ function fmtPrice(price: number): string {
 }
 
 export async function handleEslestir(ctx: WaContext): Promise<void> {
+  try {
   const supabase = getServiceClient();
   const args = ctx.text.split(" ").slice(1).join(" ").trim();
 
@@ -33,7 +35,7 @@ export async function handleEslestir(ctx: WaContext): Promise<void> {
       await runMatching(ctx, customers[0]);
       return;
     }
-    await sendButtons(ctx.phone, `"${args}" adinda musteri bulunamadi.`, [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, `"${args}" adında müşteri bulunamadı.`, [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
@@ -47,25 +49,29 @@ export async function handleEslestir(ctx: WaContext): Promise<void> {
     .limit(10);
 
   if (!customers || customers.length === 0) {
-    await sendButtons(ctx.phone, "Henuz musteriniz yok. /musteriEkle ile ekleyin.", [
-      { id: "cmd:musteriEkle", title: "Musteri Ekle" },
-      { id: "cmd:menu", title: "Ana Menu" },
+    await sendButtons(ctx.phone, "Henüz müşteriniz yok. Müşteri ekleyin!", [
+      { id: "cmd:musteriEkle", title: "Müşteri Ekle" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
 
   const rows = customers.map(c => ({
     id: `esles:${c.id}`,
-    title: ((c.name || "Isimsiz") as string).substring(0, 24),
+    title: ((c.name || "İsimsiz") as string).substring(0, 24),
     description: (c.phone as string) || "",
   }));
 
-  await sendList(ctx.phone, "👤 Hangi musteri icin eslestirme yapayim?", "Musteri Sec", [
-    { title: "Musteriler", rows },
+  await sendList(ctx.phone, "👤 Hangi müşteri için eşleştirme yapayım?", "Müşteri Seç", [
+    { title: "Müşteriler", rows },
   ]);
+  } catch (err) {
+    await handleError(ctx, "emlak:eslestir", err, "db");
+  }
 }
 
 export async function handleEslestirCallback(ctx: WaContext, data: string): Promise<void> {
+  try {
   const customerId = data.replace("esles:", "");
   const supabase = getServiceClient();
 
@@ -77,12 +83,16 @@ export async function handleEslestirCallback(ctx: WaContext, data: string): Prom
     .single();
 
   if (!customer) {
-    await sendButtons(ctx.phone, "Musteri bulunamadi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "Müşteri bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
-  await sendText(ctx.phone, `🔍 ${customer.name} icin eslestirme yapiliyor...`);
+  await sendText(ctx.phone, `🔍 ${customer.name} için eşleştirme yapılıyor...`);
   await runMatching(ctx, customer);
+  await logEvent(ctx.tenantId, ctx.userId, "eslestir", `${customer.name}`);
+  } catch (err) {
+    await handleError(ctx, "emlak:eslestir_cb", err, "db");
+  }
 }
 
 async function runMatching(ctx: WaContext, customer: Record<string, unknown>): Promise<void> {
@@ -107,8 +117,8 @@ async function runMatching(ctx: WaContext, customer: Record<string, unknown>): P
 
   if (!properties || properties.length === 0) {
     await sendButtons(ctx.phone,
-      `${customer.name} icin uygun mulk bulunamadi.\n\nButce: ${budgetMin ? fmtPrice(budgetMin) : "?"} — ${budgetMax ? fmtPrice(budgetMax) : "?"}`,
-      [{ id: "cmd:menu", title: "Ana Menu" }],
+      `${customer.name} için uygun mülk bulunamadı.\n\nButce: ${budgetMin ? fmtPrice(budgetMin) : "?"} — ${budgetMax ? fmtPrice(budgetMax) : "?"}`,
+      [{ id: "cmd:menu", title: "Ana Menü" }],
     );
     return;
   }
@@ -122,7 +132,7 @@ async function runMatching(ctx: WaContext, customer: Record<string, unknown>): P
     // Budget match (+2)
     if (p.price > 0 && (budgetMin || budgetMax)) {
       const inBudget = (!budgetMin || p.price >= budgetMin) && (!budgetMax || p.price <= budgetMax);
-      if (inBudget) { score += 2; reasons.push("💰 Butce uygun"); }
+      if (inBudget) { score += 2; reasons.push("💰 Bütçe uygun"); }
     }
 
     // Location match (+2)
@@ -145,25 +155,25 @@ async function runMatching(ctx: WaContext, customer: Record<string, unknown>): P
 
   if (matches.length === 0) {
     await sendButtons(ctx.phone,
-      `${customer.name} icin uygun mulk bulunamadi.\n\nPortfoyunuze daha fazla mulk eklemek icin /mulkekle yazin.`,
-      [{ id: "cmd:menu", title: "Ana Menu" }],
+      `${customer.name} için uygun mülk bulunamadı.\n\nPortfoyunuze daha fazla mülk eklemek için mulkekle yazın.`,
+      [{ id: "cmd:menu", title: "Ana Menü" }],
     );
     return;
   }
 
   const stars = (s: number) => "⭐".repeat(Math.min(s, 5));
 
-  let text = `🔍 *${customer.name}* icin eslesmeler\n📊 ${properties.length} ilan tarandi\n\n`;
+  let text = `🔍 *${customer.name}* için eşleşmeler\n📊 ${properties.length} ilan tarandı\n\n`;
   for (const [i, p] of matches.entries()) {
     const priceStr = p.price > 0 ? fmtPrice(p.price) : "—";
     const loc = [p.location_district, p.location_city].filter(Boolean).join(", ");
-    text += `${i + 1}. ${p.title || "Isimsiz"}\n`;
+    text += `${i + 1}. ${p.title || "İsimsiz"}\n`;
     text += `   ${priceStr} | ${p.rooms || "—"} | ${loc}\n`;
     text += `   ${stars(p.score)} (${p.score}/6) ${p.reasons.join(" ")}\n\n`;
   }
 
   await sendButtons(ctx.phone, text, [
-    { id: "cmd:musterilerim", title: "Musterilerim" },
-    { id: "cmd:menu", title: "Ana Menu" },
+    { id: "cmd:musterilerim", title: "Müşterilerim" },
+    { id: "cmd:menu", title: "Ana Menü" },
   ]);
 }

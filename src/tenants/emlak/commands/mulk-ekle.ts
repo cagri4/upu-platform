@@ -3,6 +3,7 @@ import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession } from "@/platform/whatsapp/session";
 import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { logEvent } from "@/platform/whatsapp/error-handler";
 
 // ── Command: start mulkekle flow ────────────────────────────────────────
 

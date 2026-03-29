@@ -11,6 +11,11 @@ function getConfig() {
   };
 }
 
+function truncateText(text: string, limit = 4000): string {
+  if (text.length <= limit) return text;
+  return text.substring(0, limit - 100) + "\n\n... (devamı için komutu tekrar yazın)";
+}
+
 export async function sendText(phone: string, text: string) {
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
@@ -20,7 +25,7 @@ export async function sendText(phone: string, text: string) {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       messaging_product: "whatsapp", to: phone, type: "text",
-      text: { body: text },
+      text: { body: truncateText(text) },
     }),
   }).catch(err => console.error("[wa:send] text error:", err));
 }
@@ -48,7 +53,7 @@ export async function sendButtons(
         messaging_product: "whatsapp", to: phone, type: "interactive",
         interactive: {
           type: "button",
-          body: { text },
+          body: { text: truncateText(text, 1024) },
           action: {
             buttons: validButtons.map(b => ({
               type: "reply", reply: { id: b.id, title: b.title.substring(0, 20) },
@@ -84,7 +89,7 @@ export async function sendList(
         messaging_product: "whatsapp", to: phone, type: "interactive",
         interactive: {
           type: "list",
-          body: { text },
+          body: { text: truncateText(text, 1024) },
           action: { button: buttonText, sections },
         },
       }),

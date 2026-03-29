@@ -4,6 +4,7 @@
 import type { WaContext } from "@/platform/whatsapp/types";
 import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat("tr-TR").format(price) + " TL";
@@ -27,27 +28,27 @@ export async function handleSatisTavsiye(ctx: WaContext): Promise<void> {
     .limit(10);
 
   if (!props || props.length === 0) {
-    await sendButtons(ctx.phone, "📭 Portfoyunuzde mulk yok.\n\nOnce /mulkekle ile mulk ekleyin.", [
-      { id: "cmd:mulkekle", title: "Mulk Ekle" },
-      { id: "cmd:menu", title: "Ana Menu" },
+    await sendButtons(ctx.phone, "📭 Portföyünüzde mülk yok.\n\nÖnce mülk ekleyin.", [
+      { id: "cmd:mulkekle", title: "Mülk Ekle" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
 
   const rows = props.map(p => ({
     id: `st:p:${p.id}`,
-    title: ((p.title || "Isimsiz") as string).substring(0, 24),
+    title: ((p.title || "İsimsiz") as string).substring(0, 24),
     description: p.price ? formatPrice(p.price) : "",
   }));
 
-  await sendList(ctx.phone, "🎯 Hangi mulk icin satis tavsiyesi istiyorsunuz?", "Mulk Sec", [
-    { title: "Mulkler", rows },
+  await sendList(ctx.phone, "🎯 Hangi mülk için satış tavsiyesi istiyorsunuz?", "Mülk Seç", [
+    { title: "Mülkler", rows },
   ]);
 }
 
 export async function handleSatisTavsiyeCallback(ctx: WaContext, data: string): Promise<void> {
   if (data === "st:cancel") {
-    await sendButtons(ctx.phone, "❌ Iptal edildi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "❌ İptal edildi.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
@@ -63,15 +64,15 @@ export async function handleSatisTavsiyeCallback(ctx: WaContext, data: string): 
       .single();
 
     if (!prop) {
-      await sendButtons(ctx.phone, "Mulk bulunamadi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+      await sendButtons(ctx.phone, "Mülk bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
       return;
     }
 
-    await sendText(ctx.phone, "🧠 Mulk analiz ediliyor, satis stratejisi hazirlaniyor...");
+    await sendText(ctx.phone, "🧠 Mülk analiz ediliyor, satış stratejisi hazırlanıyor...");
 
-    const typeLabels: Record<string, string> = { daire: "Daire", villa: "Villa", arsa: "Arsa", mustakil: "Mustakil" };
-    const title = (prop.title as string) || "Isimsiz";
-    const price = prop.price ? formatPrice(prop.price) : "Belirtilmemis";
+    const typeLabels: Record<string, string> = { daire: "Daire", villa: "Villa", arsa: "Arsa", mustakil: "Müstakil" };
+    const title = (prop.title as string) || "İsimsiz";
+    const price = prop.price ? formatPrice(prop.price) : "Belirtilmemiş";
     const typeLabel = prop.type ? (typeLabels[prop.type] || prop.type) : "—";
     const loc = (prop.location_district as string) || "—";
 
@@ -95,7 +96,7 @@ export async function handleSatisTavsiyeCallback(ctx: WaContext, data: string): 
     }
 
     // Build sales advice
-    let advice = `🎯 SATIS TAVSIYESI\n━━━━━━━━━━━━━━━━━━━━━━\n`;
+    let advice = `🎯 SATIŞ TAVSİYESİ\n━━━━━━━━━━━━━━━━━━━━━━\n`;
     advice += `📋 ${title}\n💰 ${price} | 📍 ${loc} | 🏠 ${typeLabel}\n`;
     if (prop.rooms) advice += `🛏 ${prop.rooms}`;
     if (prop.area) advice += ` | 📐 ${prop.area} m²`;
@@ -118,20 +119,21 @@ Aciklama: ${(prop.description as string) || "yok"}`,
     } catch { /* AI unavailable */ }
 
     if (aiAdvice) {
-      advice += `🤖 AI TAVSIYELER:\n${aiAdvice}`;
+      advice += `🤖 AI TAVSİYELER:\n${aiAdvice}`;
     } else {
       // Fallback static advice
-      advice += `📌 TAVSIYELER:\n`;
-      advice += `1. Hedef musteri profilini belirleyin\n`;
-      advice += `2. Mulkun en guclu 2-3 ozelligini vurgulayin\n`;
-      advice += `3. Fiyat pazarligina hazirlikli olun\n`;
-      advice += `4. Profesyonel fotograflar cektirin\n`;
-      advice += `5. Birden fazla portalda yayinlayin`;
+      advice += `📌 TAVSİYELER:\n`;
+      advice += `1. Hedef müşteri profilini belirleyin\n`;
+      advice += `2. Mülkün en güçlü 2-3 özelliğini vurgulayın\n`;
+      advice += `3. Fiyat pazarlığına hazırlıklı olun\n`;
+      advice += `4. Profesyonel fotoğraflar çektirin\n`;
+      advice += `5. Birden fazla portalda yayınlayın`;
     }
 
     await sendButtons(ctx.phone, advice, [
-      { id: "cmd:portfoyum", title: "Portfoyum" },
-      { id: "cmd:menu", title: "Ana Menu" },
+      { id: "cmd:portfoyum", title: "Portföyüm" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
+    await logEvent(ctx.tenantId, ctx.userId, "satis_tavsiye", `${title}`);
   }
 }

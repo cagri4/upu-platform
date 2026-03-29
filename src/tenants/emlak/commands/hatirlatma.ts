@@ -8,22 +8,23 @@ import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession } from "@/platform/whatsapp/session";
 import { sendText, sendButtons } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 
 const TOPICS = [
   { label: "Ev Gezdirme", value: "ev_gezdirme" },
-  { label: "Telefon Gorusme", value: "telefon" },
+  { label: "Telefon Görüşme", value: "telefon" },
   { label: "Teklif Sunma", value: "teklif" },
   { label: "Randevu", value: "randevu" },
-  { label: "Kendi Yaz", value: "custom" },
+  { label: "Kendi Yazın", value: "custom" },
 ];
 
 export async function handleHatirlatma(ctx: WaContext): Promise<void> {
   await startSession(ctx.userId, ctx.tenantId, "hatirlatma", "topic");
 
-  await sendButtons(ctx.phone, "📋 Hatirlatma konusu nedir?", [
+  await sendButtons(ctx.phone, "📋 Hatırlatma konusu nedir?", [
     { id: "htrt:topic:ev_gezdirme", title: "Ev Gezdirme" },
     { id: "htrt:topic:telefon", title: "Telefon" },
-    { id: "htrt:topic:custom", title: "Kendi Yaz" },
+    { id: "htrt:topic:custom", title: "Kendi Yazın" },
   ]);
 }
 
@@ -32,7 +33,7 @@ export async function handleHatirlatmaStep(ctx: WaContext, session: CommandSessi
   const step = session.current_step;
 
   if (!text) {
-    await sendText(ctx.phone, "Lutfen bir deger yazin.");
+    await sendText(ctx.phone, "Lütfen bir değer yazın.");
     return;
   }
 
@@ -46,8 +47,8 @@ export async function handleHatirlatmaStep(ctx: WaContext, session: CommandSessi
     const noteText = (text.toLowerCase() === "gec" || text.toLowerCase() === "geç") ? "" : text;
     await updateSession(ctx.userId, "date", { note: noteText });
     await sendButtons(ctx.phone, "📅 Hangi tarih?", [
-      { id: "htrt:date:today", title: "Bugun" },
-      { id: "htrt:date:tomorrow", title: "Yarin" },
+      { id: "htrt:date:today", title: "Bugün" },
+      { id: "htrt:date:tomorrow", title: "Yarın" },
       { id: "htrt:date:next_monday", title: "Haftaya Pzt" },
     ]);
     return;
@@ -56,13 +57,13 @@ export async function handleHatirlatmaStep(ctx: WaContext, session: CommandSessi
   if (step === "time_custom") {
     const timeMatch = text.match(/^(\d{1,2})[:\.]?(\d{2})?$/);
     if (!timeMatch) {
-      await sendText(ctx.phone, "Gecerli saat yazin. Ornek: 14:30 veya 10");
+      await sendText(ctx.phone, "Geçerli saat yazın. Örnek: 14:30 veya 10");
       return;
     }
     const hour = parseInt(timeMatch[1], 10);
     const minute = parseInt(timeMatch[2] || "0", 10);
     if (hour < 0 || hour > 23) {
-      await sendText(ctx.phone, "Gecerli saat yazin (0-23).");
+      await sendText(ctx.phone, "Geçerli saat yazın (0-23).");
       return;
     }
     const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
@@ -71,13 +72,13 @@ export async function handleHatirlatmaStep(ctx: WaContext, session: CommandSessi
     return;
   }
 
-  await sendText(ctx.phone, "Lutfen yukaridaki butonlardan birini secin.");
+  await sendText(ctx.phone, "Lütfen yukarıdaki butonlardan birini seçin.");
 }
 
 export async function handleHatirlatmaCallback(ctx: WaContext, data: string): Promise<void> {
   if (data === "htrt:cancel") {
     await endSession(ctx.userId);
-    await sendButtons(ctx.phone, "❌ Hatirlatma iptal edildi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "❌ Hatırlatma iptal edildi.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
@@ -89,7 +90,7 @@ export async function handleHatirlatmaCallback(ctx: WaContext, data: string): Pr
 
     if (topicValue === "custom") {
       await updateSession(ctx.userId, "custom_topic", { topic: "custom" });
-      await sendText(ctx.phone, "✏️ Hatirlatma konusunu yazin:");
+      await sendText(ctx.phone, "✏️ Hatırlatma konusunu yazın:");
       return;
     }
 
@@ -97,7 +98,7 @@ export async function handleHatirlatmaCallback(ctx: WaContext, data: string): Pr
     const topicLabel = topic?.label || topicValue;
 
     await updateSession(ctx.userId, "note", { topic: topicValue, topic_label: topicLabel });
-    await sendText(ctx.phone, `${topicLabel} secildi.\n\n📝 Not eklemek ister misiniz? (yazin veya \"gec\")`);
+    await sendText(ctx.phone, `${topicLabel} seçildi.\n\n📝 Not eklemek ister misiniz? (yazin veya \"gec\")`);
     return;
   }
 
@@ -121,10 +122,10 @@ export async function handleHatirlatmaCallback(ctx: WaContext, data: string): Pr
     const dateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}-${String(targetDate.getDate()).padStart(2, "0")}`;
     await updateSession(ctx.userId, "time", { date: dateStr });
 
-    await sendButtons(ctx.phone, "🕐 Saat kacta?", [
+    await sendButtons(ctx.phone, "🕐 Saat kaçta?", [
       { id: "htrt:time:09:00", title: "09:00" },
       { id: "htrt:time:14:00", title: "14:00" },
-      { id: "htrt:time:custom", title: "Saat Yaz" },
+      { id: "htrt:time:custom", title: "Saat Yazın" },
     ]);
     return;
   }
@@ -135,7 +136,7 @@ export async function handleHatirlatmaCallback(ctx: WaContext, data: string): Pr
 
     if (value === "custom") {
       await updateSession(ctx.userId, "time_custom", {});
-      await sendText(ctx.phone, "🕐 Saati yazin. Ornek: 14:30 veya 10");
+      await sendText(ctx.phone, "🕐 Saati yazın. Örnek: 14:30 veya 10");
       return;
     }
 
@@ -155,7 +156,7 @@ async function createReminder(ctx: WaContext): Promise<void> {
 
   if (!sess) {
     await endSession(ctx.userId);
-    await sendText(ctx.phone, "Oturum suresi doldu. Tekrar /hatirlatma yazin.");
+    await sendText(ctx.phone, "Oturum süresi doldu. Tekrar /hatirlatma yazın.");
     return;
   }
 
@@ -166,7 +167,7 @@ async function createReminder(ctx: WaContext): Promise<void> {
 
   if (isNaN(dueAt.getTime())) {
     await endSession(ctx.userId);
-    await sendText(ctx.phone, "Tarih/saat hatasi. Tekrar /hatirlatma yazin.");
+    await sendText(ctx.phone, "Tarih/saat hatası. Tekrar /hatirlatma yazın.");
     return;
   }
 
@@ -184,13 +185,14 @@ async function createReminder(ctx: WaContext): Promise<void> {
   await endSession(ctx.userId);
 
   if (error) {
-    await sendButtons(ctx.phone, "❌ Hatirlatma olusturulurken hata olustu.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "❌ Hatırlatma oluşturulurken hata oluştu.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
   const dateDisplay = dueAt.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" });
   await sendButtons(ctx.phone,
-    `✅ Hatirlatma olusturuldu!\n\n📋 ${topicLabel}\n📅 ${dateDisplay} — 🕐 ${d.time}\n\nSekreteriniz size zamaninda hatirlatma yapacak.`,
-    [{ id: "cmd:menu", title: "Ana Menu" }],
+    `✅ Hatırlatma oluşturuldu!\n\n📋 ${topicLabel}\n📅 ${dateDisplay} — 🕐 ${d.time}\n\nSekreteriniz size zamanında hatırlatma yapacak.`,
+    [{ id: "cmd:menu", title: "Ana Menü" }],
   );
+  await logEvent(ctx.tenantId, ctx.userId, "hatirlatma", `${topicLabel} — ${dateDisplay}`);
 }

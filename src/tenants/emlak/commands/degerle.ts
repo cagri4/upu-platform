@@ -6,6 +6,7 @@ import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession } from "@/platform/whatsapp/session";
 import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat("tr-TR").format(price) + " TL";
@@ -31,27 +32,27 @@ export async function handleDegerle(ctx: WaContext): Promise<void> {
     .limit(10);
 
   if (!props || props.length === 0) {
-    await sendButtons(ctx.phone, "📭 Portfoyunuzde degerlenecek mulk yok.", [
-      { id: "cmd:mulkekle", title: "Mulk Ekle" },
-      { id: "cmd:menu", title: "Ana Menu" },
+    await sendButtons(ctx.phone, "📭 Portfoyunuzde değerlenecek mülk yok.", [
+      { id: "cmd:mulkekle", title: "Mülk Ekle" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
 
   const rows = props.map(p => ({
     id: `dg:p:${p.id}`,
-    title: ((p.title || "Isimsiz") as string).substring(0, 24),
+    title: ((p.title || "İsimsiz") as string).substring(0, 24),
     description: p.price ? formatPrice(p.price) : "",
   }));
 
-  await sendList(ctx.phone, "🏠 Hangi mulkun piyasa degerini ogrenmek istiyorsunuz?", "Mulk Sec", [
-    { title: "Mulkler", rows },
+  await sendList(ctx.phone, "🏠 Hangi mulkun piyasa değerini öğrenmek istiyorsunuz?", "Mülk Seç", [
+    { title: "Mülkler", rows },
   ]);
 }
 
 export async function handleDegerleCallback(ctx: WaContext, data: string): Promise<void> {
   if (data === "dg:cancel") {
-    await sendButtons(ctx.phone, "❌ Degerleme iptal edildi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "❌ Değerleme iptal edildi.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
@@ -66,7 +67,7 @@ export async function handleDegerleCallback(ctx: WaContext, data: string): Promi
       .single();
 
     if (!prop) {
-      await sendButtons(ctx.phone, "Mulk bulunamadi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+      await sendButtons(ctx.phone, "Mülk bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
       return;
     }
 
@@ -87,8 +88,8 @@ export async function handleDegerleCallback(ctx: WaContext, data: string): Promi
 
     if (!marketProps || marketProps.length === 0) {
       await sendButtons(ctx.phone,
-        `📍 ${prop.title}\n\n❌ Karsilastirilacak yeterli piyasa verisi bulunamadi.`,
-        [{ id: "cmd:menu", title: "Ana Menu" }],
+        `📍 ${prop.title}\n\n❌ Karşılaştırılacak yeterli piyasa verisi bulunamadı.`,
+        [{ id: "cmd:menu", title: "Ana Menü" }],
       );
       return;
     }
@@ -104,20 +105,20 @@ export async function handleDegerleCallback(ctx: WaContext, data: string): Promi
     let positionText = "";
     if (myPrice && myPrice > 0) {
       const pct = Math.round(((myPrice - avg) / avg) * 100);
-      if (pct > 5) positionText = `📈 Mulkunuz piyasa ortalamasinin %${pct} USTUNDE`;
-      else if (pct < -5) positionText = `📉 Mulkunuz piyasa ortalamasinin %${Math.abs(pct)} ALTINDA`;
-      else positionText = `📊 Mulkunuz piyasa ortalamasina UYGUN`;
+      if (pct > 5) positionText = `📈 Mülkünüz piyasa ortalamasının %${pct} ÜSTÜNDE`;
+      else if (pct < -5) positionText = `📉 Mülkünüz piyasa ortalamasının %${Math.abs(pct)} ALTINDA`;
+      else positionText = `📊 Mülkünüz piyasa ortalamasına UYGUN`;
     }
 
-    let result = `🏠 MULK DEGERLEME RAPORU\n━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    let result = `🏠 MÜLK DEĞERLEME RAPORU\n━━━━━━━━━━━━━━━━━━━━━━\n\n`;
     result += `📋 ${prop.title}\n`;
     if (myPrice) result += `💰 Fiyat: ${formatPrice(myPrice)}\n`;
     if (prop.area) result += `📐 Alan: ${prop.area} m²\n`;
-    result += `\n📊 PIYASA VERISI (${count} benzer ilan)\n`;
+    result += `\n📊 PİYASA VERİSİ (${count} benzer ilan)\n`;
     result += `  Ortalama: ${formatPrice(avg)}\n`;
     result += `  Medyan: ${formatPrice(median)}\n`;
-    result += `  En dusuk: ${formatPrice(min)}\n`;
-    result += `  En yuksek: ${formatPrice(max)}\n`;
+    result += `  En düşük: ${formatPrice(min)}\n`;
+    result += `  En yüksek: ${formatPrice(max)}\n`;
     if (positionText) result += `\n${positionText}`;
 
     // AI-enhanced analysis
@@ -140,13 +141,14 @@ Veri kaynagi: ${count} sahibinden ilani`,
     if (aiAnalysis) {
       result += `\n\n🤖 AI ANALIZ:\n${aiAnalysis}`;
     }
-    result += `\n\n_📊 ${count} sahibinden ilanina gore analiz_`;
-    result += `\n_⚠️ Bu tahmindir, kesin deger icin bagimsiz degerleme yaptirin._`;
+    result += `\n\n_📊 ${count} sahibinden ilanına göre analiz_`;
+    result += `\n_⚠️ Bu tahmindir, kesin değer için bağımsız değerleme yaptırın._`;
 
     await sendButtons(ctx.phone, result, [
-      { id: "cmd:portfoyum", title: "Portfoyum" },
-      { id: "cmd:menu", title: "Ana Menu" },
+      { id: "cmd:portfoyum", title: "Portföyüm" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
+    await logEvent(ctx.tenantId, ctx.userId, "degerle", `${prop.title} — ${count} benzer ilan`);
   }
 }
 
@@ -154,25 +156,25 @@ Veri kaynagi: ${count} sahibinden ilani`,
 
 export async function handleMulkOner(ctx: WaContext): Promise<void> {
   await startSession(ctx.userId, ctx.tenantId, "mulkoner", "budget");
-  await sendText(ctx.phone, "💰 Musterinizin butcesi ne kadar?\n\nOrnek: 5000000, 5M, 3.5 milyon, 800 bin");
+  await sendText(ctx.phone, "💰 Müşterinizin bütçesi ne kadar?\n\nÖrnek: 5000000, 5M, 3.5 milyon, 800 bin");
 }
 
 export async function handleMulkOnerStep(ctx: WaContext, session: CommandSession): Promise<void> {
   const text = ctx.text.trim();
   if (!text) {
-    await sendText(ctx.phone, "Lutfen bir deger yazin.");
+    await sendText(ctx.phone, "Lütfen bir değer yazın.");
     return;
   }
 
   if (session.current_step === "budget") {
     const budget = parsePrice(text);
     if (!budget || budget < 100_000) {
-      await sendText(ctx.phone, "Gecerli bir butce yazin.\n\nOrnek: 5000000, 5M, 3.5 milyon, 800 bin");
+      await sendText(ctx.phone, "Geçerli bir bütçe yazın.\n\nÖrnek: 5000000, 5M, 3.5 milyon, 800 bin");
       return;
     }
 
     await updateSession(ctx.userId, "location", { budget });
-    await sendText(ctx.phone, "📍 Hangi semtte ariyorsunuz?\n\nOrnek: Bodrum, Yalikavak\n\nTum bolgeler icin \"hepsi\" yazin.");
+    await sendText(ctx.phone, "📍 Hangi semtte arıyorsunuz?\n\nOrnek: Bodrum, Yalikavak\n\nTüm bölgeler için \"hepsi\" yazin.");
     return;
   }
 
@@ -227,34 +229,34 @@ async function showResults(ctx: WaContext, budget: number, semt: string | null):
 
   if (exact.length === 0 && stretch.length === 0) {
     await sendButtons(ctx.phone,
-      `💰 ${formatPrice(budget)} butceyle ${semt || "tum bolgelerde"} ilan bulunamadi.`,
-      [{ id: "cmd:menu", title: "Ana Menu" }],
+      `💰 ${formatPrice(budget)} butceyle ${semt || "tüm bölgelerde"} ilan bulunamadi.`,
+      [{ id: "cmd:menu", title: "Ana Menü" }],
     );
     return;
   }
 
-  let result = `🏠 MULK ONERI RAPORU\n━━━━━━━━━━━━━━━━━━━━━━\n`;
-  result += `💰 Butce: ${formatPrice(budget)}${semt ? ` | 📍 ${semt}` : ""}\n\n`;
+  let result = `🏠 MÜLK ÖNERİ RAPORU\n━━━━━━━━━━━━━━━━━━━━━━\n`;
+  result += `💰 Bütçe: ${formatPrice(budget)}${semt ? ` | 📍 ${semt}` : ""}\n\n`;
 
   if (exact.length > 0) {
-    result += `✅ BUTCEYE UYGUN (${exact.length} ilan)\n`;
+    result += `✅ BÜTÇEYE UYGUN (${exact.length} ilan)\n`;
     for (const p of exact.slice(0, 5)) {
-      result += `  • ${p.title || "Ilan"}\n`;
+      result += `  • ${p.title || "İlan"}\n`;
       result += `    ${formatPrice(p.price)} | ${p.rooms || "—"} | ${p.location_district || "—"}\n`;
     }
     result += "\n";
   }
 
   if (stretch.length > 0) {
-    result += `💡 BIRAZ ESNETIRSENIZ (+%20)\n`;
+    result += `💡 BİRAZ ESNETİRSENİZ (+%20)\n`;
     for (const p of stretch.slice(0, 3)) {
-      result += `  • ${p.title || "Ilan"}\n`;
+      result += `  • ${p.title || "İlan"}\n`;
       result += `    ${formatPrice(p.price)} | ${p.rooms || "—"} | ${p.location_district || "—"}\n`;
     }
   }
 
   await sendButtons(ctx.phone, result, [
-    { id: "cmd:portfoyum", title: "Portfoyum" },
-    { id: "cmd:menu", title: "Ana Menu" },
+    { id: "cmd:portfoyum", title: "Portföyüm" },
+    { id: "cmd:menu", title: "Ana Menü" },
   ]);
 }

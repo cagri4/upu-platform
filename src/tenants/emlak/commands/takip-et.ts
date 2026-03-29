@@ -6,6 +6,7 @@ import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession } from "@/platform/whatsapp/session";
 import { sendText, sendButtons } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 
 function parseBudget(text: string): { min: number | null; max: number | null } | null {
   const cleaned = text.replace(/TL/gi, "").replace(/\s/g, "").replace(/\./g, "").replace(/,/g, ".").trim().toLowerCase();
@@ -43,13 +44,13 @@ export async function handleTakipEt(ctx: WaContext): Promise<void> {
     let text = `📡 Aktif Takipleriniz (${existing.length})\n\n`;
     for (const [i, c] of existing.entries()) {
       const criteria = c.criteria as Record<string, unknown> || {};
-      text += `${i + 1}. ${(criteria.listing_type as string) || "Tumü"} | ${(criteria.locations as string[])?.join(", ") || "Tum bolgeler"}\n`;
+      text += `${i + 1}. ${(criteria.listing_type as string) || "Tümü"} | ${(criteria.locations as string[])?.join(", ") || "Tüm bölgeler"}\n`;
     }
-    text += "\nHer sabah 08:00'de yeni ilanlar taranir.";
+    text += "\nHer sabah 08:00'de yeni ilanlar taranır.";
 
     await sendButtons(ctx.phone, text, [
       { id: "tkp:new", title: "Yeni Takip" },
-      { id: "cmd:menu", title: "Ana Menu" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
@@ -60,9 +61,9 @@ export async function handleTakipEt(ctx: WaContext): Promise<void> {
 async function startNewTracking(ctx: WaContext): Promise<void> {
   await startSession(ctx.userId, ctx.tenantId, "takipEt", "listing_type");
 
-  await sendButtons(ctx.phone, "📡 Yeni Piyasa Takibi\n\n🏷 Ne tur ilanlari takip etmek istiyorsunuz?", [
-    { id: "tkp:lt:satilik", title: "Satilik" },
-    { id: "tkp:lt:kiralik", title: "Kiralik" },
+  await sendButtons(ctx.phone, "📡 Yeni Piyasa Takibi\n\n🏷 Ne tür ilanları takip etmek istiyorsunuz?", [
+    { id: "tkp:lt:satilik", title: "Satılık" },
+    { id: "tkp:lt:kiralik", title: "Kiralık" },
     { id: "tkp:lt:hepsi", title: "Hepsi" },
   ]);
 }
@@ -76,16 +77,16 @@ export async function handleTakipEtStep(ctx: WaContext, session: CommandSession)
   if (step === "budget") {
     if (text.toLowerCase() === "gec" || text.toLowerCase() === "geç") {
       await updateSession(ctx.userId, "location", { budget_min: null, budget_max: null });
-      await sendText(ctx.phone, "📍 Hangi bolgeleri takip etmek istiyorsunuz?\n\nOrnek: Bodrum, Yalikavak\n\nAtlamak icin \"gec\" yazin.");
+      await sendText(ctx.phone, "📍 Hangi bölgeleri takip etmek istiyorsunuz?\n\nÖrnek: Bodrum, Yalıkavak\n\nAtlamak için \"gec\" yazin.");
       return;
     }
     const budget = parseBudget(text);
     if (!budget) {
-      await sendText(ctx.phone, "Gecerli butce yazin. Ornek: 5M, 5-10M\n\nAtlamak icin \"gec\" yazin.");
+      await sendText(ctx.phone, "Geçerli bütçe yazın. Örnek: 5M, 5-10M\n\nAtlamak için \"gec\" yazin.");
       return;
     }
     await updateSession(ctx.userId, "location", { budget_min: budget.min, budget_max: budget.max });
-    await sendText(ctx.phone, "📍 Hangi bolgeleri takip etmek istiyorsunuz?\n\nOrnek: Bodrum, Yalikavak\n\nAtlamak icin \"gec\" yazin.");
+    await sendText(ctx.phone, "📍 Hangi bölgeleri takip etmek istiyorsunuz?\n\nÖrnek: Bodrum, Yalıkavak\n\nAtlamak için \"gec\" yazin.");
     return;
   }
 
@@ -103,7 +104,7 @@ export async function handleTakipEtStep(ctx: WaContext, session: CommandSession)
 export async function handleTakipEtCallback(ctx: WaContext, data: string): Promise<void> {
   if (data === "tkp:cancel") {
     await endSession(ctx.userId);
-    await sendButtons(ctx.phone, "❌ Takip iptal edildi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "❌ Takip iptal edildi.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
@@ -118,8 +119,8 @@ export async function handleTakipEtCallback(ctx: WaContext, data: string): Promi
   if (parts[1] === "lt") {
     const value = parts[2];
     await updateSession(ctx.userId, "budget", { listing_type: value });
-    const labelMap: Record<string, string> = { satilik: "Satilik", kiralik: "Kiralik", hepsi: "Hepsi" };
-    await sendText(ctx.phone, `🏷 ${labelMap[value] || value} secildi.\n\n💰 Butce araligi (TL):\n\nOrnek: 3M, 3-8M\n\nAtlamak icin \"gec\" yazin.`);
+    const labelMap: Record<string, string> = { satilik: "Satılık", kiralik: "Kiralık", hepsi: "Hepsi" };
+    await sendText(ctx.phone, `🏷 ${labelMap[value] || value} seçildi.\n\n💰 Bütçe aralığı (TL):\n\nÖrnek: 3M, 3-8M\n\nAtlamak için \"gec\" yazin.`);
     return;
   }
 }
@@ -134,7 +135,7 @@ async function createTracking(ctx: WaContext): Promise<void> {
 
   if (!sess) {
     await endSession(ctx.userId);
-    await sendText(ctx.phone, "Oturum suresi doldu. Tekrar /takipEt yazin.");
+    await sendText(ctx.phone, "Oturum süresi doldu. Tekrar /takipEt yazın.");
     return;
   }
 
@@ -156,12 +157,13 @@ async function createTracking(ctx: WaContext): Promise<void> {
   await endSession(ctx.userId);
 
   if (error) {
-    await sendButtons(ctx.phone, "❌ Takip olusturulurken hata olustu.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "❌ Takip oluşturulurken hata oluştu.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
   await sendButtons(ctx.phone,
-    `✅ Piyasa takibi baslatildi!\n\nHer sabah 08:00'de yeni ilanlar taranacak ve size bildirilecek.\n\nTakiplerinizi gormek icin /takipEt yazin.`,
-    [{ id: "cmd:menu", title: "Ana Menu" }],
+    `✅ Piyasa takibi başlatıldı!\n\nHer sabah 08:00'de yeni ilanlar taranacak ve size bildirilecek.\n\nTakiplerinizi görmek için /takipEt yazın.`,
+    [{ id: "cmd:menu", title: "Ana Menü" }],
   );
+  await logEvent(ctx.tenantId, ctx.userId, "takip_et", "yeni takip oluşturuldu");
 }

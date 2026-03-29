@@ -8,6 +8,7 @@ import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession } from "@/platform/whatsapp/session";
 import { sendText, sendButtons } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 
 // ── Parse helpers ────────────────────────────────────────────────────
 
@@ -53,7 +54,7 @@ function fmtBudget(val: number): string {
 
 export async function handleMusteriEkle(ctx: WaContext): Promise<void> {
   await startSession(ctx.userId, ctx.tenantId, "musteriEkle", "name");
-  await sendText(ctx.phone, "👤 Musterinizin adini ve soyadini yazin:");
+  await sendText(ctx.phone, "👤 Müşterinizin adını ve soyadını yazın:");
 }
 
 // ── Step handler ─────────────────────────────────────────────────────
@@ -63,31 +64,31 @@ export async function handleMusteriEkleStep(ctx: WaContext, session: CommandSess
   const step = session.current_step;
 
   if (!text) {
-    await sendText(ctx.phone, "Lutfen bir deger yazin.");
+    await sendText(ctx.phone, "Lütfen bir değer yazın.");
     return;
   }
 
   switch (step) {
     case "name": {
       if (text.length < 2) {
-        await sendText(ctx.phone, "Isim en az 2 karakter olmali. Tekrar yazin:");
+        await sendText(ctx.phone, "İsim en az 2 karakter olmalı. Tekrar yazın:");
         return;
       }
       await updateSession(ctx.userId, "phone", { name: text });
-      await sendText(ctx.phone, "📱 Telefon numarasini yazin:\n\nOrnek: 0532 123 4567");
+      await sendText(ctx.phone, "📱 Telefon numarasını yazın:\n\nOrnek: 0532 123 4567");
       return;
     }
 
     case "phone": {
       const phone = parsePhone(text);
       if (!phone) {
-        await sendText(ctx.phone, "Gecerli bir telefon numarasi yazin. Ornek: 0532 123 4567");
+        await sendText(ctx.phone, "Geçerli bir telefon numarası yazın. Ornek: 0532 123 4567");
         return;
       }
       await updateSession(ctx.userId, "listing_type", { phone });
-      await sendButtons(ctx.phone, "🏷 Musteriniz ne ariyor?", [
-        { id: "mustekle:lt:satilik", title: "Satilik" },
-        { id: "mustekle:lt:kiralik", title: "Kiralik" },
+      await sendButtons(ctx.phone, "🏷 Müşteriniz ne arıyor?", [
+        { id: "mustekle:lt:satilik", title: "Satılık" },
+        { id: "mustekle:lt:kiralik", title: "Kiralık" },
         { id: "mustekle:lt:hepsi", title: "Hepsi" },
       ]);
       return;
@@ -96,16 +97,16 @@ export async function handleMusteriEkleStep(ctx: WaContext, session: CommandSess
     case "budget": {
       if (text.toLowerCase() === "gec" || text.toLowerCase() === "geç") {
         await updateSession(ctx.userId, "location", { budget_min: null, budget_max: null });
-        await sendText(ctx.phone, "📍 Hangi bolgeleri tercih ediyor?\n\nVirgul ile ayirin: Bodrum, Bitez\n\nAtlamak icin \"gec\" yazin.");
+        await sendText(ctx.phone, "📍 Hangi bölgeleri tercih ediyor?\n\nVirgül ile ayırın: Bodrum, Bitez\n\nAtlamak için \"gec\" yazin.");
         return;
       }
       const budget = parseBudget(text);
       if (!budget) {
-        await sendText(ctx.phone, "Gecerli bir butce yazin.\n\nOrnek: 5M, 5-10M, 15K, 15-30K\n\nAtlamak icin \"gec\" yazin.");
+        await sendText(ctx.phone, "Geçerli bir bütçe yazın.\n\nOrnek: 5M, 5-10M, 15K, 15-30K\n\nAtlamak için \"gec\" yazin.");
         return;
       }
       await updateSession(ctx.userId, "location", { budget_min: budget.min, budget_max: budget.max });
-      await sendText(ctx.phone, "📍 Hangi bolgeleri tercih ediyor?\n\nVirgul ile ayirin: Bodrum, Bitez\n\nAtlamak icin \"gec\" yazin.");
+      await sendText(ctx.phone, "📍 Hangi bölgeleri tercih ediyor?\n\nVirgül ile ayırın: Bodrum, Bitez\n\nAtlamak için \"gec\" yazin.");
       return;
     }
 
@@ -119,7 +120,7 @@ export async function handleMusteriEkleStep(ctx: WaContext, session: CommandSess
     }
 
     default:
-      await sendText(ctx.phone, "Lutfen yukaridaki butonlardan birini secin.");
+      await sendText(ctx.phone, "Lütfen yukarıdaki butonlardan birini seçin.");
       return;
   }
 }
@@ -131,7 +132,7 @@ export async function handleMusteriEkleCallback(ctx: WaContext, data: string): P
 
   if (data === "mustekle:cancel") {
     await endSession(ctx.userId);
-    await sendButtons(ctx.phone, "❌ Musteri ekleme iptal edildi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "❌ Müşteri ekleme iptal edildi.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
@@ -139,8 +140,8 @@ export async function handleMusteriEkleCallback(ctx: WaContext, data: string): P
   if (parts[1] === "lt") {
     const value = parts[2];
     await updateSession(ctx.userId, "budget", { listing_type: value });
-    const labelMap: Record<string, string> = { satilik: "Satilik", kiralik: "Kiralik", hepsi: "Hepsi" };
-    await sendText(ctx.phone, `🏷 ${labelMap[value] || value} secildi.\n\n💰 Butcesini yazin (TL):\n\nOrnek: 5M, 5-10M, 15K, 15-30K\n\nAtlamak icin \"gec\" yazin.`);
+    const labelMap: Record<string, string> = { satilik: "Satılık", kiralik: "Kiralık", hepsi: "Hepsi" };
+    await sendText(ctx.phone, `🏷 ${labelMap[value] || value} seçildi.\n\n💰 Bütçesini yazın (TL):\n\nOrnek: 5M, 5-10M, 15K, 15-30K\n\nAtlamak için \"gec\" yazin.`);
   }
 }
 
@@ -156,7 +157,7 @@ async function finalizeCustomer(ctx: WaContext, locations: string[]): Promise<vo
 
   if (!session) {
     await endSession(ctx.userId);
-    await sendText(ctx.phone, "Bir hata olustu. Lutfen tekrar deneyin.");
+    await sendText(ctx.phone, "Bir hata oluştu. Lütfen tekrar deneyin.");
     return;
   }
 
@@ -177,23 +178,23 @@ async function finalizeCustomer(ctx: WaContext, locations: string[]): Promise<vo
   await endSession(ctx.userId);
 
   if (error) {
-    await sendButtons(ctx.phone, "❌ Musteri eklenirken hata olustu.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "❌ Müşteri eklenirken hata oluştu.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
-  const labelMap: Record<string, string> = { satilik: "Satilik", kiralik: "Kiralik", hepsi: "Hepsi" };
+  const labelMap: Record<string, string> = { satilik: "Satılık", kiralik: "Kiralık", hepsi: "Hepsi" };
   let budgetStr = "";
   if (d.budget_min && d.budget_max) budgetStr = `💰 ${fmtBudget(d.budget_min as number)} — ${fmtBudget(d.budget_max as number)}\n`;
   else if (d.budget_max) budgetStr = `💰 ${fmtBudget(d.budget_max as number)}'e kadar\n`;
 
   await sendButtons(ctx.phone,
-    `✅ Musteri basariyla eklendi!\n\n` +
+    `✅ Müşteri başarıyla eklendi!\n\n` +
     `👤 ${d.name}\n📱 ${d.phone}\n🏷 ${labelMap[d.listing_type as string] || d.listing_type}\n` +
     budgetStr +
     (locations.length > 0 ? `📍 ${locations.join(", ")}\n` : ""),
     [
-      { id: "cmd:musterilerim", title: "Musterilerim" },
-      { id: "cmd:menu", title: "Ana Menu" },
+      { id: "cmd:musterilerim", title: "Müşterilerim" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ],
   );
 
@@ -215,10 +216,11 @@ async function finalizeCustomer(ctx: WaContext, locations: string[]): Promise<vo
       });
       if (matches.length > 0) {
         await sendButtons(ctx.phone,
-          `🏠 ${matches.length} mulkunuz yeni musterinize uygun!`,
-          [{ id: "cmd:eslestir", title: "Eslestir" }, { id: "cmd:menu", title: "Ana Menu" }],
+          `🏠 ${matches.length} mülkünüz yeni müşterinize uygun!`,
+          [{ id: "cmd:eslestir", title: "Eşleştir" }, { id: "cmd:menu", title: "Ana Menü" }],
         );
       }
     }
   } catch { /* don't break main flow */ }
+  await logEvent(ctx.tenantId, ctx.userId, "musteri_ekle", `${d.name}`);
 }

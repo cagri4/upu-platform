@@ -6,6 +6,7 @@ import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession, getSession } from "@/platform/whatsapp/session";
 import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -18,9 +19,9 @@ function formatPrice(price: number | null | undefined): string {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  daire: "Daire", villa: "Villa", mustakil: "Mustakil", rezidans: "Rezidans",
-  yazlik: "Yazlik", arsa: "Arsa", isyeri: "Isyeri", buro_ofis: "Buro/Ofis",
-  dukkan: "Dukkan", bina: "Bina", depo: "Depo",
+  daire: "Daire", villa: "Villa", mustakil: "Müstakil", rezidans: "Rezidans",
+  yazlik: "Yazlık", arsa: "Arsa", isyeri: "İşyeri", buro_ofis: "Büro/Ofis",
+  dukkan: "Dükkan", bina: "Bina", depo: "Depo",
 };
 
 // Page 1: Temel bilgiler (ilk gösterilen)
@@ -108,29 +109,29 @@ export async function handleMulkDetay(ctx: WaContext): Promise<void> {
     .limit(10);
 
   if (!properties || properties.length === 0) {
-    await sendButtons(ctx.phone, "Portfoyunuzde mulk yok.", [
-      { id: "cmd:mulkekle", title: "Mulk Ekle" },
-      { id: "cmd:menu", title: "Ana Menu" },
+    await sendButtons(ctx.phone, "Portföyünüzde mülk yok.", [
+      { id: "cmd:mulkekle", title: "Mülk Ekle" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
 
   const rows = properties.map(p => ({
     id: `mulkdetay:${p.id}`,
-    title: ((p.title || "Isimsiz") as string).substring(0, 24),
+    title: ((p.title || "İsimsiz") as string).substring(0, 24),
     description: formatPrice(p.price),
   }));
 
-  await sendList(ctx.phone, "Detay gormek istediginiz mulku secin:", "Mulk Sec", [
-    { title: "Mulkler", rows },
+  await sendList(ctx.phone, "Detay görmek istediğiniz mülkü seçin:", "Mülk Seç", [
+    { title: "Mülkler", rows },
   ]);
 }
 
 async function showPropertyDetail(ctx: WaContext, prop: Record<string, unknown>): Promise<void> {
   const typeLabel = prop.type ? (TYPE_LABELS[prop.type as string] || prop.type) : "—";
-  const listLabel = prop.listing_type === "satilik" ? "Satilik" : prop.listing_type === "kiralik" ? "Kiralik" : (prop.listing_type as string) || "—";
+  const listLabel = prop.listing_type === "satilik" ? "Satılık" : prop.listing_type === "kiralik" ? "Kiralık" : (prop.listing_type as string) || "—";
 
-  let text = `*${(prop.title as string) || "Isimsiz"}*\n\n`;
+  let text = `*${(prop.title as string) || "İsimsiz"}*\n\n`;
   text += `🏠 Tip: ${typeLabel} | 🏷 ${listLabel}\n`;
   text += `💰 Fiyat: ${formatPrice(prop.price as number)}\n`;
   text += `📐 Alan: ${prop.area || "—"} m²\n`;
@@ -140,8 +141,8 @@ async function showPropertyDetail(ctx: WaContext, prop: Record<string, unknown>)
   text += `\n🆔 ${(prop.id as string).substring(0, 8)}`;
 
   await sendButtons(ctx.phone, text, [
-    { id: `mulkduzenle:${prop.id}`, title: "Duzenle" },
-    { id: "cmd:menu", title: "Ana Menu" },
+    { id: `mulkduzenle:${prop.id}`, title: "Düzenle" },
+    { id: "cmd:menu", title: "Ana Menü" },
   ]);
 }
 
@@ -159,7 +160,7 @@ export async function handleMulkDetayCallback(ctx: WaContext, data: string): Pro
     .single();
 
   if (!prop) {
-    await sendButtons(ctx.phone, "Mulk bulunamadi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "Mülk bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
@@ -181,21 +182,21 @@ export async function handleMulkDuzenle(ctx: WaContext): Promise<void> {
     .limit(10);
 
   if (!properties || properties.length === 0) {
-    await sendButtons(ctx.phone, "Portfoyunuzde mulk yok.", [
-      { id: "cmd:mulkekle", title: "Mulk Ekle" },
-      { id: "cmd:menu", title: "Ana Menu" },
+    await sendButtons(ctx.phone, "Portföyünüzde mülk yok.", [
+      { id: "cmd:mulkekle", title: "Mülk Ekle" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
 
   const rows = properties.map(p => ({
     id: `mulkduzenle:${p.id}`,
-    title: ((p.title || "Isimsiz") as string).substring(0, 24),
+    title: ((p.title || "İsimsiz") as string).substring(0, 24),
     description: formatPrice(p.price),
   }));
 
-  await sendList(ctx.phone, "Duzenlemek istediginiz mulku secin:", "Mulk Sec", [
-    { title: "Mulkler", rows },
+  await sendList(ctx.phone, "Düzenlemek istediğiniz mülkü seçin:", "Mülk Seç", [
+    { title: "Mülkler", rows },
   ]);
 }
 
@@ -211,7 +212,7 @@ export async function handleMulkDuzenleCallback(ctx: WaContext, data: string): P
     .single();
 
   if (!prop) {
-    await sendButtons(ctx.phone, "Mulk bulunamadi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "Mülk bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
@@ -275,18 +276,18 @@ export async function handleMulkEditFieldCallback(ctx: WaContext, data: string):
   await startSession(ctx.userId, ctx.tenantId, "mulkduzenle", "waiting_value");
   await updateSession(ctx.userId, "waiting_value", { propertyId: propId, field, dbColumn: fieldDef.dbColumn });
 
-  await sendText(ctx.phone, `${fieldDef.label} icin yeni degeri yazin:\n\n${fieldDef.hint}`);
+  await sendText(ctx.phone, `${fieldDef.label} için yeni değeri yazın:\n\n${fieldDef.hint}`);
 }
 
 export async function handleMulkDuzenleStep(ctx: WaContext, session: CommandSession): Promise<void> {
   const text = ctx.text.trim();
   if (!text) {
-    await sendText(ctx.phone, "Lutfen bir deger yazin.");
+    await sendText(ctx.phone, "Lütfen bir değer yazın.");
     return;
   }
 
   if (session.current_step !== "waiting_value") {
-    await sendText(ctx.phone, "Lutfen yukaridaki butonlardan birini secin.");
+    await sendText(ctx.phone, "Lütfen yukarıdaki butonlardan birini seçin.");
     return;
   }
 
@@ -330,14 +331,14 @@ export async function handleMulkDuzenleStep(ctx: WaContext, session: CommandSess
   await endSession(ctx.userId);
 
   if (error) {
-    await sendButtons(ctx.phone, "Guncelleme hatasi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "Güncelleme hatası.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
   const fieldLabel = EDITABLE_FIELDS.find(f => f.key === field)?.label || field;
-  await sendButtons(ctx.phone, `✅ ${fieldLabel} guncellendi.`, [
-    { id: `mulkdetay:${propertyId}`, title: "Detay Gor" },
-    { id: "cmd:menu", title: "Ana Menu" },
+  await sendButtons(ctx.phone, `✅ ${fieldLabel} güncellendi.`, [
+    { id: `mulkdetay:${propertyId}`, title: "Detay Gör" },
+    { id: "cmd:menu", title: "Ana Menü" },
   ]);
 }
 
@@ -356,18 +357,18 @@ export async function handleMulkSil(ctx: WaContext): Promise<void> {
     .limit(10);
 
   if (!properties || properties.length === 0) {
-    await sendButtons(ctx.phone, "Portfoyunuzde mulk yok.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "Portföyünüzde mülk yok.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
   const rows = properties.map(p => ({
     id: `mulksil:${p.id}`,
-    title: ((p.title || "Isimsiz") as string).substring(0, 24),
+    title: ((p.title || "İsimsiz") as string).substring(0, 24),
     description: formatPrice(p.price),
   }));
 
-  await sendList(ctx.phone, "🗑 Silmek istediginiz mulku secin:", "Mulk Sec", [
-    { title: "Mulkler", rows },
+  await sendList(ctx.phone, "🗑 Silmek istediğiniz mülkü seçin:", "Mülk Seç", [
+    { title: "Mülkler", rows },
   ]);
 }
 
@@ -383,9 +384,9 @@ export async function handleMulkSilCallback(ctx: WaContext, data: string): Promi
       .eq("id", propId)
       .eq("user_id", ctx.userId);
 
-    await sendButtons(ctx.phone, "✅ Mulk silindi.", [
-      { id: "cmd:portfoyum", title: "Portfoyum" },
-      { id: "cmd:menu", title: "Ana Menu" },
+    await sendButtons(ctx.phone, "✅ Mülk silindi.", [
+      { id: "cmd:portfoyum", title: "Portföyüm" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
@@ -399,9 +400,9 @@ export async function handleMulkSilCallback(ctx: WaContext, data: string): Promi
     .eq("user_id", ctx.userId)
     .single();
 
-  const title = prop?.title || "Isimsiz";
-  await sendButtons(ctx.phone, `🗑 "${title}" mulkunu silmek istediginize emin misiniz?`, [
+  const title = prop?.title || "İsimsiz";
+  await sendButtons(ctx.phone, `🗑 "${title}" mülkünü silmek istediğinize emin misiniz?`, [
     { id: `mulksil_ok:${propId}`, title: "Evet, Sil" },
-    { id: "cmd:menu", title: "Iptal" },
+    { id: "cmd:menu", title: "İptal" },
   ]);
 }

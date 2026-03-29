@@ -3,6 +3,7 @@ import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession } from "@/platform/whatsapp/session";
 import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 import { randomBytes } from "crypto";
 
 export async function handleSozlesmelerim(ctx: WaContext): Promise<void> {
@@ -16,7 +17,8 @@ export async function handleSozlesmelerim(ctx: WaContext): Promise<void> {
     .limit(10);
 
   if (!contracts || contracts.length === 0) {
-    await sendButtons(ctx.phone, "📋 Henüz sözleşmeniz yok.", [
+    await sendButtons(ctx.phone, "📋 Henüz sözleşmeniz yok.\n\nHemen ilk sözleşmenizi oluşturun!", [
+      { id: "cmd:sozlesme", title: "Sözleşme Oluştur" },
       { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
@@ -97,7 +99,7 @@ export async function handleSozlesme(ctx: WaContext): Promise<void> {
 
   if (!properties || properties.length === 0) {
     await startSession(ctx.userId, ctx.tenantId, "sozlesme", "property_address");
-    await sendText(ctx.phone, "📋 Yetkilendirme sozlesmesi hazirliyoruz.\n\nPortfoyunuzde mulk bulunamadi. Tasinmaz adresini yazin:");
+    await sendText(ctx.phone, "📋 Yetkilendirme sözleşmesi hazırlıyoruz.\n\nPortföyünüzde mülk bulunamadı. Taşınmaz adresini yazın:");
     return;
   }
 
@@ -105,12 +107,12 @@ export async function handleSozlesme(ctx: WaContext): Promise<void> {
 
   const rows = properties.map(p => ({
     id: `szl:prop:${p.id}`,
-    title: ((p.title || "Isimsiz") as string).substring(0, 24),
+    title: ((p.title || "İsimsiz") as string).substring(0, 24),
     description: (p.location_district || p.location_city || "") as string,
   }));
-  rows.push({ id: "szl:prop:manual", title: "Yeni Bilgi Gir", description: "Manuel giris" });
+  rows.push({ id: "szl:prop:manual", title: "Yeni Bilgi Gir", description: "Manuel giriş" });
 
-  await sendList(ctx.phone, "📋 Hangi mulk icin sozlesme hazirlayalim?", "Mulk Sec", [
+  await sendList(ctx.phone, "📋 Hangi mülk için sözleşme hazırlayalım?", "Mülk Seç", [
     { title: "Mulkler", rows },
   ]);
 }
@@ -120,14 +122,14 @@ export async function handleSozlesmeStep(ctx: WaContext, session: CommandSession
   const step = session.current_step;
 
   if (!text) {
-    await sendText(ctx.phone, "Lutfen bir deger yazin.");
+    await sendText(ctx.phone, "Lütfen bir değer yazın.");
     return;
   }
 
   switch (step) {
     case "property_address": {
       if (text.length < 5) {
-        await sendText(ctx.phone, "Adres en az 5 karakter olmali.");
+        await sendText(ctx.phone, "Adres en az 5 karakter olmalı.");
         return;
       }
       await updateSession(ctx.userId, "owner_name", { property_address: text });
@@ -137,7 +139,7 @@ export async function handleSozlesmeStep(ctx: WaContext, session: CommandSession
 
     case "owner_name": {
       if (text.length < 3) {
-        await sendText(ctx.phone, "Ad soyad en az 3 karakter olmali.");
+        await sendText(ctx.phone, "Ad soyad en az 3 karakter olmalı.");
         return;
       }
       await updateSession(ctx.userId, "owner_tc", { owner_name: text });
@@ -148,7 +150,7 @@ export async function handleSozlesmeStep(ctx: WaContext, session: CommandSession
     case "owner_tc": {
       const cleaned = text.replace(/\s/g, "");
       if (!validateTC(cleaned)) {
-        await sendText(ctx.phone, "❌ Gecerli bir TC Kimlik No girin (11 haneli, 0 ile baslamaz):");
+        await sendText(ctx.phone, "❌ Geçerli bir TC Kimlik No girin (11 haneli, 0 ile başlamaz):");
         return;
       }
       await updateSession(ctx.userId, "owner_phone", { owner_tc: cleaned });
@@ -159,13 +161,13 @@ export async function handleSozlesmeStep(ctx: WaContext, session: CommandSession
     case "owner_phone": {
       const phone = validatePhone(text);
       if (!phone) {
-        await sendText(ctx.phone, "❌ Gecerli bir telefon numarasi girin.");
+        await sendText(ctx.phone, "❌ Geçerli bir telefon numarası girin.");
         return;
       }
       await updateSession(ctx.userId, "exclusive", { owner_phone: phone });
-      await sendButtons(ctx.phone, "🔒 Munhasir (exclusive) yetkilendirme mi?", [
-        { id: "szl:excl:yes", title: "Evet (Munhasir)" },
-        { id: "szl:excl:no", title: "Hayir" },
+      await sendButtons(ctx.phone, "🔒 Münhasır (exclusive) yetkilendirme mi?", [
+        { id: "szl:excl:yes", title: "Evet (Münhasır)" },
+        { id: "szl:excl:no", title: "Hayır" },
       ]);
       return;
     }
@@ -173,18 +175,18 @@ export async function handleSozlesmeStep(ctx: WaContext, session: CommandSession
     case "commission": {
       const commission = parseFloat(text.replace(/%/g, "").replace(/,/g, ".").trim());
       if (isNaN(commission) || commission <= 0 || commission > 20) {
-        await sendText(ctx.phone, "❌ Gecerli bir oran girin (1-20). Ornek: 2");
+        await sendText(ctx.phone, "❌ Geçerli bir oran girin (1-20). Örnek: 2");
         return;
       }
       await updateSession(ctx.userId, "duration", { commission });
-      await sendText(ctx.phone, "📅 Sozlesme suresi (ay olarak):\n\nOrnek: 3\nVarsayilan: 3 ay");
+      await sendText(ctx.phone, "📅 Sozlesme suresi (ay olarak):\n\nÖrnek: 3\nVarsayilan: 3 ay");
       return;
     }
 
     case "duration": {
       const duration = parseInt(text.replace(/ay/gi, "").trim(), 10);
       if (isNaN(duration) || duration < 1 || duration > 24) {
-        await sendText(ctx.phone, "❌ Gecerli bir sure girin (1-24 ay). Ornek: 3");
+        await sendText(ctx.phone, "❌ Geçerli bir süre girin (1-24 ay). Örnek: 3");
         return;
       }
       await updateSession(ctx.userId, "preview", { duration });
@@ -193,7 +195,7 @@ export async function handleSozlesmeStep(ctx: WaContext, session: CommandSession
     }
 
     default:
-      await sendText(ctx.phone, "Lutfen yukaridaki butonlardan birini secin.");
+      await sendText(ctx.phone, "Lütfen yukarıdaki butonlardan birini seçin.");
       return;
   }
 }
@@ -201,7 +203,7 @@ export async function handleSozlesmeStep(ctx: WaContext, session: CommandSession
 export async function handleSozlesmeCallback(ctx: WaContext, data: string): Promise<void> {
   if (data === "szl:cancel") {
     await endSession(ctx.userId);
-    await sendButtons(ctx.phone, "❌ Sozlesme olusturma iptal edildi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "❌ Sözleşme oluşturma iptal edildi.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
@@ -211,7 +213,7 @@ export async function handleSozlesmeCallback(ctx: WaContext, data: string): Prom
 
     if (propId === "manual") {
       await updateSession(ctx.userId, "property_address", {});
-      await sendText(ctx.phone, "📍 Tasinmazin tam adresini yazin:");
+      await sendText(ctx.phone, "📍 Taşınmazın tam adresini yazın:");
       return;
     }
 
@@ -224,7 +226,7 @@ export async function handleSozlesmeCallback(ctx: WaContext, data: string): Prom
 
     if (!prop) {
       await endSession(ctx.userId);
-      await sendButtons(ctx.phone, "❌ Mulk bulunamadi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+      await sendButtons(ctx.phone, "❌ Mülk bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
       return;
     }
 
@@ -232,7 +234,7 @@ export async function handleSozlesmeCallback(ctx: WaContext, data: string): Prom
     await updateSession(ctx.userId, "owner_name", {
       property_id: prop.id,
       property_title: prop.title,
-      property_address: address || "Belirtilmemis",
+      property_address: address || "Belirtilmemiş",
       property_type: prop.type,
       listing_type: prop.listing_type,
     });
@@ -246,8 +248,8 @@ export async function handleSozlesmeCallback(ctx: WaContext, data: string): Prom
     const exclusive = data.split(":")[2] === "yes";
     await updateSession(ctx.userId, "commission", { exclusive });
     await sendText(ctx.phone,
-      (exclusive ? "✅ Munhasir yetkilendirme secildi.\n\n" : "✅ Munhasir olmayan yetkilendirme secildi.\n\n") +
-      "💰 Komisyon oranini yazin:\n\nOrnek: 2 (yuzde olarak)\nVarsayilan: %2",
+      (exclusive ? "✅ Münhasır yetkilendirme seçildi.\n\n" : "✅ Münhasır olmayan yetkilendirme seçildi.\n\n") +
+      "💰 Komisyon oranını yazın:\n\nÖrnek: 2 (yüzde olarak)\nVarsayilan: %2",
     );
     return;
   }
@@ -270,27 +272,27 @@ export async function handleSozlesmeCallback(ctx: WaContext, data: string): Prom
       .single();
 
     if (!contract) {
-      await sendButtons(ctx.phone, "Sozlesme bulunamadi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+      await sendButtons(ctx.phone, "Sözleşme bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
       return;
     }
 
     const cd = contract.contract_data as Record<string, unknown>;
-    const statusLabel = contract.status === "signed" ? "✅ Imzali" : contract.status === "pending_signature" ? "⏳ Imza bekliyor" : "📝 Taslak";
+    const statusLabel = contract.status === "signed" ? "✅ İmzalı" : contract.status === "pending_signature" ? "⏳ İmza bekliyor" : "📝 Taslak";
 
-    let text = `📄 Sozlesme Detayi\n\nDurum: ${statusLabel}\n`;
+    let text = `📄 Sözleşme Detayı\n\nDurum: ${statusLabel}\n`;
     text += `🏠 ${cd.property_title || cd.property_address || "-"}\n`;
     text += `👤 ${cd.owner_name}\n📱 ${cd.owner_phone}\n`;
-    text += `🔒 Munhasir: ${cd.exclusive ? "Evet" : "Hayir"}\n`;
+    text += `🔒 Münhasır: ${cd.exclusive ? "Evet" : "Hayır"}\n`;
     text += `💰 Komisyon: %${cd.commission}+KDV\n📅 Sure: ${cd.duration} ay\n`;
 
     if (contract.status === "pending_signature" && contract.sign_token) {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://upu-platform.vercel.app";
-      text += `\n🔗 Imza linki:\n${appUrl}/tr/sign/${contract.sign_token}`;
+      text += `\n🔗 İmza linki:\n${appUrl}/tr/sign/${contract.sign_token}`;
     }
 
     await sendButtons(ctx.phone, text, [
       { id: "cmd:sozlesmelerim", title: "Geri" },
-      { id: "cmd:menu", title: "Ana Menu" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
@@ -302,17 +304,17 @@ async function showSozlesmePreview(ctx: WaContext): Promise<void> {
   if (!sess) { await endSession(ctx.userId); return; }
 
   const d = sess.data as Record<string, unknown>;
-  const exclusive = d.exclusive === true ? "Evet (Munhasir)" : "Hayir";
+  const exclusive = d.exclusive === true ? "Evet (Münhasır)" : "Hayır";
 
-  let preview = "📄 YETKILENDIRME SOZLESMESI ONIZLEME\n━━━━━━━━━━━━━━━━━━━━━━\n";
+  let preview = "📄 YETKİLENDİRME SÖZLEŞMESİ ÖNİZLEME\n━━━━━━━━━━━━━━━━━━━━━━\n";
   if (d.property_title) preview += `Ilan: ${d.property_title}\n`;
   preview += `Adres: ${d.property_address || "-"}\n\n`;
   preview += `👤 ${d.owner_name}\n🆔 TC: ${d.owner_tc}\n📱 ${d.owner_phone}\n\n`;
-  preview += `🔒 Munhasir: ${exclusive}\n💰 Komisyon: %${d.commission || 2}+KDV\n📅 Sure: ${d.duration || 3} ay`;
+  preview += `🔒 Münhasır: ${exclusive}\n💰 Komisyon: %${d.commission || 2}+KDV\n📅 Sure: ${d.duration || 3} ay`;
 
-  await sendButtons(ctx.phone, preview + "\n\nOnayliyor musunuz?", [
+  await sendButtons(ctx.phone, preview + "\n\nOnaylıyor musunuz?", [
     { id: "szl:confirm", title: "Onayla" },
-    { id: "szl:cancel", title: "Iptal" },
+    { id: "szl:cancel", title: "İptal" },
   ]);
 }
 
@@ -322,7 +324,7 @@ async function createSozlesme(ctx: WaContext): Promise<void> {
 
   if (!sess) {
     await endSession(ctx.userId);
-    await sendText(ctx.phone, "Hata olustu. Tekrar deneyin.");
+    await sendText(ctx.phone, "Hata oluştu. Tekrar deneyin.");
     return;
   }
 
@@ -357,7 +359,7 @@ async function createSozlesme(ctx: WaContext): Promise<void> {
   await endSession(ctx.userId);
 
   if (error || !contract) {
-    await sendButtons(ctx.phone, "❌ Sozlesme olusturulurken hata olustu.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "❌ Sözleşme oluşturulurken hata oluştu.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
@@ -365,7 +367,7 @@ async function createSozlesme(ctx: WaContext): Promise<void> {
   const signLink = `${appUrl}/tr/sign/${signToken}`;
 
   await sendButtons(ctx.phone,
-    `✅ Sozlesme hazirlandi!\n\n📋 ${d.property_title || d.property_address}\n👤 ${d.owner_name}\n\n🔗 Imza linki:\n${signLink}\n\nMusteri linke tiklayarak imza atabilir.`,
-    [{ id: "cmd:menu", title: "Ana Menu" }],
+    `✅ Sözleşme hazırlandı!\n\n📋 ${d.property_title || d.property_address}\n👤 ${d.owner_name}\n\n🔗 İmza linki:\n${signLink}\n\nMüşteri linke tıklayarak imza atabilir.`,
+    [{ id: "cmd:menu", title: "Ana Menü" }],
   );
 }

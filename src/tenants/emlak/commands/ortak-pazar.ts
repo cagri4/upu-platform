@@ -4,6 +4,7 @@
 import type { WaContext } from "@/platform/whatsapp/types";
 import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat("tr-TR").format(price) + " TL";
@@ -12,13 +13,13 @@ function formatPrice(price: number): string {
 export async function handleOrtakPazar(ctx: WaContext): Promise<void> {
   await sendButtons(ctx.phone,
     "🤝 ORTAK PAZAR\n━━━━━━━━━━━━━━━━━━━━━━\n\n" +
-    "Diger emlakclarla mulk paylasim agi.\n\n" +
-    "📤 Kendi mulklerinizi paylasarak diger emlakcilarin musterilerine ulasin\n" +
-    "📥 Diger emlakcilarin paylastigi mulkleri gorun",
+    "Diğer emlakçılarla mülk paylaşım ağı.\n\n" +
+    "📤 Kendi mülklerinizi paylaşarak diğer emlakçıların müşterilerine ulaşın\n" +
+    "📥 Diğer emlakçıların paylaştığı mülkleri görün",
     [
-      { id: "op:myprops", title: "Mulklerimi Paylas" },
-      { id: "op:incoming", title: "Gelen Ilanlar" },
-      { id: "cmd:menu", title: "Ana Menu" },
+      { id: "op:myprops", title: "Mülklerimi Paylaş" },
+      { id: "op:incoming", title: "Gelen İlanlar" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ],
   );
 }
@@ -27,7 +28,7 @@ export async function handleOrtakPazarCallback(ctx: WaContext, data: string): Pr
   const supabase = getServiceClient();
 
   if (data === "op:cancel") {
-    await sendButtons(ctx.phone, "❌ Ortak pazar kapatildi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "❌ Ortak pazar kapatıldı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
@@ -43,9 +44,9 @@ export async function handleOrtakPazarCallback(ctx: WaContext, data: string): Pr
       .limit(10);
 
     if (!props || props.length === 0) {
-      await sendButtons(ctx.phone, "📭 Portfoyunuzde paylasacak mulk yok.", [
-        { id: "cmd:mulkekle", title: "Mulk Ekle" },
-        { id: "cmd:menu", title: "Ana Menu" },
+      await sendButtons(ctx.phone, "📭 Portfoyunuzde paylaşacak mülk yok.", [
+        { id: "cmd:mulkekle", title: "Mülk Ekle" },
+        { id: "cmd:menu", title: "Ana Menü" },
       ]);
       return;
     }
@@ -55,15 +56,15 @@ export async function handleOrtakPazarCallback(ctx: WaContext, data: string): Pr
       const icon = shared ? "🟢" : "⚪";
       return {
         id: `op:share:${p.id}`,
-        title: `${icon} ${((p.title || "Isimsiz") as string).substring(0, 20)}`,
-        description: shared ? "Paylasiliyor" : "Paylasilmiyor",
+        title: `${icon} ${((p.title || "İsimsiz") as string).substring(0, 20)}`,
+        description: shared ? "Paylaşılıyor" : "Paylaşılmıyor",
       };
     });
 
     await sendList(ctx.phone,
-      "📤 MULKLERIM — Ortak Pazar\n\n🟢 = Paylasiliyor | ⚪ = Paylasilmiyor\n\nDurumu degistirmek icin tiklayin:",
-      "Mulk Sec",
-      [{ title: "Mulkler", rows }],
+      "📤 MULKLERIM — Ortak Pazar\n\n🟢 = Paylaşılıyor | ⚪ = Paylaşılmıyor\n\nDurumu değiştirmek için tıklayın:",
+      "Mülk Seç",
+      [{ title: "Mülkler", rows }],
     );
     return;
   }
@@ -80,7 +81,7 @@ export async function handleOrtakPazarCallback(ctx: WaContext, data: string): Pr
       .single();
 
     if (!prop) {
-      await sendButtons(ctx.phone, "Mulk bulunamadi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+      await sendButtons(ctx.phone, "Mülk bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
       return;
     }
 
@@ -92,11 +93,11 @@ export async function handleOrtakPazarCallback(ctx: WaContext, data: string): Pr
 
     const msg = newState
       ? `✅ "${prop.title}" ortak pazara eklendi!`
-      : `🔒 "${prop.title}" ortak pazardan kaldirildi.`;
+      : `🔒 "${prop.title}" ortak pazardan kaldırıldı.`;
 
     await sendButtons(ctx.phone, msg, [
-      { id: "op:myprops", title: "Mulklerime Don" },
-      { id: "cmd:menu", title: "Ana Menu" },
+      { id: "op:myprops", title: "Mülklerime Dön" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
@@ -114,13 +115,13 @@ export async function handleOrtakPazarCallback(ctx: WaContext, data: string): Pr
       .limit(10);
 
     if (!props || props.length === 0) {
-      await sendButtons(ctx.phone, "📥 Henuz diger emlakcilerdan paylasilan ilan yok.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+      await sendButtons(ctx.phone, "📥 Henüz diğer emlakçılardan paylaşılan ilan yok.", [{ id: "cmd:menu", title: "Ana Menü" }]);
       return;
     }
 
-    let text = "📥 GELEN ILANLAR\n━━━━━━━━━━━━━━━━━━━━━━\n\n";
+    let text = "📥 GELEN İLANLAR\n━━━━━━━━━━━━━━━━━━━━━━\n\n";
     for (const p of props) {
-      text += `🏠 ${p.title || "Ilan"}\n`;
+      text += `🏠 ${p.title || "İlan"}\n`;
       text += `   💰 ${p.price ? formatPrice(p.price) : "—"}`;
       if (p.rooms) text += ` | ${p.rooms}`;
       if (p.area) text += ` | ${p.area}m²`;
@@ -130,7 +131,7 @@ export async function handleOrtakPazarCallback(ctx: WaContext, data: string): Pr
       text += "\n";
     }
 
-    await sendButtons(ctx.phone, text, [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, text, [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 }

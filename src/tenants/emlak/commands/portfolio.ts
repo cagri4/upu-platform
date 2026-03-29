@@ -5,6 +5,7 @@ import type { WaContext } from "@/platform/whatsapp/types";
 import { startSession, endSession } from "@/platform/whatsapp/session";
 import { sendText, sendButtons } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 import type { CommandSession } from "@/platform/whatsapp/session";
 
 // ── Portal detection ────────────────────────────────────────────────
@@ -44,7 +45,7 @@ export async function handleTara(ctx: WaContext): Promise<void> {
 
   if (!args) {
     await startSession(ctx.userId, ctx.tenantId, "tara", "waiting_url");
-    await sendText(ctx.phone, "🔍 Portal linkini yapin:\n\nOrnek: https://sahibinden.com/ilan/...");
+    await sendText(ctx.phone, "🔍 Portal linkini yapıştırın:\n\nOrnek: https://sahibinden.com/ilan/...");
     return;
   }
 
@@ -54,7 +55,7 @@ export async function handleTara(ctx: WaContext): Promise<void> {
 export async function handleTaraStep(ctx: WaContext, session: CommandSession): Promise<void> {
   const text = ctx.text.trim();
   if (!text) {
-    await sendText(ctx.phone, "Gecerli bir portal linki yapin.");
+    await sendText(ctx.phone, "Geçerli bir portal linki yapıştırın.");
     return;
   }
 
@@ -64,7 +65,7 @@ export async function handleTaraStep(ctx: WaContext, session: CommandSession): P
     return;
   }
 
-  await sendText(ctx.phone, "Gecerli bir portal linki yapin.\n\nOrnek: https://sahibinden.com/ilan/...");
+  await sendText(ctx.phone, "Geçerli bir portal linki yapıştırın.\n\nOrnek: https://sahibinden.com/ilan/...");
 }
 
 async function processPortalUrl(ctx: WaContext, url: string): Promise<void> {
@@ -72,7 +73,7 @@ async function processPortalUrl(ctx: WaContext, url: string): Promise<void> {
 
   if (portal === "unknown") {
     await sendButtons(ctx.phone, "❌ Desteklenmeyen portal. Sahibinden, Hepsiemlak veya Emlakjet linki girin.", [
-      { id: "cmd:menu", title: "Ana Menu" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
@@ -92,8 +93,8 @@ async function processPortalUrl(ctx: WaContext, url: string): Promise<void> {
 
     if (existing) {
       await sendButtons(ctx.phone, `⚠️ Bu ilan zaten portfoyunuzde!\n\n📌 ${existing.title}`, [
-        { id: `mulkdetay:${existing.id}`, title: "Detay Gor" },
-        { id: "cmd:menu", title: "Ana Menu" },
+        { id: `mulkdetay:${existing.id}`, title: "Detay Gör" },
+        { id: "cmd:menu", title: "Ana Menü" },
       ]);
       return;
     }
@@ -105,7 +106,7 @@ async function processPortalUrl(ctx: WaContext, url: string): Promise<void> {
     .insert({
       tenant_id: ctx.tenantId,
       user_id: ctx.userId,
-      title: `${displayPortal} Ilani (${sourceId || "?"})`,
+      title: `${displayPortal} İlanı (${sourceId || "?"})`,
       source_url: url,
       source_portal: portal,
       source_id: sourceId || null,
@@ -117,15 +118,15 @@ async function processPortalUrl(ctx: WaContext, url: string): Promise<void> {
     .single();
 
   if (error || !newProp) {
-    await sendButtons(ctx.phone, "❌ Mulk eklenirken hata olustu.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+    await sendButtons(ctx.phone, "❌ Mülk eklenirken hata oluştu.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
   await sendButtons(ctx.phone,
-    `✅ ${displayPortal} ilani portfoyunuze eklendi!\n\n🆔 ${(newProp.id as string).substring(0, 8)}\n🔗 ${url}`,
+    `✅ ${displayPortal} ilanı portföyünüze eklendi!\n\n🆔 ${(newProp.id as string).substring(0, 8)}\n🔗 ${url}`,
     [
-      { id: "cmd:portfoyum", title: "Portfoyum" },
-      { id: "cmd:menu", title: "Ana Menu" },
+      { id: "cmd:portfoyum", title: "Portföyüm" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ],
   );
 }
@@ -141,10 +142,10 @@ export async function handleEkle(ctx: WaContext): Promise<void> {
   }
 
   await sendButtons(ctx.phone,
-    "🏠 Mulk Ekleme\n\nPortal linki yapin veya manuel bilgi girin.",
+    "🏠 Mülk Ekleme\n\nPortal linki yapıştırın veya manuel bilgi girin.",
     [
       { id: "cmd:mulkekle", title: "Manuel Ekle" },
-      { id: "cmd:menu", title: "Ana Menu" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ],
   );
 }

@@ -6,6 +6,7 @@ import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession } from "@/platform/whatsapp/session";
 import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat("tr-TR").format(price) + " TL";
@@ -26,9 +27,9 @@ export async function handleFotograf(ctx: WaContext): Promise<void> {
     .limit(10);
 
   if (!properties || properties.length === 0) {
-    await sendButtons(ctx.phone, "📷 Henuz mulkunuz yok. Once /mulkekle ile mulk ekleyin.", [
-      { id: "cmd:mulkekle", title: "Mulk Ekle" },
-      { id: "cmd:menu", title: "Ana Menu" },
+    await sendButtons(ctx.phone, "📷 Henuz mülkünüz yok. Once /mulkekle ile mulk ekleyin.", [
+      { id: "cmd:mulkekle", title: "Mülk Ekle" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
@@ -39,9 +40,9 @@ export async function handleFotograf(ctx: WaContext): Promise<void> {
   }));
 
   await sendList(ctx.phone,
-    "📷 *Fotograf Yukleme*\n\nFotograf eklemek istediginiz mulku secin:",
-    "Mulk Sec",
-    [{ title: "Mulkler", rows }],
+    "📷 *Fotoğraf Yükleme*\n\nFotoğraf eklemek istediğiniz mülkü seçin:",
+    "Mülk Seç",
+    [{ title: "Mülkler", rows }],
   );
 }
 
@@ -58,7 +59,7 @@ export async function handleFotografCallback(ctx: WaContext, data: string): Prom
       .single();
 
     if (!prop) {
-      await sendButtons(ctx.phone, "Mulk bulunamadi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+      await sendButtons(ctx.phone, "Mülk bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
       return;
     }
 
@@ -72,15 +73,15 @@ export async function handleFotografCallback(ctx: WaContext, data: string): Prom
     const remaining = 15 - existing;
 
     if (remaining <= 0) {
-      await sendButtons(ctx.phone, `📷 "${prop.title}" icin zaten 15 fotograf yuklenmiş.`, [{ id: "cmd:menu", title: "Ana Menu" }]);
+      await sendButtons(ctx.phone, `📷 "${prop.title}" için zaten 15 fotoğraf yüklenmiş.`, [{ id: "cmd:menu", title: "Ana Menü" }]);
       return;
     }
 
     await sendButtons(ctx.phone,
-      `📷 *${prop.title}*\n\nMevcut: ${existing} | Kalan hak: ${remaining}\n\nFotograflari web panelden yukleyebilirsiniz. Fotograflar otomatik olarak optimize edilecek.`,
+      `📷 *${prop.title}*\n\nMevcut: ${existing} | Kalan: ${remaining}\n\nFotoğrafları web panelden yükleyebilirsiniz. Fotoğraflar otomatik olarak optimize edilecek.`,
       [
         { id: "cmd:webpanel", title: "Web Panel" },
-        { id: "cmd:menu", title: "Ana Menu" },
+        { id: "cmd:menu", title: "Ana Menü" },
       ],
     );
     return;
@@ -102,21 +103,21 @@ export async function handlePaylas(ctx: WaContext): Promise<void> {
     .limit(10);
 
   if (!properties || properties.length === 0) {
-    await sendButtons(ctx.phone, "Henuz mulkunuz yok.", [
-      { id: "cmd:mulkekle", title: "Mulk Ekle" },
-      { id: "cmd:menu", title: "Ana Menu" },
+    await sendButtons(ctx.phone, "Henuz mülkünüz yok.", [
+      { id: "cmd:mulkekle", title: "Mülk Ekle" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
 
   const rows = properties.map(p => ({
     id: `paylas_select:${p.id}`,
-    title: ((p.title || "Isimsiz") as string).substring(0, 24),
+    title: ((p.title || "İsimsiz") as string).substring(0, 24),
     description: p.price ? formatPrice(p.price) : "",
   }));
 
-  await sendList(ctx.phone, "📱 Hangi mulk icin paylasim hazirlayalim?", "Mulk Sec", [
-    { title: "Mulkler", rows },
+  await sendList(ctx.phone, "📱 Hangi mülk için paylaşım hazırlayalım?", "Mülk Seç", [
+    { title: "Mülkler", rows },
   ]);
 }
 
@@ -133,25 +134,25 @@ export async function handlePaylasCallback(ctx: WaContext, data: string): Promis
       .single();
 
     if (!prop) {
-      await sendButtons(ctx.phone, "Mulk bulunamadi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+      await sendButtons(ctx.phone, "Mülk bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
       return;
     }
 
     // Generate post template
-    const priceStr = prop.price ? `💰 Fiyat bilgisi icin DM` : "";
+    const priceStr = prop.price ? `💰 Fiyat bilgisi için DM` : "";
     const loc = [prop.location_district, prop.location_city].filter(Boolean).join(", ");
-    const listLabel = prop.listing_type === "satilik" ? "Satilik" : prop.listing_type === "kiralik" ? "Kiralik" : "";
+    const listLabel = prop.listing_type === "satilik" ? "Satılık" : prop.listing_type === "kiralik" ? "Kiralık" : "";
 
     let post = `🏠 ${listLabel} ${prop.type || "Mulk"}\n\n`;
     post += `📍 ${loc}\n`;
     if (prop.rooms) post += `🛏 ${prop.rooms}`;
     if (prop.area) post += ` | 📐 ${prop.area}m²`;
     post += `\n${priceStr}\n\n`;
-    post += `📲 Detay icin mesaj atin!\n\n`;
+    post += `📲 Detay için mesaj atın!\n\n`;
     post += `#emlak #${listLabel?.toLowerCase() || "ilan"} #${(prop.location_district as string || "").toLowerCase().replace(/\s/g, "")} #gayrimenkul`;
 
-    await sendButtons(ctx.phone, `📱 Instagram Postu:\n\n${post}\n\n_Metni kopyalayip Instagram'a yapistirin._`, [
-      { id: "cmd:menu", title: "Ana Menu" },
+    await sendButtons(ctx.phone, `📱 Instagram Postu:\n\n${post}\n\n_Metni kopyalayıp Instagram'a yapıştırın._`, [
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
@@ -172,21 +173,21 @@ export async function handleYayinla(ctx: WaContext): Promise<void> {
     .limit(10);
 
   if (!properties || properties.length === 0) {
-    await sendButtons(ctx.phone, "Portfoyunuzde mulk yok.", [
-      { id: "cmd:mulkekle", title: "Mulk Ekle" },
-      { id: "cmd:menu", title: "Ana Menu" },
+    await sendButtons(ctx.phone, "Portföyünüzde mülk yok.", [
+      { id: "cmd:mulkekle", title: "Mülk Ekle" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
 
   const rows = properties.map(p => ({
     id: `pub:p:${p.id}`,
-    title: ((p.title || "Isimsiz") as string).substring(0, 24),
+    title: ((p.title || "İsimsiz") as string).substring(0, 24),
     description: p.price ? formatPrice(p.price) : "",
   }));
 
-  await sendList(ctx.phone, "📤 Hangi mulku portala yayinlamak istiyorsunuz?", "Mulk Sec", [
-    { title: "Mulkler", rows },
+  await sendList(ctx.phone, "📤 Hangi mülkü portala yayınlamak istiyorsunuz?", "Mülk Seç", [
+    { title: "Mülkler", rows },
   ]);
 }
 
@@ -203,14 +204,14 @@ export async function handleYayinlaCallback(ctx: WaContext, data: string): Promi
       .single();
 
     if (!prop) {
-      await sendButtons(ctx.phone, "Mulk bulunamadi.", [{ id: "cmd:menu", title: "Ana Menu" }]);
+      await sendButtons(ctx.phone, "Mülk bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
       return;
     }
 
     // Build portal-ready listing text
     const loc = [prop.location_neighborhood, prop.location_district, prop.location_city].filter(Boolean).join(", ");
     let text = `📤 PORTAL YAYIN BILGILERI\n━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    text += `📋 ${prop.title || "Isimsiz"}\n`;
+    text += `📋 ${prop.title || "İsimsiz"}\n`;
     text += `💰 ${prop.price ? formatPrice(prop.price) : "—"}\n`;
     text += `📍 ${loc}\n`;
     if (prop.rooms) text += `🛏 ${prop.rooms}`;
@@ -229,7 +230,7 @@ export async function handleYayinlaCallback(ctx: WaContext, data: string): Promi
 
     await sendButtons(ctx.phone, text, [
       { id: "cmd:portfoyum", title: "Portfoyum" },
-      { id: "cmd:menu", title: "Ana Menu" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
@@ -241,16 +242,16 @@ export async function handleWebsitem(ctx: WaContext): Promise<void> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://upu-platform.vercel.app";
 
   await sendButtons(ctx.phone,
-    `🌐 Kisisel Web Siteniz\n\nWeb panelinizden kisisel emlak sitenizi olusturabilir ve duzenleyebilirsiniz.\n\nPortfoyunuzdeki aktif mulkler otomatik olarak sitenizde gorunecek.`,
+    `🌐 Kişisel Web Siteniz\n\nWeb panelinizden kişisel emlak sitenizi oluşturabilir ve düzenleyebilirsiniz.\n\nPortföyünüzdeki aktif mülkler otomatik olarak sitenizde görünecek.`,
     [
       { id: "cmd:webpanel", title: "Web Panel" },
-      { id: "cmd:menu", title: "Ana Menu" },
+      { id: "cmd:menu", title: "Ana Menü" },
     ],
   );
 }
 
 export async function handleWebsitemStep(ctx: WaContext, session: CommandSession): Promise<void> {
   // Websitem is handled via web panel, no text steps needed
-  await sendText(ctx.phone, "Web panelinizden sitenizi duzenleyebilirsiniz.");
+  await sendText(ctx.phone, "Web panelinizden sitenizi düzenleyebilirsiniz.");
   await endSession(ctx.userId);
 }

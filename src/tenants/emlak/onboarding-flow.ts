@@ -19,7 +19,7 @@ export const emlakOnboardingFlow: OnboardingFlow = {
   steps: [
     {
       key: "office_name",
-      question: "Ofisinizin veya şirketinizin adı nedir?\n\n💡 Örnek: _ABC Emlak_, _Yılmaz Gayrimenkul_",
+      question: "Ofisinizin veya şirketinizin adı nedir?\n\n💡 Örnek: _ABC Emlak_, _Yılmaz Gayrimenkul_\n\n🔒 Verileriniz güvenli şekilde saklanır.",
     },
     {
       key: "location",
@@ -60,8 +60,15 @@ export const emlakOnboardingFlow: OnboardingFlow = {
     let msg = "✅ *Kurulum tamamlandı!*\n\n";
     if (data.office_name) msg += `🏢 Ofis: ${data.office_name}\n`;
     if (data.location) msg += `📍 Bölge: ${data.location}\n`;
-    if (data.briefing === "evet") msg += `📋 Günlük brifing: Aktif\n`;
-    msg += "\nSisteminiz hazır. Menüden komutlara ulaşabilirsiniz.";
+    msg += `📋 Günlük brifing: ${data.briefing === "evet" ? "Aktif" : "Pasif"}\n`;
+    msg += "\n💡 *Şunları deneyin:*\n";
+    if (data.location) {
+      msg += `• "fiyatsor ${data.location}" — bölgenizin fiyat analizi\n`;
+    } else {
+      msg += `• "fiyatsor" — bölgenizin fiyat analizi\n`;
+    }
+    msg += `• "mulkekle" — ilk mülkünüzü ekleyin\n`;
+    msg += `• "brifing" — günlük özetinizi görün`;
 
     // If user chose to add first property, start mulkekle flow
     if (data.first_mulk === "evet") {
