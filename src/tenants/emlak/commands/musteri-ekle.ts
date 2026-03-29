@@ -196,4 +196,29 @@ async function finalizeCustomer(ctx: WaContext, locations: string[]): Promise<vo
       { id: "cmd:menu", title: "Ana Menu" },
     ],
   );
+
+  // After insert succeeds, check for property matches
+  try {
+    const { data: properties } = await supabase
+      .from("emlak_properties")
+      .select("id, title, price, listing_type")
+      .eq("user_id", ctx.userId)
+      .limit(100);
+
+    if (properties?.length) {
+      const custListingType = d.listing_type as string;
+      const custBudgetMax = d.budget_max as number | null;
+      const matches = properties.filter((p) => {
+        if (custListingType && custListingType !== "hepsi" && p.listing_type !== custListingType) return false;
+        if (custBudgetMax && p.price > custBudgetMax) return false;
+        return true;
+      });
+      if (matches.length > 0) {
+        await sendButtons(ctx.phone,
+          `🏠 ${matches.length} mulkunuz yeni musterinize uygun!`,
+          [{ id: "cmd:eslestir", title: "Eslestir" }, { id: "cmd:menu", title: "Ana Menu" }],
+        );
+      }
+    }
+  } catch { /* don't break main flow */ }
 }

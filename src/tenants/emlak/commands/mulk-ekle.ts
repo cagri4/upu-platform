@@ -142,15 +142,31 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       ],
     );
 
-    // Offer AI listing description
+    // After insert succeeds, check for customer matches
     try {
-      if (process.env.ANTHROPIC_API_KEY) {
-        await sendButtons(ctx.phone,
-          "💡 AI ile ilan açıklaması oluşturmak ister misiniz?",
-          [{ id: "cmd:menu", title: "Ana Menü" }],
-        );
+      const { data: customers } = await supabase
+        .from("emlak_customers")
+        .select("id, name, budget_min, budget_max, preferred_location, listing_type")
+        .eq("user_id", ctx.userId);
+
+      if (customers?.length) {
+        const insertedPrice = d.price as number;
+        const insertedType = d.listing_type as string;
+        const matches = customers.filter((c) => {
+          if (c.listing_type && c.listing_type !== insertedType) return false;
+          if (c.budget_max && insertedPrice > c.budget_max) return false;
+          if (c.budget_min && insertedPrice < c.budget_min) return false;
+          return true;
+        });
+        if (matches.length > 0) {
+          const names = matches.slice(0, 3).map((m) => m.name).join(", ");
+          await sendButtons(ctx.phone,
+            `🤝 ${matches.length} müşteriniz bu mülke uygun: ${names}`,
+            [{ id: "cmd:eslestir", title: "Eşleştir" }, { id: "cmd:menu", title: "Ana Menü" }],
+          );
+        }
       }
-    } catch { /* AI offer failed — non-critical */ }
+    } catch { /* don't break main flow */ }
   }
 }
 
