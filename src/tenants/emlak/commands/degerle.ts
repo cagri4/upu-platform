@@ -120,6 +120,29 @@ export async function handleDegerleCallback(ctx: WaContext, data: string): Promi
     result += `  En yuksek: ${formatPrice(max)}\n`;
     if (positionText) result += `\n${positionText}`;
 
+    // AI-enhanced analysis
+    let aiAnalysis = "";
+    try {
+      const { askClaude } = await import("@/platform/ai/claude");
+      aiAnalysis = await askClaude(
+        "Sen bir emlak degerleme uzmanisin. Kisa ve oz Turkce analiz yap (max 4 cumle). Sadece verilen verilere dayan, uydurma. Fiyat araligi ver, kesin deger verme. Veri yoksa belirt.",
+        `Mulk: ${prop.title}, ${prop.area || "?"}m2, ${prop.rooms || "?"} oda, ${prop.listing_type}
+Fiyat: ${myPrice ? formatPrice(myPrice) : "belirtilmemis"}
+Bolge ortalama: ${formatPrice(avg)}
+Medyan: ${formatPrice(median)}
+Min-Max: ${formatPrice(min)} - ${formatPrice(max)}
+Bolge ilan sayisi: ${count}
+Veri kaynagi: ${count} sahibinden ilani`,
+        512,
+      );
+    } catch { /* AI unavailable */ }
+
+    if (aiAnalysis) {
+      result += `\n\n🤖 AI ANALIZ:\n${aiAnalysis}`;
+    }
+    result += `\n\n_📊 ${count} sahibinden ilanina gore analiz_`;
+    result += `\n_⚠️ Bu tahmindir, kesin deger icin bagimsiz degerleme yaptirin._`;
+
     await sendButtons(ctx.phone, result, [
       { id: "cmd:portfoyum", title: "Portfoyum" },
       { id: "cmd:menu", title: "Ana Menu" },

@@ -173,6 +173,23 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     return;
   }
 
+  // ── AI intent detection (before giving up) ──
+  try {
+    const { detectIntent } = await import("@/platform/ai/claude");
+    const intent = await detectIntent(ctx.text);
+    if (intent && intent.confidence >= 0.75 && intent.command) {
+      // Reconstruct text with args for the handler
+      if (intent.args) {
+        ctx.text = `${intent.command} ${intent.args}`;
+      }
+      const aiHandler = registry.commands[intent.command];
+      if (aiHandler) {
+        await aiHandler(ctx);
+        return;
+      }
+    }
+  } catch { /* AI unavailable — fall through to unrecognized */ }
+
   // Unrecognized
   await sendText(ctx.phone, `Komutu anlamadım. Yardım için "menu" yazın.`);
 }

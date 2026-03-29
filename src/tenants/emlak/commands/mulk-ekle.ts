@@ -141,6 +141,16 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
         { id: "cmd:menu", title: "Ana Menü" },
       ],
     );
+
+    // Offer AI listing description
+    try {
+      if (process.env.ANTHROPIC_API_KEY) {
+        await sendButtons(ctx.phone,
+          "💡 AI ile ilan açıklaması oluşturmak ister misiniz?",
+          [{ id: "cmd:menu", title: "Ana Menü" }],
+        );
+      }
+    } catch { /* AI offer failed — non-critical */ }
   }
 }
 

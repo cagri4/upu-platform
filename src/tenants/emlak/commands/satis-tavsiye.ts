@@ -94,19 +94,40 @@ export async function handleSatisTavsiyeCallback(ctx: WaContext, data: string): 
       }
     }
 
-    // Build sales advice directly (no AI dependency)
+    // Build sales advice
     let advice = `🎯 SATIS TAVSIYESI\n━━━━━━━━━━━━━━━━━━━━━━\n`;
     advice += `📋 ${title}\n💰 ${price} | 📍 ${loc} | 🏠 ${typeLabel}\n`;
     if (prop.rooms) advice += `🛏 ${prop.rooms}`;
     if (prop.area) advice += ` | 📐 ${prop.area} m²`;
     advice += marketInfo;
     advice += `\n━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    advice += `📌 TAVSIYELER:\n`;
-    advice += `1. Hedef musteri profilini belirleyin\n`;
-    advice += `2. Mulkun en guclu 2-3 ozelligini vurgulayin\n`;
-    advice += `3. Fiyat pazarligina hazirlikli olun\n`;
-    advice += `4. Profesyonel fotograflar cektirin\n`;
-    advice += `5. Birden fazla portalda yayinlayin`;
+
+    // AI-enhanced sales advice
+    let aiAdvice = "";
+    try {
+      const { askClaude } = await import("@/platform/ai/claude");
+      aiAdvice = await askClaude(
+        "Sen deneyimli bir emlak satis danismanisin. Kisa, pratik, uygulanabilir satis tavsiyesi ver (max 5 madde). Turkce yaz.",
+        `Mulk: ${title}, ${price}, ${prop.area || "?"}m2, ${loc}
+Tur: ${typeLabel}, ${prop.listing_type || "?"}
+Oda: ${prop.rooms || "bilinmiyor"}
+${marketInfo ? `Piyasa bilgisi: ${marketInfo}` : "Piyasa verisi yok"}
+Aciklama: ${(prop.description as string) || "yok"}`,
+        512,
+      );
+    } catch { /* AI unavailable */ }
+
+    if (aiAdvice) {
+      advice += `🤖 AI TAVSIYELER:\n${aiAdvice}`;
+    } else {
+      // Fallback static advice
+      advice += `📌 TAVSIYELER:\n`;
+      advice += `1. Hedef musteri profilini belirleyin\n`;
+      advice += `2. Mulkun en guclu 2-3 ozelligini vurgulayin\n`;
+      advice += `3. Fiyat pazarligina hazirlikli olun\n`;
+      advice += `4. Profesyonel fotograflar cektirin\n`;
+      advice += `5. Birden fazla portalda yayinlayin`;
+    }
 
     await sendButtons(ctx.phone, advice, [
       { id: "cmd:portfoyum", title: "Portfoyum" },
