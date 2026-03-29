@@ -24,6 +24,8 @@ export const dynamic = "force-dynamic";
 
 // ─── Register onboarding flows ────────────────────────────────────────────
 registerOnboardingFlow(emlakOnboardingFlow);
+import { siteyonetimOnboardingFlow } from "@/tenants/siteyonetim/onboarding-flow";
+registerOnboardingFlow(siteyonetimOnboardingFlow);
 
 // ─── Register agent setup flows ──────────────────────────────────────────
 import { registerAgentSetup } from "@/platform/agents/setup";
