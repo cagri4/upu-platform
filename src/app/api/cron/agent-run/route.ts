@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { runAllAgents } from "@/platform/agents/engine";
 import { emlakAgents } from "@/tenants/emlak/agents";
+import { siteyonetimAgents } from "@/tenants/siteyonetim/agents";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -45,5 +46,22 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, processed: emlakUsers.length });
+  // ── Site Yonetim agents ──
+  const syTenantId = "c12010c7-7b13-44d5-bdc7-fc7c2c1ac82e";
+  const syUsers = users.filter((u) => u.tenant_id === syTenantId);
+
+  for (const user of syUsers) {
+    try {
+      await runAllAgents(siteyonetimAgents, {
+        userId: user.id,
+        tenantId: user.tenant_id,
+        phone: user.whatsapp_phone,
+        userName: user.display_name || "",
+      });
+    } catch (err) {
+      console.error(`[agent-run] sy error for ${user.id}:`, err);
+    }
+  }
+
+  return NextResponse.json({ ok: true, processed: emlakUsers.length + syUsers.length });
 }

@@ -34,6 +34,13 @@ registerAgentSetup(medyaSetup);
 registerAgentSetup(pazarSetup);
 registerAgentSetup(sekreterSetup);
 
+// ─── Register site yonetim agent setup flows ────────────────────────────
+import { muhasebeciSetup, sySekreterSetup, teknisyenSetup, hukukSetup } from "@/tenants/siteyonetim/agents/setup-flows";
+registerAgentSetup(muhasebeciSetup);
+registerAgentSetup(sySekreterSetup);
+registerAgentSetup(teknisyenSetup);
+registerAgentSetup(hukukSetup);
+
 // ─── Parse Meta webhook payload ────────────────────────────────────────────
 
 function parseWebhook(payload: Record<string, unknown>) {
