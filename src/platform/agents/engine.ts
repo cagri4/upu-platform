@@ -39,10 +39,21 @@ export async function runAgent(agent: AgentDefinition, ctx: AgentContext): Promi
 
   if ((pending || 0) >= 2) return;
 
-  // 1. Gather context
+  // Check if agent is configured — skip if not
+  const { data: agentCfg } = await supabase
+    .from("agent_config")
+    .select("config, setup_completed")
+    .eq("user_id", ctx.userId)
+    .eq("agent_key", agent.key)
+    .maybeSingle();
+
+  if (!agentCfg?.setup_completed) return;
+
+  // 1. Gather context (includes agent config)
   let data: Record<string, unknown>;
   try {
     data = await agent.gatherContext(ctx);
+    data._agentConfig = agentCfg.config || {};
   } catch (err) {
     console.error(`[agent:${agent.key}] gather error:`, err);
     return;

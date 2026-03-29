@@ -25,6 +25,15 @@ export const dynamic = "force-dynamic";
 // ─── Register onboarding flows ────────────────────────────────────────────
 registerOnboardingFlow(emlakOnboardingFlow);
 
+// ─── Register agent setup flows ──────────────────────────────────────────
+import { registerAgentSetup } from "@/platform/agents/setup";
+import { portfoySetup, satisSetup, medyaSetup, pazarSetup, sekreterSetup } from "@/tenants/emlak/agents/setup-flows";
+registerAgentSetup(portfoySetup);
+registerAgentSetup(satisSetup);
+registerAgentSetup(medyaSetup);
+registerAgentSetup(pazarSetup);
+registerAgentSetup(sekreterSetup);
+
 // ─── Parse Meta webhook payload ────────────────────────────────────────────
 
 function parseWebhook(payload: Record<string, unknown>) {

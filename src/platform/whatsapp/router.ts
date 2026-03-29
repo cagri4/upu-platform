@@ -114,9 +114,31 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       return;
     }
 
-    // Employee selection callback
+    // Agent setup callbacks
+    if (ctx.interactiveId.startsWith("asetup:")) {
+      const { handleAgentSetupInput } = await import("@/platform/agents/setup");
+      await handleAgentSetupInput(ctx);
+      return;
+    }
+
+    // Employee selection callback — check agent config first
     if (ctx.interactiveId.startsWith("emp:")) {
       const empKey = ctx.interactiveId.replace("emp:", "");
+      // Check if this employee's agent needs setup (emlak only)
+      if (ctx.tenantKey === "emlak") {
+        try {
+          const { isAgentConfigured, startAgentSetup } = await import("@/platform/agents/setup");
+          const configured = await isAgentConfigured(ctx.userId, empKey);
+          if (!configured) {
+            const { getAgentSetup } = await import("@/platform/agents/setup");
+            const setup = getAgentSetup(empKey);
+            if (setup) {
+              await startAgentSetup(ctx, empKey);
+              return;
+            }
+          }
+        } catch { /* setup not available — show commands normally */ }
+      }
       await showEmployeeCommands(ctx, tenant, empKey);
       return;
     }
@@ -139,6 +161,12 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       await sendButtons(ctx.phone, "❌ İşlem iptal edildi.", [
         { id: "cmd:menu", title: "Ana Menü" },
       ]);
+      return;
+    }
+    // Agent setup sessions
+    if (session.command.startsWith("agent_setup_")) {
+      const { handleAgentSetupInput } = await import("@/platform/agents/setup");
+      await handleAgentSetupInput(ctx);
       return;
     }
     const stepHandler = registry.stepHandlers[session.command];
