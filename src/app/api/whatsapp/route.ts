@@ -122,25 +122,21 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (invite && invite.status === "pending") {
-        // Clear old phone binding if exists
-        const { data: oldProfile } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("whatsapp_phone", phone)
-          .maybeSingle();
-
-        if (oldProfile && oldProfile.id !== invite.user_id) {
-          await supabase.from("profiles").update({ whatsapp_phone: null }).eq("id", oldProfile.id);
-        }
-
-        // Link phone to user
+        // Link phone to user (don't clear other profiles — same phone can be on multiple SaaS)
         await supabase.from("profiles").update({ whatsapp_phone: phone }).eq("id", invite.user_id);
 
         // Mark invite as used
         await supabase.from("invite_codes").update({ status: "used" }).eq("code", inviteCode);
 
-        // Clear stale saas_active_session for this phone (prevents wrong tenant after re-registration)
-        await supabase.from("saas_active_session").delete().eq("phone", phone);
+        // Set active session to this SaaS (so user lands in the right one)
+        const { data: invTenant } = await supabase.from("tenants").select("saas_type").eq("id", invite.tenant_id).single();
+        if (invTenant) {
+          await supabase.from("saas_active_session").upsert({
+            phone,
+            active_saas_key: invTenant.saas_type,
+            updated_at: new Date().toISOString(),
+          });
+        }
 
         // Get user info
         const { data: invitedUser } = await supabase
@@ -188,21 +184,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── Resolve user by phone ──
-    const { data: user } = await supabase
+    // ── Resolve user by phone (may have multiple profiles across SaaS) ──
+    const { data: allProfiles } = await supabase
       .from("profiles")
       .select("id, tenant_id, display_name, preferred_locale")
       .eq("whatsapp_phone", phone)
-      .maybeSingle();
+      .order("created_at", { ascending: false });
 
-    if (!user) {
+    if (!allProfiles?.length) {
       await sendText(phone,
         "Merhaba! Davet kodunuz varsa lütfen gönderin.\nKod almak için yöneticinize başvurun."
       );
       return NextResponse.json({ status: "ok" });
     }
 
-    // Resolve tenant key — check active SaaS session first, then profile
+    // Resolve tenant key — check active SaaS session first
     let tenantKey = "emlak";
     const { data: activeSession } = await supabase
       .from("saas_active_session")
@@ -212,13 +208,27 @@ export async function POST(req: NextRequest) {
 
     if (activeSession?.active_saas_key) {
       tenantKey = activeSession.active_saas_key;
-    } else if (user.tenant_id) {
+    } else if (allProfiles[0].tenant_id) {
       const { data: tenant } = await supabase
         .from("tenants")
         .select("saas_type")
-        .eq("id", user.tenant_id)
+        .eq("id", allProfiles[0].tenant_id)
         .single();
       if (tenant) tenantKey = tenant.saas_type;
+    }
+
+    // Pick the profile matching the active tenant (or first if no match)
+    let user = allProfiles[0];
+    if (allProfiles.length > 1) {
+      const { data: tenantRow } = await supabase
+        .from("tenants")
+        .select("id")
+        .eq("saas_type", tenantKey)
+        .single();
+      if (tenantRow) {
+        const match = allProfiles.find(p => p.tenant_id === tenantRow.id);
+        if (match) user = match;
+      }
     }
 
     // Build context
