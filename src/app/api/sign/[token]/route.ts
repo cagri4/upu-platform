@@ -22,23 +22,40 @@ export async function GET(
     return NextResponse.json({ error: 'Sözleşme bulunamadı.' }, { status: 404 });
   }
 
+  const cd = contract.contract_data as Record<string, unknown>;
+  const summary = {
+    property_title: cd.property_title,
+    property_address: cd.property_address,
+    owner_name: cd.owner_name,
+    exclusive: cd.exclusive,
+    commission: cd.commission,
+    duration: cd.duration,
+  };
+
   if (contract.signed_at) {
-    return NextResponse.json({ error: 'Bu sözleşme zaten imzalanmış.', signed: true }, { status: 400 });
+    // Return signed contract with signature URL + details
+    const { data: full } = await supabase
+      .from('contracts')
+      .select('owner_signature_url')
+      .eq('id', contract.id)
+      .single();
+
+    return NextResponse.json({
+      id: contract.id,
+      type: contract.type,
+      status: contract.status,
+      signed: true,
+      signed_at: contract.signed_at,
+      signature_url: full?.owner_signature_url || null,
+      summary,
+    });
   }
 
-  const cd = contract.contract_data as Record<string, unknown>;
   return NextResponse.json({
     id: contract.id,
     type: contract.type,
     status: contract.status,
-    summary: {
-      property_title: cd.property_title,
-      property_address: cd.property_address,
-      owner_name: cd.owner_name,
-      exclusive: cd.exclusive,
-      commission: cd.commission,
-      duration: cd.duration,
-    },
+    summary,
   });
 }
 

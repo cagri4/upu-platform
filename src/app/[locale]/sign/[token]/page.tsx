@@ -17,6 +17,9 @@ interface ContractInfo {
   type: string;
   status: string;
   summary: ContractSummary;
+  signed?: boolean;
+  signed_at?: string;
+  signature_url?: string;
 }
 
 export default function SignPage() {
@@ -49,11 +52,13 @@ export default function SignPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        if (data.signed) setSigned(true);
         setError(data.error || 'Bir hata oluştu.');
         return;
       }
 
+      if (data.signed) {
+        setSigned(true);
+      }
       setContract(data);
     } catch {
       setError('Bağlantı hatası. Lütfen tekrar deneyin.');
@@ -180,13 +185,47 @@ export default function SignPage() {
     );
   }
 
+  if (signed && contract) {
+    const s = contract.summary;
+    const signDate = contract.signed_at
+      ? new Date(contract.signed_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+      : '';
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <div style={styles.successIcon}>✅</div>
+          <h1 style={styles.title}>Sözleşme İmzalandı</h1>
+          <p style={styles.subtitle}>Bu sözleşme {signDate} tarihinde imzalanmıştır.</p>
+
+          <div style={styles.summaryBox}>
+            {s.property_title && <p style={styles.summaryLine}><strong>Mülk:</strong> {s.property_title}</p>}
+            <p style={styles.summaryLine}><strong>Adres:</strong> {s.property_address}</p>
+            <p style={styles.summaryLine}><strong>Mülk Sahibi:</strong> {s.owner_name}</p>
+            <p style={styles.summaryLine}><strong>Münhasır:</strong> {s.exclusive ? 'Evet' : 'Hayır'}</p>
+            <p style={styles.summaryLine}><strong>Komisyon:</strong> %{s.commission}+KDV</p>
+            <p style={styles.summaryLine}><strong>Süre:</strong> {s.duration} ay</p>
+          </div>
+
+          {contract.signature_url && (
+            <div style={{ textAlign: 'center' as const, marginBottom: '16px' }}>
+              <p style={styles.signLabel}>İmza:</p>
+              <img src={contract.signature_url} alt="İmza" style={{ maxWidth: '100%', height: '120px', border: '1px solid #dee2e6', borderRadius: '8px' }} />
+            </div>
+          )}
+
+          <p style={styles.hint}>Bu sayfayı kapatabilirsiniz.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (signed) {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
           <div style={styles.successIcon}>✅</div>
           <h1 style={styles.title}>İmzalandı</h1>
-          <p style={styles.subtitle}>Bu sözleşme başarıyla imzalanmıştır. Teşekkür ederiz.</p>
+          <p style={styles.subtitle}>Bu sözleşme başarıyla imzalanmıştır.</p>
           <p style={styles.hint}>Bu sayfayı kapatabilirsiniz.</p>
         </div>
       </div>
