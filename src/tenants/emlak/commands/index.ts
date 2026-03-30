@@ -15,7 +15,7 @@ import { handleSozlesmelerim, handleWebpanel, handleSozlesme, handleSozlesmeStep
 import { handleAnaliz, handleRapor } from "./analiz";
 
 // ── Newly ported commands ────────────────────────────────────────────
-import { handleMulkDetay, handleMulkDetayCallback, handleMulkDuzenle, handleMulkDuzenleCallback, handleMulkEditFieldCallback, handleMulkDuzenleStep, handleMulkSil, handleMulkSilCallback } from "./mulk-yonetim";
+import { handleMulkDetay, handleMulkDetayCallback, handleMulkDuzenle, handleMulkDuzenleCallback, handleMulkEditFieldCallback, handleMulkDuzenleStep, handleMulkSil, handleMulkSilCallback, handleMulkYonet, handleMulkYonetSelectCallback, handleMulkYonetActionCallback } from "./mulk-yonetim";
 import { handleTara, handleTaraStep, handleEkle } from "./portfolio";
 import { handleMusteriEkle, handleMusteriEkleStep, handleMusteriEkleCallback } from "./musteri-ekle";
 import { handleMusteriDuzenle, handleMusteriDuzenleCallback, handleMusteriDuzenleStep } from "./musteri-duzenle";
@@ -38,6 +38,7 @@ export const emlakCommands: TenantCommandRegistry = {
     mulkdetay: handleMulkDetay,
     mulkduzenle: handleMulkDuzenle,
     mulksil: handleMulkSil,
+    mulkyonet: handleMulkYonet,
     tara: handleTara,
     ekle: handleEkle,
 
@@ -91,6 +92,8 @@ export const emlakCommands: TenantCommandRegistry = {
     "mulkedit:": handleMulkEditFieldCallback,
     "mulksil:": handleMulkSilCallback,
     "mulksil_ok:": handleMulkSilCallback,
+    "mulkyonet_select:": handleMulkYonetSelectCallback,
+    "mulkyonet_act:": handleMulkYonetActionCallback,
     "mustekle:": handleMusteriEkleCallback,
     "md_select:": handleMusteriDuzenleCallback,
     "md_edit:": handleMusteriDuzenleCallback,

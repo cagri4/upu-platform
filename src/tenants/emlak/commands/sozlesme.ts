@@ -290,6 +290,9 @@ export async function handleSozlesmeCallback(ctx: WaContext, data: string): Prom
       text += `\n🔗 İmza linki:\n${appUrl}/tr/sign/${contract.sign_token}`;
     }
 
+    const pdfUrl = `https://estateai.upudev.nl/api/contracts/${contract.id}/pdf`;
+    text += `\n\n📄 PDF İndir:\n${pdfUrl}`;
+
     await sendButtons(ctx.phone, text, [
       { id: "cmd:sozlesmelerim", title: "Geri" },
       { id: "cmd:menu", title: "Ana Menü" },

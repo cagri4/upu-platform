@@ -75,6 +75,76 @@ function parsePrice(text: string): number | null {
   return isNaN(num) ? null : num;
 }
 
+// ── /mulkyonet — Unified property management ─────────────────────────
+
+export async function handleMulkYonet(ctx: WaContext): Promise<void> {
+  const supabase = getServiceClient();
+
+  const { data: properties } = await supabase
+    .from("emlak_properties")
+    .select("id, title, price, listing_type")
+    .eq("user_id", ctx.userId)
+    .eq("tenant_id", ctx.tenantId)
+    .eq("status", "aktif")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (!properties || properties.length === 0) {
+    await sendButtons(ctx.phone, "Portföyünüzde mülk yok.", [
+      { id: "cmd:mulkekle", title: "Mülk Ekle" },
+      { id: "cmd:menu", title: "Ana Menü" },
+    ]);
+    return;
+  }
+
+  const rows = properties.map(p => ({
+    id: `mulkyonet_select:${p.id}`,
+    title: ((p.title || "İsimsiz") as string).substring(0, 24),
+    description: formatPrice(p.price),
+  }));
+
+  await sendList(ctx.phone, "🏠 Yönetmek istediğiniz mülkü seçin:", "Mülk Seç", [
+    { title: "Mülkler", rows },
+  ]);
+}
+
+export async function handleMulkYonetSelectCallback(ctx: WaContext, callbackData: string): Promise<void> {
+  const propertyId = callbackData.replace("mulkyonet_select:", "");
+  const supabase = getServiceClient();
+
+  const { data: prop } = await supabase
+    .from("emlak_properties")
+    .select("id, title")
+    .eq("id", propertyId)
+    .eq("user_id", ctx.userId)
+    .single();
+
+  if (!prop) {
+    await sendButtons(ctx.phone, "Mülk bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
+    return;
+  }
+
+  await sendButtons(ctx.phone, `🏠 *${prop.title || "İsimsiz"}*\n\nNe yapmak istersiniz?`, [
+    { id: `mulkyonet_act:detay:${propertyId}`, title: "📋 Detay Gör" },
+    { id: `mulkyonet_act:duzenle:${propertyId}`, title: "✏️ Düzenle" },
+    { id: `mulkyonet_act:sil:${propertyId}`, title: "🗑 Sil" },
+  ]);
+}
+
+export async function handleMulkYonetActionCallback(ctx: WaContext, callbackData: string): Promise<void> {
+  const parts = callbackData.replace("mulkyonet_act:", "").split(":");
+  const action = parts[0];
+  const propertyId = parts.slice(1).join(":");
+
+  if (action === "detay") {
+    await handleMulkDetayCallback(ctx, `mulkdetay:${propertyId}`);
+  } else if (action === "duzenle") {
+    await handleMulkDuzenleCallback(ctx, `mulkduzenle:${propertyId}`);
+  } else if (action === "sil") {
+    await handleMulkSilCallback(ctx, `mulksil:${propertyId}`);
+  }
+}
+
 // ── /mulkdetay — Show property detail card ──────────────────────────
 
 export async function handleMulkDetay(ctx: WaContext): Promise<void> {

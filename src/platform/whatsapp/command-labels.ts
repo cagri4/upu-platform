@@ -10,6 +10,7 @@ export const COMMAND_LABELS: Record<string, string> = {
   mulkdetay: "Mülk detayı görüntüle",
   mulkduzenle: "Mülk bilgilerini düzenle",
   mulksil: "Mülk sil",
+  mulkyonet: "Mülk yönet (detay/düzenle/sil)",
   tara: "Linkten mülk yükle",
   ekle: "Hızlı mülk ekle",
   musterilerim: "Müşteri listesi",

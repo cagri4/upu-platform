@@ -42,7 +42,7 @@ const TENANTS: Record<string, TenantConfig> = {
     color: "#4F46E5",
     description: "Emlak danışmanları için AI destekli sanal ofis ekibi",
     employees: [
-      { key: "portfoy", name: "Portföy Sorumlusu", icon: "🗂", description: "Mülk yönetimi", commands: ["portfoyum", "mulkekle", "mulkdetay", "mulkduzenle", "mulksil", "tara", "ekle"] },
+      { key: "portfoy", name: "Portföy Sorumlusu", icon: "🗂", description: "Mülk yönetimi", commands: ["portfoyum", "mulkekle", "mulkyonet", "tara", "ekle"] },
       { key: "satis", name: "Satış Destek Uzmanı", icon: "🤝", description: "Müşteri ve eşleştirme", commands: ["musterilerim", "musteriEkle", "musteriDuzenle", "eslestir", "hatirlatma", "takipEt", "satistavsiye", "ortakpazar"] },
       { key: "medya", name: "Medya Uzmanı", icon: "🎬", description: "Fotoğraf ve yayın", commands: ["fotograf", "yayinla", "paylas", "websitem"] },
       { key: "pazar", name: "Pazar Analisti", icon: "📊", description: "Fiyat ve analiz", commands: ["fiyatsor", "degerle", "mulkoner", "analiz", "rapor", "trend"] },
