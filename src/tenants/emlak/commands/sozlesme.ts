@@ -41,7 +41,7 @@ export async function handleSozlesmelerim(ctx: WaContext): Promise<void> {
 }
 
 export async function handleWebpanel(ctx: WaContext): Promise<void> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://upu-platform.vercel.app";
+  const appUrl = "https://estateai.upudev.nl";
 
   // Generate magic link
   try {
@@ -286,7 +286,7 @@ export async function handleSozlesmeCallback(ctx: WaContext, data: string): Prom
     text += `💰 Komisyon: %${cd.commission}+KDV\n📅 Sure: ${cd.duration} ay\n`;
 
     if (contract.status === "pending_signature" && contract.sign_token) {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://upu-platform.vercel.app";
+      const appUrl = "https://estateai.upudev.nl";
       text += `\n🔗 İmza linki:\n${appUrl}/tr/sign/${contract.sign_token}`;
     }
 
@@ -363,7 +363,7 @@ async function createSozlesme(ctx: WaContext): Promise<void> {
     return;
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://upu-platform.vercel.app";
+  const appUrl = "https://estateai.upudev.nl";
   const signLink = `${appUrl}/tr/sign/${signToken}`;
 
   await sendButtons(ctx.phone,
