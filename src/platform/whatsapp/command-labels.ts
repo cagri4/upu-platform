@@ -24,7 +24,7 @@ export const COMMAND_LABELS: Record<string, string> = {
   fotograf: "Fotoğraf yükle/düzenle",
   yayinla: "Portale ilan yayınla",
   paylas: "Sosyal medya paylaşımı",
-  websitem: "Kişisel web sitesi",
+  websitem: "Web sitesi",
   fiyatsor: "Bölge fiyat sorgusu",
   degerle: "Mülk değerleme",
   mulkoner: "Bütçeye göre mülk öner",
