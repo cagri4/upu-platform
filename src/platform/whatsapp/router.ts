@@ -346,7 +346,7 @@ async function showMenu(
       title: cmd.substring(0, 20),
     }));
     await sendButtons(ctx.phone,
-      `${tenant.icon} *${tenant.name}*\n\n⭐ Sık kullanılanlar:`,
+      `${tenant.icon} *${tenant.name}*\n\n⭐ Sık kullanılanlar:\n\n_("menu" yazarak buraya dönebilirsiniz.)_`,
       favButtons,
     );
   }
@@ -368,7 +368,7 @@ async function showMenu(
 
   // Message 3: System commands as buttons (always shown, max 3)
   await sendButtons(ctx.phone,
-    "⚙️ Sistem:\n\n_(Dilediğiniz zaman \"menu\" yazarak buraya dönebilirsiniz.)_",
+    "⚙️ Sistem:",
     [
       { id: "cmd:kilavuz", title: "📖 Kılavuz" },
       { id: "cmd:webpanel", title: "🖥 Web Panel" },
