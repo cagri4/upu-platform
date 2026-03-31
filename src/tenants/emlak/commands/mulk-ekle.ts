@@ -5,6 +5,19 @@ import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { logEvent } from "@/platform/whatsapp/error-handler";
 
+// ── Menu: choose add method ─────────────────────────────────────────────
+
+export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
+  await sendButtons(ctx.phone,
+    "🏠 *Mülk Ekle*\n\nNasıl eklemek istersiniz?",
+    [
+      { id: "mulkekle_method:link", title: "🔗 Link yapıştır" },
+      { id: "mulkekle_method:detayli", title: "📝 Detaylı ekle" },
+      { id: "mulkekle_method:hizli", title: "⚡ Hızlı ekle" },
+    ],
+  );
+}
+
 // ── Command: start mulkekle flow ────────────────────────────────────────
 
 export async function handleMulkEkle(ctx: WaContext): Promise<void> {

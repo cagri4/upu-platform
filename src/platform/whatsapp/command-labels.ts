@@ -6,7 +6,7 @@
 export const COMMAND_LABELS: Record<string, string> = {
   // ── Emlak ──
   portfoyum: "Portföy özeti",
-  mulkekle: "Yeni mülk ekle",
+  mulkekle: "Mülk ekle (link/detaylı/hızlı)",
   mulkdetay: "Mülk detayı görüntüle",
   mulkduzenle: "Mülk bilgilerini düzenle",
   mulksil: "Mülk sil",

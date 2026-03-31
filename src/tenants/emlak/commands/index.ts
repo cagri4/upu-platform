@@ -6,7 +6,7 @@ import type { TenantCommandRegistry } from "@/platform/whatsapp/types";
 
 // ── Active commands (already ported) ────────────────────────────────
 import { handlePortfoyum } from "./portfoyum";
-import { handleMulkEkle, handleMulkEkleStep, handleMulkEkleCallback } from "./mulk-ekle";
+import { handleMulkEkle, handleMulkEkleMenu, handleMulkEkleStep, handleMulkEkleCallback } from "./mulk-ekle";
 import { handleFiyatSor } from "./fiyat-sor";
 import { handleBrifing } from "./brifing";
 import { handleMusteriler } from "./musteriler";
@@ -34,7 +34,7 @@ export const emlakCommands: TenantCommandRegistry = {
     // Portföy Sorumlusu
     portfoyum: handlePortfoyum,
     portfoy: handlePortfoyum,
-    mulkekle: handleMulkEkle,
+    mulkekle: handleMulkEkleMenu,
     mulkdetay: handleMulkDetay,
     mulkduzenle: handleMulkDuzenle,
     mulksil: handleMulkSil,
@@ -86,6 +86,16 @@ export const emlakCommands: TenantCommandRegistry = {
     sozlesme: handleSozlesmeStep,
   },
   callbackPrefixes: {
+    "mulkekle_method:": async (ctx, callbackData) => {
+      const method = callbackData.replace("mulkekle_method:", "");
+      if (method === "link") {
+        await handleTara(ctx);
+      } else if (method === "detayli") {
+        await handleMulkEkle(ctx);
+      } else if (method === "hizli") {
+        await handleEkle(ctx);
+      }
+    },
     "mulkekle:": handleMulkEkleCallback,
     "mulkdetay:": handleMulkDetayCallback,
     "mulkduzenle:": handleMulkDuzenleCallback,
