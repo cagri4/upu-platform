@@ -1,19 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { resolveUserId } from "../../auth";
 
 export const dynamic = "force-dynamic";
-
-async function getUserId(token: string): Promise<string | null> {
-  const supabase = getServiceClient();
-  const { data } = await supabase
-    .from("extension_tokens")
-    .select("user_id, expires_at")
-    .eq("token", token)
-    .single();
-  if (!data) return null;
-  if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
-  return data.user_id;
-}
 
 export async function GET(
   request: NextRequest,
@@ -23,7 +12,7 @@ export async function GET(
   const token = request.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = await getUserId(token);
+  const userId = await resolveUserId(token);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const supabase = getServiceClient();
