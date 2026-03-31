@@ -9,6 +9,7 @@ import { runAllAgents } from "@/platform/agents/engine";
 import { emlakAgents } from "@/tenants/emlak/agents";
 import { siteyonetimAgents } from "@/tenants/siteyonetim/agents";
 import { bayiAgents } from "@/tenants/bayi/agents";
+import { otelAgents } from "@/tenants/otel/agents";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -81,5 +82,22 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, processed: emlakUsers.length + syUsers.length + bayiUsers.length });
+  // ── Otel agents ──
+  const otelTenantId = "16871326-afef-4ba3-a079-2c5ede8fac4d";
+  const otelUsers = users.filter((u) => u.tenant_id === otelTenantId);
+
+  for (const user of otelUsers) {
+    try {
+      await runAllAgents(otelAgents, {
+        userId: user.id,
+        tenantId: user.tenant_id,
+        phone: user.whatsapp_phone,
+        userName: user.display_name || "",
+      });
+    } catch (err) {
+      console.error(`[agent-run] otel error for ${user.id}:`, err);
+    }
+  }
+
+  return NextResponse.json({ ok: true, processed: emlakUsers.length + syUsers.length + bayiUsers.length + otelUsers.length });
 }

@@ -81,7 +81,7 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         return;
       }
       if (cmd === "favoriler") {
-        await sendButtons(ctx.phone, "⭐ Favori düzenleme yakında aktif olacak.", [{ id: "cmd:menu", title: "Ana Menü" }]);
+        await showFavorites(ctx, tenant, registry);
         return;
       }
       if (cmd === "hakkimizda") {
@@ -116,6 +116,9 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       } else if (ctx.tenantKey === "bayi") {
         const { bayiAgents } = await import("@/tenants/bayi/agents");
         agents = bayiAgents;
+      } else if (ctx.tenantKey === "otel") {
+        const { otelAgents } = await import("@/tenants/otel/agents");
+        agents = otelAgents;
       }
       await handleAgentApproval(
         { userId: ctx.userId, tenantId: ctx.tenantId, phone: ctx.phone, userName: ctx.userName },
@@ -135,11 +138,11 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     if (ctx.interactiveId.startsWith("emp:")) {
       const empKey = ctx.interactiveId.replace("emp:", "");
       // Check if this employee's agent needs setup
-      if (ctx.tenantKey === "emlak" || ctx.tenantKey === "siteyonetim" || ctx.tenantKey === "bayi") {
+      if (ctx.tenantKey === "emlak" || ctx.tenantKey === "siteyonetim" || ctx.tenantKey === "bayi" || ctx.tenantKey === "otel") {
         try {
           const { isAgentConfigured, startAgentSetup } = await import("@/platform/agents/setup");
-          // siteyonetim/bayi agent keys are prefixed with "sy_"/"bayi_" to avoid global SETUP_FLOWS collision
-          const agentKey = ctx.tenantKey === "siteyonetim" ? `sy_${empKey}` : ctx.tenantKey === "bayi" ? `bayi_${empKey}` : empKey;
+          // siteyonetim/bayi/otel agent keys are prefixed to avoid global SETUP_FLOWS collision
+          const agentKey = ctx.tenantKey === "siteyonetim" ? `sy_${empKey}` : ctx.tenantKey === "bayi" ? `bayi_${empKey}` : ctx.tenantKey === "otel" ? `otel_${empKey}` : empKey;
           const configured = await isAgentConfigured(ctx.userId, agentKey);
           if (!configured) {
             const { getAgentSetup } = await import("@/platform/agents/setup");
@@ -208,9 +211,7 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     return;
   }
   if (firstWord === "favoriler") {
-    await sendButtons(ctx.phone, "⭐ Favori düzenleme yakında aktif olacak.\n\nŞimdilik varsayılan favoriler gösterilmektedir.", [
-      { id: "cmd:menu", title: "Ana Menü" },
-    ]);
+    await showFavorites(ctx, tenant, registry);
     return;
   }
   if (firstWord === "hakkimizda" || firstWord === "hakkımızda") {

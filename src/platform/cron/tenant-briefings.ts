@@ -173,6 +173,87 @@ registerBriefing("otel", async (_userId, tenantId) => {
   return `📊 Günaydın! Otel brifing:\n\n🛎️ Bugün check-in: ${checkins || 0}\n🚪 Bugün check-out: ${checkouts || 0}\n🏨 Toplam oda: ${rooms || 0}\n\nİyi çalışmalar!`;
 });
 
+registerDailyCheck("otel", async (_userId, tenantId, phone) => {
+  const supabase = getServiceClient();
+  let alerts = 0;
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Dirty rooms with check-in today
+  const { data: dirtyRooms } = await supabase
+    .from("otel_rooms")
+    .select("room_number")
+    .eq("tenant_id", tenantId)
+    .eq("cleaning_status", "dirty")
+    .limit(5);
+  if (dirtyRooms?.length) {
+    const rooms = dirtyRooms.map(r => `Oda ${r.room_number}`).join(", ");
+    await sendText(phone, `🧹 Temizlenmemiş odalar: ${rooms}`);
+    alerts++;
+  }
+
+  // Unanswered guest messages (2+ hours old)
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  const { count: unanswered } = await supabase
+    .from("otel_guest_messages")
+    .select("*", { count: "exact", head: true })
+    .eq("tenant_id", tenantId)
+    .eq("is_answered", false)
+    .lt("created_at", twoHoursAgo);
+  if (unanswered && unanswered > 0) {
+    await sendText(phone, `💬 ${unanswered} cevaplanmamış misafir mesajı (2+ saat)`);
+    alerts++;
+  }
+
+  // Rooms under maintenance
+  const { count: maintenance } = await supabase
+    .from("otel_rooms")
+    .select("*", { count: "exact", head: true })
+    .eq("tenant_id", tenantId)
+    .eq("status", "maintenance");
+  if (maintenance && maintenance > 0) {
+    await sendText(phone, `🔧 ${maintenance} oda bakımda`);
+    alerts++;
+  }
+
+  return alerts;
+});
+
+registerWeeklyReport("otel", async (_userId, tenantId) => {
+  const supabase = getServiceClient();
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+
+  const { count: totalReservations } = await supabase
+    .from("otel_reservations")
+    .select("*", { count: "exact", head: true })
+    .eq("tenant_id", tenantId)
+    .gte("created_at", weekAgo.toISOString());
+
+  const { count: totalRooms } = await supabase
+    .from("otel_rooms")
+    .select("*", { count: "exact", head: true })
+    .eq("tenant_id", tenantId);
+
+  const { count: occupiedRooms } = await supabase
+    .from("otel_reservations")
+    .select("*", { count: "exact", head: true })
+    .eq("tenant_id", tenantId)
+    .eq("status", "checked_in");
+
+  const occupancy = (totalRooms || 0) > 0 ? Math.round(((occupiedRooms || 0) / (totalRooms || 1)) * 100) : 0;
+
+  const { data: reviews } = await supabase
+    .from("otel_guest_reviews")
+    .select("rating")
+    .eq("tenant_id", tenantId)
+    .gte("created_at", weekAgo.toISOString());
+
+  const avgRating = reviews?.length
+    ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1)
+    : "-";
+
+  return `📈 Haftalık Otel Raporu\n\n📅 Bu hafta yeni rezervasyon: ${totalReservations || 0}\n🏨 Toplam oda: ${totalRooms || 0}\n📊 Anlık doluluk: %${occupancy}\n⭐ Ortalama puan: ${avgRating}/5 (${reviews?.length || 0} yorum)\n\nBaşarılı bir hafta olsun!`;
+});
+
 // ── Market ─────────────────────────────────────────────────────────────
 
 registerBriefing("market", async (_userId, tenantId) => {

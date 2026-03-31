@@ -63,6 +63,18 @@ registerAgentSetup(bayiDepocuSetup);
 registerAgentSetup(bayiLojistikciSetup);
 registerAgentSetup(bayiUrunYoneticisiSetup);
 
+// ─── Register otel agent setup flows ───────────────────────────────────
+import {
+  resepsiyonSetup as otelResepsiyonSetup,
+  rezervasyonSetup as otelRezervasyonSetup,
+  katHizmetleriSetup as otelKatHizmetleriSetup,
+  misafirDeneyimiSetup as otelMisafirDeneyimiSetup,
+} from "@/tenants/otel/agents/setup-flows";
+registerAgentSetup(otelResepsiyonSetup);
+registerAgentSetup(otelRezervasyonSetup);
+registerAgentSetup(otelKatHizmetleriSetup);
+registerAgentSetup(otelMisafirDeneyimiSetup);
+
 // ─── Parse Meta webhook payload ────────────────────────────────────────────
 
 function parseWebhook(payload: Record<string, unknown>) {
