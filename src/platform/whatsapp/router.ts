@@ -99,6 +99,12 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       }
     }
 
+    // Favorites add/remove callbacks
+    if (ctx.interactiveId.startsWith("fav_add:") || ctx.interactiveId.startsWith("fav_rm:")) {
+      await handleFavCallback(ctx);
+      return;
+    }
+
     // Agent proposal approval/rejection
     if (ctx.interactiveId.startsWith("agent_ok:") || ctx.interactiveId.startsWith("agent_no:")) {
       const approved = ctx.interactiveId.startsWith("agent_ok:");
@@ -339,12 +345,13 @@ async function showMenu(
     return;
   }
 
-  // Message 1: Favorites as buttons (always shown, max 3)
-  const favCmds = tenant.defaultFavorites || [];
+  // Message 1: Favorites as buttons (user's or default, max 3)
+  const userFavs = await getUserFavorites(ctx.userId);
+  const favCmds = userFavs.length > 0 ? userFavs : (tenant.defaultFavorites || []);
   if (favCmds.length > 0) {
     const favButtons = favCmds.slice(0, 3).map(cmd => ({
       id: `cmd:${cmd}`,
-      title: cmd.substring(0, 20),
+      title: (COMMAND_LABELS[cmd] || cmd).substring(0, 20),
     }));
     await sendButtons(ctx.phone,
       `${tenant.icon} *${tenant.name}*\n\n⭐ Sık kullanılanlar:\n\n_("menu" yazarak buraya dönebilirsiniz.)_`,
@@ -485,6 +492,118 @@ async function showExtensionSetup(ctx: WaContext) {
   text += `_Kurulum tek seferlik — bir kez bağlandıktan sonra her zaman kullanabilirsiniz._`;
 
   await sendButtons(ctx.phone, text, [
+    { id: "cmd:menu", title: "📋 Ana Menü" },
+  ]);
+}
+
+// ── Favorites helpers ───────────────────────────────────────────────────
+
+async function getUserFavorites(userId: string): Promise<string[]> {
+  const supabase = getServiceClient();
+  const { data } = await supabase
+    .from("user_favorites")
+    .select("command_keys")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (data?.command_keys && Array.isArray(data.command_keys)) {
+    return data.command_keys as string[];
+  }
+  return [];
+}
+
+async function showFavorites(
+  ctx: WaContext,
+  tenant: ReturnType<typeof getTenantByKey>,
+  registry: TenantCommandRegistry,
+) {
+  if (!tenant) return;
+
+  const userFavs = await getUserFavorites(ctx.userId);
+  const favCmds = userFavs.length > 0 ? userFavs : (tenant.defaultFavorites || []);
+
+  // Build current favorites display
+  let text = "⭐ *Favorileriniz*\n\n";
+  if (favCmds.length === 0) {
+    text += "Henüz favori eklenmemiş.\n";
+  } else {
+    for (const cmd of favCmds) {
+      text += `• ${COMMAND_LABELS[cmd] || cmd}\n`;
+    }
+  }
+  text += "\nFavori eklemek veya çıkarmak için aşağıdan seçin:";
+
+  // Get all available commands for this tenant
+  const allCmds = Object.keys(registry.commands);
+  const notInFav = allCmds.filter(c => !favCmds.includes(c) && COMMAND_LABELS[c]).slice(0, 8);
+
+  // Show add options as list
+  const rows: Array<{ id: string; title: string; description?: string }> = [];
+
+  // Remove options
+  for (const cmd of favCmds.slice(0, 3)) {
+    rows.push({
+      id: `fav_rm:${cmd}`,
+      title: `❌ ${(COMMAND_LABELS[cmd] || cmd).substring(0, 20)}`,
+      description: "Favorilerden çıkar",
+    });
+  }
+
+  // Add options
+  for (const cmd of notInFav.slice(0, 7 - rows.length)) {
+    rows.push({
+      id: `fav_add:${cmd}`,
+      title: `➕ ${(COMMAND_LABELS[cmd] || cmd).substring(0, 20)}`,
+      description: "Favorilere ekle",
+    });
+  }
+
+  if (rows.length > 0) {
+    await sendList(ctx.phone, text, "Düzenle", [
+      { title: "Favoriler", rows },
+    ]);
+  } else {
+    await sendButtons(ctx.phone, text, [
+      { id: "cmd:menu", title: "📋 Ana Menü" },
+    ]);
+  }
+}
+
+async function handleFavCallback(ctx: WaContext) {
+  const supabase = getServiceClient();
+  const isAdd = ctx.interactiveId.startsWith("fav_add:");
+  const cmd = ctx.interactiveId.replace(/^fav_(add|rm):/, "");
+
+  // Get current favorites
+  const { data: existing } = await supabase
+    .from("user_favorites")
+    .select("command_keys")
+    .eq("user_id", ctx.userId)
+    .maybeSingle();
+
+  let favs: string[] = (existing?.command_keys as string[]) || [];
+
+  if (isAdd) {
+    if (!favs.includes(cmd)) favs.push(cmd);
+    if (favs.length > 3) favs = favs.slice(-3); // max 3 (WhatsApp button limit)
+  } else {
+    favs = favs.filter(f => f !== cmd);
+  }
+
+  // Upsert
+  await supabase.from("user_favorites").upsert({
+    user_id: ctx.userId,
+    tenant_id: ctx.tenantId,
+    command_keys: favs,
+    updated_at: new Date().toISOString(),
+  });
+
+  const label = COMMAND_LABELS[cmd] || cmd;
+  const msg = isAdd
+    ? `⭐ *${label}* favorilere eklendi.`
+    : `❌ *${label}* favorilerden çıkarıldı.`;
+
+  await sendButtons(ctx.phone, msg, [
+    { id: "cmd:favoriler", title: "⭐ Favoriler" },
     { id: "cmd:menu", title: "📋 Ana Menü" },
   ]);
 }
