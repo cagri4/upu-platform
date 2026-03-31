@@ -158,97 +158,103 @@ export async function handlePaylasCallback(ctx: WaContext, data: string): Promis
   }
 }
 
-// ── /yayinla — Portal publishing ─────────────────────────────────────
+// ── /yayinla — Portal publishing (readiness check) ──────────────────
+
+const REQUIRED_FIELDS = ["title", "price", "area", "rooms", "location_city", "location_district"] as const;
+
+function checkReadiness(prop: Record<string, unknown>): string[] {
+  const missing: string[] = [];
+  const labels: Record<string, string> = {
+    title: "başlık", price: "fiyat", area: "m²",
+    rooms: "oda sayısı", location_city: "il", location_district: "ilçe",
+  };
+  for (const f of REQUIRED_FIELDS) {
+    if (!prop[f]) missing.push(labels[f] || f);
+  }
+  return missing;
+}
 
 export async function handleYayinla(ctx: WaContext): Promise<void> {
   const supabase = getServiceClient();
 
   const { data: properties } = await supabase
     .from("emlak_properties")
-    .select("id, title, price")
+    .select("id, title, price, area, rooms, location_city, location_district")
     .eq("user_id", ctx.userId)
     .eq("tenant_id", ctx.tenantId)
     .eq("status", "aktif")
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(20);
 
-  if (!properties || properties.length === 0) {
-    await sendButtons(ctx.phone, "Portföyünüzde mülk yok.", [
+  if (!properties?.length) {
+    await sendButtons(ctx.phone, "📤 Portföyünüzde mülk yok.", [
       { id: "cmd:mulkekle", title: "Mülk Ekle" },
       { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
 
-  const rows = properties.map(p => ({
-    id: `pub:p:${p.id}`,
-    title: ((p.title || "İsimsiz") as string).substring(0, 24),
-    description: p.price ? formatPrice(p.price) : "",
-  }));
+  // Check extension token
+  const { data: extToken } = await supabase
+    .from("extension_tokens")
+    .select("token")
+    .eq("user_id", ctx.userId)
+    .maybeSingle();
 
-  await sendList(ctx.phone, "📤 Hangi mülkü portala yayınlamak istiyorsunuz?", "Mülk Seç", [
-    { title: "Mülkler", rows },
-  ]);
+  // Split into ready and not-ready
+  const ready: typeof properties = [];
+  const notReady: Array<{ title: string; missing: string[] }> = [];
+
+  for (const p of properties) {
+    const missing = checkReadiness(p as Record<string, unknown>);
+    if (missing.length === 0) {
+      ready.push(p);
+    } else {
+      notReady.push({ title: (p.title as string) || "İsimsiz", missing });
+    }
+  }
+
+  // Build message
+  let text = "📤 *İlan Yayınlama*\n\n";
+
+  if (ready.length > 0) {
+    text += `✅ *${ready.length} mülk yayına hazır:*\n`;
+    for (const p of ready.slice(0, 5)) {
+      text += `• ${p.title} — ${p.price ? formatPrice(p.price) : ""}\n`;
+    }
+    if (ready.length > 5) text += `  ...ve ${ready.length - 5} mülk daha\n`;
+    text += `\nChrome uzantınızı açarak bu mülkleri Sahibinden'e yayınlayabilirsiniz.\n`;
+  }
+
+  if (notReady.length > 0) {
+    text += `\n⚠️ *${notReady.length} mülkte bilgi eksik:*\n`;
+    for (const p of notReady.slice(0, 3)) {
+      text += `• ${p.title} — _${p.missing.join(", ")} eksik_\n`;
+    }
+    if (notReady.length > 3) text += `  ...ve ${notReady.length - 3} mülk daha\n`;
+    text += `\nEksik bilgileri tamamlamak için Mülk Yönet'i kullanın.\n`;
+  }
+
+  if (!extToken) {
+    text += `\n🧩 Chrome uzantısını henüz kurmadıysanız, Sistem → Uzantı Kurulumu'ndan bilgi alabilirsiniz.`;
+  }
+
+  if (ready.length > 0) {
+    await sendButtons(ctx.phone, text, [
+      { id: "cmd:uzanti", title: "🧩 Uzantı Kurulumu" },
+      { id: "cmd:mulkyonet", title: "✏️ Mülk Yönet" },
+      { id: "cmd:menu", title: "📋 Ana Menü" },
+    ]);
+  } else {
+    await sendButtons(ctx.phone, text, [
+      { id: "cmd:mulkyonet", title: "✏️ Mülk Yönet" },
+      { id: "cmd:menu", title: "📋 Ana Menü" },
+    ]);
+  }
 }
 
-export async function handleYayinlaCallback(ctx: WaContext, data: string): Promise<void> {
-  if (data.startsWith("pub:p:")) {
-    const propId = data.substring(6);
-    const supabase = getServiceClient();
-
-    const { data: prop } = await supabase
-      .from("emlak_properties")
-      .select("id, title, price, type, rooms, area, description, location_district, location_city, location_neighborhood")
-      .eq("id", propId)
-      .eq("user_id", ctx.userId)
-      .single();
-
-    if (!prop) {
-      await sendButtons(ctx.phone, "Mülk bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
-      return;
-    }
-
-    // Generate short 6-char extension token
-    const { randomBytes } = await import("crypto");
-    let extCode: string;
-
-    const { data: existingToken } = await supabase
-      .from("extension_tokens")
-      .select("token")
-      .eq("user_id", ctx.userId)
-      .maybeSingle();
-
-    if (existingToken) {
-      extCode = existingToken.token.substring(0, 6).toUpperCase();
-    } else {
-      const fullToken = randomBytes(24).toString("hex");
-      extCode = fullToken.substring(0, 6).toUpperCase();
-      await supabase.from("extension_tokens").insert({
-        user_id: ctx.userId,
-        token: fullToken,
-      });
-    }
-
-    const loc = [prop.location_neighborhood, prop.location_district, prop.location_city].filter(Boolean).join(", ");
-    let text = `📤 *${prop.title || "İsimsiz"}*\n`;
-    text += `💰 ${prop.price ? formatPrice(prop.price) : "—"} | 📍 ${loc}\n\n`;
-    text += `Chrome extension'ını açın, bağlantı kodu:\n\n*${extCode}*\n\n`;
-    text += `Sonra sahibinden.com/ilan-ver açın → Formu Doldur\n\n`;
-    text += `_Extension yok mu?_ https://chromewebstore.google.com/detail/bcafoeijofbhelbanpfjhmhiokjnggbe`;
-
-    await supabase.from("emlak_publishing_history").insert({
-      tenant_id: ctx.tenantId,
-      property_id: propId,
-      portal: "sahibinden",
-      status: "prepared",
-    });
-
-    await sendButtons(ctx.phone, text, [
-      { id: "cmd:portfoyum", title: "Portföyüm" },
-      { id: "cmd:menu", title: "Ana Menü" },
-    ]);
-    return;
-  }
+export async function handleYayinlaCallback(ctx: WaContext, _data: string): Promise<void> {
+  await handleYayinla(ctx);
 }
 
 // ── /websitem — Personal website ─────────────────────────────────────

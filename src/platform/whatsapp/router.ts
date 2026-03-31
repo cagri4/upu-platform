@@ -88,6 +88,10 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         await showAbout(ctx);
         return;
       }
+      if (cmd === "uzanti") {
+        await showExtensionSetup(ctx);
+        return;
+      }
       const handler = registry.commands[cmd];
       if (handler) {
         await handler(ctx);
@@ -211,6 +215,10 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
   }
   if (firstWord === "hakkimizda" || firstWord === "hakkımızda") {
     await showAbout(ctx);
+    return;
+  }
+  if (firstWord === "uzanti" || firstWord === "uzantı" || firstWord === "extension") {
+    await showExtensionSetup(ctx);
     return;
   }
   if (firstWord === "webpanel" || firstWord === "panel" || firstWord === "dashboard") {
@@ -364,7 +372,7 @@ async function showMenu(
     [
       { id: "cmd:kilavuz", title: "📖 Kılavuz" },
       { id: "cmd:webpanel", title: "🖥 Web Panel" },
-      { id: "cmd:hakkimizda", title: "ℹ️ Hakkımızda" },
+      { id: "cmd:uzanti", title: "🧩 Uzantı Kurulumu" },
     ],
   );
 }
@@ -437,5 +445,45 @@ async function showEmployeeCommands(
   // Navigation: back to employee list + main menu
   await sendButtons(ctx.phone, "Veya:", [
     { id: "cmd:menu", title: "👥 Ekibi Çağır" },
+  ]);
+}
+
+// ── Extension setup command (Emlak only) ────────────────────────────────
+
+async function showExtensionSetup(ctx: WaContext) {
+  const supabase = getServiceClient();
+
+  // Generate or get token
+  const { randomBytes } = await import("crypto");
+  let code: string;
+
+  const { data: existing } = await supabase
+    .from("extension_tokens")
+    .select("token")
+    .eq("user_id", ctx.userId)
+    .maybeSingle();
+
+  if (existing) {
+    code = existing.token.substring(0, 6).toUpperCase();
+  } else {
+    const fullToken = randomBytes(24).toString("hex");
+    code = fullToken.substring(0, 6).toUpperCase();
+    await supabase.from("extension_tokens").insert({
+      user_id: ctx.userId,
+      token: fullToken,
+    });
+  }
+
+  let text = `🧩 *Chrome Uzantı Kurulumu*\n\n`;
+  text += `Sahibinden'e ilan yayınlamak için Chrome uzantımızı kullanın. `;
+  text += `Uzantı, mülk bilgilerinizi otomatik olarak forma doldurur.\n\n`;
+  text += `*Kurulum:*\n`;
+  text += `1. Uzantıyı kurun:\nhttps://chromewebstore.google.com/detail/bcafoeijofbhelbanpfjhmhiokjnggbe\n\n`;
+  text += `2. Uzantıyı açın, bağlantı kodunuzu girin:\n*${code}*\n\n`;
+  text += `3. sahibinden.com/ilan-ver açın → mülk seçin → Formu Doldur\n\n`;
+  text += `_Kurulum tek seferlik — bir kez bağlandıktan sonra her zaman kullanabilirsiniz._`;
+
+  await sendButtons(ctx.phone, text, [
+    { id: "cmd:menu", title: "📋 Ana Menü" },
   ]);
 }

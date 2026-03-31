@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   const supabase = getServiceClient();
 
-  const { data: properties } = await supabase
+  const { data: allProps } = await supabase
     .from("emlak_properties")
     .select("id, title, type, listing_type, price, area, rooms, location_district, location_city")
     .eq("user_id", userId)
@@ -21,7 +21,12 @@ export async function GET(request: NextRequest) {
     .order("created_at", { ascending: false })
     .limit(20);
 
-  if (!properties?.length) return NextResponse.json({ properties: [] });
+  // Only return properties with required fields filled
+  const properties = (allProps || []).filter(p =>
+    p.title && p.price && p.area && p.rooms && p.location_city && p.location_district,
+  );
+
+  if (!properties.length) return NextResponse.json({ properties: [] });
 
   const propIds = properties.map(p => p.id);
   const { data: photos } = await supabase
