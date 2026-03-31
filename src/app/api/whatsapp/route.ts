@@ -43,6 +43,26 @@ registerAgentSetup(sySekreterSetup);
 registerAgentSetup(teknisyenSetup);
 registerAgentSetup(hukukSetup);
 
+// ─── Register bayi agent setup flows ────────────────────────────────────
+import {
+  asistanSetup as bayiAsistanSetup,
+  satisMuduruSetup as bayiSatisMuduruSetup,
+  satisTemsilcisiSetup as bayiSatisTemsilcisiSetup,
+  muhasebeciSetup as bayiMuhasebeciSetup,
+  tahsildarSetup as bayiTahsildarSetup,
+  depocuSetup as bayiDepocuSetup,
+  lojistikciSetup as bayiLojistikciSetup,
+  urunYoneticisiSetup as bayiUrunYoneticisiSetup,
+} from "@/tenants/bayi/agents/setup-flows";
+registerAgentSetup(bayiAsistanSetup);
+registerAgentSetup(bayiSatisMuduruSetup);
+registerAgentSetup(bayiSatisTemsilcisiSetup);
+registerAgentSetup(bayiMuhasebeciSetup);
+registerAgentSetup(bayiTahsildarSetup);
+registerAgentSetup(bayiDepocuSetup);
+registerAgentSetup(bayiLojistikciSetup);
+registerAgentSetup(bayiUrunYoneticisiSetup);
+
 // ─── Parse Meta webhook payload ────────────────────────────────────────────
 
 function parseWebhook(payload: Record<string, unknown>) {

@@ -109,6 +109,9 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       } else if (ctx.tenantKey === "siteyonetim") {
         const { siteyonetimAgents } = await import("@/tenants/siteyonetim/agents");
         agents = siteyonetimAgents;
+      } else if (ctx.tenantKey === "bayi") {
+        const { bayiAgents } = await import("@/tenants/bayi/agents");
+        agents = bayiAgents;
       }
       await handleAgentApproval(
         { userId: ctx.userId, tenantId: ctx.tenantId, phone: ctx.phone, userName: ctx.userName },
@@ -128,11 +131,11 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     if (ctx.interactiveId.startsWith("emp:")) {
       const empKey = ctx.interactiveId.replace("emp:", "");
       // Check if this employee's agent needs setup
-      if (ctx.tenantKey === "emlak" || ctx.tenantKey === "siteyonetim") {
+      if (ctx.tenantKey === "emlak" || ctx.tenantKey === "siteyonetim" || ctx.tenantKey === "bayi") {
         try {
           const { isAgentConfigured, startAgentSetup } = await import("@/platform/agents/setup");
-          // siteyonetim agent keys are prefixed with "sy_" to avoid global SETUP_FLOWS collision
-          const agentKey = ctx.tenantKey === "siteyonetim" ? `sy_${empKey}` : empKey;
+          // siteyonetim/bayi agent keys are prefixed with "sy_"/"bayi_" to avoid global SETUP_FLOWS collision
+          const agentKey = ctx.tenantKey === "siteyonetim" ? `sy_${empKey}` : ctx.tenantKey === "bayi" ? `bayi_${empKey}` : empKey;
           const configured = await isAgentConfigured(ctx.userId, agentKey);
           if (!configured) {
             const { getAgentSetup } = await import("@/platform/agents/setup");
