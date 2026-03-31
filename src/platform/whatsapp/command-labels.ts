@@ -22,7 +22,7 @@ export const COMMAND_LABELS: Record<string, string> = {
   satistavsiye: "Satış tavsiyesi al",
   ortakpazar: "Ortak pazar paylaşımı",
   fotograf: "Fotoğraf yükle/düzenle",
-  yayinla: "Portale ilan yayınla",
+  yayinla: "Portala ilan yayınla",
   paylas: "Sosyal medya paylaşımı",
   websitem: "Web sitesi",
   fiyatsor: "Bölge fiyat sorgusu",
