@@ -243,7 +243,9 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
   } catch { /* AI unavailable — fall through to unrecognized */ }
 
   // Unrecognized
-  await sendText(ctx.phone, `Komutu anlamadım. Yardım için "menu" yazın.`);
+  await sendButtons(ctx.phone, "Komutu anlamadım.", [
+    { id: "cmd:menu", title: "📋 Ana Menü" },
+  ]);
 }
 
 // ── Web panel command (shared — uses tenant subdomain) ───────────────────

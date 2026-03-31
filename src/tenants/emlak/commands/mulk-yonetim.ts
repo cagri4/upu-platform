@@ -124,10 +124,14 @@ export async function handleMulkYonetSelectCallback(ctx: WaContext, callbackData
     return;
   }
 
-  await sendButtons(ctx.phone, `🏠 *${prop.title || "İsimsiz"}*\n\nNe yapmak istersiniz?\n\n_"menu" yazarak ana menüye dönebilirsiniz._`, [
+  await sendButtons(ctx.phone, `🏠 *${prop.title || "İsimsiz"}*\n\nNe yapmak istersiniz?`, [
     { id: `mulkyonet_act:detay:${propertyId}`, title: "📋 Detay Gör" },
     { id: `mulkyonet_act:duzenle:${propertyId}`, title: "✏️ Düzenle" },
     { id: `mulkyonet_act:sil:${propertyId}`, title: "🗑 Sil" },
+  ]);
+  await sendButtons(ctx.phone, "Veya:", [
+    { id: "cmd:mulkyonet", title: "🔙 Geri" },
+    { id: "cmd:menu", title: "📋 Ana Menü" },
   ]);
 }
 

@@ -9,13 +9,16 @@ import { logEvent } from "@/platform/whatsapp/error-handler";
 
 export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
   await sendButtons(ctx.phone,
-    "🏠 *Mülk Ekle*\n\nNasıl eklemek istersiniz?\n\n_\"menu\" yazarak ana menüye dönebilirsiniz._",
+    "🏠 *Mülk Ekle*\n\nNasıl eklemek istersiniz?",
     [
       { id: "mulkekle_method:link", title: "🔗 Link yapıştır" },
       { id: "mulkekle_method:detayli", title: "📝 Detaylı ekle" },
       { id: "mulkekle_method:hizli", title: "⚡ Hızlı ekle" },
     ],
   );
+  await sendButtons(ctx.phone, "Veya:", [
+    { id: "cmd:menu", title: "📋 Ana Menü" },
+  ]);
 }
 
 // ── Command: start mulkekle flow ────────────────────────────────────────
