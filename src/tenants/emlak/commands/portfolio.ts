@@ -142,9 +142,10 @@ export async function handleEkle(ctx: WaContext): Promise<void> {
   }
 
   await sendButtons(ctx.phone,
-    "🏠 Mülk Ekleme\n\nPortal linki yapıştırın veya manuel bilgi girin.",
+    "🏠 Hızlı Mülk Ekleme\n\nPortal linki yapıştırın veya detaylı ekleme başlatın.",
     [
-      { id: "cmd:mulkekle", title: "Manuel Ekle" },
+      { id: "mulkekle_method:link", title: "🔗 Link yapıştır" },
+      { id: "mulkekle_method:detayli", title: "📝 Detaylı ekle" },
       { id: "cmd:menu", title: "Ana Menü" },
     ],
   );
