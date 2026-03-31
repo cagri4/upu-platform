@@ -35,7 +35,7 @@ COOKIE_COUNT=$(echo "$COOKIE_OUT" | grep -oP '\d+ cookie' | head -1)
 echo "$DATE — ✅ Cookie: $COOKIE_COUNT" >> "$LOG_FILE"
 
 # 2. Daily scrape — çıktıyı dosyaya yaz (bellek taşmasını önle)
-$NODE scripts/scrape-v2.mjs --daily > "$SCRAPE_DETAIL" 2>&1
+$NODE scripts/scrape-v2.mjs --days=7 > "$SCRAPE_DETAIL" 2>&1
 SCRAPE_EXIT=$?
 
 # Sonuçları parse et
