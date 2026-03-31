@@ -124,7 +124,7 @@ export async function handleMulkYonetSelectCallback(ctx: WaContext, callbackData
     return;
   }
 
-  await sendButtons(ctx.phone, `🏠 *${prop.title || "İsimsiz"}*\n\nNe yapmak istersiniz?`, [
+  await sendButtons(ctx.phone, `🏠 *${prop.title || "İsimsiz"}*\n\nNe yapmak istersiniz?\n\n_"menu" yazarak ana menüye dönebilirsiniz._`, [
     { id: `mulkyonet_act:detay:${propertyId}`, title: "📋 Detay Gör" },
     { id: `mulkyonet_act:duzenle:${propertyId}`, title: "✏️ Düzenle" },
     { id: `mulkyonet_act:sil:${propertyId}`, title: "🗑 Sil" },
@@ -211,7 +211,8 @@ async function showPropertyDetail(ctx: WaContext, prop: Record<string, unknown>)
   text += `\n🆔 ${(prop.id as string).substring(0, 8)}`;
 
   await sendButtons(ctx.phone, text, [
-    { id: `mulkduzenle:${prop.id}`, title: "Düzenle" },
+    { id: `mulkduzenle:${prop.id}`, title: "✏️ Düzenle" },
+    { id: "cmd:mulkyonet", title: "🔙 Mülk Yönet" },
     { id: "cmd:menu", title: "Ana Menü" },
   ]);
 }
@@ -407,7 +408,8 @@ export async function handleMulkDuzenleStep(ctx: WaContext, session: CommandSess
 
   const fieldLabel = EDITABLE_FIELDS.find(f => f.key === field)?.label || field;
   await sendButtons(ctx.phone, `✅ ${fieldLabel} güncellendi.`, [
-    { id: `mulkdetay:${propertyId}`, title: "Detay Gör" },
+    { id: `mulkdetay:${propertyId}`, title: "📋 Detay Gör" },
+    { id: "cmd:mulkyonet", title: "🔙 Mülk Yönet" },
     { id: "cmd:menu", title: "Ana Menü" },
   ]);
 }

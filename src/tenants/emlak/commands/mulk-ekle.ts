@@ -9,7 +9,7 @@ import { logEvent } from "@/platform/whatsapp/error-handler";
 
 export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
   await sendButtons(ctx.phone,
-    "🏠 *Mülk Ekle*\n\nNasıl eklemek istersiniz?",
+    "🏠 *Mülk Ekle*\n\nNasıl eklemek istersiniz?\n\n_\"menu\" yazarak ana menüye dönebilirsiniz._",
     [
       { id: "mulkekle_method:link", title: "🔗 Link yapıştır" },
       { id: "mulkekle_method:detayli", title: "📝 Detaylı ekle" },
