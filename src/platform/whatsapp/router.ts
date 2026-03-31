@@ -480,7 +480,7 @@ async function showExtensionSetup(ctx: WaContext) {
   text += `*Kurulum:*\n`;
   text += `1. Uzantıyı kurun:\nhttps://chromewebstore.google.com/detail/bcafoeijofbhelbanpfjhmhiokjnggbe\n\n`;
   text += `2. Uzantıyı açın, bağlantı kodunuzu girin:\n*${code}*\n\n`;
-  text += `3. sahibinden.com/ilan-ver açın → uzantıya tıklayarak mülk seçin. Sayfa, daha önce doldurduğunuz bilgilerle 1-2 saniye içinde dolacaktır. Fotoğrafları, adresi ve varsa eksik kısımları doldurup ilanınızı yayınlayabilirsiniz.\n\n`;
+  text += `3. sahibinden.com/ilan-ver açın → uzantıya tıklayarak mülk seçin. Sayfa, daha önce doldurduğunuz bilgilerle çok kısa bir sürede dolacaktır. Fotoğrafları, adresi ve varsa eksik kısımları doldurup ilanınızı yayınlayabilirsiniz.\n\n`;
   text += `_Kurulum tek seferlik — bir kez bağlandıktan sonra her zaman kullanabilirsiniz._`;
 
   await sendButtons(ctx.phone, text, [
