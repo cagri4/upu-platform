@@ -95,7 +95,11 @@ export const emlakCommands: TenantCommandRegistry = {
       } else if (method === "detayli") {
         await handleMulkEkle(ctx);
       } else if (method === "hizli") {
-        await handleEkle(ctx);
+        // Start quick add — just title, rest can be edited later
+        const { startSession } = await import("@/platform/whatsapp/session");
+        const { sendText } = await import("@/platform/whatsapp/send");
+        await startSession(ctx.userId, ctx.tenantId, "mulkekle", "title");
+        await sendText(ctx.phone, "⚡ Hızlı ekleme — ilan başlığını yazın:\n\nÖrnek: Kadıköy 3+1 2.5M satılık");
       }
     },
     "mulkekle:": handleMulkEkleCallback,
