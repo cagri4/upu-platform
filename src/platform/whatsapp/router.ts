@@ -368,7 +368,7 @@ async function showMenu(
 
   // Message 3: System commands as buttons (always shown, max 3)
   await sendButtons(ctx.phone,
-    "⚙️ Sistem:",
+    "⚙️ Sistem:\n\n_(Dilediğiniz zaman \"menu\" yazarak buraya dönebilirsiniz.)_",
     [
       { id: "cmd:kilavuz", title: "📖 Kılavuz" },
       { id: "cmd:webpanel", title: "🖥 Web Panel" },
