@@ -232,11 +232,9 @@ export async function handleYayinlaCallback(ctx: WaContext, data: string): Promi
     const loc = [prop.location_neighborhood, prop.location_district, prop.location_city].filter(Boolean).join(", ");
     let text = `📤 *${prop.title || "İsimsiz"}*\n`;
     text += `💰 ${prop.price ? formatPrice(prop.price) : "—"} | 📍 ${loc}\n\n`;
-    text += `Sahibinden'e yayınlamak için:\n\n`;
-    text += `1. Extension'ı kurun:\nhttps://chromewebstore.google.com/detail/bcafoeijofbhelbanpfjhmhiokjnggbe\n`;
-    text += `2. Bağlantı kodu: *${extCode}*\n`;
-    text += `3. sahibinden.com/ilan-ver açın → Formu Doldur\n\n`;
-    text += `_Tüm alanlar otomatik doldurulur._`;
+    text += `Chrome extension'ını açın, bağlantı kodu:\n\n*${extCode}*\n\n`;
+    text += `Sonra sahibinden.com/ilan-ver açın → Formu Doldur\n\n`;
+    text += `_Extension yok mu?_ https://chromewebstore.google.com/detail/bcafoeijofbhelbanpfjhmhiokjnggbe`;
 
     await supabase.from("emlak_publishing_history").insert({
       tenant_id: ctx.tenantId,
