@@ -431,4 +431,8 @@ async function showEmployeeCommands(
       [{ title: emp.name, rows }],
     );
   }
+  // Navigation: back to employee list + main menu
+  await sendButtons(ctx.phone, "Veya:", [
+    { id: "cmd:menu", title: "👥 Ekibi Çağır" },
+  ]);
 }
