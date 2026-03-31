@@ -9,11 +9,23 @@ export async function POST(request: NextRequest) {
 
   const supabase = getServiceClient();
 
-  const { data: rec } = await supabase
-    .from("extension_tokens")
-    .select("user_id, expires_at")
-    .eq("token", token)
-    .single();
+  // Support both full token and 6-char short code
+  let rec: { user_id: string; expires_at: string | null; token: string } | null = null;
+
+  if (token.length <= 6) {
+    // Short code — match against first 6 chars (case-insensitive)
+    const { data: rows } = await supabase
+      .from("extension_tokens")
+      .select("user_id, expires_at, token");
+    rec = (rows || []).find(r => r.token.substring(0, 6).toUpperCase() === token.toUpperCase()) || null;
+  } else {
+    const { data } = await supabase
+      .from("extension_tokens")
+      .select("user_id, expires_at, token")
+      .eq("token", token)
+      .single();
+    rec = data;
+  }
 
   if (!rec) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   if (rec.expires_at && new Date(rec.expires_at) < new Date()) {

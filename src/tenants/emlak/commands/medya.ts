@@ -208,9 +208,9 @@ export async function handleYayinlaCallback(ctx: WaContext, data: string): Promi
       return;
     }
 
-    // Generate extension token for this user (if not exists)
+    // Generate short 6-char extension token
     const { randomBytes } = await import("crypto");
-    let extToken: string | null = null;
+    let extCode: string;
 
     const { data: existingToken } = await supabase
       .from("extension_tokens")
@@ -219,28 +219,24 @@ export async function handleYayinlaCallback(ctx: WaContext, data: string): Promi
       .maybeSingle();
 
     if (existingToken) {
-      extToken = existingToken.token;
+      extCode = existingToken.token.substring(0, 6).toUpperCase();
     } else {
-      extToken = randomBytes(24).toString("hex");
+      const fullToken = randomBytes(24).toString("hex");
+      extCode = fullToken.substring(0, 6).toUpperCase();
       await supabase.from("extension_tokens").insert({
         user_id: ctx.userId,
-        token: extToken,
+        token: fullToken,
       });
     }
 
     const loc = [prop.location_neighborhood, prop.location_district, prop.location_city].filter(Boolean).join(", ");
-    let text = `📤 *Sahibinden'e Yayınla*\n\n`;
-    text += `📋 ${prop.title || "İsimsiz"}\n`;
-    text += `💰 ${prop.price ? formatPrice(prop.price) : "—"}\n`;
-    text += `📍 ${loc}\n`;
-    if (prop.rooms) text += `🛏 ${prop.rooms}`;
-    if (prop.area) text += ` | 📐 ${prop.area} m²`;
-    text += `\n\n`;
-    text += `🧩 *Chrome Extension ile otomatik doldurma:*\n\n`;
-    text += `1️⃣ Extension'ı kurun:\nhttps://chromewebstore.google.com/detail/emlak-ai/YOUR_EXTENSION_ID\n\n`;
-    text += `2️⃣ Extension'a bu kodu girin:\n\`${extToken}\`\n\n`;
-    text += `3️⃣ Sahibinden.com/ilan-ver açın\n4️⃣ Extension'dan mülk seçin → "Formu Doldur"\n\n`;
-    text += `_Tüm alanlar otomatik doldurulur. Fotoğrafları manuel yükleyin._`;
+    let text = `📤 *${prop.title || "İsimsiz"}*\n`;
+    text += `💰 ${prop.price ? formatPrice(prop.price) : "—"} | 📍 ${loc}\n\n`;
+    text += `Sahibinden'e yayınlamak için:\n\n`;
+    text += `1. Chrome'da sahibinden.com/ilan-ver açın\n`;
+    text += `2. Emlak AI extension'ını açın\n`;
+    text += `3. Bağlantı kodu: *${extCode}*\n\n`;
+    text += `_Form otomatik doldurulur. Fotoğrafları manuel yükleyin._`;
 
     await supabase.from("emlak_publishing_history").insert({
       tenant_id: ctx.tenantId,
