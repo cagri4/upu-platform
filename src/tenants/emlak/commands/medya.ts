@@ -233,10 +233,10 @@ export async function handleYayinlaCallback(ctx: WaContext, data: string): Promi
     let text = `📤 *${prop.title || "İsimsiz"}*\n`;
     text += `💰 ${prop.price ? formatPrice(prop.price) : "—"} | 📍 ${loc}\n\n`;
     text += `Sahibinden'e yayınlamak için:\n\n`;
-    text += `1. Chrome'da sahibinden.com/ilan-ver açın\n`;
-    text += `2. Emlak AI extension'ını açın\n`;
-    text += `3. Bağlantı kodu: *${extCode}*\n\n`;
-    text += `_Form otomatik doldurulur. Fotoğrafları manuel yükleyin._`;
+    text += `1. Extension'ı kurun:\nhttps://chromewebstore.google.com/detail/bcafoeijofbhelbanpfjhmhiokjnggbe\n`;
+    text += `2. Bağlantı kodu: *${extCode}*\n`;
+    text += `3. sahibinden.com/ilan-ver açın → Formu Doldur\n\n`;
+    text += `_Tüm alanlar otomatik doldurulur._`;
 
     await supabase.from("emlak_publishing_history").insert({
       tenant_id: ctx.tenantId,
