@@ -208,28 +208,49 @@ export async function handleYayinlaCallback(ctx: WaContext, data: string): Promi
       return;
     }
 
-    // Build portal-ready listing text
+    // Generate extension token for this user (if not exists)
+    const { randomBytes } = await import("crypto");
+    let extToken: string | null = null;
+
+    const { data: existingToken } = await supabase
+      .from("extension_tokens")
+      .select("token")
+      .eq("user_id", ctx.userId)
+      .maybeSingle();
+
+    if (existingToken) {
+      extToken = existingToken.token;
+    } else {
+      extToken = randomBytes(24).toString("hex");
+      await supabase.from("extension_tokens").insert({
+        user_id: ctx.userId,
+        token: extToken,
+      });
+    }
+
     const loc = [prop.location_neighborhood, prop.location_district, prop.location_city].filter(Boolean).join(", ");
-    let text = `📤 PORTAL YAYIN BILGILERI\n━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    let text = `📤 *Sahibinden'e Yayınla*\n\n`;
     text += `📋 ${prop.title || "İsimsiz"}\n`;
     text += `💰 ${prop.price ? formatPrice(prop.price) : "—"}\n`;
     text += `📍 ${loc}\n`;
     if (prop.rooms) text += `🛏 ${prop.rooms}`;
     if (prop.area) text += ` | 📐 ${prop.area} m²`;
-    text += `\n`;
-    if (prop.description) text += `\n📝 ${(prop.description as string).substring(0, 300)}\n`;
-    text += `\n💡 Bu bilgileri Sahibinden, Hepsiemlak veya Emlakjet'e kopyalayabilirsiniz.`;
+    text += `\n\n`;
+    text += `🧩 *Chrome Extension ile otomatik doldurma:*\n\n`;
+    text += `1️⃣ Extension'ı kurun:\nhttps://chromewebstore.google.com/detail/emlak-ai/YOUR_EXTENSION_ID\n\n`;
+    text += `2️⃣ Extension'a bu kodu girin:\n\`${extToken}\`\n\n`;
+    text += `3️⃣ Sahibinden.com/ilan-ver açın\n4️⃣ Extension'dan mülk seçin → "Formu Doldur"\n\n`;
+    text += `_Tüm alanlar otomatik doldurulur. Fotoğrafları manuel yükleyin._`;
 
-    // Record publishing
     await supabase.from("emlak_publishing_history").insert({
       tenant_id: ctx.tenantId,
       property_id: propId,
-      portal: "manual",
+      portal: "sahibinden",
       status: "prepared",
     });
 
     await sendButtons(ctx.phone, text, [
-      { id: "cmd:portfoyum", title: "Portfoyum" },
+      { id: "cmd:portfoyum", title: "Portföyüm" },
       { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
