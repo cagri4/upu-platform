@@ -24,7 +24,8 @@ import { handleHatirlatma, handleHatirlatmaStep, handleHatirlatmaCallback } from
 import { handleTakipEt, handleTakipEtStep, handleTakipEtCallback } from "./takip-et";
 import { handleSatisTavsiye, handleSatisTavsiyeCallback } from "./satis-tavsiye";
 import { handleOrtakPazar, handleOrtakPazarCallback } from "./ortak-pazar";
-import { handleFotograf, handleFotografCallback, handlePaylas, handlePaylasCallback, handleYayinla, handleYayinlaCallback, handleWebsitem } from "./medya";
+import { handleFotograf, handleFotografCallback, handlePaylas, handlePaylasCallback, handleYayinla, handleYayinlaCallback } from "./medya";
+import { handleWebsitem, handleWebsitemStep, handleWebsitemCallback } from "./websitem-wizard";
 import { handleDegerle, handleDegerleCallback, handleMulkOner, handleMulkOnerStep } from "./degerle";
 import { handleTrend } from "./trend";
 import { handleHediyeler, handleHediyelerCallback } from "./hediyeler";
@@ -84,6 +85,7 @@ export const emlakCommands: TenantCommandRegistry = {
     takipEt: handleTakipEtStep,
     mulkoner: handleMulkOnerStep,
     sozlesme: handleSozlesmeStep,
+    websitem: handleWebsitemStep,
   },
   callbackPrefixes: {
     "mulkekle_method:": async (ctx, callbackData) => {
@@ -118,6 +120,8 @@ export const emlakCommands: TenantCommandRegistry = {
     "dg:": handleDegerleCallback,
     "hdy:": handleHediyelerCallback,
     "szl:": handleSozlesmeCallback,
+    "websitem_action:": handleWebsitemCallback,
+    "websitem_theme:": handleWebsitemCallback,
   },
   aliases: {
     "portföy": "portfoyum",
