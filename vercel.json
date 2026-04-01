@@ -4,6 +4,7 @@
     { "path": "/api/cron/hourly-check", "schedule": "0 6 * * *" },
     { "path": "/api/cron/daily-check", "schedule": "30 6 * * *" },
     { "path": "/api/cron/weekly-report", "schedule": "0 6 * * 1" },
-    { "path": "/api/cron/agent-run", "schedule": "0 7 * * *" }
+    { "path": "/api/cron/agent-run", "schedule": "0 7 * * *" },
+    { "path": "/api/cron/agent-events", "schedule": "0 8 * * *" }
   ]
 }

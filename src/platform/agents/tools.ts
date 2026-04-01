@@ -234,10 +234,36 @@ async function executeSendWhatsApp(
   agentName: string,
   agentIcon: string,
 ): Promise<{ result: string; needsApproval: boolean }> {
-  const msg = `WhatsApp mesajı gönderilsin mi?\n\n📱 ${input.phone}\n💬 ${input.message}`;
+  const supabase = getServiceClient();
 
-  return executeNotifyHuman(
-    { message: msg, action_type: "send_whatsapp", action_data: input },
-    ctx, taskId, agentName, agentIcon,
+  const { data: proposal } = await supabase
+    .from("agent_proposals")
+    .insert({
+      user_id: ctx.userId,
+      tenant_id: ctx.tenantId,
+      agent_key: agentName,
+      action_type: "send_whatsapp",
+      action_data: input,
+      message: input.message as string,
+      status: "pending",
+    })
+    .select("id")
+    .single();
+
+  if (!proposal) return { result: "Failed to create draft", needsApproval: false };
+
+  await updateTaskStatus(taskId, "waiting_human", { pending_proposal_id: proposal.id });
+
+  // Draft UI with Send/Edit/Cancel
+  await sendButtons(
+    ctx.phone,
+    `${agentIcon} *${agentName} — Mesaj Taslağı*\n\nKime: ${input.phone}\nMesaj: "${input.message}"`,
+    [
+      { id: `agent_send:${proposal.id}`, title: "✅ Gönder" },
+      { id: `agent_edit:${proposal.id}`, title: "✏️ Düzenle" },
+      { id: `agent_no:${proposal.id}`, title: "❌ İptal" },
+    ],
   );
+
+  return { result: `Draft created: ${proposal.id}`, needsApproval: true };
 }

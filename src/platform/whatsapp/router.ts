@@ -105,6 +105,18 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       return;
     }
 
+    // Agent draft send/edit/reject
+    if (ctx.interactiveId.startsWith("agent_send:")) {
+      const proposalId = ctx.interactiveId.replace("agent_send:", "");
+      await handleAgentDraftSend(ctx, proposalId);
+      return;
+    }
+    if (ctx.interactiveId.startsWith("agent_edit:")) {
+      const proposalId = ctx.interactiveId.replace("agent_edit:", "");
+      await handleAgentDraftEdit(ctx, proposalId);
+      return;
+    }
+
     // Agent proposal approval/rejection
     if (ctx.interactiveId.startsWith("agent_ok:") || ctx.interactiveId.startsWith("agent_no:")) {
       const approved = ctx.interactiveId.startsWith("agent_ok:");
@@ -258,7 +270,41 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         return;
       }
     }
-  } catch { /* AI unavailable — fall through to unrecognized */ }
+  } catch { /* AI unavailable — fall through */ }
+
+  // ── Free text → active agent task routing ──
+  try {
+    const { getActiveTask: getActive } = await import("@/platform/agents/memory");
+    // Check all possible agent keys for active tasks
+    const supabase = getServiceClient();
+    const { data: activeTasks } = await supabase
+      .from("agent_tasks")
+      .select("id, agent_key, status")
+      .eq("user_id", ctx.userId)
+      .eq("status", "waiting_human")
+      .limit(1);
+
+    if (activeTasks?.length) {
+      const task = activeTasks[0];
+      const { saveMessage } = await import("@/platform/agents/memory");
+      await saveMessage(ctx.userId, ctx.tenantId, task.agent_key, task.id, "user", ctx.text);
+
+      // Check if this is a draft edit response
+      const { data: editSession } = await supabase
+        .from("command_sessions")
+        .select("data")
+        .eq("user_id", ctx.userId)
+        .eq("command", "agent_draft_edit")
+        .maybeSingle();
+
+      if (editSession?.data) {
+        const proposalId = (editSession.data as Record<string, unknown>).proposal_id as string;
+        await endSession(ctx.userId);
+        await finalizeDraftEdit(ctx, proposalId, ctx.text);
+        return;
+      }
+    }
+  } catch { /* ignore */ }
 
   // Unrecognized
   await sendButtons(ctx.phone, "Komutu anlamadım.", [
@@ -606,4 +652,126 @@ async function handleFavCallback(ctx: WaContext) {
     { id: "cmd:favoriler", title: "⭐ Favoriler" },
     { id: "cmd:menu", title: "📋 Ana Menü" },
   ]);
+}
+
+// ── Agent Draft Message UI ──────────────────────────────────────────────
+
+async function handleAgentDraftSend(ctx: WaContext, proposalId: string) {
+  const supabase = getServiceClient();
+
+  const { data: proposal } = await supabase
+    .from("agent_proposals")
+    .select("*")
+    .eq("id", proposalId)
+    .eq("status", "pending")
+    .single();
+
+  if (!proposal) {
+    await sendText(ctx.phone, "Bu taslak artık geçerli değil.");
+    return;
+  }
+
+  const actionData = proposal.action_data as Record<string, unknown>;
+  const phone = actionData.phone as string;
+  const message = actionData.message as string;
+
+  if (!phone || !message) {
+    await sendText(ctx.phone, "Mesaj bilgisi eksik.");
+    return;
+  }
+
+  // Send the actual message
+  await sendText(phone, message);
+
+  // Update proposal
+  await supabase.from("agent_proposals")
+    .update({ status: "approved", resolved_at: new Date().toISOString() })
+    .eq("id", proposalId);
+
+  // Log to agent_messages
+  const { saveMessage: savMsg } = await import("@/platform/agents/memory");
+  await savMsg(ctx.userId, ctx.tenantId, proposal.agent_key, null, "assistant", `Mesaj gönderildi: ${phone}`);
+
+  // Resume task if linked
+  const { data: task } = await supabase
+    .from("agent_tasks")
+    .select("id, current_step")
+    .eq("pending_proposal_id", proposalId)
+    .eq("status", "waiting_human")
+    .maybeSingle();
+
+  if (task) {
+    const { updateTaskStatus: updTask, logStep: logS } = await import("@/platform/agents/memory");
+    await logS(task.id, task.current_step, "draft_sent", `Sent to ${phone}`, "success");
+    await updTask(task.id, "done", { pending_proposal_id: null });
+  }
+
+  await sendButtons(ctx.phone, "✅ Mesaj gönderildi.", [
+    { id: "cmd:menu", title: "📋 Ana Menü" },
+  ]);
+}
+
+async function handleAgentDraftEdit(ctx: WaContext, proposalId: string) {
+  const supabase = getServiceClient();
+
+  const { data: proposal } = await supabase
+    .from("agent_proposals")
+    .select("action_data, agent_key")
+    .eq("id", proposalId)
+    .eq("status", "pending")
+    .single();
+
+  if (!proposal) {
+    await sendText(ctx.phone, "Bu taslak artık geçerli değil.");
+    return;
+  }
+
+  const actionData = proposal.action_data as Record<string, unknown>;
+
+  // Start edit session
+  const { startSession: startSess, updateSession: updSess } = await import("@/platform/whatsapp/session");
+  await startSess(ctx.userId, ctx.tenantId, "agent_draft_edit", "waiting_text");
+  await updSess(ctx.userId, "waiting_text", { proposal_id: proposalId });
+
+  await sendText(ctx.phone, `✏️ Mevcut mesaj:\n\n"${actionData.message}"\n\nYeni mesajı yazın:`);
+}
+
+async function finalizeDraftEdit(ctx: WaContext, proposalId: string, newText: string) {
+  const supabase = getServiceClient();
+
+  const { data: proposal } = await supabase
+    .from("agent_proposals")
+    .select("*")
+    .eq("id", proposalId)
+    .eq("status", "pending")
+    .single();
+
+  if (!proposal) {
+    await sendText(ctx.phone, "Bu taslak artık geçerli değil.");
+    return;
+  }
+
+  const actionData = proposal.action_data as Record<string, unknown>;
+  actionData.message = newText;
+
+  // Update proposal with new text
+  await supabase.from("agent_proposals")
+    .update({ action_data: actionData, message: proposal.message })
+    .eq("id", proposalId);
+
+  // Log edit for Claude to learn user style
+  const { saveMessage: savMsg } = await import("@/platform/agents/memory");
+  await savMsg(ctx.userId, ctx.tenantId, proposal.agent_key, null, "user",
+    `Taslak düzenlendi. Eski: "${(proposal.action_data as Record<string, unknown>).message}" → Yeni: "${newText}"`);
+
+  // Show updated draft with send/edit/cancel
+  const phone = actionData.phone as string;
+  await sendButtons(ctx.phone,
+    `📋 *Mesaj Taslağı (düzenlendi)*\n\nKime: ${phone}\nMesaj: "${newText}"`,
+    [
+      { id: `agent_send:${proposalId}`, title: "✅ Gönder" },
+      { id: `agent_edit:${proposalId}`, title: "✏️ Düzenle" },
+      { id: `agent_no:${proposalId}`, title: "❌ İptal" },
+    ],
+  );
 }
