@@ -402,17 +402,19 @@ async function showMenu(
     return;
   }
 
-  // Message 1: Favorites as buttons (user's or default, max 3)
+  // Message 1: Favorites as list (user's or default, up to 10)
   const userFavs = await getUserFavorites(ctx.userId);
   const favCmds = userFavs.length > 0 ? userFavs : (tenant.defaultFavorites || []);
   if (favCmds.length > 0) {
-    const favButtons = favCmds.slice(0, 3).map(cmd => ({
+    const favRows = favCmds.slice(0, 10).map(cmd => ({
       id: `cmd:${cmd}`,
-      title: (COMMAND_LABELS[cmd] || cmd).substring(0, 20),
+      title: (COMMAND_LABELS[cmd] || cmd).substring(0, 24),
+      description: "",
     }));
-    await sendButtons(ctx.phone,
+    await sendList(ctx.phone,
       `${tenant.icon} *${tenant.name}*\n\n⭐ Sık kullanılanlar:\n\n_("menu" yazarak buraya dönebilirsiniz.)_`,
-      favButtons,
+      "Favoriler",
+      [{ title: "Sık Kullanılanlar", rows: favRows }],
     );
   }
 
@@ -459,7 +461,7 @@ async function showProfile(ctx: WaContext) {
   const supabase = getServiceClient();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, email, phone, whatsapp_phone, preferred_locale, created_at")
+    .select("display_name, email, phone, whatsapp_phone, preferred_locale, created_at, metadata")
     .eq("id", ctx.userId)
     .single();
 
@@ -470,6 +472,7 @@ async function showProfile(ctx: WaContext) {
 
   const tenant = getTenantByKey(ctx.tenantKey);
   const dateStr = new Date(profile.created_at).toLocaleDateString("tr-TR");
+  const meta = (profile.metadata || {}) as Record<string, unknown>;
 
   let text = `👤 *Profilim*\n\n`;
   text += `*Ad:* ${profile.display_name || "-"}\n`;
@@ -477,12 +480,26 @@ async function showProfile(ctx: WaContext) {
   text += `*WhatsApp:* ${profile.whatsapp_phone || "-"}\n`;
   text += `*E-posta:* ${profile.email || "-"}\n`;
   text += `*SaaS:* ${tenant?.name || "-"}\n`;
-  text += `*Kayıt:* ${dateStr}`;
+  text += `*Kayıt:* ${dateStr}\n`;
 
-  await sendButtons(ctx.phone, text, [
-    { id: "profil_edit:name", title: "✏️ İsim Değiştir" },
-    { id: "profil_edit:phone", title: "📱 Telefon Değiştir" },
-    { id: "cmd:menu", title: "📋 Ana Menü" },
+  // Business info from onboarding
+  if (meta.office_name || meta.location) {
+    text += `\n🏢 *İş Bilgileri*\n`;
+    if (meta.office_name) text += `*Ofis:* ${meta.office_name}\n`;
+    if (meta.location) text += `*Bölge:* ${meta.location}\n`;
+    text += `*Brifing:* ${meta.briefing_enabled ? "Aktif ✅" : "Pasif ❌"}`;
+  }
+
+  await sendList(ctx.phone, text, "Düzenle", [
+    {
+      title: "Profil Düzenle",
+      rows: [
+        { id: "profil_edit:name", title: "✏️ İsim Değiştir", description: "Görünen adınızı değiştirin" },
+        { id: "profil_edit:phone", title: "📱 Telefon Değiştir", description: "Telefon numaranızı güncelleyin" },
+        { id: "profil_edit:business", title: "🏢 İş Bilgileri Düzenle", description: "Ofis, bölge ve brifing ayarları" },
+        { id: "cmd:menu", title: "📋 Ana Menü", description: "Ana menüye dön" },
+      ],
+    },
   ]);
 }
 
@@ -497,6 +514,19 @@ async function handleProfileEditCallback(ctx: WaContext) {
   } else if (field === "phone") {
     await startSession(ctx.userId, ctx.tenantId, "profil_edit", "phone");
     await sendText(ctx.phone, "📱 Yeni telefon numaranızı yazın (ör. 05xx xxx xx xx):");
+  } else if (field === "business") {
+    // Re-run onboarding flow to update business info
+    const { initOnboarding, getOnboardingState: getOnbState, sendOnboardingStep } = await import("@/platform/whatsapp/onboarding");
+    await initOnboarding(ctx.userId, ctx.tenantId, ctx.tenantKey);
+    const state = await getOnbState(ctx.userId);
+    if (state) {
+      await sendText(ctx.phone, "🏢 İş bilgilerinizi güncelleyelim:");
+      await sendOnboardingStep(ctx, state);
+    } else {
+      await sendButtons(ctx.phone, "Bu SaaS için iş bilgileri düzenleme henüz desteklenmiyor.", [
+        { id: "cmd:profilim", title: "👤 Profilim" },
+      ]);
+    }
   }
 }
 
@@ -656,13 +686,13 @@ async function showFavorites(
 
   // Get all available commands for this tenant
   const allCmds = Object.keys(registry.commands);
-  const notInFav = allCmds.filter(c => !favCmds.includes(c) && COMMAND_LABELS[c]).slice(0, 8);
+  const notInFav = allCmds.filter(c => !favCmds.includes(c) && COMMAND_LABELS[c]);
 
   // Show add options as list
   const rows: Array<{ id: string; title: string; description?: string }> = [];
 
-  // Remove options
-  for (const cmd of favCmds.slice(0, 3)) {
+  // Remove options (current favorites)
+  for (const cmd of favCmds) {
     rows.push({
       id: `fav_rm:${cmd}`,
       title: `❌ ${(COMMAND_LABELS[cmd] || cmd).substring(0, 20)}`,
@@ -670,8 +700,8 @@ async function showFavorites(
     });
   }
 
-  // Add options
-  for (const cmd of notInFav.slice(0, 7 - rows.length)) {
+  // Add options (fill remaining space up to 10 rows)
+  for (const cmd of notInFav.slice(0, 10 - rows.length)) {
     rows.push({
       id: `fav_add:${cmd}`,
       title: `➕ ${(COMMAND_LABELS[cmd] || cmd).substring(0, 20)}`,
@@ -706,7 +736,7 @@ async function handleFavCallback(ctx: WaContext) {
 
   if (isAdd) {
     if (!favs.includes(cmd)) favs.push(cmd);
-    if (favs.length > 3) favs = favs.slice(-3); // max 3 (WhatsApp button limit)
+    if (favs.length > 10) favs = favs.slice(-10); // max 10 (WhatsApp list limit)
   } else {
     favs = favs.filter(f => f !== cmd);
   }
