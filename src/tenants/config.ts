@@ -20,9 +20,11 @@ export interface TenantConfig {
   tenantId: string;      // Supabase tenant ID
   saasType: string;
   domain?: string;       // Custom domain (e.g., emlakofisi.ai)
+  whatsappPhone: string; // Bot WhatsApp number (e.g., "31644967207")
   icon: string;
   color: string;         // Primary brand color
   description: string;
+  welcomeFeatures: string; // Tenant-specific feature summary for welcome message
   employees: VirtualEmployee[];
   commandMap: Record<string, string>;
   guide: string;         // SaaS-specific usage guide text
@@ -38,9 +40,11 @@ const TENANTS: Record<string, TenantConfig> = {
     slug: "estateai",
     tenantId: "3f3598fc-a93e-4c73-bd33-7c4217f6c089",
     saasType: "emlak",
+    whatsappPhone: "31644967207",
     icon: "🏠",
     color: "#4F46E5",
     description: "Emlak danışmanları için AI destekli sanal ofis ekibi",
+    welcomeFeatures: "Portföy yönetimi, müşteri takibi, fiyat analizi ve daha fazlasını",
     employees: [
       { key: "portfoy", name: "Portföy Sorumlusu", icon: "🗂", description: "Mülk yönetimi", commands: ["portfoyum", "mulkekle", "mulkyonet"] },
       { key: "satis", name: "Satış Destek Uzmanı", icon: "🤝", description: "Müşteri ve eşleştirme", commands: ["musterilerim", "musteriEkle", "musteriDuzenle", "eslestir", "hatirlatma", "takipEt", "satistavsiye", "ortakpazar"] },
@@ -58,9 +62,11 @@ const TENANTS: Record<string, TenantConfig> = {
     slug: "retailai",
     tenantId: "32f5feda-700f-44c6-a270-5bbb5a040994",
     saasType: "bayi",
+    whatsappPhone: "31644967207",
     icon: "📦",
     color: "#059669",
     description: "Bayi ağı yönetimi için AI destekli sanal ekip",
+    welcomeFeatures: "Sipariş yönetimi, stok takibi, bayi ağı yönetimi ve daha fazlasını",
     employees: [
       { key: "asistan", name: "Asistan", icon: "📊", description: "Günlük özet, takvim ve hatırlatmalar", commands: ["ozet", "takvim", "hatirlatma", "rapor"] },
       { key: "satisMuduru", name: "Satış Müdürü", icon: "💰", description: "Kampanya, teklif ve performans analizi", commands: ["kampanyaolustur", "kampanyalar", "teklifver", "performans", "segment"] },
@@ -81,9 +87,11 @@ const TENANTS: Record<string, TenantConfig> = {
     slug: "accountai",
     tenantId: "31a22a5a-cf38-48b5-914d-a67bde4c1e16",
     saasType: "muhasebe",
+    whatsappPhone: "31644967207",
     icon: "📊",
     color: "#7C3AED",
     description: "Muhasebe büroları için AI destekli sanal ekip",
+    welcomeFeatures: "Fatura takibi, vergi hesaplama, alacak yönetimi ve daha fazlasını",
     employees: [
       { key: "faturaUzmani", name: "Fatura İşleme Uzmanı", icon: "📄", description: "e-Fatura yükleme, arama ve hesap kodu önerisi", commands: ["fatura_yukle", "son_faturalar", "fatura_ara", "fatura_detay", "fatura_rapor"] },
       { key: "sekreter", name: "Sekreter", icon: "📅", description: "Beyanname takvimi, randevu ve mükellefl yönetimi", commands: ["mukellefler", "mukellef_ekle", "takvim", "yaklasan", "randevular", "brifing"] },
@@ -100,9 +108,11 @@ const TENANTS: Record<string, TenantConfig> = {
     slug: "hotelai",
     tenantId: "16871326-afef-4ba3-a079-2c5ede8fac4d",
     saasType: "otel",
+    whatsappPhone: "31644967207",
     icon: "🏨",
     color: "#DC2626",
     description: "Oteller için AI destekli sanal ekip",
+    welcomeFeatures: "Rezervasyon yönetimi, oda takibi, misafir deneyimi ve daha fazlasını",
     employees: [
       { key: "resepsiyon", name: "Resepsiyon", icon: "🛎️", description: "Misafir karşılama, mesaj yönetimi ve eskalasyon", commands: ["misafirler", "mesajlar", "yanitla", "eskalasyon"] },
       { key: "rezervasyon", name: "Rezervasyon Uzmanı", icon: "📅", description: "Müsaitlik, fiyat sorgulama ve check-in/out", commands: ["rezervasyonlar", "checkin", "checkout", "musaitlik", "fiyat", "rezervasyonekle"] },
@@ -119,9 +129,11 @@ const TENANTS: Record<string, TenantConfig> = {
     slug: "residenceai",
     tenantId: "c12010c7-7b13-44d5-bdc7-fc7c2c1ac82e",
     saasType: "siteyonetim",
+    whatsappPhone: "31644967207",
     icon: "🏢",
     color: "#0891B2",
     description: "Konut ve site yönetimi için AI destekli sanal ekip",
+    welcomeFeatures: "Aidat takibi, arıza bildirimi, duyuru yönetimi ve daha fazlasını",
     employees: [
       { key: "muhasebeci", name: "Muhasebeci", icon: "💰", description: "Aidat, borç durumu, gelir-gider ve tahakkuk", commands: ["borcum", "rapor", "aidat", "gelir_gider"] },
       { key: "sekreter", name: "Sekreter", icon: "📝", description: "Duyuru, toplantı çağrısı ve sakin iletişimi", commands: ["duyuru", "toplanti", "mesaj"] },
@@ -138,9 +150,11 @@ const TENANTS: Record<string, TenantConfig> = {
     slug: "marketai",
     tenantId: "af1f27b0-2ec1-4423-9b93-2aa29979b73a",
     saasType: "market",
+    whatsappPhone: "31644967207",
     icon: "🛒",
     color: "#F59E0B",
     description: "Marketler için AI destekli stok ve satış yönetimi",
+    welcomeFeatures: "Stok yönetimi, sipariş takibi, satış raporları ve daha fazlasını",
     employees: [
       { key: "stokSorumlusu", name: "Stok Sorumlusu", icon: "📦", description: "Ürün ekleme, stok güncelleme ve sorgulama", commands: ["stokekle", "stokguncelle", "stoksil", "stoksorgula"] },
       { key: "siparisYoneticisi", name: "Sipariş Yöneticisi", icon: "📋", description: "Tedarikçi ve sipariş yönetimi", commands: ["tedarikciekle", "tedarikciler", "siparisolustur", "siparisekle", "siparisler", "siparisdetay", "siparisonayla", "siparisiptal"] },

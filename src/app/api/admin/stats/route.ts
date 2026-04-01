@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServiceClient } from '@/platform/auth/supabase';
+import { getTenantByKey } from '@/tenants/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,8 +36,14 @@ export async function GET() {
       .select('id, display_name, email, phone, whatsapp_phone, tenant_id, created_at')
       .order('created_at', { ascending: false });
 
+    // Enrich tenants with whatsappPhone from config
+    const enrichedTenants = (tenants || []).map((t: { saas_type?: string; [key: string]: unknown }) => {
+      const cfg = t.saas_type ? getTenantByKey(t.saas_type) : null;
+      return { ...t, whatsapp_phone: cfg?.whatsappPhone || "31644967207" };
+    });
+
     return NextResponse.json({
-      tenants: tenants || [],
+      tenants: enrichedTenants,
       userCounts: counts,
       totalUsers: total,
       users: users || [],

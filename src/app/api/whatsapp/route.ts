@@ -10,6 +10,7 @@ import { getServiceClient } from "@/platform/auth/supabase";
 import { routeCommand } from "@/platform/whatsapp/router";
 import { markAsRead, sendText } from "@/platform/whatsapp/send";
 import type { WaContext } from "@/platform/whatsapp/types";
+import { getTenantByKey } from "@/tenants/config";
 import {
   registerOnboardingFlow,
   getOnboardingState,
@@ -26,6 +27,8 @@ export const dynamic = "force-dynamic";
 registerOnboardingFlow(emlakOnboardingFlow);
 import { siteyonetimOnboardingFlow } from "@/tenants/siteyonetim/onboarding-flow";
 registerOnboardingFlow(siteyonetimOnboardingFlow);
+import { bayiOnboardingFlow } from "@/tenants/bayi/onboarding-flow";
+registerOnboardingFlow(bayiOnboardingFlow);
 
 // ─── Register agent setup flows ──────────────────────────────────────────
 import { registerAgentSetup } from "@/platform/agents/setup";
@@ -188,6 +191,8 @@ export async function POST(req: NextRequest) {
         // Check if onboarding flow exists for this tenant
         const onbFlow = getOnboardingFlow(tenantKey);
         const userName = invitedUser?.display_name || "";
+        const tenantCfg = getTenantByKey(tenantKey);
+        const features = tenantCfg?.welcomeFeatures || "iş süreçlerinizi";
 
         if (onbFlow) {
           const { sendButtons: sendBtns } = await import("@/platform/whatsapp/send");
@@ -195,7 +200,7 @@ export async function POST(req: NextRequest) {
             `Merhaba ${userName}! 👋\n\n` +
             `*${tenantName}* sistemine hoş geldiniz!\n\n` +
             `Bu sistem, WhatsApp üzerinden size yardımcı olan AI destekli sanal çalışanlardan oluşuyor. ` +
-            `Portföy yönetimi, müşteri takibi, fiyat analizi ve daha fazlasını tek bir sohbetten halledebilirsiniz.\n\n` +
+            `${features} tek bir sohbetten halledebilirsiniz.\n\n` +
             `Önce sizi hızlıca tanıyalım — birkaç kısa soru soracağım. Hazır mısınız?`,
             [{ id: "cmd:menu", title: "📋 Ana Menü" }],
           );
@@ -217,7 +222,7 @@ export async function POST(req: NextRequest) {
             `Merhaba ${userName}! 👋\n\n` +
             `*${tenantName}* sistemine hoş geldiniz!\n\n` +
             `Bu sistem, WhatsApp üzerinden size yardımcı olan AI destekli sanal çalışanlardan oluşuyor. ` +
-            `Portföy yönetimi, müşteri takibi, fiyat analizi ve daha fazlasını tek bir sohbetten halledebilirsiniz.\n\n` +
+            `${features} tek bir sohbetten halledebilirsiniz.\n\n` +
             `Başlamak için aşağıdaki Ana Menü butonuna tıklayın veya "menu" yazın.`,
             [{ id: "cmd:menu", title: "📋 Ana Menü" }],
           );
