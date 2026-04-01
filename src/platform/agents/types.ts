@@ -72,6 +72,19 @@ export interface AgentAction {
   input: Record<string, unknown>;
 }
 
+export interface ToolResult {
+  result: string;
+  needsApproval: boolean;
+}
+
+export type ToolHandler = (
+  input: Record<string, unknown>,
+  ctx: AgentContext,
+  taskId: string,
+  agentName: string,
+  agentIcon: string,
+) => Promise<ToolResult>;
+
 export interface AgentDefinition {
   key: string;
   name: string;
@@ -82,4 +95,5 @@ export interface AgentDefinition {
   parseProposals: (aiResponse: string, data: Record<string, unknown>) => AgentProposal[];
   execute: (ctx: AgentContext, actionType: string, actionData: Record<string, unknown>) => Promise<string>;
   tools?: AgentToolDefinition[];
+  toolHandlers?: Record<string, ToolHandler>;
 }

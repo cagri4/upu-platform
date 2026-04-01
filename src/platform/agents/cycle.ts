@@ -77,6 +77,7 @@ export async function runAgentCycle(
         task.id,
         agent.name,
         agent.icon,
+        agent.toolHandlers,
       );
 
       // Save tool result

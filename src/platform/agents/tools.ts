@@ -7,7 +7,7 @@
 
 import { getServiceClient } from "@/platform/auth/supabase";
 import { sendButtons } from "@/platform/whatsapp/send";
-import type { AgentContext, AgentToolDefinition } from "./types";
+import type { AgentContext, AgentToolDefinition, ToolHandler } from "./types";
 import { updateTaskStatus, logStep } from "./memory";
 
 // ── Tool Definitions (for Claude tool_use) ─────────────────────────────
@@ -90,6 +90,7 @@ export async function executeTool(
   taskId: string,
   agentName: string,
   agentIcon: string,
+  domainHandlers?: Record<string, ToolHandler>,
 ): Promise<{ result: string; needsApproval: boolean }> {
   switch (toolName) {
     case "read_db":
@@ -107,8 +108,14 @@ export async function executeTool(
     case "send_whatsapp":
       return await executeSendWhatsApp(input, ctx, taskId, agentName, agentIcon);
 
-    default:
+    default: {
+      // Check domain-specific tool handlers from agent
+      const handler = domainHandlers?.[toolName];
+      if (handler) {
+        return await handler(input, ctx, taskId, agentName, agentIcon);
+      }
       return { result: `Unknown tool: ${toolName}`, needsApproval: false };
+    }
   }
 }
 
