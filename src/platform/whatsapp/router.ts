@@ -3,7 +3,7 @@
  */
 
 import type { WaContext, TenantCommandRegistry } from "./types";
-import { getSession, endSession } from "./session";
+import { getSession, endSession, startSession, updateSession } from "./session";
 import { sendText, sendButtons, sendList } from "./send";
 import { emlakCommands } from "@/tenants/emlak/commands";
 import { bayiCommands } from "@/tenants/bayi/commands";
@@ -72,7 +72,7 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         await showGuide(ctx, tenant);
         return;
       }
-      if (cmd === "profil") {
+      if (cmd === "profil" || cmd === "profilim") {
         await showProfile(ctx);
         return;
       }
@@ -97,6 +97,12 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         await handler(ctx);
         return;
       }
+    }
+
+    // Profile edit callbacks
+    if (ctx.interactiveId.startsWith("profil_edit:")) {
+      await handleProfileEditCallback(ctx);
+      return;
     }
 
     // Favorites add/remove callbacks
@@ -196,6 +202,11 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       ]);
       return;
     }
+    // Profile edit sessions
+    if (session.command === "profil_edit") {
+      await handleProfileEditInput(ctx, session);
+      return;
+    }
     // Agent setup sessions
     if (session.command.startsWith("agent_setup_")) {
       const { handleAgentSetupInput } = await import("@/platform/agents/setup");
@@ -224,7 +235,7 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     await showGuide(ctx, tenant);
     return;
   }
-  if (firstWord === "profil") {
+  if (firstWord === "profil" || firstWord === "profilim") {
     await showProfile(ctx);
     return;
   }
@@ -420,13 +431,22 @@ async function showMenu(
     ],
   );
 
-  // Message 3: System commands as buttons (always shown, max 3)
-  await sendButtons(ctx.phone,
+  // Message 3: System commands as list (supports up to 10 items)
+  await sendList(ctx.phone,
     "⚙️ Sistem:",
+    "Sistem Menüsü",
     [
-      { id: "cmd:kilavuz", title: "📖 Kılavuz" },
-      { id: "cmd:webpanel", title: "🖥 Web Panel" },
-      { id: "cmd:uzanti", title: "🧩 Uzantı Kurulumu" },
+      {
+        title: "Sistem",
+        rows: [
+          { id: "cmd:profilim", title: "👤 Profilim", description: "Profil bilgileri ve düzenleme" },
+          { id: "cmd:favoriler", title: "⭐ Favoriler", description: "Sık kullanılan komutları düzenle" },
+          { id: "cmd:kilavuz", title: "📖 Kılavuz", description: "Kullanım rehberi" },
+          { id: "cmd:webpanel", title: "🖥 Web Panel", description: "Tarayıcıdan giriş yap" },
+          { id: "cmd:uzanti", title: "🧩 Uzantı Kurulumu", description: "Chrome uzantısı bağlantısı" },
+          { id: "cmd:hakkimizda", title: "ℹ️ Hakkımızda", description: "UPU Dev hakkında bilgi" },
+        ],
+      },
     ],
   );
 }
@@ -451,16 +471,72 @@ async function showProfile(ctx: WaContext) {
   const tenant = getTenantByKey(ctx.tenantKey);
   const dateStr = new Date(profile.created_at).toLocaleDateString("tr-TR");
 
-  let text = `👤 *Profil Bilgileri*\n\n`;
-  text += `Ad: ${profile.display_name || "-"}\n`;
-  text += `E-posta: ${profile.email || "-"}\n`;
-  text += `Telefon: ${profile.phone || "-"}\n`;
-  text += `WhatsApp: ${profile.whatsapp_phone || "-"}\n`;
-  text += `Dil: ${profile.preferred_locale || "tr"}\n`;
-  text += `SaaS: ${tenant?.name || "-"}\n`;
-  text += `Kayıt: ${dateStr}`;
+  let text = `👤 *Profilim*\n\n`;
+  text += `*Ad:* ${profile.display_name || "-"}\n`;
+  text += `*Telefon:* ${profile.phone || "-"}\n`;
+  text += `*WhatsApp:* ${profile.whatsapp_phone || "-"}\n`;
+  text += `*E-posta:* ${profile.email || "-"}\n`;
+  text += `*SaaS:* ${tenant?.name || "-"}\n`;
+  text += `*Kayıt:* ${dateStr}`;
 
-  await sendButtons(ctx.phone, text, [{ id: "cmd:menu", title: "Ana Menü" }]);
+  await sendButtons(ctx.phone, text, [
+    { id: "profil_edit:name", title: "✏️ İsim Değiştir" },
+    { id: "profil_edit:phone", title: "📱 Telefon Değiştir" },
+    { id: "cmd:menu", title: "📋 Ana Menü" },
+  ]);
+}
+
+// ── Profile edit callbacks & session handler ────────────────────────────
+
+async function handleProfileEditCallback(ctx: WaContext) {
+  const field = ctx.interactiveId.replace("profil_edit:", "");
+
+  if (field === "name") {
+    await startSession(ctx.userId, ctx.tenantId, "profil_edit", "name");
+    await sendText(ctx.phone, "✏️ Yeni adınızı yazın:");
+  } else if (field === "phone") {
+    await startSession(ctx.userId, ctx.tenantId, "profil_edit", "phone");
+    await sendText(ctx.phone, "📱 Yeni telefon numaranızı yazın (ör. 05xx xxx xx xx):");
+  }
+}
+
+async function handleProfileEditInput(ctx: WaContext, session: { current_step: string }) {
+  const supabase = getServiceClient();
+  const value = ctx.text.trim();
+
+  if (!value) {
+    await sendText(ctx.phone, "Boş değer gönderilemez. Tekrar deneyin veya \"iptal\" yazın.");
+    return;
+  }
+
+  if (session.current_step === "name") {
+    if (value.length < 2) {
+      await sendText(ctx.phone, "İsim en az 2 karakter olmalı. Tekrar deneyin:");
+      return;
+    }
+    await supabase.from("profiles")
+      .update({ display_name: value, updated_at: new Date().toISOString() })
+      .eq("id", ctx.userId);
+    await endSession(ctx.userId);
+    await sendButtons(ctx.phone, `✅ İsminiz güncellendi: *${value}*`, [
+      { id: "cmd:profilim", title: "👤 Profilim" },
+      { id: "cmd:menu", title: "📋 Ana Menü" },
+    ]);
+  } else if (session.current_step === "phone") {
+    const cleaned = value.replace(/[\s\-\(\)]/g, "");
+    if (cleaned.length < 10) {
+      await sendText(ctx.phone, "Geçerli bir telefon numarası girin (en az 10 hane). Tekrar deneyin:");
+      return;
+    }
+    await supabase.from("profiles")
+      .update({ phone: cleaned, updated_at: new Date().toISOString() })
+      .eq("id", ctx.userId);
+    await endSession(ctx.userId);
+    await sendButtons(ctx.phone, `✅ Telefonunuz güncellendi: *${cleaned}*`, [
+      { id: "cmd:profilim", title: "👤 Profilim" },
+      { id: "cmd:menu", title: "📋 Ana Menü" },
+    ]);
+  }
 }
 
 // ── Employee commands — show commands for selected employee ──────────────
