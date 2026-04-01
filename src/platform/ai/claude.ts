@@ -25,6 +25,50 @@ export async function askClaude(
   }
 }
 
+// ── Tool-using Claude call (for agent engine) ─────────────────────────
+
+export async function askClaudeWithTools(
+  systemPrompt: string,
+  userMessage: string,
+  tools: Array<{ name: string; description: string; input_schema: Record<string, unknown> }>,
+  maxTokens = 1024,
+): Promise<{ text: string; toolCall: { name: string; input: Record<string, unknown> } | null }> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return { text: "", toolCall: null };
+  }
+  try {
+    const anthropicTools = tools.map(t => ({
+      name: t.name,
+      description: t.description,
+      input_schema: t.input_schema as Anthropic.Tool.InputSchema,
+    }));
+
+    const response = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userMessage }],
+      tools: anthropicTools,
+    });
+
+    let text = "";
+    let toolCall: { name: string; input: Record<string, unknown> } | null = null;
+
+    for (const block of response.content) {
+      if (block.type === "text") {
+        text += block.text;
+      } else if (block.type === "tool_use") {
+        toolCall = { name: block.name, input: block.input as Record<string, unknown> };
+      }
+    }
+
+    return { text, toolCall };
+  } catch (err) {
+    console.error("[ai:claude:tools] error:", err);
+    return { text: "", toolCall: null };
+  }
+}
+
 export async function detectIntent(text: string): Promise<{ command: string; args: string; confidence: number } | null> {
   if (!process.env.ANTHROPIC_API_KEY) return null;
   try {
