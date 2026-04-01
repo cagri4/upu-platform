@@ -187,11 +187,17 @@ export async function POST(req: NextRequest) {
 
         // Check if onboarding flow exists for this tenant
         const onbFlow = getOnboardingFlow(tenantKey);
+        const userName = invitedUser?.display_name || "";
+
         if (onbFlow) {
-          await sendText(phone,
-            `Hoş geldiniz ${invitedUser?.display_name || ""}! 🎉\n\n` +
-            `${tenantName} sistemine başarıyla kaydoldunuz.\n\n` +
-            `Sisteminizi hızlıca kuralım — birkaç kısa soru soracağım.`
+          const { sendButtons: sendBtns } = await import("@/platform/whatsapp/send");
+          await sendBtns(phone,
+            `Merhaba ${userName}! 👋\n\n` +
+            `*${tenantName}* sistemine hoş geldiniz!\n\n` +
+            `Bu sistem, WhatsApp üzerinden size yardımcı olan AI destekli sanal çalışanlardan oluşuyor. ` +
+            `Portföy yönetimi, müşteri takibi, fiyat analizi ve daha fazlasını tek bir sohbetten halledebilirsiniz.\n\n` +
+            `Önce sizi hızlıca tanıyalım — birkaç kısa soru soracağım. Hazır mısınız?`,
+            [{ id: "cmd:menu", title: "📋 Ana Menü" }],
           );
 
           // Init onboarding and send first step
@@ -200,16 +206,20 @@ export async function POST(req: NextRequest) {
           if (state) {
             const ctx: WaContext = {
               phone, userId: invite.user_id, tenantId: invite.tenant_id,
-              tenantKey, userName: invitedUser?.display_name || "", locale: "tr",
+              tenantKey, userName, locale: "tr",
               messageId: "", text: "", interactiveId: "",
             };
             await sendOnboardingStep(ctx, state);
           }
         } else {
-          await sendText(phone,
-            `Hoş geldiniz ${invitedUser?.display_name || ""}! 🎉\n\n` +
-            `${tenantName} sistemine başarıyla kaydoldunuz.\n\n` +
-            `💡 "menu" yazarak komutlara ulaşabilirsiniz.`
+          const { sendButtons: sendBtns } = await import("@/platform/whatsapp/send");
+          await sendBtns(phone,
+            `Merhaba ${userName}! 👋\n\n` +
+            `*${tenantName}* sistemine hoş geldiniz!\n\n` +
+            `Bu sistem, WhatsApp üzerinden size yardımcı olan AI destekli sanal çalışanlardan oluşuyor. ` +
+            `Portföy yönetimi, müşteri takibi, fiyat analizi ve daha fazlasını tek bir sohbetten halledebilirsiniz.\n\n` +
+            `Başlamak için aşağıdaki Ana Menü butonuna tıklayın veya "menu" yazın.`,
+            [{ id: "cmd:menu", title: "📋 Ana Menü" }],
           );
         }
         return NextResponse.json({ status: "ok" });
