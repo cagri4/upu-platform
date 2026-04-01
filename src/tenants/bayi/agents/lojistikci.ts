@@ -1,21 +1,275 @@
 /**
- * Lojistikci Agent — pending deliveries, today's routes, delayed shipments
+ * Lojistikci Agent — V2 (tool-using, memory-backed)
+ *
+ * Deliveries, routes, cargo tracking, delayed shipments.
+ * Uses domain tools + platform tools within the agent cycle.
  */
 
-import type { AgentContext, AgentDefinition, AgentProposal } from "@/platform/agents/types";
+import type {
+  AgentContext,
+  AgentDefinition,
+  AgentProposal,
+  AgentToolDefinition,
+  ToolHandler,
+  ToolResult,
+} from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { createProposalAndNotify, formatCurrency, formatDate } from "./helpers";
+
+// ── Domain Tools ────────────────────────────────────────────────────────
+
+const LOJISTIKCI_TOOLS: AgentToolDefinition[] = [
+  {
+    name: "read_pending_deliveries",
+    description:
+      "Yoldaki teslimatları oku. Gönderilmiş siparişler.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "read_today_deliveries",
+    description:
+      "Bugün teslim edilecek siparişleri oku.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "read_delayed_shipments",
+    description:
+      "Geciken sevkiyatları oku. 3+ gün hazırlanıyor durumunda.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "update_order_status",
+    description: "Sipariş durumunu güncelle. Kullanıcı onayı gerektirir.",
+    input_schema: {
+      type: "object",
+      properties: {
+        order_id: { type: "string", description: "Sipariş ID" },
+        new_status: {
+          type: "string",
+          enum: ["preparing", "shipped", "delivered"],
+          description: "Yeni durum",
+        },
+        note: { type: "string", description: "Not (opsiyonel)" },
+      },
+      required: ["order_id", "new_status"],
+    },
+  },
+  {
+    name: "create_delivery_note",
+    description: "Teslimat notu oluştur. Kullanıcı onayı gerektirir.",
+    input_schema: {
+      type: "object",
+      properties: {
+        order_id: { type: "string", description: "Sipariş ID" },
+        note: { type: "string", description: "Teslimat notu" },
+      },
+      required: ["order_id", "note"],
+    },
+  },
+  {
+    name: "draft_message",
+    description: "Taslak WhatsApp mesajı. Direkt göndermez, kullanıcıya gösterir.",
+    input_schema: {
+      type: "object",
+      properties: {
+        customer_name: { type: "string", description: "Alıcı adı" },
+        customer_phone: { type: "string", description: "Telefon numarası" },
+        message_text: { type: "string", description: "Mesaj metni" },
+      },
+      required: ["customer_name", "customer_phone", "message_text"],
+    },
+  },
+];
+
+// ── Domain Tool Handlers ────────────────────────────────────────────────
+
+async function handleReadPendingDeliveries(
+  _input: Record<string, unknown>,
+  ctx: AgentContext,
+): Promise<ToolResult> {
+  const supabase = getServiceClient();
+
+  const { data, error } = await supabase
+    .from("bayi_orders")
+    .select("id, dealer_id, total_amount, created_at")
+    .eq("tenant_id", ctx.tenantId)
+    .eq("status", "shipped")
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error) return { result: `Hata: ${error.message}`, needsApproval: false };
+  if (!data?.length) return { result: "Yoldaki teslimat yok.", needsApproval: false };
+
+  const list = data.map((o) =>
+    `- [${o.id}] Bayi: ${o.dealer_id} | Tutar: ${formatCurrency(o.total_amount || 0)} | Tarih: ${formatDate(o.created_at)}`,
+  );
+  return { result: `Yoldaki teslimatlar (${data.length}):\n${list.join("\n")}`, needsApproval: false };
+}
+
+async function handleReadTodayDeliveries(
+  _input: Record<string, unknown>,
+  ctx: AgentContext,
+): Promise<ToolResult> {
+  const supabase = getServiceClient();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data, error } = await supabase
+    .from("bayi_orders")
+    .select("id, dealer_id, total_amount, estimated_delivery")
+    .eq("tenant_id", ctx.tenantId)
+    .eq("status", "shipped")
+    .eq("estimated_delivery", today);
+
+  if (error) return { result: `Hata: ${error.message}`, needsApproval: false };
+  if (!data?.length) return { result: "Bugün teslim edilecek sipariş yok.", needsApproval: false };
+
+  const list = data.map((o) =>
+    `- [${o.id}] Bayi: ${o.dealer_id} | Tutar: ${formatCurrency(o.total_amount || 0)}`,
+  );
+  return { result: `Bugün teslim edilecek (${data.length}):\n${list.join("\n")}`, needsApproval: false };
+}
+
+async function handleReadDelayedShipments(
+  _input: Record<string, unknown>,
+  ctx: AgentContext,
+): Promise<ToolResult> {
+  const supabase = getServiceClient();
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await supabase
+    .from("bayi_orders")
+    .select("id, dealer_id, total_amount, created_at")
+    .eq("tenant_id", ctx.tenantId)
+    .eq("status", "preparing")
+    .lt("created_at", threeDaysAgo)
+    .order("created_at", { ascending: true });
+
+  if (error) return { result: `Hata: ${error.message}`, needsApproval: false };
+  if (!data?.length) return { result: "Geciken sevkiyat yok.", needsApproval: false };
+
+  const list = data.map((o) => {
+    const delayDays = Math.floor((Date.now() - new Date(o.created_at).getTime()) / (24 * 60 * 60 * 1000));
+    return `- [${o.id}] Bayi: ${o.dealer_id} | Tutar: ${formatCurrency(o.total_amount || 0)} | ${delayDays} gün gecikmiş`;
+  });
+  return { result: `Geciken sevkiyatlar (${data.length}):\n${list.join("\n")}`, needsApproval: false };
+}
+
+async function handleUpdateOrderStatus(
+  input: Record<string, unknown>,
+  ctx: AgentContext,
+  taskId: string,
+  agentName: string,
+  agentIcon: string,
+): Promise<ToolResult> {
+  const statusLabels: Record<string, string> = {
+    preparing: "Hazırlanıyor",
+    shipped: "Gönderildi",
+    delivered: "Teslim Edildi",
+  };
+  const label = statusLabels[input.new_status as string] || input.new_status;
+  const noteText = input.note ? `\n📝 ${input.note}` : "";
+
+  return createProposalAndNotify({
+    ctx, taskId, agentName, agentIcon,
+    agentKey: "bayi_lojistikci",
+    actionType: "update_order_status",
+    actionData: {
+      order_id: input.order_id,
+      new_status: input.new_status,
+      note: input.note || null,
+    },
+    message: `📦 *Sipariş Durum Güncelleme*\n\n🔖 Sipariş: ${input.order_id}\n📊 Yeni durum: ${label}${noteText}`,
+    buttonLabel: "✅ Güncelle",
+  });
+}
+
+async function handleCreateDeliveryNote(
+  input: Record<string, unknown>,
+  ctx: AgentContext,
+  taskId: string,
+  agentName: string,
+  agentIcon: string,
+): Promise<ToolResult> {
+  return createProposalAndNotify({
+    ctx, taskId, agentName, agentIcon,
+    agentKey: "bayi_lojistikci",
+    actionType: "create_delivery_note",
+    actionData: {
+      order_id: input.order_id,
+      note: input.note,
+    },
+    message: `📋 *Teslimat Notu*\n\n🔖 Sipariş: ${input.order_id}\n📝 ${input.note}`,
+    buttonLabel: "✅ Kaydet",
+  });
+}
+
+async function handleDraftMessage(
+  input: Record<string, unknown>,
+  ctx: AgentContext,
+  taskId: string,
+  agentName: string,
+  agentIcon: string,
+): Promise<ToolResult> {
+  return createProposalAndNotify({
+    ctx, taskId, agentName, agentIcon,
+    agentKey: "bayi_lojistikci",
+    actionType: "send_whatsapp",
+    actionData: { phone: input.customer_phone, message: input.message_text },
+    message: `✉️ *${input.customer_name}* kişisine mesaj taslağı:\n\n📱 ${input.customer_phone}\n💬 _${input.message_text}_`,
+    buttonLabel: "✅ Gönder",
+  });
+}
+
+const lojistikciToolHandlers: Record<string, ToolHandler> = {
+  read_pending_deliveries: (input, ctx) => handleReadPendingDeliveries(input, ctx),
+  read_today_deliveries: (input, ctx) => handleReadTodayDeliveries(input, ctx),
+  read_delayed_shipments: (input, ctx) => handleReadDelayedShipments(input, ctx),
+  update_order_status: handleUpdateOrderStatus,
+  create_delivery_note: handleCreateDeliveryNote,
+  draft_message: handleDraftMessage,
+};
+
+// ── Agent Definition ────────────────────────────────────────────────────
 
 export const lojistikciAgent: AgentDefinition = {
   key: "bayi_lojistikci",
-  name: "Lojistikci",
+  name: "Lojistikçi",
   icon: "🚛",
+  tools: LOJISTIKCI_TOOLS,
+  toolHandlers: lojistikciToolHandlers,
 
   systemPrompt:
-    "Sen bayi yönetim sisteminin lojistikçisisin. Teslimatları planla, gecikmeleri takip et, rota öner. " +
-    "Yapılması gereken en önemli 1-3 aksiyonu JSON array olarak döndür. " +
-    'Her aksiyon: {"type": "action_type", "message": "kullanıcıya gösterilecek Türkçe mesaj", "priority": "high|medium|low", "data": {}}. ' +
-    "Aksiyon tipleri: teslimat_planla (teslimat planla), gecikme_uyari (gecikme uyarısı), rota_oner (rota optimizasyonu öner). " +
-    "Yapılacak bir şey yoksa boş array dön: []",
+    `Sen bayi yönetim sisteminin lojistikçisisin. Görevin teslimatları takip etmek, geciken sevkiyatları raporlamak ve lojistik süreçleri yönetmek.\n\n` +
+    `## Kullanabileceğin Araçlar\n` +
+    `- read_pending_deliveries: Yoldaki teslimatları oku\n` +
+    `- read_today_deliveries: Bugün teslim edilecek siparişler\n` +
+    `- read_delayed_shipments: Geciken sevkiyatlar (3+ gün)\n` +
+    `- update_order_status: Sipariş durumu güncelle (onay gerektirir)\n` +
+    `- create_delivery_note: Teslimat notu oluştur (onay gerektirir)\n` +
+    `- draft_message: Taslak WhatsApp mesajı (onay gerektirir)\n` +
+    `- notify_human: Kullanıcıya bildirim gönder\n` +
+    `- read_db: Veritabanından veri oku\n\n` +
+    `## Kurallar\n` +
+    `- ASLA direkt mesaj gönderme, her zaman draft_message veya notify_human kullan.\n` +
+    `- Her kritik aksiyon için kullanıcı onayı al.\n` +
+    `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
+    `- Önce veri topla (read_pending_deliveries, read_delayed_shipments), sonra analiz et, sonra aksiyon öner.\n` +
+    `- Geciken sevkiyatlara özellikle dikkat et, acil müdahale gerektirebilir.\n` +
+    `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
+    `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
@@ -46,11 +300,26 @@ export const lojistikciAgent: AgentDefinition = {
       .eq("status", "preparing")
       .lt("created_at", threeDaysAgo);
 
+    // Memory
+    const recentMessages = await getRecentMessages(ctx.userId, "bayi_lojistikci", 10);
+    const taskHistory = await getTaskHistory(ctx.userId, "bayi_lojistikci", 5);
+
     return {
       pendingDeliveries: pendingDeliveries?.length || 0,
       todayDeliveries: todayDeliveries?.length || 0,
       delayedShipments: delayed?.length || 0,
       delayedTotal: (delayed || []).reduce((s, o) => s + (o.total_amount || 0), 0),
+      recentDecisions: taskHistory
+        .filter((t) => t.status === "done" && t.execution_log?.length)
+        .slice(0, 3)
+        .map((t) => ({
+          date: t.created_at,
+          actions: (t.execution_log || []).map((l: { action: string; status: string }) => `${l.action}: ${l.status}`),
+        })),
+      messageHistory: recentMessages.slice(-5).map((m) => ({
+        role: m.role,
+        content: m.content.substring(0, 200),
+      })),
     };
   },
 
@@ -58,30 +327,51 @@ export const lojistikciAgent: AgentDefinition = {
     const pendingDeliveries = data.pendingDeliveries as number;
     const todayDeliveries = data.todayDeliveries as number;
     const delayedShipments = data.delayedShipments as number;
+    const delayedTotal = data.delayedTotal as number;
+    const recentDecisions = data.recentDecisions as Array<{ date: string; actions: string[] }>;
+    const messageHistory = data.messageHistory as Array<{ role: string; content: string }>;
 
     if (pendingDeliveries === 0 && delayedShipments === 0) return "";
 
-    return (
-      `Yoldaki teslimat: ${pendingDeliveries}, Bugün teslim edilecek: ${todayDeliveries}, ` +
-      `Geciken sevkiyat: ${delayedShipments} (${(data.delayedTotal as number).toLocaleString("tr-TR")} TL)`
-    );
+    let prompt = `## Lojistik Özeti\n`;
+    prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+    prompt += `- Yoldaki teslimat: ${pendingDeliveries}\n`;
+    prompt += `- Bugün teslim edilecek: ${todayDeliveries}\n`;
+    prompt += `- Geciken sevkiyat: ${delayedShipments} (${formatCurrency(delayedTotal)})\n`;
+
+    if (delayedShipments > 0) {
+      prompt += `\n### Geciken Sevkiyatlar\n`;
+      prompt += `${delayedShipments} sipariş 3+ gündür "hazırlanıyor" durumunda. Toplam tutar: ${formatCurrency(delayedTotal)}. Acil müdahale gerekebilir.\n`;
+    }
+
+    if (recentDecisions?.length) {
+      prompt += `\n### Son Kararlar\n`;
+      for (const d of recentDecisions) {
+        const dt = new Date(d.date).toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" });
+        prompt += `- ${dt}: ${d.actions.join(", ")}\n`;
+      }
+    }
+
+    if (messageHistory?.length) {
+      prompt += `\n### Son Mesajlar\n`;
+      for (const m of messageHistory) {
+        prompt += `[${m.role}] ${m.content}\n`;
+      }
+    }
+
+    return prompt;
   },
 
-  parseProposals(aiResponse: string, _data: Record<string, unknown>): AgentProposal[] {
+  parseProposals(aiResponse: string): AgentProposal[] {
     try {
       const match = aiResponse.match(/\[[\s\S]*\]/);
       if (!match) return [];
-      const arr = JSON.parse(match[0]) as Array<{
-        type: string;
-        message: string;
-        priority: "high" | "medium" | "low";
-        data?: Record<string, unknown>;
-      }>;
+      const arr = JSON.parse(match[0]);
       if (!Array.isArray(arr)) return [];
-      return arr.map((item) => ({
+      return arr.map((item: { type: string; message: string; priority?: string; data?: Record<string, unknown> }) => ({
         actionType: item.type,
         message: item.message,
-        priority: item.priority || "medium",
+        priority: (item.priority as "high" | "medium" | "low") || "medium",
         actionData: item.data || {},
       }));
     } catch {
@@ -89,20 +379,40 @@ export const lojistikciAgent: AgentDefinition = {
     }
   },
 
-  async execute(
-    _ctx: AgentContext,
-    actionType: string,
-    _actionData: Record<string, unknown>,
-  ): Promise<string> {
+  async execute(ctx: AgentContext, actionType: string, actionData: Record<string, unknown>): Promise<string> {
+    const supabase = getServiceClient();
+
     switch (actionType) {
-      case "teslimat_planla":
-        return "Teslimat planı oluşturuldu";
-      case "gecikme_uyari":
-        return "Gecikme uyarısı gönderildi";
-      case "rota_oner":
-        return "Rota optimizasyonu önerildi";
+      case "update_order_status": {
+        const updateFields: Record<string, unknown> = { status: actionData.new_status };
+        if (actionData.note) updateFields.delivery_notes = actionData.note;
+        const { error } = await supabase
+          .from("bayi_orders")
+          .update(updateFields)
+          .eq("id", actionData.order_id)
+          .eq("tenant_id", ctx.tenantId);
+        if (error) return `Hata: ${error.message}`;
+        return "Sipariş durumu güncellendi.";
+      }
+
+      case "create_delivery_note": {
+        const { error } = await supabase
+          .from("bayi_orders")
+          .update({ delivery_notes: actionData.note })
+          .eq("id", actionData.order_id)
+          .eq("tenant_id", ctx.tenantId);
+        if (error) return `Hata: ${error.message}`;
+        return "Teslimat notu kaydedildi.";
+      }
+
+      case "send_whatsapp": {
+        const { sendText } = await import("@/platform/whatsapp/send");
+        await sendText(actionData.phone as string, actionData.message as string);
+        return "Mesaj gönderildi.";
+      }
+
       default:
-        return "İşlem tamamlandı";
+        return "İşlem tamamlandı.";
     }
   },
 };
