@@ -147,4 +147,12 @@ export const COMMAND_LABELS: Record<string, string> = {
   raporgunluk: "Günlük rapor",
   raporhaftalik: "Haftalık rapor",
   topsatan: "En çok satanlar",
+
+  sktkontrol: "SKT kontrol",
+  sktekle: "SKT ekle",
+  kategoriler: "Kategoriler",
+  kategoriekle: "Kategori ata",
+  kasarapor: "Kasa raporu",
+  raporaylik: "Aylık rapor",
+  teslimal: "Teslimat al",
 };

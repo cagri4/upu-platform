@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { logEvent, logError, logOnboarding } from "@/platform/analytics/logger";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { routeCommand } from "@/platform/whatsapp/router";
 import { markAsRead, sendText } from "@/platform/whatsapp/send";
@@ -29,6 +30,10 @@ import { siteyonetimOnboardingFlow } from "@/tenants/siteyonetim/onboarding-flow
 registerOnboardingFlow(siteyonetimOnboardingFlow);
 import { bayiOnboardingFlow } from "@/tenants/bayi/onboarding-flow";
 registerOnboardingFlow(bayiOnboardingFlow);
+import { otelOnboardingFlow } from "@/tenants/otel/onboarding-flow";
+registerOnboardingFlow(otelOnboardingFlow);
+import { muhasebeOnboardingFlow } from "@/tenants/muhasebe/onboarding-flow";
+registerOnboardingFlow(muhasebeOnboardingFlow);
 
 // ─── Register agent setup flows ──────────────────────────────────────────
 import { registerAgentSetup } from "@/platform/agents/setup";
@@ -77,6 +82,32 @@ registerAgentSetup(otelResepsiyonSetup);
 registerAgentSetup(otelRezervasyonSetup);
 registerAgentSetup(otelKatHizmetleriSetup);
 registerAgentSetup(otelMisafirDeneyimiSetup);
+
+// ─── Register muhasebe agent setup flows ───────────────────────────────
+import {
+  faturaUzmaniSetup as muhFaturaUzmaniSetup,
+  muhSekreterSetup,
+  vergiUzmaniSetup as muhVergiUzmaniSetup,
+  tahsilatUzmaniSetup as muhTahsilatUzmaniSetup,
+} from "@/tenants/muhasebe/agents/setup-flows";
+registerAgentSetup(muhFaturaUzmaniSetup);
+registerAgentSetup(muhSekreterSetup);
+registerAgentSetup(muhVergiUzmaniSetup);
+registerAgentSetup(muhTahsilatUzmaniSetup);
+
+// ─── Register market onboarding flow ───────────────────────────────────
+import { marketOnboardingFlow } from "@/tenants/market/onboarding-flow";
+registerOnboardingFlow(marketOnboardingFlow);
+
+// ─── Register market agent setup flows ─────────────────────────────────
+import {
+  stokSorumlusuSetup as mktStokSorumlusuSetup,
+  siparisYoneticisiSetup as mktSiparisYoneticisiSetup,
+  finansAnalistiSetup as mktFinansAnalistiSetup,
+} from "@/tenants/market/agents/setup-flows";
+registerAgentSetup(mktStokSorumlusuSetup);
+registerAgentSetup(mktSiparisYoneticisiSetup);
+registerAgentSetup(mktFinansAnalistiSetup);
 
 // ─── Parse Meta webhook payload ────────────────────────────────────────────
 
@@ -134,6 +165,9 @@ export async function POST(req: NextRequest) {
 
     const { phone, name, messageId, text, interactiveId } = parsed;
     console.log(`[wa-platform] ${phone}: ${text || interactiveId}`);
+
+    // Log incoming message (fire-and-forget)
+    logEvent({ eventType: "message", eventName: "incoming", phone, metadata: { text: text?.substring(0, 200), interactiveId } });
 
     // Mark as read + typing indicator
     if (messageId) markAsRead(messageId, phone);
@@ -227,6 +261,8 @@ export async function POST(req: NextRequest) {
             [{ id: "cmd:menu", title: "📋 Ana Menü" }],
           );
         }
+        // Log signup event
+        logEvent({ eventType: "signup", eventName: "invite_code_used", userId: invite.user_id, tenantId: invite.tenant_id, phone, metadata: { inviteCode } });
         return NextResponse.json({ status: "ok" });
       }
     }
@@ -295,9 +331,11 @@ export async function POST(req: NextRequest) {
     const onbState = await getOnboardingState(user.id);
     if (onbState && !onbState.completed_at) {
       try {
+        logOnboarding(ctx, onbState.current_step || "unknown");
         await handleOnboardingInput(ctx, onbState);
       } catch (onbErr) {
         console.error("[wa-platform] onboarding error:", onbErr);
+        logError(ctx, onbErr instanceof Error ? onbErr.message : String(onbErr), { context: "onboarding" });
         await sendText(phone, "Kurulum sırasında hata oluştu. \"menu\" yazarak devam edebilirsiniz.");
       }
       return NextResponse.json({ status: "ok" });
@@ -306,10 +344,14 @@ export async function POST(req: NextRequest) {
     // Route to tenant command handler
     try {
       console.log("[wa-platform] Before routeCommand, tenantKey:", tenantKey, "userId:", user.id);
+      const cmdStart = Date.now();
       await routeCommand(ctx);
+      const cmdDuration = Date.now() - cmdStart;
       console.log("[wa-platform] After routeCommand — success");
+      logEvent({ eventType: "session", eventName: "request_complete", userId: user.id, tenantId: user.tenant_id || undefined, tenantKey, phone, durationMs: cmdDuration });
     } catch (routeErr) {
       console.error("[wa-platform] routeCommand error:", routeErr instanceof Error ? routeErr.message : routeErr);
+      logError(ctx, routeErr instanceof Error ? routeErr.message : String(routeErr), { context: "routeCommand" });
       try {
         await sendText(phone, "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin veya \"menu\" yazın.");
       } catch {
@@ -320,6 +362,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: "ok" });
   } catch (err) {
     console.error("[wa-platform] Webhook error:", err);
+    logEvent({ eventType: "error", eventName: "webhook_error", errorMessage: err instanceof Error ? err.message : String(err), success: false });
     return NextResponse.json({ status: "ok" });
   }
 }

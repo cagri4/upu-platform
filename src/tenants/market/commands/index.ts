@@ -1,8 +1,8 @@
 /**
  * Market Tenant — Command Registry
  *
- * 16 commands across 3 departments:
- *   Stok Sorumlusu (4), Siparis Yoneticisi (8), Finans Analisti (4)
+ * 30 commands across 3 departments:
+ *   Stok Sorumlusu (8), Siparis Yoneticisi (11), Finans Analisti (11)
  */
 
 import type { TenantCommandRegistry } from "@/platform/whatsapp/types";
@@ -28,6 +28,21 @@ import { handleFiyatGuncelle, stepFiyatGuncelle, handleFiyatKampanya, stepFiyatK
 // Rapor
 import { handleSatisKaydet, stepSatisKaydet, handleRaporGunluk, handleRaporHaftalik, handleTopSatan } from "./rapor";
 
+// Brifing
+import { handleBrifing } from "./brifing";
+
+// SKT
+import { handleSktKontrol, handleSktEkle, stepSktEkle } from "./skt";
+
+// Kategori
+import { handleKategoriler, handleKategoriEkle, stepKategoriEkle, handleCategoryCallback } from "./kategori";
+
+// Kasa & Aylik Rapor
+import { handleKasaRapor, handleRaporAylik } from "./kasa";
+
+// Teslimat
+import { handleTeslimAl, stepTeslimAl, handleTeslimatlar } from "./teslimat";
+
 export const marketCommands: TenantCommandRegistry = {
   commands: {
     // ── Stok / Stok Sorumlusu ──────────────────────────
@@ -35,6 +50,10 @@ export const marketCommands: TenantCommandRegistry = {
     stokguncelle: handleStokGuncelle,
     stoksil: handleStokSil,
     stoksorgula: handleStokSorgula,
+    sktkontrol: handleSktKontrol,
+    sktekle: handleSktEkle,
+    kategoriler: handleKategoriler,
+    kategoriekle: handleKategoriEkle,
 
     // ── Siparis / Siparis Yoneticisi ────────────────────
     tedarikciekle: handleTedarikciEkle,
@@ -45,6 +64,8 @@ export const marketCommands: TenantCommandRegistry = {
     siparisdetay: handleSiparisDetay,
     siparisonayla: handleSiparisOnayla,
     siparisiptal: handleSiparisIptal,
+    teslimal: handleTeslimAl,
+    teslimatlar: handleTeslimatlar,
 
     // ── Fiyat / Finans Analisti ─────────────────────────
     fiyatguncelle: handleFiyatGuncelle,
@@ -55,7 +76,12 @@ export const marketCommands: TenantCommandRegistry = {
     satiskaydet: handleSatisKaydet,
     raporgunluk: handleRaporGunluk,
     raporhaftalik: handleRaporHaftalik,
+    raporaylik: handleRaporAylik,
     topsatan: handleTopSatan,
+    kasarapor: handleKasaRapor,
+
+    // ── Genel ──────────────────────────────────────────
+    brifing: handleBrifing,
   },
 
   stepHandlers: {
@@ -72,10 +98,14 @@ export const marketCommands: TenantCommandRegistry = {
     fiyatkampanya: stepFiyatKampanya,
     fiyatsorgula: stepFiyatSorgula,
     satiskaydet: stepSatisKaydet,
+    sktekle: stepSktEkle,
+    kategoriekle: stepKategoriEkle,
+    teslimal: stepTeslimAl,
   },
 
   callbackPrefixes: {
     "mkt_unit:": handleUnitCallback,
+    "mkt_cat:": handleCategoryCallback,
   },
 
   aliases: {
@@ -91,5 +121,12 @@ export const marketCommands: TenantCommandRegistry = {
     "kampanya": "fiyatkampanya",
     "gunluk": "raporgunluk",
     "haftalik": "raporhaftalik",
+    "aylik": "raporaylik",
+    "skt": "sktkontrol",
+    "sonkullanma": "sktkontrol",
+    "kategori": "kategoriler",
+    "kasa": "kasarapor",
+    "teslim": "teslimal",
+    "ozet": "brifing",
   },
 };

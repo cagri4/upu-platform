@@ -17,6 +17,9 @@ const TABLE_AGENT_MAP: Record<string, string[]> = {
   contracts: ["sekreter"],
   emlak_properties: ["portfoy"],
   emlak_customers: ["satis"],
+  mkt_products: ["mkt_stokSorumlusu"],
+  mkt_orders: ["mkt_siparisYoneticisi"],
+  mkt_sales: ["mkt_finansAnalisti"],
 };
 
 export async function GET(req: NextRequest) {
@@ -86,6 +89,15 @@ export async function GET(req: NextRequest) {
         } else if (tenant.saas_type === "bayi") {
           const { bayiAgents } = await import("@/tenants/bayi/agents");
           agents = bayiAgents;
+        } else if (tenant.saas_type === "muhasebe") {
+          const { muhasebeAgents } = await import("@/tenants/muhasebe/agents");
+          agents = muhasebeAgents;
+        } else if (tenant.saas_type === "otel") {
+          const { otelAgents } = await import("@/tenants/otel/agents");
+          agents = otelAgents;
+        } else if (tenant.saas_type === "market") {
+          const { marketAgents } = await import("@/tenants/market/agents");
+          agents = marketAgents;
         }
 
         const ctx = {

@@ -10,6 +10,8 @@ import { emlakAgents } from "@/tenants/emlak/agents";
 import { siteyonetimAgents } from "@/tenants/siteyonetim/agents";
 import { bayiAgents } from "@/tenants/bayi/agents";
 import { otelAgents } from "@/tenants/otel/agents";
+import { muhasebeAgents } from "@/tenants/muhasebe/agents";
+import { marketAgents } from "@/tenants/market/agents";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -99,5 +101,39 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, processed: emlakUsers.length + syUsers.length + bayiUsers.length + otelUsers.length });
+  // ── Muhasebe agents ──
+  const muhasebeTenantId = "31a22a5a-cf38-48b5-914d-a67bde4c1e16";
+  const muhasebeUsers = users.filter((u) => u.tenant_id === muhasebeTenantId);
+
+  for (const user of muhasebeUsers) {
+    try {
+      await runAllAgents(muhasebeAgents, {
+        userId: user.id,
+        tenantId: user.tenant_id,
+        phone: user.whatsapp_phone,
+        userName: user.display_name || "",
+      });
+    } catch (err) {
+      console.error(`[agent-run] muhasebe error for ${user.id}:`, err);
+    }
+  }
+
+  // ── Market agents ──
+  const marketTenantId = "af1f27b0-2ec1-4423-9b93-2aa29979b73a";
+  const marketUsers = users.filter((u) => u.tenant_id === marketTenantId);
+
+  for (const user of marketUsers) {
+    try {
+      await runAllAgents(marketAgents, {
+        userId: user.id,
+        tenantId: user.tenant_id,
+        phone: user.whatsapp_phone,
+        userName: user.display_name || "",
+      });
+    } catch (err) {
+      console.error(`[agent-run] market error for ${user.id}:`, err);
+    }
+  }
+
+  return NextResponse.json({ ok: true, processed: emlakUsers.length + syUsers.length + bayiUsers.length + otelUsers.length + muhasebeUsers.length + marketUsers.length });
 }

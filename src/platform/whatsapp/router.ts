@@ -14,6 +14,8 @@ import { marketCommands } from "@/tenants/market/commands";
 import { getTenantByKey } from "@/tenants/config";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { COMMAND_LABELS } from "./command-labels";
+import { isAdmin, routeAdminCommand, routeAdminCallback } from "@/platform/admin/commands";
+import { logCommand } from "@/platform/analytics/logger";
 
 // ── Registry per tenant ──────────────────────────────────────────────────
 
@@ -60,6 +62,18 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       return;
     }
 
+    // Admin panel callbacks
+    if (ctx.interactiveId.startsWith("admin:")) {
+      const adminUser = await isAdmin(ctx);
+      if (adminUser) {
+        const handled = await routeAdminCallback(ctx, ctx.interactiveId);
+        if (handled) {
+          logCommand(ctx, ctx.interactiveId, true);
+          return;
+        }
+      }
+    }
+
     // Platform-level callbacks
     if (ctx.interactiveId.startsWith("cmd:")) {
       const cmd = ctx.interactiveId.replace("cmd:", "");
@@ -94,7 +108,14 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       }
       const handler = registry.commands[cmd];
       if (handler) {
-        await handler(ctx);
+        const start = Date.now();
+        try {
+          await handler(ctx);
+          logCommand(ctx, cmd, true, Date.now() - start);
+        } catch (err) {
+          logCommand(ctx, cmd, false, Date.now() - start, err instanceof Error ? err.message : String(err));
+          throw err;
+        }
         return;
       }
     }
@@ -143,6 +164,12 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       } else if (ctx.tenantKey === "otel") {
         const { otelAgents } = await import("@/tenants/otel/agents");
         agents = otelAgents;
+      } else if (ctx.tenantKey === "muhasebe") {
+        const { muhasebeAgents } = await import("@/tenants/muhasebe/agents");
+        agents = muhasebeAgents;
+      } else if (ctx.tenantKey === "market") {
+        const { marketAgents } = await import("@/tenants/market/agents");
+        agents = marketAgents;
       }
       await handleAgentApproval(
         { userId: ctx.userId, tenantId: ctx.tenantId, phone: ctx.phone, userName: ctx.userName },
@@ -162,11 +189,11 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     if (ctx.interactiveId.startsWith("emp:")) {
       const empKey = ctx.interactiveId.replace("emp:", "");
       // Check if this employee's agent needs setup
-      if (ctx.tenantKey === "emlak" || ctx.tenantKey === "siteyonetim" || ctx.tenantKey === "bayi" || ctx.tenantKey === "otel") {
+      if (ctx.tenantKey === "emlak" || ctx.tenantKey === "siteyonetim" || ctx.tenantKey === "bayi" || ctx.tenantKey === "otel" || ctx.tenantKey === "muhasebe" || ctx.tenantKey === "market") {
         try {
           const { isAgentConfigured, startAgentSetup } = await import("@/platform/agents/setup");
           // siteyonetim/bayi/otel agent keys are prefixed to avoid global SETUP_FLOWS collision
-          const agentKey = ctx.tenantKey === "siteyonetim" ? `sy_${empKey}` : ctx.tenantKey === "bayi" ? `bayi_${empKey}` : ctx.tenantKey === "otel" ? `otel_${empKey}` : empKey;
+          const agentKey = ctx.tenantKey === "siteyonetim" ? `sy_${empKey}` : ctx.tenantKey === "bayi" ? `bayi_${empKey}` : ctx.tenantKey === "otel" ? `otel_${empKey}` : ctx.tenantKey === "muhasebe" ? `muh_${empKey}` : ctx.tenantKey === "market" ? `mkt_${empKey}` : empKey;
           const configured = await isAgentConfigured(ctx.userId, agentKey);
           if (!configured) {
             const { getAgentSetup } = await import("@/platform/agents/setup");
@@ -224,6 +251,19 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
   const lower = ctx.text.toLowerCase().trim();
   const firstWord = lower.split(/\s+/)[0];
 
+  // Admin text commands (prefix "a ")
+  if (lower.startsWith("a ")) {
+    const adminUser = await isAdmin(ctx);
+    if (adminUser) {
+      const adminInput = lower.substring(2).trim();
+      const handled = await routeAdminCommand(ctx, adminInput);
+      if (handled) {
+        logCommand(ctx, `admin:${adminInput}`, true);
+        return;
+      }
+    }
+  }
+
   // Menu/help
   if (["menu", "help", "yardım", "yardim", "merhaba", "başla", "basla"].includes(firstWord)) {
     await showMenu(ctx, tenant, registry);
@@ -262,7 +302,14 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
   // Check commands
   const handler = registry.commands[resolved];
   if (handler) {
-    await handler(ctx);
+    const start = Date.now();
+    try {
+      await handler(ctx);
+      logCommand(ctx, resolved, true, Date.now() - start);
+    } catch (err) {
+      logCommand(ctx, resolved, false, Date.now() - start, err instanceof Error ? err.message : String(err));
+      throw err;
+    }
     return;
   }
 
@@ -434,22 +481,25 @@ async function showMenu(
   );
 
   // Message 3: System commands as list (supports up to 10 items)
+  const systemRows = [
+    { id: "cmd:profilim", title: "👤 Profilim", description: "Profil bilgileri ve düzenleme" },
+    { id: "cmd:favoriler", title: "⭐ Favoriler", description: "Sık kullanılan komutları düzenle" },
+    { id: "cmd:kilavuz", title: "📖 Kılavuz", description: "Kullanım rehberi" },
+    { id: "cmd:webpanel", title: "🖥 Web Panel", description: "Tarayıcıdan giriş yap" },
+    { id: "cmd:uzanti", title: "🧩 Uzantı Kurulumu", description: "Chrome uzantısı bağlantısı" },
+    { id: "cmd:hakkimizda", title: "ℹ️ Hakkımızda", description: "UPU Dev hakkında bilgi" },
+  ];
+
+  // Add admin panel button if user is admin
+  const adminUser = await isAdmin(ctx);
+  if (adminUser) {
+    systemRows.push({ id: "admin:panel", title: "📊 Admin Panel", description: "Platform yönetim paneli" });
+  }
+
   await sendList(ctx.phone,
     "⚙️ Sistem:",
     "Sistem Menüsü",
-    [
-      {
-        title: "Sistem",
-        rows: [
-          { id: "cmd:profilim", title: "👤 Profilim", description: "Profil bilgileri ve düzenleme" },
-          { id: "cmd:favoriler", title: "⭐ Favoriler", description: "Sık kullanılan komutları düzenle" },
-          { id: "cmd:kilavuz", title: "📖 Kılavuz", description: "Kullanım rehberi" },
-          { id: "cmd:webpanel", title: "🖥 Web Panel", description: "Tarayıcıdan giriş yap" },
-          { id: "cmd:uzanti", title: "🧩 Uzantı Kurulumu", description: "Chrome uzantısı bağlantısı" },
-          { id: "cmd:hakkimizda", title: "ℹ️ Hakkımızda", description: "UPU Dev hakkında bilgi" },
-        ],
-      },
-    ],
+    [{ title: "Sistem", rows: systemRows }],
   );
 }
 
