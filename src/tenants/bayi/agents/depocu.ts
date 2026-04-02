@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify, formatCurrency } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -315,6 +316,7 @@ export const depocuAgent: AgentDefinition = {
     `- Kimseye ASLA direkt mesaj gönderme, her zaman draft_message veya notify_human kullan.\n` +
     `- Her kritik aksiyon için kullanıcı onayı al.\n` +
     `- Önce veri topla (read_stock_status, read_pending_purchases), sonra analiz et, sonra aksiyon öner.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran: kritik stok bildirimi, stok kontrol sıklığı, otomatik satın alma.\n` +
     `- Kritik stok seviyesindeki ürünlere acil müdahale gerekir.\n` +
     `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
@@ -322,6 +324,7 @@ export const depocuAgent: AgentDefinition = {
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "bayi_depocu");
 
     // Low stock items (below min_stock or below 10)
     const { data: lowStock } = await supabase
@@ -350,6 +353,7 @@ export const depocuAgent: AgentDefinition = {
 
     return {
       lowStockCount: lowStock?.length || 0,
+      agentConfig: config,
       lowStockItems: (lowStock || []).map((p) => ({
         id: p.id,
         name: p.name,
@@ -383,9 +387,19 @@ export const depocuAgent: AgentDefinition = {
 
     const recentDecisions = data.recentDecisions as Array<{ date: string; actions: string[] }>;
     const messageHistory = data.messageHistory as Array<{ role: string; content: string }>;
+    const config = data.agentConfig as Record<string, unknown> | null;
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    if (config) {
+      prompt += `### Kullanıcı Tercihleri\n`;
+      if (config.kritik_stok_bildirimi) prompt += `- Kritik stok bildirimi: ${config.kritik_stok_bildirimi === "evet" ? "Aktif" : "Kapalı"}\n`;
+      if (config.stok_kontrol_sikligi) prompt += `- Stok kontrol sıklığı: ${config.stok_kontrol_sikligi}\n`;
+      if (config.otomatik_satinalma) prompt += `- Otomatik satın alma önerisi: ${config.otomatik_satinalma === "evet" ? "Aktif" : "Önce sorar"}\n`;
+      prompt += `\n`;
+    }
+
     prompt += `### Depo Özeti\n`;
     prompt += `- Toplam ürün: ${totalProducts}\n`;
     prompt += `- Kritik stok: ${lowStockCount} ürün\n`;

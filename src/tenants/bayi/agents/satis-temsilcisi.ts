@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify, formatCurrency, formatDate } from "./helpers";
 
 // -- Domain Tools ------------------------------------------------------------
@@ -264,6 +265,7 @@ export const satisTemsilcisiAgent: AgentDefinition = {
     `- Bayiye ASLA direkt mesaj gönderme, her zaman draft_message veya notify_human kullan.\n` +
     `- Her kritik aksiyon için kullanıcı onayı al.\n` +
     `- Önce veri topla (read_planned_visits, read_pending_orders, read_problem_dealers), sonra analiz et, sonra aksiyon öner.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran: ziyaret hatırlatma süresi, sipariş bildirimi, günlük ziyaret hedefi.\n` +
     `- Sorunlu bayilere ve gecikmiş ziyaretlere özellikle dikkat et.\n` +
     `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
@@ -271,6 +273,7 @@ export const satisTemsilcisiAgent: AgentDefinition = {
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "bayi_satisTemsilcisi");
     const today = new Date().toISOString().slice(0, 10);
     const in3d = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
@@ -304,6 +307,7 @@ export const satisTemsilcisiAgent: AgentDefinition = {
 
     return {
       plannedVisits: visits?.length || 0,
+      agentConfig: config,
       visits: (visits || []).slice(0, 5).map((v) => ({
         id: v.id,
         dealerId: v.dealer_id,
@@ -343,8 +347,18 @@ export const satisTemsilcisiAgent: AgentDefinition = {
 
     if (plannedVisits === 0 && pendingOrders === 0 && (!problemDealers || problemDealers.length === 0)) return "";
 
+    const config = data.agentConfig as Record<string, unknown> | null;
+
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    if (config) {
+      prompt += `### Kullanıcı Tercihleri\n`;
+      if (config.ziyaret_hatirlatma) prompt += `- Ziyaret hatırlatma: ${config.ziyaret_hatirlatma} gün önce\n`;
+      if (config.siparis_bildirimi) prompt += `- Sipariş bildirimi: ${config.siparis_bildirimi}\n`;
+      if (config.gunluk_ziyaret_hedefi) prompt += `- Günlük ziyaret hedefi: ${config.gunluk_ziyaret_hedefi}\n`;
+      prompt += `\n`;
+    }
 
     prompt += `### Ziyaret Planı (3 gün)\n`;
     if (visits?.length) {

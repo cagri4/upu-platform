@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -266,12 +267,16 @@ export const pazarAgent: AgentDefinition = {
     `- Her kritik aksiyon için kullanıcı onayı al.\n` +
     `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
     `- Önce veri topla (read_market_data, read_user_properties_vs_market), sonra analiz et, sonra aksiyon öner.\n` +
-    `- Piyasa ortalamasından %15+ sapan mülklere özellikle dikkat et.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran: takip bölgeleri, rapor sıklığı, fırsat bildirimi eşiği.\n` +
+    `- Piyasa ortalamasından sapan mülklere (kullanıcı fırsat eşiğine göre) özellikle dikkat et.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+
+    // Fetch user preferences
+    const config = await getAgentConfig(ctx.userId, "pazar");
 
     const { data: userProps } = await supabase
       .from("emlak_properties")
@@ -283,7 +288,7 @@ export const pazarAgent: AgentDefinition = {
     const taskHistory = await getTaskHistory(ctx.userId, "pazar", 5);
 
     if (!userProps?.length) {
-      return { districtCount: 0, recentDecisions: [], messageHistory: [] };
+      return { districtCount: 0, recentDecisions: [], messageHistory: [], agentConfig: config };
     }
 
     const districts = [...new Set(userProps.map((p) => p.district).filter(Boolean))] as string[];
@@ -327,6 +332,7 @@ export const pazarAgent: AgentDefinition = {
       districtCount: districts.length,
       propertyCount: userProps.length,
       analysis: districtAnalysis,
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -349,9 +355,20 @@ export const pazarAgent: AgentDefinition = {
     }>;
     const recentDecisions = data.recentDecisions as Array<{ date: string; actions: string[] }>;
     const messageHistory = data.messageHistory as Array<{ role: string; content: string }>;
+    const config = data.agentConfig as Record<string, unknown> | null;
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    if (config) {
+      prompt += `### Kullanıcı Tercihleri\n`;
+      if (config.takip_bolgeleri) prompt += `- Takip bölgeleri: ${config.takip_bolgeleri}\n`;
+      if (config.rapor_sikligi) prompt += `- Rapor sıklığı: ${config.rapor_sikligi}\n`;
+      if (config.karsilastirma) prompt += `- Portföy karşılaştırma: ${config.karsilastirma === "evet" ? "Aktif" : "Kapalı"}\n`;
+      if (config.firsat_bildirimi) prompt += `- Fırsat bildirimi: ${config.firsat_bildirimi === "hayir" ? "Kapalı" : `%${config.firsat_bildirimi}+ altında`}\n`;
+      prompt += `\n`;
+    }
+
     prompt += `### Piyasa Karşılaştırması (${data.propertyCount} mülk, ${data.districtCount} bölge)\n`;
 
     for (const a of analysis) {

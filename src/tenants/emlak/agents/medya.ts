@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -249,12 +250,16 @@ export const medyaAgent: AgentDefinition = {
     `- Her kritik aksiyon için kullanıcı onayı al.\n` +
     `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
     `- Önce veri topla (read_properties_media, read_publishing_history), sonra analiz et, sonra aksiyon öner.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran: foto uyarısı, yayın takibi, ilan metni, sosyal medya tercihleri.\n` +
     `- Fotoğrafsız mülklere ve yayınlanmamış ilanlara özellikle dikkat et.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+
+    // Fetch user preferences
+    const config = await getAgentConfig(ctx.userId, "medya");
 
     const { data: properties } = await supabase
       .from("emlak_properties")
@@ -270,7 +275,7 @@ export const medyaAgent: AgentDefinition = {
     const taskHistory = await getTaskHistory(ctx.userId, "medya", 5);
 
     if (!properties?.length) {
-      return { totalCount: 0, recentDecisions: [], messageHistory: [] };
+      return { totalCount: 0, recentDecisions: [], messageHistory: [], agentConfig: config };
     }
 
     const noPhotoProps = properties.filter((p) => !p.photo_count || p.photo_count === 0);
@@ -283,6 +288,7 @@ export const medyaAgent: AgentDefinition = {
       noPhotoSample: noPhotoProps.slice(0, 5).map((p) => ({ id: p.id, title: p.title })),
       unpublishedCount: unpublished.length,
       unpublishedSample: unpublished.slice(0, 5).map((p) => ({ id: p.id, title: p.title })),
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -304,9 +310,20 @@ export const medyaAgent: AgentDefinition = {
     const unpublishedSample = data.unpublishedSample as Array<{ id: string; title: string }>;
     const recentDecisions = data.recentDecisions as Array<{ date: string; actions: string[] }>;
     const messageHistory = data.messageHistory as Array<{ role: string; content: string }>;
+    const config = data.agentConfig as Record<string, unknown> | null;
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    if (config) {
+      prompt += `### Kullanıcı Tercihleri\n`;
+      if (config.foto_uyari) prompt += `- Fotoğraf uyarısı: ${config.foto_uyari === "evet" ? "Aktif" : "Kapalı"}\n`;
+      if (config.yayin_takip) prompt += `- Yayın takibi: ${config.yayin_takip === "evet" ? "Aktif" : "Kapalı"}\n`;
+      if (config.ilan_metni) prompt += `- AI ilan metni: ${config.ilan_metni}\n`;
+      if (config.sosyal_medya) prompt += `- Sosyal medya önerisi: ${config.sosyal_medya}\n`;
+      prompt += `\n`;
+    }
+
     prompt += `### Medya Özeti\n`;
     prompt += `- Toplam mülk: ${data.totalCount}\n`;
     prompt += `- Fotoğrafsız: ${data.noPhotoCount}\n`;

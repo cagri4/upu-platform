@@ -14,6 +14,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -254,11 +255,13 @@ export const resepsiyonAgent: AgentDefinition = {
     `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
     `- Önce veri topla (read_guest_messages, read_today_arrivals), sonra analiz et, sonra aksiyon öner.\n` +
     `- 30+ dakika cevaplanmamış mesajlara özellikle dikkat et.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "otel_resepsiyon");
 
     const { data: messages } = await supabase
       .from("otel_guest_messages")
@@ -295,6 +298,7 @@ export const resepsiyonAgent: AgentDefinition = {
       })),
       todayCheckins: todayCheckins || 0,
       activeGuests: activeGuests || 0,
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -322,6 +326,15 @@ export const resepsiyonAgent: AgentDefinition = {
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    const config = data.agentConfig as Record<string, unknown> | null;
+    if (config && Object.keys(config).length > 0) {
+      prompt += `\n### Kullanici Tercihleri\n`;
+      for (const [key, value] of Object.entries(config)) {
+        prompt += `- ${key}: ${value}\n`;
+      }
+      prompt += `\n`;
+    }
     prompt += `### Resepsiyon Özeti\n`;
     prompt += `- Cevaplanmamış mesaj: ${unanswered}\n`;
     prompt += `- Bugün check-in: ${checkins}\n`;

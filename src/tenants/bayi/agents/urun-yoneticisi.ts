@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify, formatCurrency } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -297,12 +298,14 @@ export const urunYoneticisiAgent: AgentDefinition = {
     `- Her kritik aksiyon için kullanıcı onayı al.\n` +
     `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
     `- Önce veri topla (read_products, read_product_stats), sonra analiz et, sonra aksiyon öner.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran: fiyat değişim bildirimi, katalog güncelleme sıklığı, pasif ürün uyarısı.\n` +
     `- Fiyatsız ve yavaş hareketli ürünlere özellikle dikkat et.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "bayi_urunYoneticisi");
 
     // Total product count
     const { count: totalProductCount } = await supabase
@@ -350,6 +353,7 @@ export const urunYoneticisiAgent: AgentDefinition = {
       noPriceCount: noPriceCount || 0,
       slowMoverCount: slowMovers.length,
       slowMoverNames: slowMovers.slice(0, 5).map((p) => p.name),
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -375,8 +379,18 @@ export const urunYoneticisiAgent: AgentDefinition = {
 
     if (inactiveCount === 0 && noPriceCount === 0 && slowMoverCount === 0) return "";
 
+    const config = data.agentConfig as Record<string, unknown> | null;
+
     let prompt = `## Ürün Kataloğu Özeti\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    if (config) {
+      prompt += `### Kullanıcı Tercihleri\n`;
+      if (config.fiyat_degisim_bildirimi) prompt += `- Fiyat değişim bildirimi: ${config.fiyat_degisim_bildirimi === "evet" ? "Aktif" : "Kapalı"}\n`;
+      if (config.katalog_guncelleme_sikligi) prompt += `- Katalog güncelleme sıklığı: ${config.katalog_guncelleme_sikligi}\n`;
+      if (config.pasif_urun_uyarisi) prompt += `- Pasif ürün uyarısı: ${config.pasif_urun_uyarisi === "evet" ? "Aktif" : "Kapalı"}\n`;
+      prompt += `\n`;
+    }
     prompt += `- Toplam ürün: ${totalProducts}\n`;
     prompt += `- Pasif ürün: ${inactiveCount}\n`;
     prompt += `- Fiyatsız ürün: ${noPriceCount}\n`;

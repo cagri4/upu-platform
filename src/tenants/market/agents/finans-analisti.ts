@@ -12,6 +12,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -320,11 +321,13 @@ export const finansAnalistiAgent: AgentDefinition = {
     `## Kurallar\n` +
     `- Her kritik aksiyon icin kullanici onayi al.\n` +
     `- Once veri topla, sonra analiz et, sonra aksiyon oner.\n` +
+    `- Kullanici tercihlerine (agent_config) gore davran.\n` +
     `- Yapilacak bir sey yoksa hicbir tool cagirma, kisa bir Turkce ozet yaz.\n` +
     `- Turkce yanit ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "mkt_finansAnalisti");
     const now = new Date();
 
     // Today's sales
@@ -368,6 +371,7 @@ export const finansAnalistiAgent: AgentDefinition = {
         const product = Array.isArray(c.mkt_products) ? c.mkt_products[0] : c.mkt_products;
         return `${product?.name || "-"}: %${c.discount_percent}`;
       }),
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -388,6 +392,15 @@ export const finansAnalistiAgent: AgentDefinition = {
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    const config = data.agentConfig as Record<string, unknown> | null;
+    if (config && Object.keys(config).length > 0) {
+      prompt += `\n### Kullanici Tercihleri\n`;
+      for (const [key, value] of Object.entries(config)) {
+        prompt += `- ${key}: ${value}\n`;
+      }
+      prompt += `\n`;
+    }
     prompt += `### Satis Ozeti\n`;
     prompt += `- Gunluk ciro: ${Number(data.dailyRevenue).toLocaleString("tr-TR")} TL\n`;
     prompt += `- Haftalik ciro: ${Number(data.weeklyRevenue).toLocaleString("tr-TR")} TL\n`;

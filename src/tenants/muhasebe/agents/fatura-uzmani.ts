@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -259,11 +260,13 @@ export const faturaUzmaniAgent: AgentDefinition = {
     `- Her kritik aksiyon icin kullanici onayi al.\n` +
     `- Otonomi seviyesi: HER SEYI SOR — hicbir yazma islemini onaysiz yapma.\n` +
     `- Once veri topla (read_invoices, read_invoice_stats), sonra analiz et, sonra aksiyon oner.\n` +
+    `- Kullanici tercihlerine (agent_config) gore davran.\n` +
     `- Yapilacak bir sey yoksa hicbir tool cagirma, kisa bir Turkce ozet yaz.\n` +
     `- Turkce yanit ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "muh_faturaUzmani");
 
     const { data: invoices } = await supabase
       .from("muh_invoices")
@@ -274,7 +277,7 @@ export const faturaUzmaniAgent: AgentDefinition = {
     const taskHistory = await getTaskHistory(ctx.userId, "muh_faturaUzmani", 5);
 
     if (!invoices?.length) {
-      return { count: 0, recentDecisions: [], messageHistory: [] };
+      return { count: 0, recentDecisions: [], messageHistory: [], agentConfig: config };
     }
 
     const count = invoices.length;
@@ -289,6 +292,7 @@ export const faturaUzmaniAgent: AgentDefinition = {
       totalAmount: total,
       missingVkn,
       overdueCount: overdue,
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -311,6 +315,15 @@ export const faturaUzmaniAgent: AgentDefinition = {
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    const config = data.agentConfig as Record<string, unknown> | null;
+    if (config && Object.keys(config).length > 0) {
+      prompt += `\n### Kullanici Tercihleri\n`;
+      for (const [key, value] of Object.entries(config)) {
+        prompt += `- ${key}: ${value}\n`;
+      }
+      prompt += `\n`;
+    }
     prompt += `### Fatura Ozeti\n`;
     prompt += `- Toplam: ${data.count} fatura\n`;
     prompt += `- Toplam tutar: ${Number(data.totalAmount).toLocaleString("tr-TR")} TL\n`;

@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify, getUserBuilding } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -245,12 +246,14 @@ export const sekreterAgent: AgentDefinition = {
     `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
     `- Önce veri topla (read_residents, read_building_activity), sonra analiz et, sonra aksiyon öner.\n` +
     `- Açık arıza veya önemli gelişme varsa duyuru öner.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
+    const config = await getAgentConfig(ctx.userId, "sy_sekreter");
     const building = await getUserBuilding(ctx);
-    if (!building) return { noBuilding: true };
+    if (!building) return { noBuilding: true, agentConfig: config };
 
     const supabase = getServiceClient();
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -282,6 +285,7 @@ export const sekreterAgent: AgentDefinition = {
       residentCount: residentCount || 0,
       openTickets: openTickets || 0,
       recentTxCount: recentTxCount || 0,
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -304,6 +308,15 @@ export const sekreterAgent: AgentDefinition = {
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    const config = data.agentConfig as Record<string, unknown> | null;
+    if (config && Object.keys(config).length > 0) {
+      prompt += `\n### Kullanici Tercihleri\n`;
+      for (const [key, value] of Object.entries(config)) {
+        prompt += `- ${key}: ${value}\n`;
+      }
+      prompt += `\n`;
+    }
     prompt += `### Bina Özeti\n`;
     prompt += `- Bina: ${data.buildingName}\n`;
     prompt += `- Aktif sakin: ${data.residentCount}\n`;

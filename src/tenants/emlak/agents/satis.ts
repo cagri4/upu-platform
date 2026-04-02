@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -250,12 +251,16 @@ export const satisAgent: AgentDefinition = {
     `- Her kritik aksiyon için kullanıcı onayı al.\n` +
     `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
     `- Önce veri topla (read_customers, read_matches), sonra analiz et, sonra aksiyon öner.\n` +
-    `- 14+ gün sessiz müşterilere özellikle dikkat et.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran: soğuma süresi, eşleştirme tercihi, takip sıklığı, otonomi seviyesi.\n` +
+    `- Soğuma süresi tercihine göre sessiz müşterilere dikkat et.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+
+    // Fetch user preferences
+    const config = await getAgentConfig(ctx.userId, "satis");
 
     const { data: customers } = await supabase
       .from("emlak_customers")
@@ -266,12 +271,14 @@ export const satisAgent: AgentDefinition = {
     const taskHistory = await getTaskHistory(ctx.userId, "satis", 5);
 
     if (!customers?.length) {
-      return { count: 0, recentDecisions: [], messageHistory: [] };
+      return { count: 0, recentDecisions: [], messageHistory: [], agentConfig: config };
     }
 
     const count = customers.length;
-    const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
-    const coldCustomers = customers.filter((c) => !c.updated_at || c.updated_at < fourteenDaysAgo);
+    // Use config soguma_suresi if available, otherwise default to 14 days
+    const coldDays = config?.soguma_suresi ? Number(config.soguma_suresi) : 14;
+    const coldThreshold = new Date(Date.now() - coldDays * 24 * 60 * 60 * 1000).toISOString();
+    const coldCustomers = customers.filter((c) => !c.updated_at || c.updated_at < coldThreshold);
 
     const { count: propertyCount } = await supabase
       .from("emlak_properties")
@@ -286,9 +293,11 @@ export const satisAgent: AgentDefinition = {
     return {
       count,
       coldCount: coldCustomers.length,
+      coldDays,
       coldCustomers: coldCustomers.slice(0, 5).map((c) => ({ id: c.id, name: c.name })),
       propertyCount: propertyCount || 0,
       monitorCount: monitorCount || 0,
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -309,12 +318,24 @@ export const satisAgent: AgentDefinition = {
     const coldCustomers = data.coldCustomers as Array<{ id: string; name: string }>;
     const recentDecisions = data.recentDecisions as Array<{ date: string; actions: string[] }>;
     const messageHistory = data.messageHistory as Array<{ role: string; content: string }>;
+    const config = data.agentConfig as Record<string, unknown> | null;
+    const coldDays = (data.coldDays as number) || 14;
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    if (config) {
+      prompt += `### Kullanıcı Tercihleri\n`;
+      if (config.soguma_suresi) prompt += `- Soğuma süresi: ${config.soguma_suresi} gün\n`;
+      if (config.eslestirme_otomatik) prompt += `- Otomatik eşleştirme: ${config.eslestirme_otomatik}\n`;
+      if (config.takip_sikligi) prompt += `- Takip sıklığı: ${config.takip_sikligi}\n`;
+      if (config.otomatik_aksiyon) prompt += `- Otonom aksiyon: ${config.otomatik_aksiyon}\n`;
+      prompt += `\n`;
+    }
+
     prompt += `### Müşteri Özeti\n`;
     prompt += `- Toplam müşteri: ${data.count}\n`;
-    prompt += `- Soğuk müşteri (14+ gün): ${data.coldCount}\n`;
+    prompt += `- Soğuk müşteri (${coldDays}+ gün): ${data.coldCount}\n`;
     prompt += `- Mülk sayısı: ${data.propertyCount}\n`;
     prompt += `- Aktif takip kriteri: ${data.monitorCount}\n`;
 

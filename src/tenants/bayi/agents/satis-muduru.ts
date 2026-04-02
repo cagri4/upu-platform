@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify, formatCurrency } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -290,12 +291,14 @@ export const satisMuduruAgent: AgentDefinition = {
     `- Her kritik aksiyon için kullanıcı onayı al.\n` +
     `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
     `- Önce veri topla (read_campaigns, read_dealer_performance, read_sales_targets), sonra analiz et, sonra aksiyon öner.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran: kampanya bildirimi, performans eşiği, segment analizi sıklığı.\n` +
     `- Düşük performanslı bayilere özellikle dikkat et.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "bayi_satisMuduru");
     const now = new Date().toISOString();
 
     // Active campaigns
@@ -339,6 +342,7 @@ export const satisMuduruAgent: AgentDefinition = {
       campaignNames: (campaigns || []).map((c) => c.name).join(", "),
       topDealers,
       bottomDealers,
+      agentConfig: config,
       targets: (targets || []).map((t) => ({
         period: t.period,
         target: t.target_amount,
@@ -369,8 +373,18 @@ export const satisMuduruAgent: AgentDefinition = {
 
     if (activeCampaigns === 0 && (!targets || targets.length === 0)) return "";
 
+    const config = data.agentConfig as Record<string, unknown> | null;
+
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    if (config) {
+      prompt += `### Kullanıcı Tercihleri\n`;
+      if (config.kampanya_bildirimi) prompt += `- Kampanya bildirimi: ${config.kampanya_bildirimi === "evet" ? "Aktif" : "Kapalı"}\n`;
+      if (config.performans_esigi) prompt += `- Performans eşiği: %${config.performans_esigi}\n`;
+      if (config.segment_sikligi) prompt += `- Segment analizi: ${config.segment_sikligi}\n`;
+      prompt += `\n`;
+    }
 
     prompt += `### Kampanya Özeti\n`;
     prompt += `- Aktif kampanya: ${activeCampaigns}`;

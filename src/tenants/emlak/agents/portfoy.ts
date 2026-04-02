@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -250,11 +251,15 @@ export const portfoyAgent: AgentDefinition = {
     `- Her kritik aksiyon için kullanıcı onayı al.\n` +
     `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
     `- Önce veri topla (read_properties, read_property_stats), sonra analiz et, sonra aksiyon öner.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran: fiyat eşiği, bölge filtresi, eksik bilgi uyarısı vb.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+
+    // Fetch user preferences
+    const config = await getAgentConfig(ctx.userId, "portfoy");
 
     const { data: properties } = await supabase
       .from("emlak_properties")
@@ -265,7 +270,7 @@ export const portfoyAgent: AgentDefinition = {
     const taskHistory = await getTaskHistory(ctx.userId, "portfoy", 5);
 
     if (!properties?.length) {
-      return { count: 0, recentDecisions: [], messageHistory: [] };
+      return { count: 0, recentDecisions: [], messageHistory: [], agentConfig: config };
     }
 
     const count = properties.length;
@@ -291,6 +296,7 @@ export const portfoyAgent: AgentDefinition = {
       oldestId: oldest?.id || null,
       daysOld,
       totalValue,
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -310,9 +316,21 @@ export const portfoyAgent: AgentDefinition = {
 
     const recentDecisions = data.recentDecisions as Array<{ date: string; actions: string[] }>;
     const messageHistory = data.messageHistory as Array<{ role: string; content: string }>;
+    const config = data.agentConfig as Record<string, unknown> | null;
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    if (config) {
+      prompt += `### Kullanıcı Tercihleri\n`;
+      if (config.bolge) prompt += `- Takip bölgeleri: ${config.bolge}\n`;
+      if (config.mulk_tipleri) prompt += `- Mülk tipleri: ${config.mulk_tipleri}\n`;
+      if (config.scrape_bildirim) prompt += `- Yeni ilan bildirimi: ${config.scrape_bildirim}\n`;
+      if (config.fiyat_esik) prompt += `- Fiyat değişim eşiği: %${config.fiyat_esik}\n`;
+      if (config.eksik_bilgi_uyari) prompt += `- Eksik bilgi uyarısı: ${config.eksik_bilgi_uyari === "evet" ? "Aktif" : "Kapalı"}\n`;
+      prompt += `\n`;
+    }
+
     prompt += `### Portföy Özeti\n`;
     prompt += `- Toplam: ${data.count} mülk\n`;
     prompt += `- Fotoğrafsız: ${data.missingPhotos}\n`;

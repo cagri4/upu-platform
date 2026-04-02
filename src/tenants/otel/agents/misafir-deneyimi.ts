@@ -14,6 +14,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -304,11 +305,13 @@ export const misafirDeneyimiAgent: AgentDefinition = {
     `- Önce veri topla (read_reviews, read_guest_requests, read_satisfaction_stats), sonra analiz et, sonra aksiyon öner.\n` +
     `- 3 puan ve altı yorumlara özellikle dikkat et.\n` +
     `- Bekleyen özel isteklere yüksek öncelik ver.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "otel_misafirDeneyimi");
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const { data: reviews } = await supabase
@@ -359,6 +362,7 @@ export const misafirDeneyimiAgent: AgentDefinition = {
         description: r.description?.substring(0, 60),
       })),
       activeGuests: activeGuests || 0,
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -387,6 +391,15 @@ export const misafirDeneyimiAgent: AgentDefinition = {
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    const config = data.agentConfig as Record<string, unknown> | null;
+    if (config && Object.keys(config).length > 0) {
+      prompt += `\n### Kullanici Tercihleri\n`;
+      for (const [key, value] of Object.entries(config)) {
+        prompt += `- ${key}: ${value}\n`;
+      }
+      prompt += `\n`;
+    }
     prompt += `### Misafir Deneyimi Özeti\n`;
     prompt += `- Haftalık yorum: ${reviews} (ort. ${data.avgRating}/5)\n`;
     prompt += `- Düşük puan (≤3): ${data.lowRatingCount}\n`;

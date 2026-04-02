@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify, formatCurrency, formatDate } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -275,6 +276,7 @@ export const muhasebeciAgent: AgentDefinition = {
     `- Bayiye ASLA direkt mesaj gonderme, her zaman draft_message veya notify_human kullan.\n` +
     `- Her kritik aksiyon icin kullanici onayi al.\n` +
     `- Once veri topla (read_receivables, read_overdue_invoices), sonra analiz et, sonra aksiyon oner.\n` +
+    `- Kullanici tercihlerine (agent_config) gore davran: gecikme esigi, bakiye rapor sikligi, otomatik hatirlatma.\n` +
     `- Vadesi gecmis odemelere ve buyuk alacaklara oncelik ver.\n` +
     `- Otonomi seviyesi: HER SEYI SOR — hicbir yazma islemini onaysiz yapma.\n` +
     `- Yapilacak bir sey yoksa hicbir tool cagirma, kisa bir Turkce ozet yaz.\n` +
@@ -282,6 +284,7 @@ export const muhasebeciAgent: AgentDefinition = {
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "bayi_muhasebeci");
 
     // Total receivables (dealers with negative balance)
     const { data: debtDealers } = await supabase
@@ -320,6 +323,7 @@ export const muhasebeciAgent: AgentDefinition = {
       overdueCount: overdueInvoices?.length || 0,
       overdueTotal,
       recentInvoiceCount: recentInvoiceCount || 0,
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -345,8 +349,18 @@ export const muhasebeciAgent: AgentDefinition = {
 
     if (totalReceivables === 0 && overdueCount === 0 && recentInvoiceCount === 0) return "";
 
+    const config = data.agentConfig as Record<string, unknown> | null;
+
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    if (config) {
+      prompt += `### Kullanici Tercihleri\n`;
+      if (config.gecikme_esigi) prompt += `- Gecikme uyari esigi: ${config.gecikme_esigi} gun\n`;
+      if (config.bakiye_rapor_sikligi) prompt += `- Bakiye rapor sikligi: ${config.bakiye_rapor_sikligi}\n`;
+      if (config.otomatik_hatirlatma) prompt += `- Otomatik hatirlatma: ${config.otomatik_hatirlatma === "evet" ? "Aktif" : "Kapali"}\n`;
+      prompt += `\n`;
+    }
 
     prompt += `### Alacak Ozeti\n`;
     prompt += `- Toplam alacak: ${formatCurrency(totalReceivables)} (${debtDealerCount} bayi)\n`;

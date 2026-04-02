@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify, getUserBuilding } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -271,12 +272,14 @@ export const teknisyenAgent: AgentDefinition = {
     `- Önce veri topla (read_tickets, read_ticket_stats), sonra analiz et, sonra aksiyon öner.\n` +
     `- 7+ gün bekleyen arızaları önceliklendir.\n` +
     `- Acil arızaları yüksek öncelikle işaretle.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
+    const config = await getAgentConfig(ctx.userId, "sy_teknisyen");
     const building = await getUserBuilding(ctx);
-    if (!building) return { noBuilding: true };
+    if (!building) return { noBuilding: true, agentConfig: config };
 
     const supabase = getServiceClient();
 
@@ -312,6 +315,7 @@ export const teknisyenAgent: AgentDefinition = {
       openCount,
       oldCount,
       categories: categories || "yok",
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -334,6 +338,15 @@ export const teknisyenAgent: AgentDefinition = {
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    const config = data.agentConfig as Record<string, unknown> | null;
+    if (config && Object.keys(config).length > 0) {
+      prompt += `\n### Kullanici Tercihleri\n`;
+      for (const [key, value] of Object.entries(config)) {
+        prompt += `- ${key}: ${value}\n`;
+      }
+      prompt += `\n`;
+    }
     prompt += `### Arıza Özeti\n`;
     prompt += `- Bina: ${data.buildingName}\n`;
     prompt += `- Açık talep: ${data.openCount}\n`;

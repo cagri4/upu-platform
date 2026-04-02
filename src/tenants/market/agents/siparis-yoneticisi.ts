@@ -12,6 +12,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -258,11 +259,13 @@ export const siparisYoneticisiAgent: AgentDefinition = {
     `## Kurallar\n` +
     `- Her kritik aksiyon icin kullanici onayi al.\n` +
     `- Once veri topla, sonra analiz et, sonra aksiyon oner.\n` +
+    `- Kullanici tercihlerine (agent_config) gore davran.\n` +
     `- Yapilacak bir sey yoksa hicbir tool cagirma, kisa bir Turkce ozet yaz.\n` +
     `- Turkce yanit ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "mkt_siparisYoneticisi");
 
     const { data: orders } = await supabase
       .from("mkt_orders")
@@ -275,7 +278,7 @@ export const siparisYoneticisiAgent: AgentDefinition = {
     const taskHistory = await getTaskHistory(ctx.userId, "mkt_siparisYoneticisi", 5);
 
     if (!orders?.length) {
-      return { orderCount: 0, recentDecisions: [], messageHistory: [] };
+      return { orderCount: 0, recentDecisions: [], messageHistory: [], agentConfig: config };
     }
 
     const pending = orders.filter((o) => o.status === "pending");
@@ -293,6 +296,7 @@ export const siparisYoneticisiAgent: AgentDefinition = {
         const supplier = Array.isArray(o.mkt_suppliers) ? o.mkt_suppliers[0] : o.mkt_suppliers;
         return `${o.id.substring(0, 8)} | ${supplier?.name || "-"} | ${new Date(o.created_at).toLocaleDateString("tr-TR")}`;
       }),
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -315,6 +319,15 @@ export const siparisYoneticisiAgent: AgentDefinition = {
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    const config = data.agentConfig as Record<string, unknown> | null;
+    if (config && Object.keys(config).length > 0) {
+      prompt += `\n### Kullanici Tercihleri\n`;
+      for (const [key, value] of Object.entries(config)) {
+        prompt += `- ${key}: ${value}\n`;
+      }
+      prompt += `\n`;
+    }
     prompt += `### Siparis Ozeti\n`;
     prompt += `- Toplam siparis: ${data.orderCount}\n`;
     prompt += `- Bekleyen: ${data.pendingCount}\n`;

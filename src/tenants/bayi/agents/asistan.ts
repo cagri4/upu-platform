@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify, formatCurrency } from "./helpers";
 
 // -- Domain Tools ------------------------------------------------------------
@@ -260,12 +261,14 @@ export const asistanAgent: AgentDefinition = {
     `- Bayiye ASLA direkt mesaj gonderme, her zaman draft_message veya notify_human kullan.\n` +
     `- Her kritik aksiyon icin kullanici onayi al.\n` +
     `- Otonomi seviyesi: HER SEYI SOR — hicbir yazma islemini onaysiz yapma.\n` +
+    `- Kullanici tercihlerine (agent_config) gore davran: brifing saati, rapor sikligi, metrik tercihleri.\n` +
     `- Once veri topla (read_daily_summary, read_dealer_overview), sonra analiz et, sonra aksiyon oner.\n` +
     `- Yapilacak bir sey yoksa hicbir tool cagirma, kisa bir Turkce ozet yaz.\n` +
     `- Turkce yanit ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "bayi_asistan");
     const today = new Date().toISOString().slice(0, 10);
 
     // Today's orders: count + revenue
@@ -309,6 +312,7 @@ export const asistanAgent: AgentDefinition = {
       criticalStockCount: criticalStockCount || 0,
       activeDeliveries: activeDeliveryCount || 0,
       dealerCount: dealerCount || 0,
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -334,8 +338,18 @@ export const asistanAgent: AgentDefinition = {
 
     if (orderCount === 0 && criticalStockCount === 0 && activeDeliveries === 0 && dealerCount === 0) return "";
 
+    const config = data.agentConfig as Record<string, unknown> | null;
+
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    if (config) {
+      prompt += `### Kullanici Tercihleri\n`;
+      if (config.brifing_saat) prompt += `- Brifing saati: ${config.brifing_saat}\n`;
+      if (config.rapor_sikligi) prompt += `- Rapor sikligi: ${config.rapor_sikligi}\n`;
+      if (config.metrikler) prompt += `- Takip metrikleri: ${config.metrikler}\n`;
+      prompt += `\n`;
+    }
 
     prompt += `### Gunluk Ozet\n`;
     prompt += `- Siparis: ${orderCount}\n`;

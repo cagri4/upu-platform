@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify, getUserBuilding } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -275,12 +276,14 @@ export const hukukAgent: AgentDefinition = {
     `- 3+ ay gecikmiş borçlarda yasal uyarı öner.\n` +
     `- 6+ ay gecikmiş borçlarda icra takip önerisi değerlendir.\n` +
     `- KMK 20. madde: her kat maliki gider ve avans payını ödemekle yükümlüdür.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
+    const config = await getAgentConfig(ctx.userId, "sy_hukukMusaviri");
     const building = await getUserBuilding(ctx);
-    if (!building) return { noBuilding: true };
+    if (!building) return { noBuilding: true, agentConfig: config };
 
     const supabase = getServiceClient();
 
@@ -325,6 +328,7 @@ export const hukukAgent: AgentDefinition = {
       emptyCount: (unitCount || 0) - uniqueOccupied,
       severelyLateCount,
       lateDebt,
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -347,6 +351,15 @@ export const hukukAgent: AgentDefinition = {
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    const config = data.agentConfig as Record<string, unknown> | null;
+    if (config && Object.keys(config).length > 0) {
+      prompt += `\n### Kullanici Tercihleri\n`;
+      for (const [key, value] of Object.entries(config)) {
+        prompt += `- ${key}: ${value}\n`;
+      }
+      prompt += `\n`;
+    }
     prompt += `### Hukuki Özet\n`;
     prompt += `- Bina: ${data.buildingName}\n`;
     prompt += `- Toplam daire: ${data.unitCount}\n`;

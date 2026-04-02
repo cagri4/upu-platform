@@ -12,6 +12,7 @@
 import type { AgentTask, AgentContext, AgentDefinition } from "./types";
 import { updateTaskStatus, logStep, saveMessage, getRecentMessages } from "./memory";
 import { executeTool, PLATFORM_TOOLS } from "./tools";
+import { getAgentConfig } from "./setup";
 
 export async function runAgentCycle(
   task: AgentTask,
@@ -19,6 +20,14 @@ export async function runAgentCycle(
   ctx: AgentContext,
 ): Promise<void> {
   const maxSteps = task.max_steps || 10;
+
+  // Fetch user config once at the start of the cycle
+  let agentConfig: Record<string, unknown> | null = null;
+  try {
+    agentConfig = await getAgentConfig(ctx.userId, agent.key);
+  } catch (err) {
+    console.error(`[cycle:${agent.key}] config fetch error:`, err);
+  }
 
   for (let step = task.current_step; step < maxSteps; step++) {
     // Update status
@@ -32,6 +41,11 @@ export async function runAgentCycle(
       console.error(`[cycle:${agent.key}] gather error:`, err);
     }
 
+    // Inject agent config into domain context so formatPrompt can use it
+    if (agentConfig) {
+      domainContext.agentConfig = agentConfig;
+    }
+
     const recentMessages = await getRecentMessages(ctx.userId, agent.key, 20);
     const history = recentMessages.map(m => `[${m.role}] ${m.content}`).join("\n");
 
@@ -42,7 +56,7 @@ export async function runAgentCycle(
       return;
     }
 
-    const systemPrompt = buildSystemPrompt(agent, task, history);
+    const systemPrompt = buildSystemPrompt(agent, task, history, agentConfig);
 
     let toolCall: { name: string; input: Record<string, unknown> } | null = null;
     let textResponse = "";
@@ -108,7 +122,7 @@ export async function runAgentCycle(
 
 // ── System Prompt Builder ──────────────────────────────────────────────
 
-function buildSystemPrompt(agent: AgentDefinition, task: AgentTask, history: string): string {
+function buildSystemPrompt(agent: AgentDefinition, task: AgentTask, history: string, config?: Record<string, unknown> | null): string {
   let prompt = agent.systemPrompt + "\n\n";
   prompt += "## Kurallar\n";
   prompt += "- Kullanıcıya direkt mesaj GÖNDERME. notify_human tool'u kullan.\n";
@@ -116,6 +130,15 @@ function buildSystemPrompt(agent: AgentDefinition, task: AgentTask, history: str
   prompt += "- read_db ile veri okuyabilirsin (onaysız).\n";
   prompt += "- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir özet yaz.\n";
   prompt += "- Türkçe yanıt ver.\n\n";
+
+  if (config && Object.keys(config).length > 0) {
+    prompt += "## Kullanıcı Tercihleri (agent_config)\n";
+    prompt += "Aşağıdaki tercihler kullanıcı tarafından kurulum sırasında belirlenmiştir. Bu tercihlere göre davran:\n";
+    for (const [key, value] of Object.entries(config)) {
+      prompt += `- ${key}: ${value}\n`;
+    }
+    prompt += "\n";
+  }
 
   if (history) {
     prompt += "## Son Mesajlar\n" + history + "\n\n";

@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
 
@@ -319,6 +320,7 @@ export const sekreterAgent: AgentDefinition = {
     `- Müşteriye ASLA direkt mesaj gönderme, her zaman draft_message veya notify_human kullan.\n` +
     `- Her kritik aksiyon için kullanıcı onayı al.\n` +
     `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran: brifing saati, çalışma günleri, hatırlatma süresi, otonom seviye.\n` +
     `- Önce veri topla (read_reminders, read_contracts), sonra analiz et, sonra aksiyon öner.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
@@ -326,9 +328,13 @@ export const sekreterAgent: AgentDefinition = {
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
 
-    // Reminders within next 24 hours
+    // Fetch user preferences
+    const config = await getAgentConfig(ctx.userId, "sekreter");
+
+    // Reminders within next 24 hours (or use config hatirlatma_suresi)
     const now = new Date().toISOString();
-    const in24h = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const reminderDays = config?.hatirlatma_suresi ? Number(config.hatirlatma_suresi) : 1;
+    const in24h = new Date(Date.now() + reminderDays * 24 * 60 * 60 * 1000).toISOString();
 
     const { data: reminders } = await supabase
       .from("reminders")
@@ -358,6 +364,7 @@ export const sekreterAgent: AgentDefinition = {
     const expiringContracts = contracts?.length || 0;
 
     return {
+      agentConfig: config,
       reminderCount,
       reminders: (reminders || []).slice(0, 5).map((r) => ({
         id: r.id,
@@ -393,11 +400,22 @@ export const sekreterAgent: AgentDefinition = {
     const contracts = data.contracts as Array<{ id: string; title: string; customerName?: string; endDate: string }>;
     const recentDecisions = data.recentDecisions as Array<{ date: string; actions: string[] }>;
     const messageHistory = data.messageHistory as Array<{ role: string; content: string }>;
+    const config = data.agentConfig as Record<string, unknown> | null;
 
     if (reminderCount === 0 && expiringContracts === 0) return "";
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    if (config) {
+      prompt += `### Kullanıcı Tercihleri\n`;
+      if (config.brifing_saat) prompt += `- Brifing saati: ${config.brifing_saat}\n`;
+      if (config.calisma_gunleri) prompt += `- Çalışma günleri: ${config.calisma_gunleri}\n`;
+      if (config.hatirlatma_suresi) prompt += `- Hatırlatma süresi: ${config.hatirlatma_suresi} gün önce\n`;
+      if (config.haftalik_rapor_gun) prompt += `- Haftalık rapor günü: ${config.haftalik_rapor_gun}\n`;
+      if (config.otonom_seviye) prompt += `- Otonom seviye: ${config.otonom_seviye}\n`;
+      prompt += `\n`;
+    }
 
     if (reminderCount > 0) {
       prompt += `### Yaklaşan Hatırlatmalar (${reminderCount})\n`;

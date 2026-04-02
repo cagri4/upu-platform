@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify, formatCurrency, formatDate } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -302,12 +303,14 @@ export const tahsildarAgent: AgentDefinition = {
     `- Her kritik aksiyon için kullanıcı onayı al.\n` +
     `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
     `- Önce veri topla (read_due_today, read_overdue, read_collection_activities), sonra analiz et, sonra aksiyon öner.\n` +
-    `- 30+ gün gecikmiş ödemelere özellikle dikkat et.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran: vade uyarı süresi, otomatik hatırlatma, risk eşiği.\n` +
+    `- Risk eşiğini aşan gecikmiş ödemelere özellikle dikkat et.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "bayi_tahsildar");
     const today = new Date().toISOString().slice(0, 10);
 
     // Due today
@@ -350,6 +353,7 @@ export const tahsildarAgent: AgentDefinition = {
       overdueTotal,
       recentActivitiesCount: activities?.length || 0,
       collectedThisWeek,
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -375,8 +379,18 @@ export const tahsildarAgent: AgentDefinition = {
 
     if (dueTodayCount === 0 && overdueCount === 0) return "";
 
+    const config = data.agentConfig as Record<string, unknown> | null;
+
     let prompt = `## Tahsilat Ozeti\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    if (config) {
+      prompt += `### Kullanıcı Tercihleri\n`;
+      if (config.vade_uyari_suresi) prompt += `- Vade uyarı süresi: ${config.vade_uyari_suresi} gün önce\n`;
+      if (config.otomatik_hatirlatma) prompt += `- Otomatik hatırlatma: ${config.otomatik_hatirlatma === "evet" ? "Aktif" : "Önce sorar"}\n`;
+      if (config.risk_esigi) prompt += `- Risk eşiği: ${config.risk_esigi} gün gecikme\n`;
+      prompt += `\n`;
+    }
     prompt += `- Bugun vadesi gelen: ${dueTodayCount} fatura (${formatCurrency(dueTodayTotal)})\n`;
     prompt += `- Vadesi gecmis: ${overdueCount} fatura (${formatCurrency(overdueTotal)})\n`;
     prompt += `- Bu hafta tahsilat: ${formatCurrency(collectedThisWeek)}\n`;

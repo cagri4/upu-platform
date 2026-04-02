@@ -15,6 +15,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify, formatCurrency, formatDate } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -267,12 +268,14 @@ export const lojistikciAgent: AgentDefinition = {
     `- Her kritik aksiyon için kullanıcı onayı al.\n` +
     `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
     `- Önce veri topla (read_pending_deliveries, read_delayed_shipments), sonra analiz et, sonra aksiyon öner.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran: teslimat bildirimi, gecikme eşiği, rota optimizasyonu.\n` +
     `- Geciken sevkiyatlara özellikle dikkat et, acil müdahale gerektirebilir.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "bayi_lojistikci");
     const today = new Date().toISOString().slice(0, 10);
 
     // Pending deliveries (shipped orders)
@@ -309,6 +312,7 @@ export const lojistikciAgent: AgentDefinition = {
       todayDeliveries: todayDeliveries?.length || 0,
       delayedShipments: delayed?.length || 0,
       delayedTotal: (delayed || []).reduce((s, o) => s + (o.total_amount || 0), 0),
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -333,8 +337,18 @@ export const lojistikciAgent: AgentDefinition = {
 
     if (pendingDeliveries === 0 && delayedShipments === 0) return "";
 
+    const config = data.agentConfig as Record<string, unknown> | null;
+
     let prompt = `## Lojistik Özeti\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    if (config) {
+      prompt += `### Kullanıcı Tercihleri\n`;
+      if (config.teslimat_bildirimi) prompt += `- Teslimat bildirimi: ${config.teslimat_bildirimi === "evet" ? "Aktif" : "Kapalı"}\n`;
+      if (config.gecikme_esigi) prompt += `- Gecikme eşiği: ${config.gecikme_esigi} gün\n`;
+      if (config.rota_optimizasyonu) prompt += `- Rota optimizasyonu: ${config.rota_optimizasyonu === "evet" ? "Aktif" : "Kapalı"}\n`;
+      prompt += `\n`;
+    }
     prompt += `- Yoldaki teslimat: ${pendingDeliveries}\n`;
     prompt += `- Bugün teslim edilecek: ${todayDeliveries}\n`;
     prompt += `- Geciken sevkiyat: ${delayedShipments} (${formatCurrency(delayedTotal)})\n`;

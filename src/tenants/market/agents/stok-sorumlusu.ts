@@ -12,6 +12,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -287,11 +288,13 @@ export const stokSorumlusuAgent: AgentDefinition = {
     `## Kurallar\n` +
     `- Her kritik aksiyon icin kullanici onayi al.\n` +
     `- Once veri topla, sonra analiz et, sonra aksiyon oner.\n` +
+    `- Kullanici tercihlerine (agent_config) gore davran.\n` +
     `- Yapilacak bir sey yoksa hicbir tool cagirma, kisa bir Turkce ozet yaz.\n` +
     `- Turkce yanit ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "mkt_stokSorumlusu");
 
     const { data: products } = await supabase
       .from("mkt_products")
@@ -303,7 +306,7 @@ export const stokSorumlusuAgent: AgentDefinition = {
     const taskHistory = await getTaskHistory(ctx.userId, "mkt_stokSorumlusu", 5);
 
     if (!products?.length) {
-      return { count: 0, recentDecisions: [], messageHistory: [] };
+      return { count: 0, recentDecisions: [], messageHistory: [], agentConfig: config };
     }
 
     const count = products.length;
@@ -319,6 +322,7 @@ export const stokSorumlusuAgent: AgentDefinition = {
       expiringCount: expiringSoon.length,
       expiringItems: expiringSoon.slice(0, 5).map((p) => `${p.name}: SKT ${p.expiry_date?.substring(0, 10)}`),
       totalValue,
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -341,6 +345,15 @@ export const stokSorumlusuAgent: AgentDefinition = {
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    const config = data.agentConfig as Record<string, unknown> | null;
+    if (config && Object.keys(config).length > 0) {
+      prompt += `\n### Kullanici Tercihleri\n`;
+      for (const [key, value] of Object.entries(config)) {
+        prompt += `- ${key}: ${value}\n`;
+      }
+      prompt += `\n`;
+    }
     prompt += `### Stok Ozeti\n`;
     prompt += `- Toplam: ${data.count} urun\n`;
     prompt += `- Dusuk stok: ${data.lowStockCount}\n`;

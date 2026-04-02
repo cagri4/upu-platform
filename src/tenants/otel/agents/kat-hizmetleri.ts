@@ -14,6 +14,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -309,11 +310,13 @@ export const katHizmetleriAgent: AgentDefinition = {
     `- Otonomi seviyesi: HER ŞEYİ SOR — hiçbir yazma işlemini onaysız yapma.\n` +
     `- Önce veri topla (read_room_status, read_checkin_rooms), sonra analiz et, sonra aksiyon öner.\n` +
     `- Check-in öncesi temiz olmayan odalara yüksek öncelik ver.\n` +
+    `- Kullanıcı tercihlerine (agent_config) göre davran.\n` +
     `- Yapılacak bir şey yoksa hiçbir tool çağırma, kısa bir Türkçe özet yaz.\n` +
     `- Türkçe yanıt ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "otel_katHizmetleri");
 
     const { data: dirtyRooms } = await supabase
       .from("otel_rooms")
@@ -353,6 +356,7 @@ export const katHizmetleriAgent: AgentDefinition = {
       maintenanceCount: maintenanceCount || 0,
       todayCheckouts: todayCheckouts || 0,
       todayCheckins: todayCheckins || 0,
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -381,6 +385,15 @@ export const katHizmetleriAgent: AgentDefinition = {
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    const config = data.agentConfig as Record<string, unknown> | null;
+    if (config && Object.keys(config).length > 0) {
+      prompt += `\n### Kullanici Tercihleri\n`;
+      for (const [key, value] of Object.entries(config)) {
+        prompt += `- ${key}: ${value}\n`;
+      }
+      prompt += `\n`;
+    }
     prompt += `### Kat Hizmetleri Özeti\n`;
     prompt += `- Kirli oda: ${dirty}\n`;
     prompt += `- Bakımda: ${maintenance}\n`;

@@ -14,6 +14,7 @@ import type {
 } from "@/platform/agents/types";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
+import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify } from "./helpers";
 
 // ── Domain Tools ────────────────────────────────────────────────────────
@@ -234,11 +235,13 @@ export const sekreterAgent: AgentDefinition = {
     `- Her kritik aksiyon icin kullanici onayi al.\n` +
     `- Otonomi seviyesi: HER SEYI SOR — hicbir yazma islemini onaysiz yapma.\n` +
     `- Once veri topla, sonra analiz et, sonra aksiyon oner.\n` +
+    `- Kullanici tercihlerine (agent_config) gore davran.\n` +
     `- Yapilacak bir sey yoksa hicbir tool cagirma, kisa bir Turkce ozet yaz.\n` +
     `- Turkce yanit ver.\n`,
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
+    const config = await getAgentConfig(ctx.userId, "muh_sekreter");
     const today = new Date().toISOString().split("T")[0];
 
     const { count: mukellefCount } = await supabase
@@ -276,6 +279,7 @@ export const sekreterAgent: AgentDefinition = {
       pendingFilings: pendingFilings ?? 0,
       upcomingDeadlines: upcomingDeadlines ?? 0,
       todayAppointments: todayAppointments ?? 0,
+      agentConfig: config,
       recentDecisions: taskHistory
         .filter((t) => t.status === "done" && t.execution_log?.length)
         .slice(0, 3)
@@ -296,6 +300,15 @@ export const sekreterAgent: AgentDefinition = {
 
     let prompt = `## Mevcut Durum\n`;
     prompt += `Tarih: ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })}\n\n`;
+
+    const config = data.agentConfig as Record<string, unknown> | null;
+    if (config && Object.keys(config).length > 0) {
+      prompt += `\n### Kullanici Tercihleri\n`;
+      for (const [key, value] of Object.entries(config)) {
+        prompt += `- ${key}: ${value}\n`;
+      }
+      prompt += `\n`;
+    }
     prompt += `### Genel Bakis\n`;
     prompt += `- Aktif mukellef: ${data.mukellefCount}\n`;
     prompt += `- Bekleyen beyanname: ${data.pendingFilings}\n`;
