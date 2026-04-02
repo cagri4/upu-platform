@@ -459,9 +459,9 @@ async function showMenu(
       description: "",
     }));
     await sendList(ctx.phone,
-      `${tenant.icon} *${tenant.name}*\n\n⭐ Sık kullanılanlar:\n\n_("menu" yazarak buraya dönebilirsiniz.)_`,
+      `${tenant.icon} *${tenant.name}*\n\n⭐ Favorilerim:\n\n_("menu" yazarak buraya dönebilirsiniz.)_`,
       "Favoriler",
-      [{ title: "Sık Kullanılanlar", rows: favRows }],
+      [{ title: "Favorilerim", rows: favRows }],
     );
   }
 
@@ -483,7 +483,7 @@ async function showMenu(
   // Message 3: System commands as list (supports up to 10 items)
   const systemRows = [
     { id: "cmd:profilim", title: "👤 Profilim", description: "Profil bilgileri ve düzenleme" },
-    { id: "cmd:favoriler", title: "⭐ Favoriler", description: "Sık kullanılan komutları düzenle" },
+    { id: "cmd:favoriler", title: "⭐ Favoriler", description: "Favori komutları düzenle" },
     { id: "cmd:kilavuz", title: "📖 Kılavuz", description: "Kullanım rehberi" },
     { id: "cmd:webpanel", title: "🖥 Web Panel", description: "Tarayıcıdan giriş yap" },
     { id: "cmd:uzanti", title: "🧩 Uzantı Kurulumu", description: "Chrome uzantısı bağlantısı" },
