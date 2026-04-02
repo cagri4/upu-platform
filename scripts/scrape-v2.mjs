@@ -97,8 +97,9 @@ const OUTPUT_FILE = path.join(OUTPUT_DIR, 'v2-bodrum.json');
 const PROGRESS_FILE = path.join(OUTPUT_DIR, 'v2-progress.json');
 
 const DELAY = {
-  page: { min: 3000, max: 5000 },
-  category: { min: 10000, max: 20000 },
+  page: { min: 4000, max: 7000 },
+  category: { min: 30000, max: 60000 },
+  blocked: { min: 60000, max: 90000 },
 };
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
@@ -248,7 +249,9 @@ function extractListings() {
 // ─── MAIN ───────────────────────────────────────────────────────────────────
 
 async function scrape() {
-  const urls = isTestMode ? ALL_URLS.slice(skipCount, skipCount + 3) : ALL_URLS;
+  // URL sırasını randomize et — her gece aynı sıra = tahmin edilebilir pattern
+  const shuffled = [...ALL_URLS].sort(() => Math.random() - 0.5);
+  const urls = isTestMode ? shuffled.slice(skipCount, skipCount + 3) : shuffled;
   const mode = isDailyMode ? 'DAILY' : isTestMode ? 'TEST' : 'FULL';
   console.log(`\n🏠 Scraper V2 [${mode}] — ${urls.length} URL\n`);
 
@@ -307,7 +310,7 @@ async function scrape() {
         console.error(`  ⚠️ Sayfa yüklenemedi: ${err.message}`);
         break;
       }
-      await sleep(1500, 2500);
+      await sleep(2500, 4000);
 
       // Block/login check
       const pageUrl = page.url();
@@ -373,14 +376,11 @@ async function scrape() {
     }
 
     if (blocked) {
-      if (isDateFiltered) {
-        // Daily modda engel yerse bu kategoriyi atla, diğerlerine devam et
-        console.log('  ⏭️ Daily: engel atlanıyor, sonraki kategoriye geçiliyor...');
-        blocked = false;
-        await sleep(30000, 45000); // Engel sonrası uzun bekleme
-        continue;
-      }
-      break;
+      // Engel yerse uzun bekle ve sonraki kategoriye geç (eskiden sadece daily'de yapıyordu)
+      console.log('  ⏭️ Engel atlanıyor, uzun bekleme sonrası sonraki kategoriye geçiliyor...');
+      blocked = false;
+      await sleep(DELAY.blocked.min, DELAY.blocked.max);
+      continue;
     }
 
     const added = allListings.length - beforeCount;
