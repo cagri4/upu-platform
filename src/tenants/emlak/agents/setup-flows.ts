@@ -132,23 +132,15 @@ export const medyaSetup: AgentSetupFlow = {
   questions: [
     {
       key: "foto_uyari",
-      text: "Fotoğrafsız mülkler için uyarı göndereyim mi?",
+      text: "(1/3) Fotoğrafsız mülkler için uyarı göndereyim mi?",
       buttons: [
         { id: "evet", title: "Evet" },
         { id: "hayir", title: "Hayır" },
       ],
     },
     {
-      key: "yayin_takip",
-      text: "Yayınlanmamış veya süresi dolan ilanları takip edeyim mi?",
-      buttons: [
-        { id: "evet", title: "Evet, takip et" },
-        { id: "hayir", title: "Hayır" },
-      ],
-    },
-    {
       key: "ilan_metni",
-      text: "Yeni mülk eklendiğinde otomatik ilan metni oluşturayım mı? (AI ile)",
+      text: "(2/3) Yeni mülk eklendiğinde otomatik ilan metni oluşturayım mı? (AI ile)",
       buttons: [
         { id: "evet", title: "Evet" },
         { id: "sor", title: "Önce sor" },
@@ -157,7 +149,7 @@ export const medyaSetup: AgentSetupFlow = {
     },
     {
       key: "sosyal_medya",
-      text: "Sosyal medya paylaşım önerisi ne sıklıkla gelsin?",
+      text: "(3/3) Sosyal medya paylaşım önerisi ne sıklıkla gelsin?",
       buttons: [
         { id: "gunluk", title: "Her gün" },
         { id: "haftalik", title: "Haftada bir" },
@@ -168,7 +160,6 @@ export const medyaSetup: AgentSetupFlow = {
   onComplete: (config) => {
     let summary = "";
     summary += `📸 Fotoğraf uyarısı: ${config.foto_uyari === "evet" ? "Aktif" : "Kapalı"}\n`;
-    summary += `📢 Yayın takibi: ${config.yayin_takip === "evet" ? "Aktif" : "Kapalı"}\n`;
     summary += `✍️ AI ilan metni: ${config.ilan_metni === "evet" ? "Otomatik" : config.ilan_metni === "sor" ? "Sorar" : "Kapalı"}\n`;
     summary += `📱 Sosyal medya önerisi: ${config.sosyal_medya === "gunluk" ? "Günlük" : config.sosyal_medya === "haftalik" ? "Haftalık" : "Kapalı"}`;
     return summary;
