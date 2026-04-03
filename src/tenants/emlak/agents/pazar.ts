@@ -197,59 +197,102 @@ async function handleReadUserVsMarket(
     .from("emlak_properties")
     .select("id, title, price, area, rooms, type, listing_type, location_district, location_neighborhood")
     .eq("user_id", ctx.userId)
-    .not("location_district", "is", null)
     .not("price", "is", null);
 
-  if (!userProps?.length) return { result: "Portföyde bölge ve fiyat bilgisi olan mülk yok.", needsApproval: false };
+  if (!userProps?.length) return { result: "Portföyde fiyat bilgisi olan mülk yok.", needsApproval: false };
 
-  const districts = [...new Set(userProps.map((p) => p.location_district).filter(Boolean))] as string[];
-  const lines: string[] = ["📊 Portföy vs Piyasa Karşılaştırması", "─────────────────────"];
+  const lines: string[] = ["📊 Portföy vs Piyasa — Dar Alan Karşılaştırması", "─────────────────────"];
 
-  for (const district of districts) {
-    const userDistrictProps = userProps.filter((p) => p.location_district === district);
-    const userAvg = Math.round(userDistrictProps.reduce((s, p) => s + (p.price || 0), 0) / userDistrictProps.length);
+  for (const prop of userProps.slice(0, 10)) {
+    // Extract semt from neighborhood (e.g. "Yalıkavak / Geriş Mh." → "Yalıkavak")
+    const semt = prop.location_neighborhood
+      ? prop.location_neighborhood.split("/")[0]?.trim()
+      : null;
 
-    // Market comparison with same listing_type
-    const listingTypes = [...new Set(userDistrictProps.map(p => p.listing_type).filter(Boolean))];
+    // Build narrowest possible market query: semt + tip + oda
     let marketQuery = supabase
       .from("emlak_properties")
-      .select("price, area, rooms, type")
-      .eq("location_district", district)
+      .select("price, area")
       .not("price", "is", null);
-    if (listingTypes.length === 1) {
-      marketQuery = marketQuery.eq("listing_type", listingTypes[0]);
+
+    // 1. Semt filter (neighborhood contains semt name)
+    if (semt) {
+      marketQuery = marketQuery.ilike("location_neighborhood", `${semt}%`);
+    } else if (prop.location_district) {
+      marketQuery = marketQuery.eq("location_district", prop.location_district);
     }
 
-    const { data: marketProps } = await marketQuery.limit(500);
+    // 2. Listing type filter (satılık/kiralık)
+    if (prop.listing_type) {
+      marketQuery = marketQuery.eq("listing_type", prop.listing_type);
+    }
 
-    const marketAvg = marketProps?.length
-      ? Math.round(marketProps.reduce((s, p) => s + (p.price || 0), 0) / marketProps.length)
-      : 0;
+    // 3. Property type filter (daire/villa/arsa)
+    if (prop.type) {
+      marketQuery = marketQuery.eq("type", prop.type);
+    }
 
-    const diff = marketAvg > 0 ? Math.round(((userAvg - marketAvg) / marketAvg) * 100) : 0;
-    const diffLabel = diff > 0 ? `+${diff}%` : `${diff}%`;
+    // 4. Room filter
+    if (prop.rooms) {
+      marketQuery = marketQuery.eq("rooms", prop.rooms);
+    }
+
+    const { data: narrowMarket } = await marketQuery.limit(500);
+
+    // If too few results with narrow filter, widen to semt + type only
+    let marketData = narrowMarket;
+    let filterLabel = "";
+    if (!narrowMarket || narrowMarket.length < 3) {
+      let widerQuery = supabase
+        .from("emlak_properties")
+        .select("price, area")
+        .not("price", "is", null);
+      if (semt) {
+        widerQuery = widerQuery.ilike("location_neighborhood", `${semt}%`);
+      } else if (prop.location_district) {
+        widerQuery = widerQuery.eq("location_district", prop.location_district);
+      }
+      if (prop.listing_type) {
+        widerQuery = widerQuery.eq("listing_type", prop.listing_type);
+      }
+      const { data: widerData } = await widerQuery.limit(500);
+      marketData = widerData;
+      filterLabel = ` (geniş: ${semt || prop.location_district})`;
+    } else {
+      const parts = [semt || prop.location_district, prop.type, prop.rooms].filter(Boolean);
+      filterLabel = ` (${parts.join(", ")})`;
+    }
+
+    if (!marketData?.length) {
+      lines.push(`\n⚪ ${prop.title?.substring(0, 35)}`);
+      lines.push(`  ₺${prop.price.toLocaleString("tr-TR")} — karşılaştırma verisi yok`);
+      continue;
+    }
+
+    const prices = marketData.map(m => m.price).filter(Boolean) as number[];
+    const marketAvg = Math.round(prices.reduce((s, p) => s + p, 0) / prices.length);
+    const diff = marketAvg > 0 ? Math.round(((prop.price - marketAvg) / marketAvg) * 100) : 0;
     const diffEmoji = diff > 10 ? "🔴" : diff < -10 ? "🟢" : "🟡";
 
-    lines.push(`\n${diffEmoji} *${district}* (${userDistrictProps.length} mülkünüz / ${marketProps?.length || 0} piyasa)`);
-    lines.push(`  Sizin ort: ₺${userAvg.toLocaleString("tr-TR")} / Piyasa ort: ₺${marketAvg.toLocaleString("tr-TR")} (${diffLabel})`);
+    // m² comparison
+    const m2Price = prop.area && prop.area > 0 ? Math.round(prop.price / prop.area) : 0;
+    const marketM2Prices = marketData
+      .filter(m => m.price && m.area && m.area > 0)
+      .map(m => Math.round(m.price / m.area));
+    const marketAvgM2 = marketM2Prices.length
+      ? Math.round(marketM2Prices.reduce((s, p) => s + p, 0) / marketM2Prices.length)
+      : 0;
 
-    // Per-property breakdown with room-based comparison
-    for (const prop of userDistrictProps.slice(0, 5)) {
-      const roomFilter = prop.rooms && marketProps?.length
-        ? marketProps.filter(m => m.rooms === prop.rooms)
-        : [];
-      let roomComparison = "";
-      if (roomFilter.length >= 3) {
-        const roomAvg = Math.round(roomFilter.reduce((s, p) => s + (p.price || 0), 0) / roomFilter.length);
-        const roomDiff = roomAvg > 0 ? Math.round(((prop.price - roomAvg) / roomAvg) * 100) : 0;
-        roomComparison = ` | ${prop.rooms} ort: ₺${roomAvg.toLocaleString("tr-TR")} (${roomDiff > 0 ? "+" : ""}${roomDiff}%)`;
-      }
-      const m2Price = prop.area && prop.area > 0 ? ` | ₺${Math.round(prop.price / prop.area).toLocaleString("tr-TR")}/m²` : "";
-      lines.push(`  • ${prop.title?.substring(0, 30)} — ₺${prop.price.toLocaleString("tr-TR")}${m2Price}${roomComparison}`);
+    lines.push(`\n${diffEmoji} ${prop.title?.substring(0, 35)}`);
+    lines.push(`  Fiyat: ₺${prop.price.toLocaleString("tr-TR")} | Piyasa ort: ₺${marketAvg.toLocaleString("tr-TR")} (${diff > 0 ? "+" : ""}${diff}%)${filterLabel}`);
+    if (m2Price && marketAvgM2) {
+      lines.push(`  m² fiyat: ₺${m2Price.toLocaleString("tr-TR")} | Piyasa ort: ₺${marketAvgM2.toLocaleString("tr-TR")}/m²`);
     }
-    if (userDistrictProps.length > 5) {
-      lines.push(`  ... ve ${userDistrictProps.length - 5} mülk daha`);
-    }
+    lines.push(`  Karşılaştırma: ${prices.length} benzer ilan`);
+  }
+
+  if (userProps.length > 10) {
+    lines.push(`\n... ve ${userProps.length - 10} mülk daha`);
   }
 
   return { result: lines.join("\n"), needsApproval: false };
