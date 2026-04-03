@@ -154,3 +154,73 @@ export async function getTaskHistory(
     .limit(limit);
   return (data as AgentTask[]) || [];
 }
+
+// ── Agent Learnings ───────────────────────────────────────────────────
+
+export interface AgentLearning {
+  id: string;
+  agent_key: string;
+  user_id: string;
+  tenant_id: string | null;
+  learning: string;
+  category: string;
+  confidence: number;
+  source_task_id: string | null;
+  created_at: string;
+}
+
+export async function getLearnings(
+  userId: string,
+  agentKey: string,
+  limit = 20,
+): Promise<AgentLearning[]> {
+  const supabase = getServiceClient();
+  const { data } = await supabase
+    .from("agent_learnings")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("agent_key", agentKey)
+    .order("confidence", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data as AgentLearning[]) || [];
+}
+
+export async function saveLearning(
+  userId: string,
+  tenantId: string,
+  agentKey: string,
+  learning: string,
+  category = "general",
+  confidence = 0.5,
+  sourceTaskId?: string,
+): Promise<void> {
+  const supabase = getServiceClient();
+  // Check for duplicate/similar learning
+  const { data: existing } = await supabase
+    .from("agent_learnings")
+    .select("id, confidence")
+    .eq("user_id", userId)
+    .eq("agent_key", agentKey)
+    .eq("learning", learning)
+    .limit(1);
+
+  if (existing?.length) {
+    // Increase confidence of existing learning
+    const newConf = Math.min((existing[0].confidence || 0.5) + 0.1, 1.0);
+    await supabase
+      .from("agent_learnings")
+      .update({ confidence: newConf, updated_at: new Date().toISOString() })
+      .eq("id", existing[0].id);
+  } else {
+    await supabase.from("agent_learnings").insert({
+      user_id: userId,
+      tenant_id: tenantId,
+      agent_key: agentKey,
+      learning,
+      category,
+      confidence,
+      source_task_id: sourceTaskId || null,
+    });
+  }
+}

@@ -10,7 +10,7 @@
  */
 
 import type { AgentTask, AgentContext, AgentDefinition } from "./types";
-import { updateTaskStatus, logStep, saveMessage, getRecentMessages } from "./memory";
+import { updateTaskStatus, logStep, saveMessage, getRecentMessages, getLearnings, saveLearning } from "./memory";
 import { executeTool, PLATFORM_TOOLS } from "./tools";
 import { getAgentConfig } from "./setup";
 
@@ -27,6 +27,14 @@ export async function runAgentCycle(
     agentConfig = await getAgentConfig(ctx.userId, agent.key);
   } catch (err) {
     console.error(`[cycle:${agent.key}] config fetch error:`, err);
+  }
+
+  // Fetch learnings — accumulated knowledge from past interactions
+  let learnings: Array<{ learning: string; confidence: number; category: string }> = [];
+  try {
+    learnings = await getLearnings(ctx.userId, agent.key, 15);
+  } catch (err) {
+    console.error(`[cycle:${agent.key}] learnings fetch error:`, err);
   }
 
   for (let step = task.current_step; step < maxSteps; step++) {
@@ -56,7 +64,7 @@ export async function runAgentCycle(
       return;
     }
 
-    const systemPrompt = buildSystemPrompt(agent, task, history, agentConfig);
+    const systemPrompt = buildSystemPrompt(agent, task, history, agentConfig, learnings);
 
     let toolCall: { name: string; input: Record<string, unknown> } | null = null;
     let textResponse = "";
@@ -111,6 +119,25 @@ export async function runAgentCycle(
     // ── 5. DECIDE — no tool call = agent is done thinking ────────────
     if (textResponse) {
       await logStep(task.id, step, "conclude", textResponse, "success");
+
+      // Extract learnings from the final response
+      try {
+        const { askClaude } = await import("@/platform/ai/claude");
+        const learningPrompt = `Aşağıdaki ajan çıktısından, gelecekte faydalı olacak 0-3 kısa öğrenme çıkar. Her öğrenme tek cümle olsun. Sadece gerçekten yeni ve faydalı bilgiler yaz. Eğer öğrenilecek bir şey yoksa "YOK" yaz.\n\nAjan: ${agent.name}\nÇıktı: ${textResponse.substring(0, 500)}\n\nFormat: Her satırda bir öğrenme. Kategori|Öğrenme şeklinde.`;
+        const learningResult = await askClaude(learningPrompt, "Kısa ve öz cevap ver.");
+        if (learningResult && !learningResult.includes("YOK")) {
+          const newLearnings = learningResult.split("\n").filter(l => l.trim().length > 5).slice(0, 3);
+          for (const line of newLearnings) {
+            const [cat, ...rest] = line.split("|");
+            const text = rest.join("|").trim() || cat.trim();
+            const category = rest.length > 0 ? cat.trim().toLowerCase() : "general";
+            await saveLearning(ctx.userId, ctx.tenantId, agent.key, text, category, 0.5, task.id);
+          }
+        }
+      } catch (err) {
+        // Learning extraction is non-critical — don't fail the task
+        console.error(`[cycle:${agent.key}] learning extraction error:`, err);
+      }
     }
     await updateTaskStatus(task.id, "done");
     return;
@@ -122,7 +149,7 @@ export async function runAgentCycle(
 
 // ── System Prompt Builder ──────────────────────────────────────────────
 
-function buildSystemPrompt(agent: AgentDefinition, task: AgentTask, history: string, config?: Record<string, unknown> | null): string {
+function buildSystemPrompt(agent: AgentDefinition, task: AgentTask, history: string, config?: Record<string, unknown> | null, learnings?: Array<{ learning: string; confidence: number; category: string }>): string {
   let prompt = agent.systemPrompt + "\n\n";
   prompt += "## Kurallar\n";
   prompt += "- Kullanıcıya direkt mesaj GÖNDERME. notify_human tool'u kullan.\n";
@@ -138,6 +165,16 @@ function buildSystemPrompt(agent: AgentDefinition, task: AgentTask, history: str
       prompt += `- ${key}: ${value}\n`;
     }
     prompt += "\n";
+  }
+
+  if (learnings && learnings.length > 0) {
+    prompt += "## Öğrenme Hafızası\n";
+    prompt += "Geçmiş etkileşimlerden öğrenilen bilgiler (güven seviyesine göre sıralı):\n";
+    for (const l of learnings) {
+      const confBar = l.confidence >= 0.8 ? "🟢" : l.confidence >= 0.5 ? "🟡" : "⚪";
+      prompt += `${confBar} [${l.category}] ${l.learning}\n`;
+    }
+    prompt += "Bu öğrenmeleri dikkate alarak daha isabetli kararlar ver.\n\n";
   }
 
   if (history) {
