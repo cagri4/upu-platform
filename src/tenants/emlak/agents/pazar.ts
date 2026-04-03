@@ -24,12 +24,14 @@ const PAZAR_TOOLS: AgentToolDefinition[] = [
   {
     name: "read_market_data",
     description:
-      "Bölge ve mülk tipine göre piyasa verilerini oku. Ortalama fiyat, min/max, ilan sayısı.",
+      "Bölge, mülk tipi, oda sayısı ve emlak tipine göre piyasa verilerini oku. Ortalama fiyat, min/max, m² fiyat, ilan sayısı, oda dağılımı, tip dağılımı.",
     input_schema: {
       type: "object",
       properties: {
-        region: { type: "string", description: "Bölge/ilçe adı" },
-        property_type: { type: "string", enum: ["satilik", "kiralik"], description: "Mülk tipi (opsiyonel)" },
+        region: { type: "string", description: "Bölge/ilçe/mahalle adı" },
+        listing_type: { type: "string", enum: ["satilik", "kiralik"], description: "Satılık veya kiralık (opsiyonel)" },
+        property_type: { type: "string", enum: ["daire", "villa", "mustakil", "rezidans", "arsa", "yazlik", "buro_ofis", "dukkan"], description: "Emlak tipi (opsiyonel)" },
+        rooms: { type: "string", description: "Oda sayısı filtresi, örn: 3+1, 2+1, stüdyo (opsiyonel)" },
       },
       required: ["region"],
     },
@@ -95,38 +97,91 @@ async function handleReadMarketData(
   const supabase = getServiceClient();
   const region = input.region as string;
 
+  // Build query with all available filters
   let query = supabase
     .from("emlak_properties")
-    .select("id, price, square_meters, listing_type")
-    .ilike("district", `%${region}%`)
+    .select("id, price, area, rooms, type, listing_type, location_neighborhood, building_age")
+    .or(`location_district.ilike.%${region}%,location_neighborhood.ilike.%${region}%`)
     .not("price", "is", null);
 
+  if (input.listing_type) {
+    query = query.eq("listing_type", input.listing_type as string);
+  }
   if (input.property_type) {
-    query = query.eq("listing_type", input.property_type);
+    query = query.eq("type", input.property_type as string);
+  }
+  if (input.rooms) {
+    query = query.eq("rooms", input.rooms as string);
   }
 
-  const { data, error } = await query.limit(100);
+  const { data, error } = await query.limit(500);
   if (error) return { result: `Hata: ${error.message}`, needsApproval: false };
-  if (!data?.length) return { result: `${region} bölgesinde veri bulunamadı.`, needsApproval: false };
+  if (!data?.length) return { result: `${region} bölgesinde bu kriterlere uyan veri bulunamadı.`, needsApproval: false };
 
+  // Price stats
   const prices = data.map((p) => p.price).filter(Boolean) as number[];
   const avg = Math.round(prices.reduce((s, p) => s + p, 0) / prices.length);
   const min = Math.min(...prices);
   const max = Math.max(...prices);
+  const median = prices.sort((a, b) => a - b)[Math.floor(prices.length / 2)];
 
+  // m² price stats
   const m2Prices = data
-    .filter((p) => p.price && p.square_meters && p.square_meters > 0)
-    .map((p) => Math.round(p.price / p.square_meters));
+    .filter((p) => p.price && p.area && p.area > 0)
+    .map((p) => Math.round(p.price / p.area));
   const avgM2 = m2Prices.length
     ? Math.round(m2Prices.reduce((s, p) => s + p, 0) / m2Prices.length)
     : 0;
 
+  // Room distribution
+  const roomDist: Record<string, number> = {};
+  for (const p of data) {
+    if (p.rooms) roomDist[p.rooms] = (roomDist[p.rooms] || 0) + 1;
+  }
+  const roomLines = Object.entries(roomDist)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([r, c]) => `  ${r}: ${c} ilan`);
+
+  // Property type distribution
+  const typeDist: Record<string, number> = {};
+  for (const p of data) {
+    if (p.type) typeDist[p.type] = (typeDist[p.type] || 0) + 1;
+  }
+  const typeLines = Object.entries(typeDist)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([t, c]) => `  ${t}: ${c} ilan`);
+
+  // Neighborhood distribution
+  const neighborhoodDist: Record<string, number> = {};
+  for (const p of data) {
+    if (p.location_neighborhood) neighborhoodDist[p.location_neighborhood] = (neighborhoodDist[p.location_neighborhood] || 0) + 1;
+  }
+  const neighborhoodLines = Object.entries(neighborhoodDist)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([n, c]) => `  ${n}: ${c} ilan`);
+
+  // Filters applied
+  const filters = [
+    input.listing_type ? `Tip: ${input.listing_type}` : null,
+    input.property_type ? `Emlak: ${input.property_type}` : null,
+    input.rooms ? `Oda: ${input.rooms}` : null,
+  ].filter(Boolean);
+
   const lines = [
-    `Bölge: ${region}${input.property_type ? ` (${input.property_type})` : ""}`,
+    `📊 ${region} Pazar Analizi${filters.length ? ` (${filters.join(", ")})` : ""}`,
+    `─────────────────────`,
     `İlan sayısı: ${data.length}`,
-    `Ortalama: ₺${avg.toLocaleString("tr-TR")}`,
+    `Ortalama fiyat: ₺${avg.toLocaleString("tr-TR")}`,
+    `Medyan fiyat: ₺${median.toLocaleString("tr-TR")}`,
     `Min: ₺${min.toLocaleString("tr-TR")} / Max: ₺${max.toLocaleString("tr-TR")}`,
     avgM2 ? `Ort. m² fiyatı: ₺${avgM2.toLocaleString("tr-TR")}` : null,
+    ``,
+    roomLines.length ? `Oda dağılımı:\n${roomLines.join("\n")}` : null,
+    typeLines.length ? `\nEmlak tipi dağılımı:\n${typeLines.join("\n")}` : null,
+    neighborhoodLines.length ? `\nMahalle dağılımı:\n${neighborhoodLines.join("\n")}` : null,
   ].filter(Boolean);
 
   return { result: lines.join("\n"), needsApproval: false };
@@ -140,25 +195,32 @@ async function handleReadUserVsMarket(
 
   const { data: userProps } = await supabase
     .from("emlak_properties")
-    .select("id, title, price, district, square_meters")
+    .select("id, title, price, area, rooms, type, listing_type, location_district, location_neighborhood")
     .eq("user_id", ctx.userId)
-    .not("district", "is", null)
+    .not("location_district", "is", null)
     .not("price", "is", null);
 
   if (!userProps?.length) return { result: "Portföyde bölge ve fiyat bilgisi olan mülk yok.", needsApproval: false };
 
-  const districts = [...new Set(userProps.map((p) => p.district).filter(Boolean))] as string[];
-  const lines: string[] = [];
+  const districts = [...new Set(userProps.map((p) => p.location_district).filter(Boolean))] as string[];
+  const lines: string[] = ["📊 Portföy vs Piyasa Karşılaştırması", "─────────────────────"];
 
   for (const district of districts) {
-    const userDistrictProps = userProps.filter((p) => p.district === district);
+    const userDistrictProps = userProps.filter((p) => p.location_district === district);
     const userAvg = Math.round(userDistrictProps.reduce((s, p) => s + (p.price || 0), 0) / userDistrictProps.length);
 
-    const { data: marketProps } = await supabase
+    // Market comparison with same listing_type
+    const listingTypes = [...new Set(userDistrictProps.map(p => p.listing_type).filter(Boolean))];
+    let marketQuery = supabase
       .from("emlak_properties")
-      .select("price")
-      .eq("district", district)
+      .select("price, area, rooms, type")
+      .eq("location_district", district)
       .not("price", "is", null);
+    if (listingTypes.length === 1) {
+      marketQuery = marketQuery.eq("listing_type", listingTypes[0]);
+    }
+
+    const { data: marketProps } = await marketQuery.limit(500);
 
     const marketAvg = marketProps?.length
       ? Math.round(marketProps.reduce((s, p) => s + (p.price || 0), 0) / marketProps.length)
@@ -166,8 +228,28 @@ async function handleReadUserVsMarket(
 
     const diff = marketAvg > 0 ? Math.round(((userAvg - marketAvg) / marketAvg) * 100) : 0;
     const diffLabel = diff > 0 ? `+${diff}%` : `${diff}%`;
+    const diffEmoji = diff > 10 ? "🔴" : diff < -10 ? "🟢" : "🟡";
 
-    lines.push(`${district}: Sizin ₺${userAvg.toLocaleString("tr-TR")} / Piyasa ₺${marketAvg.toLocaleString("tr-TR")} (${diffLabel}, ${userDistrictProps.length}/${marketProps?.length || 0} ilan)`);
+    lines.push(`\n${diffEmoji} *${district}* (${userDistrictProps.length} mülkünüz / ${marketProps?.length || 0} piyasa)`);
+    lines.push(`  Sizin ort: ₺${userAvg.toLocaleString("tr-TR")} / Piyasa ort: ₺${marketAvg.toLocaleString("tr-TR")} (${diffLabel})`);
+
+    // Per-property breakdown with room-based comparison
+    for (const prop of userDistrictProps.slice(0, 5)) {
+      const roomFilter = prop.rooms && marketProps?.length
+        ? marketProps.filter(m => m.rooms === prop.rooms)
+        : [];
+      let roomComparison = "";
+      if (roomFilter.length >= 3) {
+        const roomAvg = Math.round(roomFilter.reduce((s, p) => s + (p.price || 0), 0) / roomFilter.length);
+        const roomDiff = roomAvg > 0 ? Math.round(((prop.price - roomAvg) / roomAvg) * 100) : 0;
+        roomComparison = ` | ${prop.rooms} ort: ₺${roomAvg.toLocaleString("tr-TR")} (${roomDiff > 0 ? "+" : ""}${roomDiff}%)`;
+      }
+      const m2Price = prop.area && prop.area > 0 ? ` | ₺${Math.round(prop.price / prop.area).toLocaleString("tr-TR")}/m²` : "";
+      lines.push(`  • ${prop.title?.substring(0, 30)} — ₺${prop.price.toLocaleString("tr-TR")}${m2Price}${roomComparison}`);
+    }
+    if (userDistrictProps.length > 5) {
+      lines.push(`  ... ve ${userDistrictProps.length - 5} mülk daha`);
+    }
   }
 
   return { result: lines.join("\n"), needsApproval: false };
@@ -255,7 +337,7 @@ export const pazarAgent: AgentDefinition = {
   systemPrompt:
     `Sen emlak ofisinin pazar analistsin. Görevin bölge bazlı fiyat analizleri yapmak, kullanıcının mülklerini piyasayla karşılaştırmak ve fiyat önerileri sunmak.\n\n` +
     `## Kullanabileceğin Araçlar\n` +
-    `- read_market_data: Bölge bazlı piyasa verisi oku\n` +
+    `- read_market_data: Bölge, mülk tipi, oda sayısı bazlı piyasa verisi oku (fiyat, m², dağılım)\n` +
     `- read_user_properties_vs_market: Kullanıcı portföyü vs piyasa karşılaştırması\n` +
     `- create_price_report: Fiyat raporu oluştur\n` +
     `- suggest_price_change: Fiyat değişikliği öner (onay gerektirir)\n` +
@@ -280,9 +362,9 @@ export const pazarAgent: AgentDefinition = {
 
     const { data: userProps } = await supabase
       .from("emlak_properties")
-      .select("id, title, price, district, square_meters")
+      .select("id, title, price, area, rooms, type, listing_type, location_district")
       .eq("user_id", ctx.userId)
-      .not("district", "is", null);
+      .not("location_district", "is", null);
 
     const recentMessages = await getRecentMessages(ctx.userId, "pazar", 10);
     const taskHistory = await getTaskHistory(ctx.userId, "pazar", 5);
@@ -291,7 +373,7 @@ export const pazarAgent: AgentDefinition = {
       return { districtCount: 0, recentDecisions: [], messageHistory: [], agentConfig: config };
     }
 
-    const districts = [...new Set(userProps.map((p) => p.district).filter(Boolean))] as string[];
+    const districts = [...new Set(userProps.map((p) => p.location_district).filter(Boolean))] as string[];
 
     const districtAnalysis: Array<{
       district: string;
@@ -303,13 +385,13 @@ export const pazarAgent: AgentDefinition = {
     }> = [];
 
     for (const district of districts) {
-      const userDistrictProps = userProps.filter((p) => p.district === district);
+      const userDistrictProps = userProps.filter((p) => p.location_district === district);
       const userAvg = Math.round(userDistrictProps.reduce((s, p) => s + (p.price || 0), 0) / userDistrictProps.length);
 
       const { data: marketProps } = await supabase
         .from("emlak_properties")
         .select("price")
-        .eq("district", district)
+        .eq("location_district", district)
         .not("price", "is", null);
 
       const marketAvg = marketProps?.length
