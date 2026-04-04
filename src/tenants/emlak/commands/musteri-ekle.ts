@@ -94,19 +94,28 @@ export async function handleMusteriEkleStep(ctx: WaContext, session: CommandSess
       return;
     }
 
+    case "rooms": {
+      if (text.toLowerCase() === "gec" || text.toLowerCase() === "geç") {
+        await updateSession(ctx.userId, "budget", { rooms: null });
+      } else {
+        await updateSession(ctx.userId, "budget", { rooms: text.trim() });
+      }
+      await sendText(ctx.phone, "💰 Bütçesini yazın (TL):\n\nÖrnek: 5M, 5-10M, 15K, 15-30K\n\nAtlamak için \"gec\" yazın.");
+      return;
+    }
+
     case "budget": {
       if (text.toLowerCase() === "gec" || text.toLowerCase() === "geç") {
         await updateSession(ctx.userId, "location", { budget_min: null, budget_max: null });
-        await sendText(ctx.phone, "📍 Hangi bölgeleri tercih ediyor?\n\nVirgül ile ayırın: Bodrum, Bitez\n\nAtlamak için \"gec\" yazin.");
-        return;
+      } else {
+        const budget = parseBudget(text);
+        if (!budget) {
+          await sendText(ctx.phone, "Geçerli bir bütçe yazın.\n\nÖrnek: 5M, 5-10M, 15K, 15-30K\n\nAtlamak için \"gec\" yazın.");
+          return;
+        }
+        await updateSession(ctx.userId, "location", { budget_min: budget.min, budget_max: budget.max });
       }
-      const budget = parseBudget(text);
-      if (!budget) {
-        await sendText(ctx.phone, "Geçerli bir bütçe yazın.\n\nOrnek: 5M, 5-10M, 15K, 15-30K\n\nAtlamak için \"gec\" yazin.");
-        return;
-      }
-      await updateSession(ctx.userId, "location", { budget_min: budget.min, budget_max: budget.max });
-      await sendText(ctx.phone, "📍 Hangi bölgeleri tercih ediyor?\n\nVirgül ile ayırın: Bodrum, Bitez\n\nAtlamak için \"gec\" yazin.");
+      await sendText(ctx.phone, "📍 Hangi bölgeleri tercih ediyor?\n\nVirgül ile ayırın: Bodrum, Bitez\n\nAtlamak için \"gec\" yazın.");
       return;
     }
 
@@ -115,7 +124,14 @@ export async function handleMusteriEkleStep(ctx: WaContext, session: CommandSess
       if (text.toLowerCase() !== "gec" && text.toLowerCase() !== "geç") {
         locations = text.split(",").map(s => s.trim()).filter(Boolean);
       }
-      await finalizeCustomer(ctx, locations);
+      await updateSession(ctx.userId, "notes", { location: locations.join(", ") || null });
+      await sendText(ctx.phone, "📝 Müşteri hakkında not eklemek ister misiniz?\n\nÖrnek: Acil arıyor, deniz manzarası şart\n\nAtlamak için \"gec\" yazın.");
+      return;
+    }
+
+    case "notes": {
+      const notes = (text.toLowerCase() === "gec" || text.toLowerCase() === "geç") ? null : text.trim();
+      await finalizeCustomer(ctx, notes);
       return;
     }
 
@@ -139,15 +155,27 @@ export async function handleMusteriEkleCallback(ctx: WaContext, data: string): P
   // Listing type: mustekle:lt:{value}
   if (parts[1] === "lt") {
     const value = parts[2];
-    await updateSession(ctx.userId, "budget", { listing_type: value });
+    await updateSession(ctx.userId, "property_type", { listing_type: value });
     const labelMap: Record<string, string> = { satilik: "Satılık", kiralik: "Kiralık", hepsi: "Hepsi" };
-    await sendText(ctx.phone, `🏷 ${labelMap[value] || value} seçildi.\n\n💰 Bütçesini yazın (TL):\n\nOrnek: 5M, 5-10M, 15K, 15-30K\n\nAtlamak için \"gec\" yazin.`);
+    await sendButtons(ctx.phone, `🏷 ${labelMap[value] || value} seçildi.\n\n🏠 Ne tür mülk arıyor?`, [
+      { id: "mustekle:pt:daire", title: "Daire" },
+      { id: "mustekle:pt:villa", title: "Villa" },
+      { id: "mustekle:pt:hepsi", title: "Hepsi" },
+    ]);
+  }
+
+  // Property type: mustekle:pt:{value}
+  if (parts[1] === "pt") {
+    const value = parts[2];
+    const types = value === "hepsi" ? [] : [value];
+    await updateSession(ctx.userId, "rooms", { property_type: types });
+    await sendText(ctx.phone, "🛏 Oda sayısı tercihi?\n\nÖrnek: 3+1, 2+1\n\nAtlamak için \"gec\" yazın.");
   }
 }
 
 // ── Finalize ─────────────────────────────────────────────────────────
 
-async function finalizeCustomer(ctx: WaContext, locations: string[]): Promise<void> {
+async function finalizeCustomer(ctx: WaContext, notes: string | null): Promise<void> {
   const supabase = getServiceClient();
   const { data: session } = await supabase
     .from("command_sessions")
@@ -169,9 +197,12 @@ async function finalizeCustomer(ctx: WaContext, locations: string[]): Promise<vo
     name: d.name,
     phone: d.phone,
     listing_type: d.listing_type,
+    property_type: (d.property_type as string[])?.length ? d.property_type : null,
+    rooms: d.rooms || null,
     budget_min: d.budget_min || null,
     budget_max: d.budget_max || null,
-    location: locations.length > 0 ? locations.join(", ") : null,
+    location: d.location || null,
+    notes: notes,
     status: "aktif",
   });
 
@@ -187,11 +218,18 @@ async function finalizeCustomer(ctx: WaContext, locations: string[]): Promise<vo
   if (d.budget_min && d.budget_max) budgetStr = `💰 ${fmtBudget(d.budget_min as number)} — ${fmtBudget(d.budget_max as number)}\n`;
   else if (d.budget_max) budgetStr = `💰 ${fmtBudget(d.budget_max as number)}'e kadar\n`;
 
+  const ptLabels: Record<string, string> = { daire: "Daire", villa: "Villa", arsa: "Arsa", mustakil: "Müstakil", rezidans: "Rezidans" };
+  const ptArr = d.property_type as string[] | null;
+  const ptStr = ptArr?.length ? ptArr.map(t => ptLabels[t] || t).join(", ") : "";
+
   await sendButtons(ctx.phone,
     `✅ Müşteri başarıyla eklendi!\n\n` +
     `👤 ${d.name}\n📱 ${d.phone}\n🏷 ${labelMap[d.listing_type as string] || d.listing_type}\n` +
+    (ptStr ? `🏠 ${ptStr}\n` : "") +
+    (d.rooms ? `🛏 ${d.rooms}\n` : "") +
     budgetStr +
-    (locations.length > 0 ? `📍 ${locations.join(", ")}\n` : ""),
+    (d.location ? `📍 ${d.location}\n` : "") +
+    (notes ? `📝 ${notes}\n` : ""),
     [
       { id: "cmd:musterilerim", title: "Müşterilerim" },
       { id: "cmd:menu", title: "Ana Menü" },
