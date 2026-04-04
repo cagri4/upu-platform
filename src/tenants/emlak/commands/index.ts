@@ -29,6 +29,7 @@ import { handleWebsitem, handleWebsitemStep, handleWebsitemCallback } from "./we
 import { handleDegerle, handleDegerleCallback, handleMulkOner, handleMulkOnerStep } from "./degerle";
 import { handleTrend } from "./trend";
 import { handleHediyeler, handleHediyelerCallback } from "./hediyeler";
+import { handleSunum, handleSunumStep, handleSunumCallback, handleSunumlarim } from "./sunum";
 
 export const emlakCommands: TenantCommandRegistry = {
   commands: {
@@ -52,6 +53,8 @@ export const emlakCommands: TenantCommandRegistry = {
     takipEt: handleTakipEt,
     satistavsiye: handleSatisTavsiye,
     ortakpazar: handleOrtakPazar,
+    sunum: handleSunum,
+    sunumlarim: handleSunumlarim,
 
     // Medya Uzmanı
     fotograf: handleFotograf,
@@ -86,6 +89,7 @@ export const emlakCommands: TenantCommandRegistry = {
     mulkoner: handleMulkOnerStep,
     sozlesme: handleSozlesmeStep,
     websitem: handleWebsitemStep,
+    sunum: handleSunumStep,
   },
   callbackPrefixes: {
     "mulkekle_method:": async (ctx, callbackData) => {
@@ -124,6 +128,7 @@ export const emlakCommands: TenantCommandRegistry = {
     "dg:": handleDegerleCallback,
     "hdy:": handleHediyelerCallback,
     "szl:": handleSozlesmeCallback,
+    "snm:": handleSunumCallback,
     "websitem_action:": handleWebsitemCallback,
     "websitem_theme:": handleWebsitemCallback,
   },
@@ -140,5 +145,8 @@ export const emlakCommands: TenantCommandRegistry = {
     "panel": "webpanel",
     "dashboard": "webpanel",
     "fotoğraf": "fotograf",
+    "sunumlar": "sunumlarim",
+    "sunumlarım": "sunumlarim",
+    "prezentasyon": "sunum",
   },
 };
