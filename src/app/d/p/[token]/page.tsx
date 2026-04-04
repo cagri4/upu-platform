@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getServiceClient } from "@/platform/auth/supabase";
 import type { Metadata } from "next";
+import NotesForm from "./notes-form";
 
 /* ── Types ────────────────────────────────────────────────────────── */
 
@@ -61,7 +62,7 @@ async function getPresentation(token: string) {
 
   const { data } = await supabase
     .from("emlak_presentations")
-    .select("id, title, content, ai_summary, status, user_id, created_at")
+    .select("id, title, content, ai_summary, status, user_id, created_at, feedback_text")
     .eq("magic_token", token)
     .single();
 
@@ -268,6 +269,13 @@ export default async function PresentationPage({ params }: PageProps) {
               </div>
             </div>
           </div>
+
+          {/* ── Notes Form (only for agent) ─────────────────── */}
+          <NotesForm
+            token={token}
+            propertyTitles={properties.map(p => p.title || "Mulk")}
+            existingNotes={pres.feedback_text as string | null}
+          />
 
           {/* ── Footer ────────────────────────────────────────── */}
           <div className="text-center py-4">
