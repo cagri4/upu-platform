@@ -281,7 +281,7 @@ export async function handleSunumCallback(ctx: WaContext, data: string): Promise
     }
 
     const appUrl = "https://estateai.upudev.nl";
-    const link = `${appUrl}/d/${pres.magic_token}`;
+    const link = `${appUrl}/d/p/${pres.magic_token}`;
 
     // Send to customer via WhatsApp
     const { sendText: sendWa } = await import("@/platform/whatsapp/send");
@@ -486,7 +486,7 @@ async function generatePresentation(ctx: WaContext): Promise<void> {
   }
 
   const appUrl = "https://estateai.upudev.nl";
-  const link = `${appUrl}/d/${magicToken}`;
+  const link = `${appUrl}/d/p/${magicToken}`;
 
   await sendButtons(ctx.phone,
     `✅ Sunum hazırlandı!\n\n📊 ${customer.name} için ${props.length} mülk\n🔗 ${link}\n\nMüşteriye göndermek ister misiniz?`,
