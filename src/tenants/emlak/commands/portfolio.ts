@@ -151,8 +151,9 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
   }
 
   await sendButtons(ctx.phone,
-    `✅ ${displayPortal} ilanı portföyünüze eklendi!\n\n🆔 ${(newProp.id as string).substring(0, 8)}\n🔗 ${url}`,
+    `✅ ${displayPortal} ilanı portföyünüze eklendi!\n\n🆔 ${(newProp.id as string).substring(0, 8)}\n🔗 ${url}\n\n⚠️ Bilgiler henüz eksik — tamamlamak ister misiniz?`,
     [
+      { id: `mulkduzenle:${newProp.id}`, title: "✏️ Bilgileri Tamamla" },
       { id: "cmd:portfoyum", title: "Portföyüm" },
       { id: "cmd:menu", title: "Ana Menü" },
     ],
