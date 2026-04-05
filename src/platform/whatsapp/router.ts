@@ -229,21 +229,26 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       ]);
       return;
     }
-    // Profile edit sessions
-    if (session.command === "profil_edit") {
-      await handleProfileEditInput(ctx, session);
-      return;
-    }
-    // Agent setup sessions
-    if (session.command.startsWith("agent_setup_")) {
-      const { handleAgentSetupInput } = await import("@/platform/agents/setup");
-      await handleAgentSetupInput(ctx);
-      return;
-    }
-    const stepHandler = registry.stepHandlers[session.command];
-    if (stepHandler) {
-      await stepHandler(ctx, session);
-      return;
+    if (lower === "menu" || lower === "menü" || lower === "ana menü" || lower === "ana menu") {
+      await endSession(ctx.userId);
+      // Fall through to menu handling below
+    } else {
+      // Profile edit sessions
+      if (session.command === "profil_edit") {
+        await handleProfileEditInput(ctx, session);
+        return;
+      }
+      // Agent setup sessions
+      if (session.command.startsWith("agent_setup_")) {
+        const { handleAgentSetupInput } = await import("@/platform/agents/setup");
+        await handleAgentSetupInput(ctx);
+        return;
+      }
+      const stepHandler = registry.stepHandlers[session.command];
+      if (stepHandler) {
+        await stepHandler(ctx, session);
+        return;
+      }
     }
   }
 
