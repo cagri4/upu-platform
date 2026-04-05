@@ -94,6 +94,71 @@ async function resolveShortUrl(url: string): Promise<string> {
   return url;
 }
 
+// ── Parse Sahibinden URL for property info ──────────────────────────
+
+interface UrlParsedInfo {
+  listing_type: string | null;
+  type: string | null;
+  rooms: string | null;
+  location: string | null;
+  title: string | null;
+}
+
+function parseSahibindenUrl(url: string): UrlParsedInfo {
+  const result: UrlParsedInfo = { listing_type: null, type: null, rooms: null, location: null, title: null };
+
+  try {
+    // URL format: /ilan/emlak-konut-satilik-turgutreis-...-2-plus1-daire-1306005343/detay
+    const path = new URL(url).pathname;
+    const slug = path.replace("/ilan/", "").replace("/detay", "").replace(/\/+$/, "");
+    const parts = slug.split("-");
+
+    // listing_type: satilik / kiralik
+    if (parts.includes("satilik")) result.listing_type = "satilik";
+    else if (parts.includes("kiralik")) result.listing_type = "kiralik";
+
+    // type: daire, villa, arsa, mustakil, rezidans, etc.
+    const typeMap: Record<string, string> = {
+      daire: "daire", villa: "villa", arsa: "arsa", mustakil: "mustakil",
+      rezidans: "rezidans", yazlik: "yazlik", bina: "bina", depo: "depo",
+      dukkan: "dukkan", ofis: "buro_ofis", isyeri: "isyeri",
+    };
+    for (const p of parts) {
+      if (typeMap[p]) { result.type = typeMap[p]; break; }
+    }
+
+    // rooms: look for patterns like "2-plus1", "3-plus-1", "1-plus0"
+    const roomMatch = slug.match(/(\d)\s*[-]?\s*plus\s*[-]?\s*(\d)/i);
+    if (roomMatch) result.rooms = `${roomMatch[1]}+${roomMatch[2]}`;
+
+    // location: after satilik/kiralik, before property details
+    // e.g. "emlak-konut-satilik-turgutreis-havuzlu-..." → turgutreis
+    const ltIndex = Math.max(parts.indexOf("satilik"), parts.indexOf("kiralik"));
+    if (ltIndex >= 0 && ltIndex + 1 < parts.length) {
+      // Next part after satilik/kiralik is usually the location
+      const locPart = parts[ltIndex + 1];
+      // Skip if it's a number or common word
+      if (locPart && locPart.length > 2 && !/^\d+$/.test(locPart)) {
+        result.location = locPart.charAt(0).toUpperCase() + locPart.slice(1);
+      }
+    }
+
+    // title: build from slug, clean up
+    const idMatch = slug.match(/-(\d{7,12})$/);
+    let titleSlug = idMatch ? slug.replace(/-\d{7,12}$/, "") : slug;
+    // Remove category prefix (emlak-konut-)
+    titleSlug = titleSlug.replace(/^emlak-konut-/, "").replace(/^emlak-/, "");
+    // Remove listing type
+    titleSlug = titleSlug.replace(/^(satilik|kiralik)-/, "");
+    // Replace dashes with spaces, capitalize
+    const titleWords = titleSlug.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1));
+    // Replace "plus" with "+"
+    result.title = titleWords.join(" ").replace(/(\d)\s*Plus\s*(\d)/gi, "$1+$2");
+  } catch { /* ignore parse errors */ }
+
+  return result;
+}
+
 async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
   // Resolve short URLs first
   const url = await resolveShortUrl(rawUrl);
@@ -128,19 +193,26 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
     }
   }
 
-  // Insert property
+  // Parse URL for property info
+  const parsed = portal === "sahibinden" ? parseSahibindenUrl(url) : { listing_type: null, type: null, rooms: null, location: null, title: null };
+
+  const title = parsed.title || `${displayPortal} İlanı (${sourceId || "?"})`;
+
+  // Insert property with parsed info
   const { data: newProp, error } = await supabase
     .from("emlak_properties")
     .insert({
       tenant_id: ctx.tenantId,
       user_id: ctx.userId,
-      title: `${displayPortal} İlanı (${sourceId || "?"})`,
+      title,
       source_url: url,
       source_portal: portal,
       source_id: sourceId || null,
       status: "aktif",
-      type: "daire",
-      listing_type: "satilik",
+      type: parsed.type || "daire",
+      listing_type: parsed.listing_type || "satilik",
+      rooms: parsed.rooms || null,
+      location_neighborhood: parsed.location || null,
     })
     .select("id")
     .single();
@@ -150,8 +222,17 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
     return;
   }
 
-  await sendButtons(ctx.phone,
-    `✅ ${displayPortal} ilanı portföyünüze eklendi!\n\n🆔 ${(newProp.id as string).substring(0, 8)}\n🔗 ${url}\n\n⚠️ Bilgiler henüz eksik — tamamlamak ister misiniz?`,
+  // Build info summary
+  let info = `✅ ${displayPortal} ilanı eklendi!\n\n`;
+  info += `📌 ${title}\n`;
+  if (parsed.listing_type) info += `🏷 ${parsed.listing_type === "satilik" ? "Satılık" : "Kiralık"}\n`;
+  if (parsed.type) info += `🏠 ${parsed.type.charAt(0).toUpperCase() + parsed.type.slice(1)}\n`;
+  if (parsed.rooms) info += `🛏 ${parsed.rooms}\n`;
+  if (parsed.location) info += `📍 ${parsed.location}\n`;
+  info += `\n🔗 ${url.substring(0, 60)}...\n`;
+  info += `\n⚠️ Fiyat, m² gibi bilgiler eksik — tamamlamak ister misiniz?`;
+
+  await sendButtons(ctx.phone, info,
     [
       { id: `mulkduzenle:${newProp.id}`, title: "✏️ Bilgileri Tamamla" },
       { id: "cmd:portfoyum", title: "Portföyüm" },
