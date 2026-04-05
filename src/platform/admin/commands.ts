@@ -68,6 +68,10 @@ export async function routeAdminCommand(ctx: WaContext, input: string): Promise<
     await adminAlertler(ctx);
     return true;
   }
+  if (lower === "insight" || lower === "performans") {
+    await adminInsight(ctx);
+    return true;
+  }
 
   return false;
 }
@@ -104,6 +108,10 @@ export async function routeAdminCallback(ctx: WaContext, callbackId: string): Pr
     await adminAlertler(ctx);
     return true;
   }
+  if (callbackId === "admin:insight") {
+    await adminInsight(ctx);
+    return true;
+  }
 
   return false;
 }
@@ -122,6 +130,7 @@ async function showAdminMenu(ctx: WaContext): Promise<void> {
           { id: "admin:kullanicilar", title: "👥 Kullanıcılar", description: "Tüm kullanıcı listesi" },
           { id: "admin:hatalar", title: "⚠️ Hatalar", description: "Son hatalar" },
           { id: "admin:tenant", title: "🏢 Tenant Raporu", description: "Tenant bazlı rapor" },
+          { id: "admin:insight", title: "📊 Insight", description: "Toplu performans raporu" },
           { id: "admin:alertler", title: "🔔 Alert Ayarları", description: "Bildirim tercihleri" },
         ],
       },
@@ -553,6 +562,121 @@ async function adminTenant(ctx: WaContext, key: string): Promise<void> {
   await sendButtons(ctx.phone, text, [
     { id: "admin:tenant", title: "🏢 Tenantlar" },
     { id: "admin:panel", title: "📊 Admin Panel" },
+  ]);
+}
+
+// ── a insight — Aggregate platform insights ─────────────────────────────
+
+async function adminInsight(ctx: WaContext): Promise<void> {
+  const supabase = getServiceClient();
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const [
+    weekEventsRes,
+    monthEventsRes,
+    feedbackRes,
+    salesRes,
+    presRes,
+    activeUsersRes,
+  ] = await Promise.all([
+    // Events this week
+    supabase.from("platform_events").select("user_id, event_type")
+      .gte("created_at", sevenDaysAgo),
+    // Events this month
+    supabase.from("platform_events").select("user_id, event_type")
+      .gte("created_at", thirtyDaysAgo),
+    // Sale feedback
+    supabase.from("platform_events").select("metadata")
+      .eq("event_type", "sale_feedback")
+      .gte("created_at", thirtyDaysAgo),
+    // Sales (status changes)
+    supabase.from("platform_events").select("user_id, metadata")
+      .eq("event_name", "property_status_change")
+      .gte("created_at", thirtyDaysAgo),
+    // Presentations
+    supabase.from("emlak_presentations").select("id, user_id")
+      .gte("created_at", thirtyDaysAgo),
+    // Active users (distinct)
+    supabase.from("platform_events").select("user_id")
+      .gte("created_at", sevenDaysAgo),
+  ]);
+
+  const weekEvents = weekEventsRes.data || [];
+  const monthEvents = monthEventsRes.data || [];
+  const weekActiveUsers = new Set(weekEvents.map(e => e.user_id).filter(Boolean));
+  const monthActiveUsers = new Set(monthEvents.map(e => e.user_id).filter(Boolean));
+
+  // Command counts
+  const weekCommands = weekEvents.filter(e => e.event_type === "command").length;
+  const monthCommands = monthEvents.filter(e => e.event_type === "command").length;
+  const weekErrors = weekEvents.filter(e => e.event_type === "error").length;
+
+  // Feedback stats
+  const feedbacks = feedbackRes.data || [];
+  const ratings = feedbacks
+    .map(f => (f.metadata as Record<string, unknown>)?.system_rating as number)
+    .filter(r => typeof r === "number");
+  const avgRating = ratings.length > 0
+    ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
+    : "—";
+
+  // Sales
+  const salesData = salesRes.data || [];
+  const saleCount = salesData.filter(s => {
+    const detail = String((s.metadata as Record<string, unknown>)?.new_status || "");
+    return detail.includes("satildi") || detail.includes("kiralandi");
+  }).length;
+
+  // Presentations
+  const presCount = presRes.data?.length || 0;
+
+  let text = `📊 *Platform Insight* (Son 30 gün)\n\n`;
+  text += `*Kullanıcılar*\n`;
+  text += `  Bu hafta aktif: ${weekActiveUsers.size}\n`;
+  text += `  Bu ay aktif: ${monthActiveUsers.size}\n\n`;
+
+  text += `*Aktivite*\n`;
+  text += `  Bu hafta komut: ${weekCommands}\n`;
+  text += `  Bu ay komut: ${monthCommands}\n`;
+  text += `  Hata (7g): ${weekErrors}\n\n`;
+
+  text += `*İş Sonuçları*\n`;
+  text += `  Satış/Kiralama: ${saleCount}\n`;
+  text += `  Sunum gönderilen: ${presCount}\n`;
+  if (presCount > 0 && saleCount > 0) {
+    text += `  Dönüşüm: ~%${Math.round((saleCount / presCount) * 100)}\n`;
+  }
+  text += `\n`;
+
+  text += `*Sistem Değerlendirmesi*\n`;
+  text += `  Ortalama puan: ${avgRating}/10 (${ratings.length} oy)\n`;
+
+  // Top users by activity
+  const userActivity: Record<string, number> = {};
+  for (const e of monthEvents) {
+    if (e.user_id) userActivity[e.user_id] = (userActivity[e.user_id] || 0) + 1;
+  }
+  const topUsers = Object.entries(userActivity).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  if (topUsers.length > 0) {
+    // Get names
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", topUsers.map(u => u[0]));
+    const nameMap: Record<string, string> = {};
+    for (const p of profiles || []) nameMap[p.id] = p.display_name || "?";
+
+    text += `\n*En Aktif Kullanıcılar*\n`;
+    for (const [uid, count] of topUsers) {
+      text += `  ${nameMap[uid] || uid.substring(0, 8)}: ${count} işlem\n`;
+    }
+  }
+
+  await sendButtons(ctx.phone, text, [
+    { id: "admin:panel", title: "📊 Admin Panel" },
+    { id: "cmd:menu", title: "Ana Menü" },
   ]);
 }
 

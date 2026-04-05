@@ -124,14 +124,21 @@ export async function handleMulkYonetSelectCallback(ctx: WaContext, callbackData
     return;
   }
 
-  await sendButtons(ctx.phone, `🏠 *${prop.title || "İsimsiz"}*\n\nNe yapmak istersiniz?`, [
-    { id: `mulkyonet_act:detay:${propertyId}`, title: "📋 Detay Gör" },
-    { id: `mulkyonet_act:duzenle:${propertyId}`, title: "✏️ Düzenle" },
-    { id: `mulkyonet_act:sil:${propertyId}`, title: "🗑 Sil" },
-  ]);
-  await sendButtons(ctx.phone, "Veya:", [
-    { id: "cmd:mulkyonet", title: "🔙 Geri" },
-    { id: "cmd:menu", title: "📋 Ana Menü" },
+  await sendList(ctx.phone, `🏠 *${prop.title || "İsimsiz"}*\n\nBu mülk ile ne yapmak istersiniz?`, "İşlem Seç", [
+    {
+      title: "Mülk İşlemleri",
+      rows: [
+        { id: `mulkyonet_act:detay:${propertyId}`, title: "📋 Detay Gör", description: "Mülk bilgilerini görüntüle" },
+        { id: `mulkyonet_act:duzenle:${propertyId}`, title: "✏️ Düzenle", description: "Bilgileri güncelle" },
+        { id: `mulkyonet_act:statu:${propertyId}`, title: "📊 Statü Değiştir", description: "Satıldı/Kiralandı/Pasif" },
+        { id: `mulkyonet_act:foto:${propertyId}`, title: "📸 Fotoğraf", description: "Fotoğraf ekle/görüntüle" },
+        { id: `mulkyonet_act:degerle:${propertyId}`, title: "💰 Değerleme", description: "Piyasa karşılaştırması" },
+        { id: `mulkyonet_act:paylas:${propertyId}`, title: "📱 Paylaş", description: "Sosyal medya paylaşım metni" },
+        { id: `mulkyonet_act:sunum:${propertyId}`, title: "🎯 Sunum Hazırla", description: "Müşteriye sunum oluştur" },
+        { id: `mulkyonet_act:esles:${propertyId}`, title: "🤝 Müşteri Eşleştir", description: "Uygun müşteri bul" },
+        { id: `mulkyonet_act:sil:${propertyId}`, title: "🗑 Sil", description: "Mülkü tamamen sil" },
+      ],
+    },
   ]);
 }
 
@@ -146,6 +153,34 @@ export async function handleMulkYonetActionCallback(ctx: WaContext, callbackData
     await handleMulkDuzenleCallback(ctx, `mulkduzenle:${propertyId}`);
   } else if (action === "sil") {
     await handleMulkSilCallback(ctx, `mulksil:${propertyId}`);
+  } else if (action === "statu") {
+    await showStatusOptions(ctx, propertyId);
+  } else if (action === "statu_set") {
+    const pid = parts[1];
+    const newStatus = parts[2];
+    await applyStatusChange(ctx, pid, newStatus);
+  } else if (action === "foto") {
+    // Redirect to fotograf command with property context
+    const { handleFotografCallback } = await import("./medya");
+    await handleFotografCallback(ctx, `foto_select:${propertyId}`);
+  } else if (action === "degerle") {
+    // Run valuation for this specific property
+    const { handleDegerleCallback } = await import("./degerle");
+    await handleDegerleCallback(ctx, `dg:${propertyId}`);
+  } else if (action === "paylas") {
+    // Generate share text for this property
+    const { handlePaylasCallback } = await import("./medya");
+    await handlePaylasCallback(ctx, `paylas_select:${propertyId}`);
+  } else if (action === "sunum") {
+    // Start presentation with this property pre-selected
+    await sendButtons(ctx.phone, "🎯 Sunum hazırlamak için önce müşteriyi seçmeniz gerekiyor.", [
+      { id: "cmd:sunum", title: "🎯 Sunum Başlat" },
+      { id: "cmd:mulkyonet", title: "🔙 Geri" },
+    ]);
+  } else if (action === "esles") {
+    // Match customers for this property
+    const { handleEslestirCallback } = await import("./eslestir");
+    await handleEslestirCallback(ctx, `esles:${propertyId}`);
   }
 }
 
@@ -361,6 +396,65 @@ export async function handleMulkDuzenleStep(ctx: WaContext, session: CommandSess
     return;
   }
 
+  // Handle feedback rating after status change
+  if (session.current_step === "feedback_rating") {
+    const rating = parseInt(text, 10);
+    if (isNaN(rating) || rating < 1 || rating > 10) {
+      await sendText(ctx.phone, "1 ile 10 arasında bir sayı yazın:");
+      return;
+    }
+
+    const { propertyId, propertyTitle, newStatus } = session.data as {
+      propertyId: string; propertyTitle: string; newStatus: string;
+    };
+
+    // Ask for optional comment
+    await updateSession(ctx.userId, "feedback_comment", {
+      propertyId, propertyTitle, newStatus, rating,
+    });
+
+    await sendText(ctx.phone,
+      `Puan: ${rating}/10 ✓\n\nÖneriniz veya yorumunuz var mı?\n(Yoksa "yok" yazın)`
+    );
+    return;
+  }
+
+  if (session.current_step === "feedback_comment") {
+    const { propertyId, propertyTitle, newStatus, rating } = session.data as {
+      propertyId: string; propertyTitle: string; newStatus: string; rating: number;
+    };
+
+    const comment = text.toLowerCase() === "yok" ? null : text;
+
+    // Save feedback to platform_events
+    const supabase = getServiceClient();
+    await supabase.from("platform_events").insert({
+      user_id: ctx.userId,
+      tenant_id: ctx.tenantId,
+      event_type: "sale_feedback",
+      payload: {
+        property_id: propertyId,
+        property_title: propertyTitle,
+        status_change: newStatus,
+        system_rating: rating,
+        comment,
+      },
+    });
+
+    await endSession(ctx.userId);
+
+    await sendButtons(ctx.phone,
+      `✅ Teşekkürler! Geri bildiriminiz kaydedildi.\n\n` +
+      `🏠 ${propertyTitle}\n⭐ Puan: ${rating}/10` +
+      (comment ? `\n💬 ${comment}` : ""),
+      [
+        { id: "cmd:mulkyonet", title: "🔙 Mülk Yönet" },
+        { id: "cmd:menu", title: "Ana Menü" },
+      ]
+    );
+    return;
+  }
+
   if (session.current_step !== "waiting_value") {
     await sendText(ctx.phone, "Lütfen yukarıdaki butonlardan birini seçin.");
     return;
@@ -418,6 +512,98 @@ export async function handleMulkDuzenleStep(ctx: WaContext, session: CommandSess
   ]);
 }
 
+// ── Status change + feedback ─────────────────────────────────────────
+
+const STATUS_OPTIONS = [
+  { value: "satildi", label: "Satıldı ✅", emoji: "🎉" },
+  { value: "kiralandi", label: "Kiralandı ✅", emoji: "🏠" },
+  { value: "pasif", label: "Pasif (Yayından kaldır)", emoji: "⏸" },
+  { value: "aktif", label: "Aktif (Tekrar yayınla)", emoji: "▶" },
+];
+
+async function showStatusOptions(ctx: WaContext, propertyId: string): Promise<void> {
+  const supabase = getServiceClient();
+  const { data: prop } = await supabase
+    .from("emlak_properties")
+    .select("title, status")
+    .eq("id", propertyId)
+    .eq("user_id", ctx.userId)
+    .single();
+
+  if (!prop) {
+    await sendText(ctx.phone, "Mülk bulunamadı.");
+    return;
+  }
+
+  const currentLabel = STATUS_OPTIONS.find(s => s.value === prop.status)?.label || prop.status;
+
+  // WhatsApp buttons max 3, so split into two messages
+  await sendButtons(ctx.phone, `📊 *${prop.title || "İsimsiz"}*\nMevcut durum: ${currentLabel}\n\nYeni durumu seçin:`, [
+    { id: `mulkyonet_act:statu_set:${propertyId}:satildi`, title: "🎉 Satıldı" },
+    { id: `mulkyonet_act:statu_set:${propertyId}:kiralandi`, title: "🏠 Kiralandı" },
+    { id: `mulkyonet_act:statu_set:${propertyId}:pasif`, title: "⏸ Pasif" },
+  ]);
+}
+
+async function applyStatusChange(ctx: WaContext, propertyId: string, newStatus: string): Promise<void> {
+  const supabase = getServiceClient();
+
+  const { data: prop } = await supabase
+    .from("emlak_properties")
+    .select("id, title, status")
+    .eq("id", propertyId)
+    .eq("user_id", ctx.userId)
+    .single();
+
+  if (!prop) {
+    await sendText(ctx.phone, "Mülk bulunamadı.");
+    return;
+  }
+
+  const oldStatus = prop.status;
+  const { error } = await supabase
+    .from("emlak_properties")
+    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .eq("id", propertyId)
+    .eq("user_id", ctx.userId);
+
+  if (error) {
+    await sendText(ctx.phone, "Güncelleme hatası: " + error.message);
+    return;
+  }
+
+  const label = STATUS_OPTIONS.find(s => s.value === newStatus)?.label || newStatus;
+
+  // Log the status change event
+  await logEvent(ctx.tenantId, ctx.userId, "property_status_change",
+    `${prop.title}: ${oldStatus} → ${newStatus}`
+  );
+
+  // If sold or rented → ask feedback about system helpfulness
+  if (newStatus === "satildi" || newStatus === "kiralandi") {
+    const verb = newStatus === "satildi" ? "satıldı" : "kiralandı";
+
+    await sendText(ctx.phone,
+      `🎉 Tebrikler! *${prop.title}* ${verb} olarak işaretlendi.\n\n` +
+      `Bu süreçte sistem size ne kadar yardımcı oldu?\n` +
+      `1'den 10'a kadar puanlayın (mesaj olarak yazın):`
+    );
+
+    // Start a session to capture the rating
+    await startSession(ctx.userId, ctx.tenantId, "mulkduzenle", "feedback_rating");
+    await updateSession(ctx.userId, "feedback_rating", {
+      propertyId,
+      propertyTitle: prop.title,
+      newStatus,
+    });
+  } else {
+    await sendButtons(ctx.phone, `✅ *${prop.title}* → ${label}`, [
+      { id: "cmd:mulkyonet", title: "🔙 Mülk Yönet" },
+      { id: "cmd:menu", title: "Ana Menü" },
+    ]);
+  }
+}
+
 // ── /mulksil — Delete (deactivate) property ──────────────────────────
 
 export async function handleMulkSil(ctx: WaContext): Promise<void> {
@@ -452,15 +638,15 @@ export async function handleMulkSilCallback(ctx: WaContext, data: string): Promi
   const propId = data.replace("mulksil:", "").replace("mulksil_ok:", "");
 
   if (data.startsWith("mulksil_ok:")) {
-    // Confirmed delete
+    // Confirmed delete — hard delete from DB
     const supabase = getServiceClient();
     await supabase
       .from("emlak_properties")
-      .update({ status: "silindi" })
+      .delete()
       .eq("id", propId)
       .eq("user_id", ctx.userId);
 
-    await sendButtons(ctx.phone, "✅ Mülk silindi.", [
+    await sendButtons(ctx.phone, "✅ Mülk tamamen silindi.", [
       { id: "cmd:portfoyum", title: "Portföyüm" },
       { id: "cmd:menu", title: "Ana Menü" },
     ]);

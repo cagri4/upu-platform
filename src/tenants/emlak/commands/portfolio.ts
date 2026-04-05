@@ -23,8 +23,13 @@ function detectPortal(url: string): PortalType {
 function extractListingId(url: string, portal: PortalType): string | null {
   try {
     if (portal === "sahibinden") {
+      // Full URL: sahibinden.com/ilan/...-1234567890/detay
       const match = url.match(/[-/](\d{7,12})(?:\/|$|\?)/);
-      return match ? match[1] : null;
+      if (match) return match[1];
+      // Short URL: sahibinden.com/s/PgkwG6Eh or shbd.io/s/PgkwG6Eh
+      const shortMatch = url.match(/\/s\/([A-Za-z0-9]+)/);
+      if (shortMatch) return `s_${shortMatch[1]}`;
+      return null;
     }
     if (portal === "hepsiemlak") {
       const match = url.match(/-(\d+)(?:\/|$|\?)/);
@@ -59,7 +64,7 @@ export async function handleTaraStep(ctx: WaContext, session: CommandSession): P
     return;
   }
 
-  if (text.startsWith("http") || text.includes("sahibinden") || text.includes("hepsiemlak") || text.includes("emlakjet")) {
+  if (text.startsWith("http") || text.includes("sahibinden") || text.includes("shbd.io") || text.includes("hepsiemlak") || text.includes("emlakjet")) {
     await endSession(ctx.userId);
     await processPortalUrl(ctx, text);
     return;
@@ -68,7 +73,24 @@ export async function handleTaraStep(ctx: WaContext, session: CommandSession): P
   await sendText(ctx.phone, "Geçerli bir portal linki yapıştırın.\n\nOrnek: https://sahibinden.com/ilan/...");
 }
 
-async function processPortalUrl(ctx: WaContext, url: string): Promise<void> {
+async function resolveShortUrl(url: string): Promise<string> {
+  // shbd.io redirects to sahibinden.com/s/CODE but Cloudflare blocks fetch
+  // Follow only the first redirect to get the sahibinden.com URL
+  if (url.includes("shbd.io")) {
+    try {
+      const res = await fetch(url, { method: "HEAD", redirect: "manual" });
+      const location = res.headers.get("location");
+      if (location && location.includes("sahibinden.com")) {
+        return location;
+      }
+    } catch { /* fall through */ }
+  }
+  return url;
+}
+
+async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
+  // Resolve short URLs first
+  const url = await resolveShortUrl(rawUrl);
   const portal = detectPortal(url);
 
   if (portal === "unknown") {
@@ -136,7 +158,7 @@ async function processPortalUrl(ctx: WaContext, url: string): Promise<void> {
 export async function handleEkle(ctx: WaContext): Promise<void> {
   const args = ctx.text.split(" ").slice(1).join(" ").trim();
 
-  if (args && (args.startsWith("http") || args.includes("sahibinden") || args.includes("hepsiemlak") || args.includes("emlakjet"))) {
+  if (args && (args.startsWith("http") || args.includes("sahibinden") || args.includes("shbd.io") || args.includes("hepsiemlak") || args.includes("emlakjet"))) {
     await processPortalUrl(ctx, args);
     return;
   }

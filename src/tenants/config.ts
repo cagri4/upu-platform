@@ -47,7 +47,7 @@ const TENANTS: Record<string, TenantConfig> = {
     welcomeFeatures: "Portföy yönetimi, müşteri takibi, fiyat analizi ve daha fazlasını",
     employees: [
       { key: "portfoy", name: "Portföy Sorumlusu", icon: "🗂", description: "Mülk yönetimi", commands: ["portfoyum", "mulkekle", "mulkyonet"] },
-      { key: "satis", name: "Satış Destek Uzmanı", icon: "🤝", description: "Müşteri ve eşleştirme", commands: ["musterilerim", "musteriEkle", "musteriDuzenle", "eslestir", "hatirlatma", "takipEt", "satistavsiye", "ortakpazar"] },
+      { key: "satis", name: "Satış Destek Uzmanı", icon: "🤝", description: "Müşteri ve eşleştirme", commands: ["musterilerim", "musteriEkle", "musteriDuzenle", "eslestir", "hatirlatma", "takipEt", "satistavsiye", "ortakpazar", "sunum", "sunumlarim"] },
       { key: "medya", name: "Medya Uzmanı", icon: "🎬", description: "Fotoğraf ve yayın", commands: ["fotograf", "yayinla", "paylas", "websitem"] },
       { key: "pazar", name: "Pazar Analisti", icon: "📊", description: "Fiyat ve analiz", commands: ["fiyatsor", "degerle", "mulkoner", "analiz", "rapor", "trend"] },
       { key: "sekreter", name: "Sekreter", icon: "📋", description: "Brifing ve görevler", commands: ["brifing", "gorevler", "sozlesme", "sozlesmelerim", "hediyeler"] },

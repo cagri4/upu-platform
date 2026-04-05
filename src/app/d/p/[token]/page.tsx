@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getServiceClient } from "@/platform/auth/supabase";
 import type { Metadata } from "next";
-import NotesForm from "./notes-form";
+
 
 /* ── Types ────────────────────────────────────────────────────────── */
 
@@ -269,13 +269,6 @@ export default async function PresentationPage({ params }: PageProps) {
               </div>
             </div>
           </div>
-
-          {/* ── Notes Form (only for agent) ─────────────────── */}
-          <NotesForm
-            token={token}
-            propertyTitles={properties.map(p => p.title || "Mulk")}
-            existingNotes={pres.feedback_text as string | null}
-          />
 
           {/* ── Footer ────────────────────────────────────────── */}
           <div className="text-center py-4">

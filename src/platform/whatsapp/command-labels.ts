@@ -21,6 +21,8 @@ export const COMMAND_LABELS: Record<string, string> = {
   takipEt: "Piyasa takibi kur",
   satistavsiye: "Satış tavsiyesi al",
   ortakpazar: "Ortak pazar paylaşımı",
+  sunum: "Müşteriye sunum hazırla",
+  sunumlarim: "Geçmiş sunumlarım",
   fotograf: "Fotoğraf yükle/düzenle",
   yayinla: "Portala ilan yayınla",
   paylas: "Sosyal medya paylaşımı",
