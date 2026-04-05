@@ -3,14 +3,12 @@ import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession } from "@/platform/whatsapp/session";
 import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { logEvent } from "@/platform/whatsapp/error-handler";
 
 // ── Constants ──────────────────────────────────────────────────────────
 
 const TYPE_LABELS: Record<string, string> = {
   daire: "Daire", villa: "Villa", mustakil: "Müstakil", rezidans: "Rezidans",
   arsa: "Arsa", isyeri: "İşyeri", dukkan: "Dükkan", buro_ofis: "Büro/Ofis",
-  yazlik: "Yazlık", bina: "Bina", depo: "Depo",
 };
 
 // ── Menu: choose add method ─────────────────────────────────────────────
@@ -29,7 +27,7 @@ export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
   ]);
 }
 
-// ── Command: start detaylı flow ────────────────────────────────────────
+// ── Start detaylı flow ─────────────────────────────────────────────────
 
 export async function handleMulkEkle(ctx: WaContext): Promise<void> {
   await startSession(ctx.userId, ctx.tenantId, "mulkekle", "title");
@@ -40,7 +38,7 @@ export async function handleMulkEkle(ctx: WaContext): Promise<void> {
   );
 }
 
-// ── Step handler ────────────────────────────────────────────────────────
+// ── Step handler (text inputs only) ─────────────────────────────────────
 
 export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession): Promise<void> {
   const step = session.current_step;
@@ -48,14 +46,12 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
   const skip = text?.toLowerCase() === "geç";
 
   if (!text) {
-    await sendText(ctx.phone, "Lütfen bir değer yazın. (Atlamak için \"geç\")");
+    await sendText(ctx.phone, "Lütfen bir değer yazın. (\"geç\" ile atlayın)");
     return;
   }
 
   switch (step) {
-    // ══════════════════════════════════════════════════════════════
-    // AŞAMA 1 — TEMEL BİLGİLER (1-10)
-    // ══════════════════════════════════════════════════════════════
+    // ── AŞAMA 1: Temel Bilgiler ──
 
     case "title": {
       if (text.length < 3) {
@@ -108,7 +104,6 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
       return;
     }
 
-    // city, district, neighborhood are text steps in Aşama 1
     case "city": {
       const city = skip ? null : text;
       await updateSession(ctx.userId, "district", { city });
@@ -126,7 +121,6 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
     case "neighborhood": {
       const neighborhood = skip ? null : text;
       await updateSession(ctx.userId, "phase1_done", { neighborhood });
-      // Phase 1 complete — ask to continue or save
       await sendButtons(ctx.phone,
         "✅ *Aşama 1 tamamlandı* — Temel Bilgiler\n\nDevam etmek ister misiniz?",
         [
@@ -137,71 +131,14 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
       return;
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // AŞAMA 2 — BİNA BİLGİLERİ (11-20)
-    // ══════════════════════════════════════════════════════════════
-
-    case "total_floors": {
-      const tf = skip ? null : parseInt(text.replace(/[^\d]/g, ""), 10) || null;
-      await updateSession(ctx.userId, "building_age", { total_floors: tf });
-      await sendText(ctx.phone, "🏗 Bina yaşı:\n\nÖrnek: 5\n\n(\"geç\" ile atlayın)");
-      return;
-    }
-
-    case "building_age": {
-      const age = skip ? null : parseInt(text.replace(/[^\d]/g, ""), 10) || null;
-      await updateSession(ctx.userId, "heating_select", { building_age: age });
-      await sendList(ctx.phone, "🔥 Isınma tipi seçin:", "Isınma", [
-        { title: "Isınma Tipleri", rows: [
-          { id: "mulkekle:heating:dogalgaz", title: "Doğalgaz (Kombi)" },
-          { id: "mulkekle:heating:merkezi", title: "Merkezi Sistem" },
-          { id: "mulkekle:heating:klima", title: "Klima" },
-          { id: "mulkekle:heating:soba", title: "Soba" },
-          { id: "mulkekle:heating:yerden", title: "Yerden Isıtma" },
-          { id: "mulkekle:heating:yok", title: "Belirtme" },
-        ]},
-      ]);
-      return;
-    }
-
-    case "facade_input": {
-      const facade = skip ? null : text;
-      await updateSession(ctx.userId, "deed_type_select", { facade });
-      await sendList(ctx.phone, "📜 Tapu durumu seçin:", "Tapu", [
-        { title: "Tapu Durumu", rows: [
-          { id: "mulkekle:deed:kat_mulkiyeti", title: "Kat Mülkiyeti" },
-          { id: "mulkekle:deed:kat_irtifaki", title: "Kat İrtifakı" },
-          { id: "mulkekle:deed:arsa_tapusu", title: "Arsa Tapusu" },
-          { id: "mulkekle:deed:hisseli", title: "Hisseli Tapu" },
-          { id: "mulkekle:deed:kooperatif", title: "Kooperatif" },
-          { id: "mulkekle:deed:yok", title: "Belirtme" },
-        ]},
-      ]);
-      return;
-    }
-
-    // ══════════════════════════════════════════════════════════════
-    // AŞAMA 3 — DETAYLAR (21-30)
-    // ══════════════════════════════════════════════════════════════
-
-    case "bathroom_count": {
-      const bc = skip ? null : parseInt(text.replace(/[^\d]/g, ""), 10) || null;
-      await updateSession(ctx.userId, "kitchen_select", { bathroom_count: bc });
-      await sendButtons(ctx.phone, "🍳 Mutfak tipi:", [
-        { id: "mulkekle:kitchen:acik", title: "Açık Mutfak" },
-        { id: "mulkekle:kitchen:kapali", title: "Kapalı Mutfak" },
-        { id: "mulkekle:kitchen:amerikan", title: "Amerikan" },
-      ]);
-      return;
-    }
+    // ── AŞAMA 3: Açıklama + Özellikler (serbest metin) ──
 
     case "description": {
       const desc = skip ? null : text;
       await updateSession(ctx.userId, "features_input", { description: desc });
       await sendText(ctx.phone,
         "🏷 İç özellikler yazın (virgülle ayırın):\n\n" +
-        "Örnek: Ankastre mutfak, Jakuzi, Giyinme odası, Vestiyer\n\n" +
-        "(\"geç\" ile atlayın)"
+        "Örnek: Ankastre mutfak, Jakuzi, Giyinme odası\n\n(\"geç\" ile atlayın)"
       );
       return;
     }
@@ -211,8 +148,7 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
       await updateSession(ctx.userId, "exterior_input", { interior_features: features });
       await sendText(ctx.phone,
         "🌿 Dış özellikler yazın (virgülle ayırın):\n\n" +
-        "Örnek: Yüzme havuzu, Bahçe, Otopark, Güvenlik\n\n" +
-        "(\"geç\" ile atlayın)"
+        "Örnek: Yüzme havuzu, Bahçe, Güvenlik\n\n(\"geç\" ile atlayın)"
       );
       return;
     }
@@ -221,9 +157,8 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
       const ext = skip ? null : text;
       await updateSession(ctx.userId, "view_input", { exterior_features: ext });
       await sendText(ctx.phone,
-        "🏔 Manzara özellikleri yazın (virgülle ayırın):\n\n" +
-        "Örnek: Deniz, Doğa, Göl, Şehir\n\n" +
-        "(\"geç\" ile atlayın)"
+        "🏔 Manzara yazın (virgülle ayırın):\n\n" +
+        "Örnek: Deniz, Doğa, Göl, Şehir\n\n(\"geç\" ile atlayın)"
       );
       return;
     }
@@ -233,8 +168,7 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
       await updateSession(ctx.userId, "transport_input", { view_features: view });
       await sendText(ctx.phone,
         "🚌 Ulaşım bilgisi yazın:\n\n" +
-        "Örnek: Metro 500m, Otobüs durağı 200m, Sahile 1km\n\n" +
-        "(\"geç\" ile atlayın)"
+        "Örnek: Metro 500m, Otobüs 200m\n\n(\"geç\" ile atlayın)"
       );
       return;
     }
@@ -242,25 +176,24 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
     case "transport_input": {
       const transport = skip ? null : text;
       await updateSession(ctx.userId, "phase3_done", { transportation: transport });
-      // Phase 3 complete — finalize
       await showSummaryAndConfirm(ctx);
       return;
     }
 
     default:
-      await sendText(ctx.phone, "Lütfen yukarıdaki seçeneklerden birini kullanın veya bir değer yazın.");
+      await sendText(ctx.phone, "Lütfen yukarıdaki seçeneklerden birini kullanın.");
       return;
   }
 }
 
-// ── Callback handler ────────────────────────────────────────────────────
+// ── Callback handler (list/button selections) ───────────────────────────
 
 export async function handleMulkEkleCallback(ctx: WaContext, data: string): Promise<void> {
   const parts = data.split(":");
   if (parts.length < 3) return;
   const [, field, value] = parts;
 
-  // ── AŞAMA 1 callbacks ──
+  // ═══ AŞAMA 1 ═══
 
   if (field === "rooms") {
     await updateSession(ctx.userId, "listing_type", { rooms: value });
@@ -294,15 +227,15 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
     return;
   }
 
-  // ── Phase navigation ──
+  // ═══ Phase Navigation ═══
 
   if (field === "phase") {
     if (value === "2") {
+      // Start Aşama 2 — Kat seçimi
       await updateSession(ctx.userId, "floor_select", {});
       await sendList(ctx.phone,
         "🏢 *Aşama 2/3 — Bina Bilgileri*\n\nKat seçin:",
-        "Kat",
-        [{ title: "Kat Seçenekleri", rows: [
+        "Kat", [{ title: "Kat", rows: [
           { id: "mulkekle:floor:giris", title: "Giriş Kat" },
           { id: "mulkekle:floor:1", title: "1. Kat" },
           { id: "mulkekle:floor:2", title: "2. Kat" },
@@ -316,29 +249,86 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       return;
     }
     if (value === "3") {
-      await updateSession(ctx.userId, "bathroom_count", {});
-      await sendText(ctx.phone,
-        "🚿 *Aşama 3/3 — Detaylar*\n\nBanyo sayısı yazın:\n\nÖrnek: 2\n\n(\"geç\" ile atlayın)"
+      // Start Aşama 3 — Banyo sayısı
+      await updateSession(ctx.userId, "bathroom_select", {});
+      await sendList(ctx.phone,
+        "🚿 *Aşama 3/3 — Detaylar*\n\nBanyo sayısı:",
+        "Banyo", [{ title: "Banyo Sayısı", rows: [
+          { id: "mulkekle:bathroom:1", title: "1 Banyo" },
+          { id: "mulkekle:bathroom:2", title: "2 Banyo" },
+          { id: "mulkekle:bathroom:3", title: "3 Banyo" },
+          { id: "mulkekle:bathroom:4", title: "4 Banyo" },
+          { id: "mulkekle:bathroom:5", title: "5+ Banyo" },
+          { id: "mulkekle:bathroom:yok", title: "Belirtme" },
+        ]}],
       );
       return;
     }
     return;
   }
 
-  // ── AŞAMA 2 callbacks ──
+  // ═══ AŞAMA 2 ═══
 
   if (field === "floor") {
     const floor = value === "giris" ? 0 : value === "yok" ? null : parseInt(value, 10) || null;
-    await updateSession(ctx.userId, "total_floors", { floor });
-    await sendText(ctx.phone, "🏢 Toplam kat sayısı:\n\nÖrnek: 5\n\n(\"geç\" ile atlayın)");
+    await updateSession(ctx.userId, "totalfloors_select", { floor });
+    await sendList(ctx.phone, "🏢 Toplam kat sayısı:", "Toplam Kat", [
+      { title: "Toplam Kat", rows: [
+        { id: "mulkekle:totalfloors:1", title: "1 katlı" },
+        { id: "mulkekle:totalfloors:2", title: "2 katlı" },
+        { id: "mulkekle:totalfloors:3", title: "3 katlı" },
+        { id: "mulkekle:totalfloors:4", title: "4 katlı" },
+        { id: "mulkekle:totalfloors:5", title: "5 katlı" },
+        { id: "mulkekle:totalfloors:10", title: "6-10 katlı" },
+        { id: "mulkekle:totalfloors:15", title: "11-15 katlı" },
+        { id: "mulkekle:totalfloors:20", title: "16-20 katlı" },
+        { id: "mulkekle:totalfloors:30", title: "21+ katlı" },
+        { id: "mulkekle:totalfloors:yok", title: "Belirtme" },
+      ]},
+    ]);
+    return;
+  }
+
+  if (field === "totalfloors") {
+    const tf = value === "yok" ? null : parseInt(value, 10) || null;
+    await updateSession(ctx.userId, "buildingage_select", { total_floors: tf });
+    await sendList(ctx.phone, "🏗 Bina yaşı:", "Bina Yaşı", [
+      { title: "Bina Yaşı", rows: [
+        { id: "mulkekle:buildingage:0", title: "Sıfır Bina" },
+        { id: "mulkekle:buildingage:1", title: "1-5 Yıl" },
+        { id: "mulkekle:buildingage:6", title: "6-10 Yıl" },
+        { id: "mulkekle:buildingage:11", title: "11-15 Yıl" },
+        { id: "mulkekle:buildingage:16", title: "16-20 Yıl" },
+        { id: "mulkekle:buildingage:21", title: "21-25 Yıl" },
+        { id: "mulkekle:buildingage:26", title: "26-30 Yıl" },
+        { id: "mulkekle:buildingage:31", title: "31+ Yıl" },
+        { id: "mulkekle:buildingage:yok", title: "Belirtme" },
+      ]},
+    ]);
+    return;
+  }
+
+  if (field === "buildingage") {
+    const age = value === "yok" ? null : parseInt(value, 10);
+    await updateSession(ctx.userId, "heating_select", { building_age: age });
+    await sendList(ctx.phone, "🔥 Isınma tipi:", "Isınma", [
+      { title: "Isınma", rows: [
+        { id: "mulkekle:heating:dogalgaz", title: "Doğalgaz (Kombi)" },
+        { id: "mulkekle:heating:merkezi", title: "Merkezi Sistem" },
+        { id: "mulkekle:heating:klima", title: "Klima" },
+        { id: "mulkekle:heating:soba", title: "Soba" },
+        { id: "mulkekle:heating:yerden", title: "Yerden Isıtma" },
+        { id: "mulkekle:heating:yok", title: "Belirtme" },
+      ]},
+    ]);
     return;
   }
 
   if (field === "heating") {
     const heating = value === "yok" ? null : value;
     await updateSession(ctx.userId, "parking_select", { heating });
-    await sendList(ctx.phone, "🅿️ Otopark durumu:", "Otopark", [
-      { title: "Otopark Seçenekleri", rows: [
+    await sendList(ctx.phone, "🅿️ Otopark:", "Otopark", [
+      { title: "Otopark", rows: [
         { id: "mulkekle:parking:acik", title: "Açık Otopark" },
         { id: "mulkekle:parking:kapali", title: "Kapalı Otopark" },
         { id: "mulkekle:parking:acik_kapali", title: "Açık & Kapalı" },
@@ -351,16 +341,52 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "parking") {
     const parking = value === "belirtme" ? null : value === "yok" ? "Yok" : value;
-    await updateSession(ctx.userId, "facade_input", { parking });
-    await sendText(ctx.phone, "🧭 Cephe yönü:\n\nÖrnek: Güney, Güneybatı\n\n(\"geç\" ile atlayın)");
+    await updateSession(ctx.userId, "facade_select", { parking });
+    await sendList(ctx.phone, "🧭 Cephe yönü:", "Cephe", [
+      { title: "Cephe Yönü", rows: [
+        { id: "mulkekle:facade:kuzey", title: "Kuzey" },
+        { id: "mulkekle:facade:guney", title: "Güney" },
+        { id: "mulkekle:facade:dogu", title: "Doğu" },
+        { id: "mulkekle:facade:bati", title: "Batı" },
+        { id: "mulkekle:facade:kuzeydogu", title: "Kuzeydoğu" },
+        { id: "mulkekle:facade:kuzeybati", title: "Kuzeybatı" },
+        { id: "mulkekle:facade:guneydogu", title: "Güneydoğu" },
+        { id: "mulkekle:facade:guneybati", title: "Güneybatı" },
+        { id: "mulkekle:facade:yok", title: "Belirtme" },
+      ]},
+    ]);
+    return;
+  }
+
+  if (field === "facade") {
+    const facadeLabels: Record<string, string> = {
+      kuzey: "Kuzey", guney: "Güney", dogu: "Doğu", bati: "Batı",
+      kuzeydogu: "Kuzeydoğu", kuzeybati: "Kuzeybatı", guneydogu: "Güneydoğu", guneybati: "Güneybatı",
+    };
+    const facade = value === "yok" ? null : facadeLabels[value] || value;
+    await updateSession(ctx.userId, "deed_select", { facade });
+    await sendList(ctx.phone, "📜 Tapu durumu:", "Tapu", [
+      { title: "Tapu Durumu", rows: [
+        { id: "mulkekle:deed:kat_mulkiyeti", title: "Kat Mülkiyeti" },
+        { id: "mulkekle:deed:kat_irtifaki", title: "Kat İrtifakı" },
+        { id: "mulkekle:deed:arsa_tapusu", title: "Arsa Tapusu" },
+        { id: "mulkekle:deed:hisseli", title: "Hisseli Tapu" },
+        { id: "mulkekle:deed:kooperatif", title: "Kooperatif" },
+        { id: "mulkekle:deed:yok", title: "Belirtme" },
+      ]},
+    ]);
     return;
   }
 
   if (field === "deed") {
-    const deed = value === "yok" ? null : value.replace(/_/g, " ");
+    const deedLabels: Record<string, string> = {
+      kat_mulkiyeti: "Kat Mülkiyeti", kat_irtifaki: "Kat İrtifakı",
+      arsa_tapusu: "Arsa Tapusu", hisseli: "Hisseli Tapu", kooperatif: "Kooperatif",
+    };
+    const deed = value === "yok" ? null : deedLabels[value] || value;
     await updateSession(ctx.userId, "housing_select", { deed_type: deed });
-    await sendList(ctx.phone, "🏗 Yapı tipi seçin:", "Yapı Tipi", [
-      { title: "Yapı Tipleri", rows: [
+    await sendList(ctx.phone, "🏗 Yapı tipi:", "Yapı Tipi", [
+      { title: "Yapı Tipi", rows: [
         { id: "mulkekle:housing:apartman", title: "Apartman" },
         { id: "mulkekle:housing:site_ici", title: "Site İçi" },
         { id: "mulkekle:housing:mustakil", title: "Müstakil" },
@@ -373,7 +399,11 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   }
 
   if (field === "housing") {
-    const housing = value === "belirtme" ? null : value.replace(/_/g, " ");
+    const housingLabels: Record<string, string> = {
+      apartman: "Apartman", site_ici: "Site İçi", mustakil: "Müstakil",
+      kooperatif: "Kooperatif", rezidans: "Rezidans",
+    };
+    const housing = value === "belirtme" ? null : housingLabels[value] || value;
     await updateSession(ctx.userId, "usage_select", { housing_type: housing });
     await sendButtons(ctx.phone, "🔑 Kullanım durumu:", [
       { id: "mulkekle:usage:bos", title: "Boş" },
@@ -384,8 +414,8 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   }
 
   if (field === "usage") {
-    const usage = value === "bos" ? "Boş" : value === "kiracili" ? "Kiracılı" : "Sahibi oturuyor";
-    await updateSession(ctx.userId, "swap_select", { usage_status: usage });
+    const usageLabels: Record<string, string> = { bos: "Boş", kiracili: "Kiracılı", sahibi: "Sahibi Oturuyor" };
+    await updateSession(ctx.userId, "swap_select", { usage_status: usageLabels[value] || value });
     await sendButtons(ctx.phone, "🔄 Takas kabul edilir mi?", [
       { id: "mulkekle:swap:evet", title: "Evet" },
       { id: "mulkekle:swap:hayir", title: "Hayır" },
@@ -407,11 +437,22 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
     return;
   }
 
-  // ── AŞAMA 3 callbacks ──
+  // ═══ AŞAMA 3 ═══
+
+  if (field === "bathroom") {
+    const bc = value === "yok" ? null : parseInt(value, 10) || null;
+    await updateSession(ctx.userId, "kitchen_select", { bathroom_count: bc });
+    await sendButtons(ctx.phone, "🍳 Mutfak tipi:", [
+      { id: "mulkekle:kitchen:acik", title: "Açık Mutfak" },
+      { id: "mulkekle:kitchen:kapali", title: "Kapalı Mutfak" },
+      { id: "mulkekle:kitchen:amerikan", title: "Amerikan" },
+    ]);
+    return;
+  }
 
   if (field === "kitchen") {
-    const kitchen = value === "acik" ? "Açık" : value === "kapali" ? "Kapalı" : "Amerikan";
-    await updateSession(ctx.userId, "elevator_select", { kitchen_type: kitchen });
+    const kitchenLabels: Record<string, string> = { acik: "Açık", kapali: "Kapalı", amerikan: "Amerikan" };
+    await updateSession(ctx.userId, "elevator_select", { kitchen_type: kitchenLabels[value] || value });
     await sendButtons(ctx.phone, "🛗 Asansör var mı?", [
       { id: "mulkekle:elevator:evet", title: "Evet" },
       { id: "mulkekle:elevator:hayir", title: "Hayır" },
@@ -431,14 +472,12 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   if (field === "balcony") {
     await updateSession(ctx.userId, "description", { balcony: value === "evet" });
     await sendText(ctx.phone,
-      "📝 Açıklama yazın:\n\n" +
-      "Mülkü tanımlayan detaylı metin.\n\n" +
-      "(\"geç\" ile atlayın)"
+      "📝 Açıklama yazın:\n\nMülkü tanımlayan detaylı metin.\n\n(\"geç\" ile atlayın)"
     );
     return;
   }
 
-  // ── FINALIZE ──
+  // ═══ FINALIZE ═══
 
   if (field === "finalize" && value === "ok") {
     await finalizeProperty(ctx);
@@ -446,120 +485,83 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   }
 }
 
-// ── Summary and confirm ────────────────────────────────────────────────
+// ── Summary ────────────────────────────────────────────────────────────
 
 async function showSummaryAndConfirm(ctx: WaContext): Promise<void> {
   const supabase = getServiceClient();
   const { data: sess } = await supabase
-    .from("command_sessions")
-    .select("data")
-    .eq("user_id", ctx.userId)
-    .single();
+    .from("command_sessions").select("data").eq("user_id", ctx.userId).single();
 
-  if (!sess) {
-    await endSession(ctx.userId);
-    await sendText(ctx.phone, "Bir hata oluştu. Tekrar deneyin.");
-    return;
-  }
+  if (!sess) { await endSession(ctx.userId); await sendText(ctx.phone, "Hata. Tekrar deneyin."); return; }
 
   const d = sess.data as Record<string, unknown>;
   const priceStr = d.price ? new Intl.NumberFormat("tr-TR").format(d.price as number) : "—";
   const ltLabel = d.listing_type === "satilik" ? "Satılık" : "Kiralık";
 
-  let summary = `📋 *Mülk Özeti — Onay*\n\n`;
-  summary += `📌 ${d.title}\n`;
-  summary += `💰 ${priceStr} TL | 🏷 ${ltLabel}\n`;
-  summary += `📐 ${d.m2 || "—"} m²`;
-  if (d.net_area) summary += ` (net: ${d.net_area})`;
-  summary += ` | 🛏 ${d.rooms || "—"}\n`;
-  summary += `🏠 ${TYPE_LABELS[d.type as string] || d.type || "—"}\n`;
+  let s = `📋 *Mülk Özeti — Onay*\n\n`;
+  s += `📌 ${d.title}\n💰 ${priceStr} TL | 🏷 ${ltLabel}\n`;
+  s += `📐 ${d.m2 || "—"} m²`;
+  if (d.net_area) s += ` (net: ${d.net_area})`;
+  s += ` | 🛏 ${d.rooms || "—"}\n`;
+  s += `🏠 ${TYPE_LABELS[d.type as string] || d.type || "—"}\n`;
 
   const loc = [d.neighborhood, d.district, d.city].filter(Boolean).join(", ");
-  if (loc) summary += `📍 ${loc}\n`;
+  if (loc) s += `📍 ${loc}\n`;
+  if (d.floor !== undefined && d.floor !== null) { s += `🏢 ${d.floor === 0 ? "Giriş" : d.floor}. Kat`; if (d.total_floors) s += ` / ${d.total_floors}`; s += `\n`; }
+  if (d.building_age !== undefined && d.building_age !== null) s += `🏗 ${d.building_age} yaş\n`;
+  if (d.heating) s += `🔥 ${d.heating}\n`;
+  if (d.parking) s += `🅿️ ${d.parking}\n`;
+  if (d.facade) s += `🧭 ${d.facade}\n`;
+  if (d.deed_type) s += `📜 ${d.deed_type}\n`;
+  if (d.housing_type) s += `🏗 ${d.housing_type}\n`;
+  if (d.usage_status) s += `🔑 ${d.usage_status}\n`;
+  if (d.swap === true) s += `🔄 Takas: Evet\n`;
+  if (d.bathroom_count) s += `🚿 ${d.bathroom_count} banyo\n`;
+  if (d.kitchen_type) s += `🍳 ${d.kitchen_type}\n`;
+  if (d.elevator === true) s += `🛗 Asansör: Var\n`;
+  if (d.balcony === true) s += `🏠 Balkon: Var\n`;
+  if (d.description) s += `\n📝 ${(d.description as string).substring(0, 200)}\n`;
 
-  if (d.floor !== undefined && d.floor !== null) summary += `🏢 ${d.floor === 0 ? "Giriş" : d.floor}. Kat`;
-  if (d.total_floors) summary += ` / ${d.total_floors} kat`;
-  if (d.floor !== undefined || d.total_floors) summary += `\n`;
-
-  if (d.building_age) summary += `🏗 ${d.building_age} yaşında\n`;
-  if (d.heating) summary += `🔥 ${d.heating}\n`;
-  if (d.parking) summary += `🅿️ ${d.parking}\n`;
-  if (d.facade) summary += `🧭 ${d.facade}\n`;
-  if (d.deed_type) summary += `📜 ${d.deed_type}\n`;
-  if (d.housing_type) summary += `🏗 ${d.housing_type}\n`;
-  if (d.usage_status) summary += `🔑 ${d.usage_status}\n`;
-  if (d.swap === true) summary += `🔄 Takas: Evet\n`;
-  if (d.bathroom_count) summary += `🚿 ${d.bathroom_count} banyo\n`;
-  if (d.kitchen_type) summary += `🍳 ${d.kitchen_type}\n`;
-  if (d.elevator === true) summary += `🛗 Asansör: Var\n`;
-  if (d.balcony === true) summary += `🏠 Balkon: Var\n`;
-  if (d.description) summary += `\n📝 ${(d.description as string).substring(0, 200)}\n`;
-
-  await sendButtons(ctx.phone, summary, [
+  await sendButtons(ctx.phone, s, [
     { id: "mulkekle:finalize:ok", title: "✅ Kaydet" },
     { id: "cmd:mulkekle", title: "🔄 Baştan Başla" },
   ]);
 }
 
-// ── Finalize property ──────────────────────────────────────────────────
+// ── Finalize ───────────────────────────────────────────────────────────
 
 async function finalizeProperty(ctx: WaContext): Promise<void> {
   const supabase = getServiceClient();
   const { data: session } = await supabase
-    .from("command_sessions")
-    .select("data")
-    .eq("user_id", ctx.userId)
-    .single();
+    .from("command_sessions").select("data").eq("user_id", ctx.userId).single();
 
-  if (!session) {
-    await endSession(ctx.userId);
-    await sendText(ctx.phone, "Bir hata oluştu. Tekrar deneyin.");
-    return;
-  }
+  if (!session) { await endSession(ctx.userId); await sendText(ctx.phone, "Hata. Tekrar deneyin."); return; }
 
   const d = session.data as Record<string, unknown>;
 
   const { error } = await supabase.from("emlak_properties").insert({
-    tenant_id: ctx.tenantId,
-    user_id: ctx.userId,
-    title: d.title,
-    price: d.price,
-    area: d.m2,
-    net_area: d.net_area || null,
-    rooms: d.rooms,
-    listing_type: d.listing_type,
-    type: d.type || "daire",
-    location_city: d.city || null,
-    location_district: d.district || null,
+    tenant_id: ctx.tenantId, user_id: ctx.userId,
+    title: d.title, price: d.price, area: d.m2, net_area: d.net_area || null,
+    rooms: d.rooms, listing_type: d.listing_type, type: d.type || "daire",
+    location_city: d.city || null, location_district: d.district || null,
     location_neighborhood: d.neighborhood || null,
-    floor: d.floor !== undefined ? d.floor : null,
-    total_floors: d.total_floors || null,
-    building_age: d.building_age || null,
-    heating: d.heating || null,
-    parking: d.parking || null,
-    facade: d.facade || null,
-    deed_type: d.deed_type || null,
-    housing_type: d.housing_type || null,
-    usage_status: d.usage_status || null,
-    swap: d.swap ?? null,
-    bathroom_count: d.bathroom_count || null,
-    kitchen_type: d.kitchen_type || null,
-    elevator: d.elevator ?? null,
-    balcony: d.balcony ?? null,
-    description: d.description || null,
-    interior_features: d.interior_features || null,
-    exterior_features: d.exterior_features || null,
-    view_features: d.view_features || null,
-    transportation: d.transportation || null,
-    status: "aktif",
+    floor: d.floor !== undefined ? d.floor : null, total_floors: d.total_floors || null,
+    building_age: d.building_age !== undefined ? d.building_age : null,
+    heating: d.heating || null, parking: d.parking || null, facade: d.facade || null,
+    deed_type: d.deed_type || null, housing_type: d.housing_type || null,
+    usage_status: d.usage_status || null, swap: d.swap ?? null,
+    bathroom_count: d.bathroom_count || null, kitchen_type: d.kitchen_type || null,
+    elevator: d.elevator ?? null, balcony: d.balcony ?? null,
+    description: d.description || null, interior_features: d.interior_features || null,
+    exterior_features: d.exterior_features || null, view_features: d.view_features || null,
+    transportation: d.transportation || null, status: "aktif",
   });
 
   await endSession(ctx.userId);
 
   if (error) {
     await sendButtons(ctx.phone, "❌ Mülk eklenirken hata oluştu.", [
-      { id: "cmd:mulkekle", title: "Tekrar Dene" },
-      { id: "cmd:menu", title: "Ana Menü" },
+      { id: "cmd:mulkekle", title: "Tekrar Dene" }, { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
@@ -569,13 +571,9 @@ async function finalizeProperty(ctx: WaContext): Promise<void> {
   const location = [d.neighborhood, d.district, d.city].filter(Boolean).join(", ");
 
   await sendButtons(ctx.phone,
-    `✅ Mülk başarıyla eklendi!\n\n` +
-    `📋 ${d.title}\n💰 ${priceStr} TL\n📐 ${d.m2} m²\n🛏 ${d.rooms}\n🏷 ${ltLabel}` +
+    `✅ Mülk başarıyla eklendi!\n\n📋 ${d.title}\n💰 ${priceStr} TL\n📐 ${d.m2} m²\n🛏 ${d.rooms}\n🏷 ${ltLabel}` +
     (location ? `\n📍 ${location}` : ""),
-    [
-      { id: "cmd:portfoyum", title: "Portföyüm" },
-      { id: "cmd:menu", title: "Ana Menü" },
-    ],
+    [{ id: "cmd:portfoyum", title: "Portföyüm" }, { id: "cmd:menu", title: "Ana Menü" }],
   );
 
   // Check for customer matches
