@@ -60,7 +60,10 @@ export async function handleTara(ctx: WaContext): Promise<void> {
 export async function handleTaraStep(ctx: WaContext, session: CommandSession): Promise<void> {
   const text = ctx.text.trim();
   if (!text) {
-    await sendText(ctx.phone, "Geçerli bir portal linki yapıştırın.");
+    await sendButtons(ctx.phone, "Geçerli bir portal linki yapıştırın.", [
+      { id: "cmd:mulkekle", title: "🔙 Mülk Ekle" },
+      { id: "cmd:menu", title: "Ana Menü" },
+    ]);
     return;
   }
 
@@ -70,7 +73,10 @@ export async function handleTaraStep(ctx: WaContext, session: CommandSession): P
     return;
   }
 
-  await sendText(ctx.phone, "Geçerli bir portal linki yapıştırın.\n\nOrnek: https://sahibinden.com/ilan/...");
+  await sendButtons(ctx.phone, "Geçerli bir portal linki yapıştırın.\n\nOrnek: https://sahibinden.com/ilan/...", [
+    { id: "cmd:mulkekle", title: "🔙 Mülk Ekle" },
+    { id: "cmd:menu", title: "Ana Menü" },
+  ]);
 }
 
 async function resolveShortUrl(url: string): Promise<string> {

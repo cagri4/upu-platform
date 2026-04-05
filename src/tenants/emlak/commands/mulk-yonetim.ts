@@ -241,16 +241,59 @@ async function showPropertyDetail(ctx: WaContext, prop: Record<string, unknown>)
   const listLabel = prop.listing_type === "satilik" ? "Satılık" : prop.listing_type === "kiralik" ? "Kiralık" : (prop.listing_type as string) || "—";
 
   let text = `*${(prop.title as string) || "İsimsiz"}*\n\n`;
+
+  // Temel
   text += `🏠 Tip: ${typeLabel} | 🏷 ${listLabel}\n`;
   text += `💰 Fiyat: ${formatPrice(prop.price as number)}\n`;
-  text += `📐 Alan: ${prop.area || "—"} m²\n`;
+  text += `📐 Brüt: ${prop.area || "—"} m²`;
+  if (prop.net_area) text += ` | Net: ${prop.net_area} m²`;
+  text += `\n`;
   text += `🛏 Oda: ${prop.rooms || "—"}\n`;
-  if (prop.location_district) text += `📍 ${prop.location_district}${prop.location_city ? `, ${prop.location_city}` : ""}\n`;
-  if (prop.description) text += `\n📝 ${((prop.description as string) || "").substring(0, 200)}\n`;
-  text += `\n🆔 ${(prop.id as string).substring(0, 8)}`;
+
+  // Konum
+  const loc = [prop.location_neighborhood, prop.location_district, prop.location_city].filter(Boolean).join(", ");
+  if (loc) text += `📍 ${loc}\n`;
+
+  // Bina
+  if (prop.floor !== null && prop.floor !== undefined) {
+    text += `🏢 Kat: ${prop.floor === 0 ? "Giriş" : prop.floor}`;
+    if (prop.total_floors) text += ` / ${prop.total_floors}`;
+    text += `\n`;
+  }
+  if (prop.building_age !== null && prop.building_age !== undefined) text += `🏗 Bina yaşı: ${prop.building_age}\n`;
+  if (prop.heating) text += `🔥 Isınma: ${prop.heating}\n`;
+  if (prop.parking) text += `🅿️ Otopark: ${prop.parking}\n`;
+  if (prop.facade) text += `🧭 Cephe: ${prop.facade}\n`;
+  if (prop.deed_type) text += `📜 Tapu: ${prop.deed_type}\n`;
+  if (prop.housing_type) text += `🏗 Yapı: ${prop.housing_type}\n`;
+  if (prop.usage_status) text += `🔑 Kullanım: ${prop.usage_status}\n`;
+  if (prop.swap === true) text += `🔄 Takas: Evet\n`;
+  if (prop.swap === false) text += `🔄 Takas: Hayır\n`;
+
+  // Detaylar
+  if (prop.bathroom_count) text += `🚿 Banyo: ${prop.bathroom_count}\n`;
+  if (prop.kitchen_type) text += `🍳 Mutfak: ${prop.kitchen_type}\n`;
+  if (prop.elevator === true) text += `🛗 Asansör: Var\n`;
+  if (prop.elevator === false) text += `🛗 Asansör: Yok\n`;
+  if (prop.balcony === true) text += `🏠 Balkon: Var\n`;
+  if (prop.balcony === false) text += `🏠 Balkon: Yok\n`;
+
+  // Özellikler
+  if (prop.interior_features) text += `\n🏷 İç: ${(prop.interior_features as string).substring(0, 100)}\n`;
+  if (prop.exterior_features) text += `🌿 Dış: ${(prop.exterior_features as string).substring(0, 100)}\n`;
+  if (prop.view_features) text += `🏔 Manzara: ${prop.view_features}\n`;
+  if (prop.transportation) text += `🚌 Ulaşım: ${(prop.transportation as string).substring(0, 100)}\n`;
+
+  // Açıklama
+  if (prop.description) text += `\n📝 ${((prop.description as string)).substring(0, 300)}\n`;
+
+  // Kaynak
+  if (prop.source_url) text += `\n🔗 ${(prop.source_url as string).substring(0, 60)}...\n`;
+
+  text += `\n🆔 ${(prop.id as string).substring(0, 8)} | 📊 ${prop.status || "aktif"}`;
 
   await sendButtons(ctx.phone, text, [
-    { id: `mulkduzenle:${prop.id}`, title: "✏️ Düzenle" },
+    { id: `mulkyonet_select:${prop.id}`, title: "⚙️ İşlem Yap" },
     { id: "cmd:mulkyonet", title: "🔙 Mülk Yönet" },
     { id: "cmd:menu", title: "Ana Menü" },
   ]);
@@ -531,7 +574,7 @@ async function showStatusOptions(ctx: WaContext, propertyId: string): Promise<vo
     .single();
 
   if (!prop) {
-    await sendText(ctx.phone, "Mülk bulunamadı.");
+    await sendButtons(ctx.phone, "Mülk bulunamadı.", [{ id: "cmd:mulkyonet", title: "Mülk Yönet" }, { id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
@@ -556,7 +599,7 @@ async function applyStatusChange(ctx: WaContext, propertyId: string, newStatus: 
     .single();
 
   if (!prop) {
-    await sendText(ctx.phone, "Mülk bulunamadı.");
+    await sendButtons(ctx.phone, "Mülk bulunamadı.", [{ id: "cmd:mulkyonet", title: "Mülk Yönet" }, { id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
@@ -568,7 +611,7 @@ async function applyStatusChange(ctx: WaContext, propertyId: string, newStatus: 
     .eq("user_id", ctx.userId);
 
   if (error) {
-    await sendText(ctx.phone, "Güncelleme hatası: " + error.message);
+    await sendButtons(ctx.phone, "Güncelleme hatası: " + error.message, [{ id: "cmd:mulkyonet", title: "Mülk Yönet" }, { id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
 
