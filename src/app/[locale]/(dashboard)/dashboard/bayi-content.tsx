@@ -4,8 +4,20 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Users, Package, AlertTriangle, TrendingUp,
-  Truck, CreditCard, ShoppingCart, Clock,
+  Truck, CreditCard, ShoppingCart, Clock, BarChart3,
+  TrendingDown, Minus,
 } from 'lucide-react';
+
+interface InsightData {
+  totalCommands: number;
+  thisWeek: number; lastWeek: number; trend: number;
+  topCommands: { name: string; count: number }[];
+  orders: { total: number; pending: number; completed: number; revenue: number };
+  dealers: { total: number; active: number };
+  criticalStock: number;
+  totalDebt: number;
+  dailyOrders: { date: string; count: number; revenue: number }[];
+}
 
 interface BayiData {
   summary: {
@@ -61,7 +73,9 @@ function statusLabel(s: string): { text: string; color: string } {
 export default function BayiDashboardContent({ userId }: { userId: string }) {
   const [data, setData] = useState<BayiData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dealers' | 'orders' | 'stock' | 'collections'>('dealers');
+  const [activeTab, setActiveTab] = useState<'dealers' | 'orders' | 'stock' | 'collections' | 'insight'>('dealers');
+  const [insight, setInsight] = useState<InsightData | null>(null);
+  const [insightLoading, setInsightLoading] = useState(false);
 
   useEffect(() => {
     fetch(`/api/dashboard/bayi?userId=${userId}`)
@@ -96,6 +110,7 @@ export default function BayiDashboardContent({ userId }: { userId: string }) {
           { key: 'orders' as const, label: 'Son Siparisler', count: data.recentOrders.length },
           { key: 'stock' as const, label: 'Kritik Stok', count: data.criticalStock.length },
           { key: 'collections' as const, label: 'Tahsilat', count: data.collections.length },
+          { key: 'insight' as const, label: 'Insight', count: 0 },
         ].map(tab => (
           <button
             key={tab.key}
@@ -116,6 +131,13 @@ export default function BayiDashboardContent({ userId }: { userId: string }) {
       {activeTab === 'orders' && <OrdersTable orders={data.recentOrders} />}
       {activeTab === 'stock' && <StockTable items={data.criticalStock} />}
       {activeTab === 'collections' && <CollectionsTable items={data.collections} />}
+      {activeTab === 'insight' && <InsightPanel userId={userId} data={insight} loading={insightLoading} onLoad={() => {
+        if (!insight && !insightLoading) {
+          setInsightLoading(true);
+          fetch(`/api/dashboard/bayi-insight?userId=${userId}`)
+            .then(r => r.json()).then(setInsight).catch(console.error).finally(() => setInsightLoading(false));
+        }
+      }} />}
 
       {/* Recent Activity */}
       <Card>
@@ -259,6 +281,80 @@ function StockTable({ items }: { items: BayiData['criticalStock'] }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function InsightPanel({ userId, data, loading, onLoad }: {
+  userId: string; data: InsightData | null; loading: boolean; onLoad: () => void;
+}) {
+  useEffect(() => { onLoad(); }, []);
+
+  if (loading) return <p className="text-sm text-slate-500 py-4">Insight yukleniyor...</p>;
+  if (!data) return <p className="text-sm text-slate-500 py-4">Veri yuklenemedi.</p>;
+
+  const TrendIcon = data.trend > 0 ? TrendingUp : data.trend < 0 ? TrendingDown : Minus;
+  const trendColor = data.trend > 0 ? 'text-green-500' : data.trend < 0 ? 'text-red-500' : 'text-slate-400';
+  const maxOrder = Math.max(...data.dailyOrders.map(d => d.count), 1);
+
+  return (
+    <div className="space-y-4">
+      {/* Trend + Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-slate-50 rounded-lg p-4">
+          <p className="text-xs text-slate-500">Toplam Komut (30g)</p>
+          <p className="text-2xl font-bold">{data.totalCommands}</p>
+        </div>
+        <div className="bg-slate-50 rounded-lg p-4">
+          <p className="text-xs text-slate-500">Haftalik Trend</p>
+          <div className="flex items-center gap-1">
+            <TrendIcon className={`w-5 h-5 ${trendColor}`} />
+            <span className={`text-xl font-bold ${trendColor}`}>{data.trend > 0 ? '+' : ''}{data.trend}%</span>
+          </div>
+          <p className="text-xs text-slate-400">Bu hafta: {data.thisWeek} | Gecen: {data.lastWeek}</p>
+        </div>
+        <div className="bg-slate-50 rounded-lg p-4">
+          <p className="text-xs text-slate-500">Aylik Ciro</p>
+          <p className="text-xl font-bold text-emerald-600">{formatPrice(data.orders.revenue)} TL</p>
+        </div>
+        <div className="bg-slate-50 rounded-lg p-4">
+          <p className="text-xs text-slate-500">Toplam Alacak</p>
+          <p className="text-xl font-bold text-orange-600">{formatPrice(data.totalDebt)} TL</p>
+        </div>
+      </div>
+
+      {/* Daily Orders Chart */}
+      <div className="bg-slate-50 rounded-lg p-4">
+        <p className="text-sm font-medium text-slate-600 mb-3">Gunluk Siparisler (14 Gun)</p>
+        <div className="flex items-end gap-1 h-24">
+          {data.dailyOrders.map(day => (
+            <div key={day.date} className="flex-1 flex flex-col items-center gap-0.5">
+              <div className="w-full flex flex-col-reverse" style={{ height: '80px' }}>
+                <div
+                  className="w-full bg-indigo-400 rounded-t"
+                  style={{ height: `${Math.max((day.count / maxOrder) * 100, 3)}%` }}
+                  title={`${day.date}: ${day.count} siparis, ${formatPrice(day.revenue)} TL`}
+                />
+              </div>
+              <span className="text-[8px] text-slate-400">{day.date.slice(8)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Top Commands */}
+      <div className="bg-slate-50 rounded-lg p-4">
+        <p className="text-sm font-medium text-slate-600 mb-2">En Cok Kullanilan Komutlar</p>
+        <div className="space-y-1.5">
+          {data.topCommands.map(cmd => (
+            <div key={cmd.name} className="flex justify-between text-sm">
+              <span className="text-slate-600">{cmd.name}</span>
+              <span className="text-slate-400 bg-white px-2 py-0.5 rounded text-xs">{cmd.count}</span>
+            </div>
+          ))}
+          {data.topCommands.length === 0 && <p className="text-xs text-slate-400">Henuz veri yok</p>}
+        </div>
+      </div>
     </div>
   );
 }
