@@ -38,7 +38,8 @@ export async function handlePortfoyum(ctx: WaContext): Promise<void> {
     }
 
     await sendButtons(ctx.phone, text, [
-      { id: "cmd:mulkekle", title: "Mülk Ekle" },
+      { id: "cmd:mulkyonet", title: "⚙️ Mülk Yönet" },
+      { id: "cmd:mulkekle", title: "➕ Mülk Ekle" },
       { id: "cmd:menu", title: "Ana Menü" },
     ]);
     await logEvent(ctx.tenantId, ctx.userId, "portfoyum", `${count} mülk listelendi`);
