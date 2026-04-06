@@ -5,10 +5,11 @@ import { Check, UserPlus, MessageSquare, Rocket } from "lucide-react";
 
 export default async function HomePage() {
   const headersList = await headers();
-  const tenantKey = headersList.get("x-tenant-key") || "emlak";
-  const tenant = getTenantByKey(tenantKey);
+  const isAdmin = headersList.get("x-is-admin") === "true";
+  const tenantKey = headersList.get("x-tenant-key");
+  const tenant = tenantKey ? getTenantByKey(tenantKey) : null;
 
-  if (!tenant) {
+  if (isAdmin || !tenant) {
     return <PlatformOverview />;
   }
 
