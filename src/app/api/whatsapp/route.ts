@@ -247,6 +247,7 @@ export async function POST(req: NextRequest) {
               phone, userId: invite.user_id, tenantId: invite.tenant_id,
               tenantKey, userName, locale: "tr",
               messageId: "", text: "", interactiveId: "",
+              role: "admin", permissions: {}, dealerId: null,
             };
             await sendOnboardingStep(ctx, state);
           }
@@ -270,7 +271,7 @@ export async function POST(req: NextRequest) {
     // ── Resolve user by phone (may have multiple profiles across SaaS) ──
     const { data: allProfiles } = await supabase
       .from("profiles")
-      .select("id, tenant_id, display_name, preferred_locale")
+      .select("id, tenant_id, display_name, preferred_locale, role, permissions, dealer_id")
       .eq("whatsapp_phone", phone)
       .order("created_at", { ascending: false });
 
@@ -325,6 +326,9 @@ export async function POST(req: NextRequest) {
       messageId,
       text,
       interactiveId,
+      role: (user.role as WaContext["role"]) || "admin",
+      permissions: (user.permissions as Record<string, unknown>) || {},
+      dealerId: user.dealer_id || null,
     };
 
     // ── Check onboarding state — intercept if not completed ──

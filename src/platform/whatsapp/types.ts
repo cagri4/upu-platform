@@ -2,6 +2,8 @@
  * Shared types for WhatsApp command handlers
  */
 
+export type UserRole = "admin" | "employee" | "dealer" | "system" | "user";
+
 export interface WaContext {
   phone: string;
   userId: string;
@@ -12,6 +14,9 @@ export interface WaContext {
   messageId: string;
   text: string;
   interactiveId: string;
+  role: UserRole;
+  permissions: Record<string, unknown>;
+  dealerId: string | null;
 }
 
 export type CommandHandler = (ctx: WaContext) => Promise<void>;
