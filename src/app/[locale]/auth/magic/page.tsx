@@ -30,6 +30,9 @@ export default function MagicLinkPage() {
       }
 
       setStatus('success');
+      // Save user info for dashboard
+      if (data.userId) localStorage.setItem('upu_user_id', data.userId);
+      if (data.name) localStorage.setItem('upu_user_name', data.name);
       // Redirect to dashboard after short delay
       setTimeout(() => {
         window.location.href = '/tr/dashboard';

@@ -9,6 +9,7 @@ import {
   ShoppingCart, ClipboardList, AlertTriangle,
   Truck, CreditCard, BarChart3,
 } from 'lucide-react';
+import BayiDashboardContent from './bayi-content';
 
 interface DashboardMetrics {
   totalUsers: number;
@@ -83,11 +84,15 @@ function getTenantCards(tenantKey: string, m: DashboardMetrics) {
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [tenantKey, setTenantKey] = useState('emlak');
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const hostname = window.location.host;
     const tenant = getTenantByDomain(hostname) || getTenantByKey('emlak');
     if (tenant) setTenantKey(tenant.key);
+
+    const storedUserId = localStorage.getItem('upu_user_id');
+    if (storedUserId) setUserId(storedUserId);
 
     fetch('/api/dashboard/metrics')
       .then(res => res.json())
@@ -96,6 +101,19 @@ export default function DashboardPage() {
   }, []);
 
   const tenant = getTenantByKey(tenantKey);
+
+  // Bayi tenant gets its own rich dashboard
+  if (tenantKey === 'bayi' && userId) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 mb-6">
+          {tenant?.icon} {tenant?.name || 'Panel'}
+        </h1>
+        <BayiDashboardContent userId={userId} />
+      </div>
+    );
+  }
+
   const cards = metrics ? getTenantCards(tenantKey, metrics) : [];
 
   return (
@@ -123,7 +141,7 @@ export default function DashboardPage() {
           <CardTitle className="text-lg">Son Aktiviteler</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-500">Henüz aktivite bulunmuyor.</p>
+          <p className="text-sm text-slate-500">Henuz aktivite bulunmuyor.</p>
         </CardContent>
       </Card>
     </div>

@@ -59,10 +59,14 @@ export async function GET(req: NextRequest) {
     }
 
     if (tenantKey === "bayi") {
-      const { count: orderCount } = await supabase
-        .from("bayi_orders")
-        .select("*", { count: "exact", head: true });
-      extra.orderCount = orderCount ?? 0;
+      const [orderRes, stockRes, deliveryRes] = await Promise.all([
+        supabase.from("bayi_orders").select("*", { count: "exact", head: true }).eq("tenant_id", tenant.id),
+        supabase.from("bayi_products").select("*", { count: "exact", head: true }).eq("tenant_id", tenant.id).lt("stock_quantity", 10),
+        supabase.from("bayi_orders").select("*", { count: "exact", head: true }).eq("tenant_id", tenant.id).eq("status", "shipped"),
+      ]);
+      extra.orderCount = orderRes.count ?? 0;
+      extra.stockAlerts = stockRes.count ?? 0;
+      extra.deliveryCount = deliveryRes.count ?? 0;
     }
 
     if (tenantKey === "muhasebe") {
