@@ -16,7 +16,6 @@ interface SidebarProps {
 
 const COMMON_ITEMS = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
-  { href: '/billing', label: 'Abonelik', icon: CreditCard },
   { href: '/settings', label: 'Ayarlar', icon: Settings },
 ];
 
