@@ -555,15 +555,28 @@ async function showMenu(
     );
   }
 
-  // Message 3: System commands as list (supports up to 10 items)
+  // Message 3: System commands (filtered by role + tenant)
   const systemRows = [
     { id: "cmd:profilim", title: "👤 Profilim", description: "Profil bilgileri ve düzenleme" },
-    { id: "cmd:favoriler", title: "⭐ Favoriler", description: "Favori komutları düzenle" },
-    { id: "cmd:kilavuz", title: "📖 Kılavuz", description: "Kullanım rehberi" },
-    { id: "cmd:webpanel", title: "🖥 Web Panel", description: "Tarayıcıdan giriş yap" },
-    { id: "cmd:uzanti", title: "🧩 Uzantı Kurulumu", description: "Chrome uzantısı bağlantısı" },
-    { id: "cmd:hakkimizda", title: "ℹ️ Hakkımızda", description: "UPU Dev hakkında bilgi" },
   ];
+
+  // Favorites — not for dealers (too few commands)
+  if (ctx.role !== "dealer") {
+    systemRows.push({ id: "cmd:favoriler", title: "⭐ Favoriler", description: "Favori komutları düzenle" });
+  }
+
+  systemRows.push({ id: "cmd:kilavuz", title: "📖 Kılavuz", description: "Kullanım rehberi" });
+  systemRows.push({ id: "cmd:webpanel", title: "🖥 Web Panel", description: "Tarayıcıdan giriş yap" });
+
+  // Uzantı — only for emlak tenant admin
+  if (ctx.tenantKey === "emlak" && ctx.role !== "dealer") {
+    systemRows.push({ id: "cmd:uzanti", title: "🧩 Uzantı Kurulumu", description: "Chrome uzantısı bağlantısı" });
+  }
+
+  // Degistir — always available
+  systemRows.push({ id: "cmd:degistir", title: "🔄 Değiştir", description: "SaaS veya görünüm değiştir" });
+
+  systemRows.push({ id: "cmd:hakkimizda", title: "ℹ️ Hakkımızda", description: "UPU Dev hakkında bilgi" });
 
   // Add admin panel button if user is admin
   const adminUser = await isAdmin(ctx);
