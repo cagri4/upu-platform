@@ -87,13 +87,15 @@ async function createEmployeeWithPermissions(
 
   await endSession(ctx.userId);
 
+  const waLink = `https://wa.me/31644967207?text=${encodeURIComponent(`Kayıt Kodu: ${code}`)}`;
+
   await sendButtons(ctx.phone,
     `✅ Çalışan oluşturuldu!\n\n` +
     `👤 ${sessionData.name}\n` +
     `💼 ${sessionData.position}\n` +
     `🔑 Yetki: ${permissions.groupLabel}\n\n` +
-    `📋 Kayıt Kodu: *${code}*\n\n` +
-    `Bu kodu çalışana gönderin. WhatsApp'tan bota "Kayıt Kodu: ${code}" yazarak sisteme giriş yapacak.`,
+    `Bu linki çalışana gönderin. Linke tıklayarak sisteme giriş yapacak:\n\n` +
+    `${waLink}`,
     [
       { id: "cmd:calisanyonet", title: "👥 Çalışanlar" },
       { id: "cmd:menu", title: "Ana Menü" },
@@ -258,6 +260,108 @@ export async function handleCalisanEkleCallback(ctx: WaContext, data: string): P
     }
   }
 
+  if (parts[0] === "detay" && parts[1]) {
+    const empId = parts[1];
+    const supabase = getServiceClient();
+    const { data: emp } = await supabase
+      .from("profiles")
+      .select("id, display_name, role, permissions, whatsapp_phone, metadata, created_at")
+      .eq("id", empId)
+      .single();
+
+    if (!emp) {
+      await sendButtons(ctx.phone, "Çalışan bulunamadı.", [{ id: "cmd:calisanyonet", title: "👥 Çalışanlar" }]);
+      return;
+    }
+
+    const perms = (emp.permissions || {}) as Record<string, unknown>;
+    const meta = (emp.metadata || {}) as Record<string, unknown>;
+    const phone = emp.whatsapp_phone || "Kayıt bekliyor";
+    const date = new Date(emp.created_at).toLocaleDateString("tr-TR");
+
+    let text = `👤 *${emp.display_name}*\n\n`;
+    text += `💼 Pozisyon: ${meta.position || "—"}\n`;
+    text += `🔑 Yetki: ${perms.groupLabel || "—"}\n`;
+    text += `📱 Telefon: ${phone}\n`;
+    text += `📅 Eklenme: ${date}\n`;
+
+    if (perms.groups) {
+      text += `\n📋 Yetki grupları: ${(perms.groups as string[]).map(g => EMPLOYEE_GROUPS[g]?.label || g).join(", ")}`;
+    }
+
+    await sendButtons(ctx.phone, text, [
+      { id: `calisanekle:yetki_degistir:${empId}`, title: "🔑 Yetki Değiştir" },
+      { id: `calisanekle:sil:${empId}`, title: "🗑 Sil" },
+      { id: "cmd:calisanyonet", title: "🔙 Çalışanlar" },
+    ]);
+    return;
+  }
+
+  if (parts[0] === "yetki_degistir" && parts[1]) {
+    const empId = parts[1];
+    // Show permission groups to select new permissions
+    await startSession(ctx.userId, ctx.tenantId, "calisanekle", "permission_select");
+    await updateSession(ctx.userId, "permission_select", { editEmployeeId: empId, selectedGroups: [] });
+
+    await sendList(ctx.phone, "🔑 Yeni yetki grubunu seçin:", "Yetki Seç", [
+      { title: "Yetki Grupları", rows: [
+        { id: "calisanekle:yetki_set:satis", title: "💰 Satış Ekibi", description: "Kampanya, sipariş, bayi ziyaret" },
+        { id: "calisanekle:yetki_set:finans", title: "💳 Finans Ekibi", description: "Bakiye, fatura, tahsilat" },
+        { id: "calisanekle:yetki_set:depo", title: "📦 Depo & Lojistik", description: "Stok, tedarik, teslimat" },
+        { id: "calisanekle:yetki_set:urun", title: "🏷 Ürün Yönetimi", description: "Ürün kataloğu, fiyat" },
+        { id: "calisanekle:yetki_set:tam", title: "🔓 Tam Yetki", description: "Tüm elemanlar ve komutlar" },
+      ]},
+    ]);
+    return;
+  }
+
+  if (parts[0] === "yetki_set" && parts[1]) {
+    const permGroup = parts[1];
+    const group = EMPLOYEE_GROUPS[permGroup];
+    if (!group) return;
+
+    const supabase = getServiceClient();
+    const { data: sess } = await supabase
+      .from("command_sessions").select("data").eq("user_id", ctx.userId).single();
+    if (!sess) { await endSession(ctx.userId); return; }
+
+    const d = sess.data as Record<string, unknown>;
+    const empId = d.editEmployeeId as string;
+
+    if (!empId) { await endSession(ctx.userId); return; }
+
+    // Build permissions
+    const finalGroups = permGroup === "tam" ? ["tam"] : [permGroup];
+    const allEmployees = [...new Set(finalGroups.flatMap(g => EMPLOYEE_GROUPS[g]?.employees || []))];
+    const allCommands = [...new Set(finalGroups.flatMap(g => EMPLOYEE_GROUPS[g]?.commands || []))];
+    const groupLabels = finalGroups.map(g => EMPLOYEE_GROUPS[g]?.label || g);
+
+    const permissions = {
+      employees: allEmployees,
+      commands: allCommands,
+      groups: finalGroups,
+      groupLabel: groupLabels.join(" + "),
+    };
+
+    await supabase.from("profiles")
+      .update({ permissions })
+      .eq("id", empId)
+      .eq("invited_by", ctx.userId);
+
+    await endSession(ctx.userId);
+
+    const { data: emp } = await supabase.from("profiles").select("display_name").eq("id", empId).single();
+
+    await sendButtons(ctx.phone,
+      `✅ Yetki güncellendi!\n\n👤 ${emp?.display_name || "Çalışan"}\n🔑 Yeni yetki: ${permissions.groupLabel}`,
+      [
+        { id: "cmd:calisanyonet", title: "👥 Çalışanlar" },
+        { id: "cmd:menu", title: "Ana Menü" },
+      ],
+    );
+    return;
+  }
+
   if (parts[0] === "sil" && parts[1]) {
     const empId = parts[1];
     // Confirm
@@ -317,9 +421,9 @@ export async function handleCalisanYonet(ctx: WaContext): Promise<void> {
     }
 
     const rows = employees.map(emp => ({
-      id: `calisanekle:sil:${emp.id}`,
-      title: `🗑 ${(emp.display_name || "?").substring(0, 20)}`,
-      description: "Çalışanı sil",
+      id: `calisanekle:detay:${emp.id}`,
+      title: `${(emp.display_name || "?").substring(0, 24)}`,
+      description: ((emp.metadata as Record<string, unknown>)?.position as string || "").substring(0, 72),
     }));
 
     await sendButtons(ctx.phone, text, [
@@ -328,7 +432,7 @@ export async function handleCalisanYonet(ctx: WaContext): Promise<void> {
     ]);
 
     if (rows.length > 0) {
-      await sendList(ctx.phone, "Çalışan silmek için:", "İşlem", [
+      await sendList(ctx.phone, "Detay/düzenleme için çalışan seçin:", "Çalışan Seç", [
         { title: "Çalışanlar", rows },
       ]);
     }
