@@ -103,10 +103,19 @@ const PLAN_ACCESS: Record<string, Record<string, boolean>> = {
 export default function SettingsPage() {
   const [tenantKey, setTenantKey] = useState('emlak');
   const [currentPlan, setCurrentPlan] = useState('Deneme');
+  const [userRole, setUserRole] = useState<string>('admin');
 
   useEffect(() => {
     const hostname = window.location.host;
     const tenant = getTenantByDomain(hostname) || getTenantByKey('emlak');
+
+    const userId = localStorage.getItem('upu_user_id');
+    if (userId) {
+      fetch(`/api/auth/user-role?userId=${userId}`)
+        .then(r => r.json())
+        .then(d => { if (d.role) setUserRole(d.role); })
+        .catch(() => {});
+    }
     if (tenant) setTenantKey(tenant.key);
   }, []);
 
@@ -199,8 +208,8 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* ── Subscription & Plan Comparison ───────────────────────── */}
-        <Card>
+        {/* ── Subscription & Plan Comparison (admin only) ──────────── */}
+        {userRole !== 'dealer' && userRole !== 'employee' && <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-slate-500" /> Abonelik
@@ -283,7 +292,7 @@ export default function SettingsPage() {
               ))}
             </div>
           </CardContent>
-        </Card>
+        </Card>}
       </div>
     </div>
   );
