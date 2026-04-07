@@ -78,6 +78,13 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       }
       return;
     }
+    if (ctx.interactiveId === "degistir_role:no_employee") {
+      await sendButtons(ctx.phone, "⚠️ Henüz çalışan atanmadı. Önce çalışan ekleyin.", [
+        { id: "cmd:calisanekle", title: "➕ Çalışan Ekle" },
+        { id: "cmd:menu", title: "Ana Menü" },
+      ]);
+      return;
+    }
     if (ctx.interactiveId.startsWith("degistir_role:")) {
       const newRole = ctx.interactiveId.replace("degistir_role:", "");
       const supabase = getServiceClient();
@@ -1037,36 +1044,23 @@ async function handleDegistir(ctx: WaContext): Promise<void> {
 
   const rows: Array<{ id: string; title: string; description: string }> = [];
 
-  // SaaS switch options (if multiple SaaS)
-  const uniqueSaas = [...new Set(Object.values(tenantMap).map(t => t.saas_type))];
-  if (uniqueSaas.length > 1) {
-    for (const saasKey of uniqueSaas) {
-      const t = Object.values(tenantMap).find(tm => tm.saas_type === saasKey);
-      if (t && saasKey !== ctx.tenantKey) {
-        rows.push({
-          id: `degistir_saas:${saasKey}`,
-          title: `🔄 ${t.name}`.substring(0, 24),
-          description: `${saasKey} sistemine geç`,
-        });
-      }
-    }
-  }
-
-  // Role switch options (bayi tenant + actual admin role — not view_as_role)
+  // Get actual DB role (not view_as_role)
   const actualRole = profiles.find(p => {
     const tid = p.tenant_id;
     return tenantMap[tid]?.saas_type === ctx.tenantKey;
-  })?.role || ctx.role;
+  })?.role || "admin";
 
-  if (ctx.tenantKey === "bayi" && (actualRole === "admin" || actualRole === "user")) {
-    // Always show reset if any view is active
-    if (currentViewRole) {
-      rows.push({
-        id: "degistir_role:reset",
-        title: "👔 Admin Görünümü",
-        description: "Kendi menünüze dönün",
-      });
-    }
+  const isInSubView = !!currentViewRole; // dealer or employee view active
+
+  if (isInSubView) {
+    // In a sub-view (dealer/employee) → only show same-SaaS options, no cross-SaaS switch
+    // Always show admin reset
+    rows.push({
+      id: "degistir_role:reset",
+      title: "👔 Firma Sahibi Görünümü",
+      description: "Kendi menünüze dönün",
+    });
+    // Show other sub-views
     if (currentViewRole !== "dealer") {
       rows.push({
         id: "degistir_role:dealer",
@@ -1075,11 +1069,73 @@ async function handleDegistir(ctx: WaContext): Promise<void> {
       });
     }
     if (currentViewRole !== "employee") {
+      // Check if any employee exists
+      const { data: employees } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("invited_by", ctx.userId)
+        .eq("role", "employee")
+        .limit(1);
+
+      if (employees?.length) {
+        rows.push({
+          id: "degistir_role:employee",
+          title: "👤 Çalışan Görünümü",
+          description: "Çalışanın gördüğü menüyü görün",
+        });
+      } else {
+        rows.push({
+          id: "degistir_role:no_employee",
+          title: "👤 Çalışan Görünümü",
+          description: "⚠️ Henüz çalışan atanmadı",
+        });
+      }
+    }
+  } else {
+    // In admin view → show cross-SaaS switch + role switch (if bayi)
+    const uniqueSaas = [...new Set(Object.values(tenantMap).map(t => t.saas_type))];
+    if (uniqueSaas.length > 1) {
+      for (const saasKey of uniqueSaas) {
+        const t = Object.values(tenantMap).find(tm => tm.saas_type === saasKey);
+        if (t && saasKey !== ctx.tenantKey) {
+          rows.push({
+            id: `degistir_saas:${saasKey}`,
+            title: `🔄 ${t.name}`.substring(0, 24),
+            description: `${saasKey} sistemine geç`,
+          });
+        }
+      }
+    }
+
+    // Role switch (bayi tenant admin only)
+    if (ctx.tenantKey === "bayi" && (actualRole === "admin" || actualRole === "user")) {
       rows.push({
-        id: "degistir_role:employee",
-        title: "👤 Çalışan Görünümü",
-        description: "Çalışanın gördüğü menüyü görün",
+        id: "degistir_role:dealer",
+        title: "🏪 Bayi Görünümü",
+        description: "Bayinin gördüğü menüyü görün",
       });
+
+      // Check if employee exists
+      const { data: employees } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("invited_by", ctx.userId)
+        .eq("role", "employee")
+        .limit(1);
+
+      if (employees?.length) {
+        rows.push({
+          id: "degistir_role:employee",
+          title: "👤 Çalışan Görünümü",
+          description: "Çalışanın gördüğü menüyü görün",
+        });
+      } else {
+        rows.push({
+          id: "degistir_role:no_employee",
+          title: "👤 Çalışan Görünümü",
+          description: "⚠️ Henüz çalışan atanmadı",
+        });
+      }
     }
   }
 
