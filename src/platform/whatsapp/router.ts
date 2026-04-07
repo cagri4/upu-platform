@@ -1053,44 +1053,12 @@ async function handleDegistir(ctx: WaContext): Promise<void> {
   const isInSubView = !!currentViewRole; // dealer or employee view active
 
   if (isInSubView) {
-    // In a sub-view (dealer/employee) → only show same-SaaS options, no cross-SaaS switch
-    // Always show admin reset
+    // In a sub-view → only show reset to admin
     rows.push({
       id: "degistir_role:reset",
       title: "👔 Firma Sahibi Görünümü",
       description: "Kendi menünüze dönün",
     });
-    // Show other sub-views
-    if (currentViewRole !== "dealer") {
-      rows.push({
-        id: "degistir_role:dealer",
-        title: "🏪 Bayi Görünümü",
-        description: "Bayinin gördüğü menüyü görün",
-      });
-    }
-    if (currentViewRole !== "employee") {
-      // Check if any employee exists
-      const { data: employees } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("invited_by", ctx.userId)
-        .eq("role", "employee")
-        .limit(1);
-
-      if (employees?.length) {
-        rows.push({
-          id: "degistir_role:employee",
-          title: "👤 Çalışan Görünümü",
-          description: "Çalışanın gördüğü menüyü görün",
-        });
-      } else {
-        rows.push({
-          id: "degistir_role:no_employee",
-          title: "👤 Çalışan Görünümü",
-          description: "⚠️ Henüz çalışan atanmadı",
-        });
-      }
-    }
   } else {
     // In admin view → show cross-SaaS switch + role switch (if bayi)
     const uniqueSaas = [...new Set(Object.values(tenantMap).map(t => t.saas_type))];
