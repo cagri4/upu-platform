@@ -1052,15 +1052,22 @@ async function handleDegistir(ctx: WaContext): Promise<void> {
     }
   }
 
-  // Role switch options (bayi tenant + admin role)
-  if (ctx.tenantKey === "bayi" && (ctx.role === "admin" || ctx.role === "user")) {
-    if (currentViewRole === "dealer") {
+  // Role switch options (bayi tenant + actual admin role — not view_as_role)
+  const actualRole = profiles.find(p => {
+    const tid = p.tenant_id;
+    return tenantMap[tid]?.saas_type === ctx.tenantKey;
+  })?.role || ctx.role;
+
+  if (ctx.tenantKey === "bayi" && (actualRole === "admin" || actualRole === "user")) {
+    // Always show reset if any view is active
+    if (currentViewRole) {
       rows.push({
         id: "degistir_role:reset",
         title: "👔 Admin Görünümü",
         description: "Kendi menünüze dönün",
       });
-    } else {
+    }
+    if (currentViewRole !== "dealer") {
       rows.push({
         id: "degistir_role:dealer",
         title: "🏪 Bayi Görünümü",
