@@ -174,7 +174,125 @@ export async function POST(req: NextRequest) {
 
     const supabase = getServiceClient();
 
-    // ── Check invite code BEFORE resolving user ──
+    // ── Check multi-use invite link (BAYI:CODE format) ──
+    const bayiCodeMatch = text?.toUpperCase().match(/^BAYI[:\s]+([A-Z0-9]{6,})\b/);
+    if (bayiCodeMatch) {
+      const linkCode = bayiCodeMatch[1];
+      const { data: inviteLink } = await supabase
+        .from("bayi_invite_links")
+        .select("id, tenant_id, role, permissions, max_uses, used_count, is_active, expires_at, created_by")
+        .eq("code", linkCode)
+        .eq("is_active", true)
+        .single();
+
+      if (inviteLink) {
+        // Check expiry
+        if (inviteLink.expires_at && new Date(inviteLink.expires_at) < new Date()) {
+          await sendText(phone, "❌ Bu davet linkinin süresi dolmuş.");
+          return NextResponse.json({ status: "ok" });
+        }
+        // Check max uses
+        if (inviteLink.max_uses && inviteLink.used_count >= inviteLink.max_uses) {
+          await sendText(phone, "❌ Bu davet linki kullanım limitine ulaşmış.");
+          return NextResponse.json({ status: "ok" });
+        }
+        // Check if phone already registered in this tenant
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("whatsapp_phone", phone)
+          .eq("tenant_id", inviteLink.tenant_id)
+          .maybeSingle();
+
+        if (existingProfile) {
+          await sendText(phone, "✅ Bu telefon numarası zaten kayıtlı. \"menu\" yazarak başlayabilirsiniz.");
+          return NextResponse.json({ status: "ok" });
+        }
+
+        // Create auth user + profile
+        const { randomBytes } = await import("crypto");
+        const { data: authUser, error: authErr } = await supabase.auth.admin.createUser({
+          email: `dealer_${Date.now()}_${randomBytes(4).toString("hex")}@placeholder.upudev.nl`,
+          email_confirm: true,
+          user_metadata: { name: name || phone },
+        });
+
+        if (authErr || !authUser.user) {
+          await sendText(phone, "❌ Kayıt hatası. Lütfen tekrar deneyin.");
+          return NextResponse.json({ status: "ok" });
+        }
+
+        // Create profile with dealer role
+        await supabase.from("profiles").insert({
+          id: authUser.user.id,
+          tenant_id: inviteLink.tenant_id,
+          display_name: name || phone,
+          whatsapp_phone: phone,
+          role: inviteLink.role || "dealer",
+          permissions: inviteLink.permissions || {},
+          invited_by: inviteLink.created_by,
+        });
+
+        // Create subscription
+        await supabase.from("subscriptions").insert({
+          tenant_id: inviteLink.tenant_id,
+          user_id: authUser.user.id,
+          plan: "trial",
+          status: "active",
+        });
+
+        // Update used count
+        await supabase.from("bayi_invite_links")
+          .update({ used_count: (inviteLink.used_count || 0) + 1 })
+          .eq("id", inviteLink.id);
+
+        // Set active session
+        const { data: t } = await supabase.from("tenants").select("saas_type").eq("id", inviteLink.tenant_id).single();
+        if (t) {
+          await supabase.from("saas_active_session").upsert({
+            phone, active_saas_key: t.saas_type, updated_at: new Date().toISOString(),
+          });
+        }
+
+        // Get tenant info for welcome
+        const { data: tenantInfo } = await supabase.from("tenants").select("name, saas_type").eq("id", inviteLink.tenant_id).single();
+        const tenantCfg = tenantInfo ? getTenantByKey(tenantInfo.saas_type) : null;
+
+        await sendText(phone,
+          `✅ Hoş geldiniz!\n\n*${tenantInfo?.name || "Sistem"}*'e başarıyla kaydoldunuz.\n\n` +
+          `Şimdi sizi tanıyalım — birkaç soru soracağım.`
+        );
+
+        // Start onboarding if available
+        const tenantKey = tenantInfo?.saas_type || "bayi";
+        const onbFlow = getOnboardingFlow(tenantKey);
+        if (onbFlow) {
+          await initOnboarding(authUser.user.id, inviteLink.tenant_id, tenantKey);
+          const state = await getOnboardingState(authUser.user.id);
+          if (state) {
+            const onbCtx: WaContext = {
+              phone, userId: authUser.user.id, tenantId: inviteLink.tenant_id,
+              tenantKey, userName: name || phone, locale: "tr",
+              messageId: "", text: "", interactiveId: "",
+              role: (inviteLink.role as WaContext["role"]) || "dealer",
+              permissions: (inviteLink.permissions as Record<string, unknown>) || {},
+              dealerId: null,
+            };
+            await sendOnboardingStep(onbCtx, state);
+          }
+        } else {
+          const { sendButtons: sendBtns } = await import("@/platform/whatsapp/send");
+          await sendBtns(phone, "Başlamak için Ana Menü'ye tıklayın:", [
+            { id: "cmd:menu", title: "📋 Ana Menü" },
+          ]);
+        }
+
+        logEvent({ eventType: "signup", eventName: "multi_invite_used", userId: authUser.user.id, tenantId: inviteLink.tenant_id, phone, metadata: { code: linkCode, role: inviteLink.role } });
+        return NextResponse.json({ status: "ok" });
+      }
+    }
+
+    // ── Check single-use invite code ──
     const codeMatch = text
       ? text.toUpperCase().match(/KOD(?:U|UM)?[:\s]+([A-Z0-9]{6})\b/) ||
         text.toUpperCase().match(/^([A-Z0-9]{6})$/)

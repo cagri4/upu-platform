@@ -470,20 +470,40 @@ async function showMenu(
     );
   }
 
-  // Message 2: List with employees (max 10 rows)
-  const empRows = tenant.employees.map((emp) => ({
+  // Message 2: List with employees (filtered by role)
+  let visibleEmployees = tenant.employees;
+
+  if (ctx.role === "dealer") {
+    // Dealers see only dealer-facing employees (defined in tenant config or fallback to first)
+    const dealerEmpKeys = tenant.dealerEmployees || [];
+    if (dealerEmpKeys.length > 0) {
+      visibleEmployees = tenant.employees.filter(e => dealerEmpKeys.includes(e.key));
+    } else {
+      visibleEmployees = []; // No dealer employees defined → show none
+    }
+  } else if (ctx.role === "employee") {
+    // Employees see only permitted employees
+    const permittedEmps = (ctx.permissions?.employees as string[]) || [];
+    if (permittedEmps.length > 0) {
+      visibleEmployees = tenant.employees.filter(e => permittedEmps.includes(e.key));
+    }
+  }
+
+  const empRows = visibleEmployees.map((emp) => ({
     id: `emp:${emp.key}`,
     title: `${emp.icon} ${emp.name}`.substring(0, 24),
     description: emp.description.substring(0, 72),
   })).slice(0, 10);
 
-  await sendList(ctx.phone,
-    "Bir sanal eleman seçin:",
-    "Ekibi Çağır",
-    [
-      { title: "Sanal Elemanlar", rows: empRows },
-    ],
-  );
+  if (empRows.length > 0) {
+    await sendList(ctx.phone,
+      "Bir sanal eleman seçin:",
+      "Ekibi Çağır",
+      [
+        { title: "Sanal Elemanlar", rows: empRows },
+      ],
+    );
+  }
 
   // Message 3: System commands as list (supports up to 10 items)
   const systemRows = [

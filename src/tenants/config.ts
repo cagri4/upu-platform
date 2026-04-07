@@ -26,6 +26,7 @@ export interface TenantConfig {
   description: string;
   welcomeFeatures: string; // Tenant-specific feature summary for welcome message
   employees: VirtualEmployee[];
+  dealerEmployees?: string[];  // Employee keys visible to dealer role
   commandMap: Record<string, string>;
   guide: string;         // SaaS-specific usage guide text
   defaultFavorites: string[];  // Default favorite command names
@@ -76,7 +77,9 @@ const TENANTS: Record<string, TenantConfig> = {
       { key: "depocu", name: "Depocu", icon: "📦", description: "Stok durumu, kritik stok ve tedarik yönetimi", commands: ["stok", "kritikstok", "stokhareketleri", "tedarikciler", "satinalma"] },
       { key: "lojistikci", name: "Lojistikçi", icon: "🚛", description: "Teslimat planlaması ve kargo takibi", commands: ["teslimatlar", "rota", "kargotakip"] },
       { key: "urunYoneticisi", name: "Ürün Yöneticisi", icon: "🏷", description: "Ürün kataloğu ve fiyat listesi", commands: ["urunler", "fiyatliste", "yeniurun", "fiyatguncelle"] },
+      { key: "bayiAsistan", name: "Bayi Asistanı", icon: "🤖", description: "Sipariş, bakiye, katalog ve kampanyalar", commands: ["siparisver", "siparislerim", "tekrarsiparis", "bakiyem", "faturalarim", "odemelerim", "urunler", "fiyatlar", "kampanyalar", "mesajgonder"] },
     ],
+    dealerEmployees: ["bayiAsistan"],
     commandMap: {},
     guide: "",
     defaultFavorites: ["ozet", "siparisler", "stok"],
