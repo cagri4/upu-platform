@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
     const supabase = getServiceClient();
 
     // ── Check multi-use invite link (BAYI:CODE format) ──
-    const bayiCodeMatch = text?.toUpperCase().match(/^BAYI[:\s]+([A-Z0-9]{6,})\b/);
+    const bayiCodeMatch = text?.toUpperCase().match(/BAYI[:\s]+([A-Z0-9]{6,})\b/);
     if (bayiCodeMatch) {
       const linkCode = bayiCodeMatch[1];
       const { data: inviteLink } = await supabase

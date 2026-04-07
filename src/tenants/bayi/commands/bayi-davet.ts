@@ -26,7 +26,7 @@ export async function handleBayiDavet(ctx: WaContext): Promise<void> {
       .maybeSingle();
 
     if (existing) {
-      const whatsappLink = `https://wa.me/31644967207?text=${encodeURIComponent(`BAYI:${existing.code}`)}`;
+      const whatsappLink = `https://wa.me/31644967207?text=${encodeURIComponent(`Merhaba! Bayi Yönetim Sistemine kayıt olmak istiyorum. Davet Kodum: BAYI:${existing.code}`)}`;
 
       await sendButtons(ctx.phone,
         `🏪 *Mevcut Bayi Davet Linki*\n\n` +
@@ -55,7 +55,7 @@ export async function handleBayiDavet(ctx: WaContext): Promise<void> {
       is_active: true,
     });
 
-    const whatsappLink = `https://wa.me/31644967207?text=${encodeURIComponent(`BAYI:${code}`)}`;
+    const whatsappLink = `https://wa.me/31644967207?text=${encodeURIComponent(`Merhaba! Bayi Yönetim Sistemine kayıt olmak istiyorum. Davet Kodum: BAYI:${code}`)}`;
 
     await sendButtons(ctx.phone,
       `✅ *Bayi Davet Linki Oluşturuldu!*\n\n` +
