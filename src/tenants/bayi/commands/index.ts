@@ -41,7 +41,7 @@ import { handleStok, handleKritikStok, handleStokHareketleri, handleTedarikciler
 import { handleTeslimatlar, handleRota, handleKargoTakip } from "./lojistik";
 
 // Urun
-import { handleUrunler, handleFiyatListe, handleYeniUrun, handleFiyatGuncelle } from "./urunler";
+import { handleUrunler, handleFiyatListe, handleYeniUrun, handleYeniUrunStep, handleYeniUrunCallback, handleFiyatGuncelle } from "./urunler";
 
 // Dealer-facing commands
 import {
@@ -156,6 +156,7 @@ export const bayiCommands: TenantCommandRegistry = {
     talimat: handleTalimatStep,
     duyuru: handleDuyuruStep,
     dealer_onboard: handleDealerOnboardStep,
+    yeniurun: handleYeniUrunStep,
   },
   callbackPrefixes: {
     "siparis_bayi:": handleSiparisBayiCallback,
@@ -167,6 +168,7 @@ export const bayiCommands: TenantCommandRegistry = {
     "kmp_bildir:": handleKampanyaBildirCallback,
     "tahsilat_gonder:": handleTahsilatBildirCallback,
     "donboard:": handleDealerOnboardCallback,
+    "yeniurun_birim:": handleYeniUrunCallback,
   },
   aliases: {
     "sipariş": "siparisler",

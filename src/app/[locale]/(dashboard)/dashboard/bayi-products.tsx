@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Package, Plus, Pencil, Trash2, X, Search } from 'lucide-react';
+import { Package, Plus, Pencil, Trash2, X, Search, Upload, Download } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -45,6 +45,10 @@ export default function BayiProductsPanel({ userId }: { userId: string }) {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
+  const [showCsvImport, setShowCsvImport] = useState(false);
+  const [csvText, setCsvText] = useState("");
+  const [csvResult, setCsvResult] = useState<{ imported?: number; errors?: number; error?: string } | null>(null);
+  const [csvLoading, setCsvLoading] = useState(false);
 
   useEffect(() => { fetchProducts(); }, []);
 
@@ -101,10 +105,67 @@ export default function BayiProductsPanel({ userId }: { userId: string }) {
         <h2 className="text-lg font-bold flex items-center gap-2">
           <Package className="w-5 h-5" /> Urun Yonetimi ({products.length})
         </h2>
-        <Button onClick={() => { setEditing(emptyProduct); setShowForm(true); }} size="sm">
-          <Plus className="w-4 h-4 mr-1" /> Urun Ekle
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowCsvImport(!showCsvImport)}>
+            <Upload className="w-4 h-4 mr-1" /> CSV Yukle
+          </Button>
+          <Button onClick={() => { setEditing(emptyProduct); setShowForm(true); }} size="sm">
+            <Plus className="w-4 h-4 mr-1" /> Urun Ekle
+          </Button>
+        </div>
       </div>
+
+      {/* CSV Import */}
+      {showCsvImport && (
+        <Card className="border-blue-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center justify-between">
+              CSV Toplu Urun Yukleme
+              <button onClick={() => { setShowCsvImport(false); setCsvResult(null); }}><X className="w-4 h-4 text-slate-400" /></button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-slate-500 mb-2">
+              CSV formatı (ilk satir baslik):<br/>
+              <code className="bg-slate-100 px-1">ad,kategori,fiyat,stok,birim,marka,sku,barkod,aciklama</code><br/>
+              Ayrac: virgul, noktali virgul veya tab. Minimum: ad ve fiyat.
+            </p>
+            <textarea
+              value={csvText}
+              onChange={e => setCsvText(e.target.value)}
+              placeholder={"ad,kategori,fiyat,stok,birim,marka\nBoya 10L Beyaz,Ic Cephe,450,100,adet,Marshall\nVernik 2.5L,Vernik,280,50,adet,Polisan"}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono resize-none mb-2"
+              rows={5}
+            />
+            <div className="flex items-center gap-2">
+              <input type="file" accept=".csv,.txt" className="text-xs" onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) { const text = await file.text(); setCsvText(text); }
+              }} />
+              <Button size="sm" disabled={csvLoading || !csvText.trim()} onClick={async () => {
+                setCsvLoading(true); setCsvResult(null);
+                try {
+                  const res = await fetch('/api/dashboard/bayi-products/csv', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, csvData: csvText }),
+                  });
+                  const data = await res.json();
+                  setCsvResult(data);
+                  if (data.ok) { fetchProducts(); setCsvText(""); }
+                } catch { setCsvResult({ error: "Baglanti hatasi" }); }
+                finally { setCsvLoading(false); }
+              }}>
+                {csvLoading ? "Yukleniyor..." : "Yukle"}
+              </Button>
+            </div>
+            {csvResult && (
+              <div className={`mt-2 text-xs p-2 rounded ${csvResult.error ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                {csvResult.error ? `Hata: ${csvResult.error}` : `${csvResult.imported} urun yuklendi${csvResult.errors ? `, ${csvResult.errors} hata` : ''}`}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search + Filter */}
       <div className="flex gap-2">
