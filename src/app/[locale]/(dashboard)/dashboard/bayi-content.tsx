@@ -31,8 +31,8 @@ interface BayiData {
     totalDebt: number;
   };
   dealers: Array<{
-    id: string; name: string; city: string; district: string;
-    phone: string; status: string; balance: number; created_at: string;
+    id: string; name: string; company_name: string; city: string; district: string;
+    phone: string; status: string; balance: number; created_at: string; contact_name: string;
   }>;
   recentOrders: Array<{
     id: string; dealer_name: string; status: string;
@@ -209,7 +209,7 @@ function DealersTable({ dealers }: { dealers: BayiData['dealers'] }) {
             const st = statusLabel(d.status || "aktif");
             return (
               <tr key={d.id} className="border-b border-slate-100 hover:bg-slate-50">
-                <td className="px-4 py-3 font-medium">{d.name}</td>
+                <td className="px-4 py-3 font-medium">{d.name || d.company_name || "—"}</td>
                 <td className="px-4 py-3 text-slate-500">{[d.district, d.city].filter(Boolean).join(", ") || "—"}</td>
                 <td className="px-4 py-3 text-slate-500">{d.phone || "—"}</td>
                 <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${st.color}`}>{st.text}</span></td>
@@ -376,7 +376,7 @@ function CollectionsTable({ items }: { items: BayiData['collections'] }) {
         <tbody>
           {items.map(d => (
             <tr key={d.id} className="border-b border-slate-100 hover:bg-slate-50">
-              <td className="px-4 py-3 font-medium">{d.name}</td>
+              <td className="px-4 py-3 font-medium">{d.name || "—"}</td>
               <td className="px-4 py-3 text-right font-bold text-orange-600">{formatPrice(d.balance)} TL</td>
             </tr>
           ))}

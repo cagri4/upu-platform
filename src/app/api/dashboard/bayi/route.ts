@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     ] = await Promise.all([
       // Dealers
       supabase.from("bayi_dealers")
-        .select("id, name, city, district, phone, status, balance, created_at")
+        .select("id, name, company_name, city, district, phone, status, balance, created_at, contact_name")
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false })
         .limit(20),
@@ -91,9 +91,9 @@ export async function GET(req: NextRequest) {
     if (dealerIds.length > 0) {
       const { data: dealerNames } = await supabase
         .from("bayi_dealers")
-        .select("id, name")
+        .select("id, name, company_name")
         .in("id", dealerIds);
-      for (const d of dealerNames || []) dealerNameMap[d.id] = d.name;
+      for (const d of dealerNames || []) dealerNameMap[d.id] = d.name || d.company_name || "?";
     }
 
     const recentOrders = (recentOrdersRes.data || []).map(o => ({
@@ -101,9 +101,15 @@ export async function GET(req: NextRequest) {
       dealer_name: dealerNameMap[o.dealer_id] || "—",
     }));
 
+    // Normalize dealer names (use company_name as fallback)
+    const dealers = (dealersRes.data || []).map(d => ({
+      ...d,
+      name: d.name || d.company_name || "—",
+    }));
+
     return NextResponse.json({
       summary: {
-        totalDealers: (dealersRes.data || []).length,
+        totalDealers: dealers.length,
         totalOrders: allOrders.length,
         pendingOrders: pendingOrders.length,
         completedOrders: completedOrders.length,
@@ -111,7 +117,7 @@ export async function GET(req: NextRequest) {
         criticalStockCount: (criticalStockRes.data || []).length,
         totalDebt: (collectionsRes.data || []).reduce((sum, d) => sum + (d.balance || 0), 0),
       },
-      dealers: dealersRes.data || [],
+      dealers,
       recentOrders,
       criticalStock: criticalStockRes.data || [],
       collections: collectionsRes.data || [],
