@@ -38,6 +38,69 @@ const EMPLOYEE_GROUPS: Record<string, { label: string; employees: string[]; comm
   },
 };
 
+// ── Helper: create employee with permissions ────────────────────────
+
+async function createEmployeeWithPermissions(
+  ctx: WaContext,
+  sessionData: Record<string, unknown>,
+  permissions: Record<string, unknown>,
+): Promise<void> {
+  const supabase = getServiceClient();
+  const { randomBytes } = await import("crypto");
+  const code = randomBytes(3).toString("hex").toUpperCase();
+
+  const { data: authUser, error: authErr } = await supabase.auth.admin.createUser({
+    email: `emp_${Date.now()}_${randomBytes(4).toString("hex")}@placeholder.upudev.nl`,
+    email_confirm: true,
+    user_metadata: { name: sessionData.name },
+  });
+
+  if (authErr || !authUser.user) {
+    await endSession(ctx.userId);
+    await sendButtons(ctx.phone, "❌ Çalışan oluşturma hatası.", [{ id: "cmd:menu", title: "Ana Menü" }]);
+    return;
+  }
+
+  await supabase.from("profiles").insert({
+    id: authUser.user.id,
+    tenant_id: ctx.tenantId,
+    display_name: sessionData.name as string,
+    role: "employee",
+    permissions,
+    invited_by: ctx.userId,
+    metadata: { position: sessionData.position },
+  });
+
+  await supabase.from("invite_codes").insert({
+    tenant_id: ctx.tenantId,
+    user_id: authUser.user.id,
+    code,
+    status: "pending",
+  });
+
+  await supabase.from("subscriptions").insert({
+    tenant_id: ctx.tenantId,
+    user_id: authUser.user.id,
+    plan: "trial",
+    status: "active",
+  });
+
+  await endSession(ctx.userId);
+
+  await sendButtons(ctx.phone,
+    `✅ Çalışan oluşturuldu!\n\n` +
+    `👤 ${sessionData.name}\n` +
+    `💼 ${sessionData.position}\n` +
+    `🔑 Yetki: ${permissions.groupLabel}\n\n` +
+    `📋 Kayıt Kodu: *${code}*\n\n` +
+    `Bu kodu çalışana gönderin. WhatsApp'tan bota "Kayıt Kodu: ${code}" yazarak sisteme giriş yapacak.`,
+    [
+      { id: "cmd:calisanyonet", title: "👥 Çalışanlar" },
+      { id: "cmd:menu", title: "Ana Menü" },
+    ],
+  );
+}
+
 // ── /calisanekle — Yeni çalışan ekle ────────────────────────────────
 
 export async function handleCalisanEkle(ctx: WaContext): Promise<void> {
@@ -98,69 +161,101 @@ export async function handleCalisanEkleCallback(ctx: WaContext, data: string): P
     if (!sess) { await endSession(ctx.userId); return; }
     const d = sess.data as Record<string, unknown>;
 
-    // Create invite code
-    const { randomBytes } = await import("crypto");
-    const code = randomBytes(3).toString("hex").toUpperCase();
+    // Accumulate selected groups
+    const selectedGroups = (d.selectedGroups as string[] || []);
+    selectedGroups.push(permGroup);
+    const selectedLabels = selectedGroups.map(g => EMPLOYEE_GROUPS[g]?.label || g);
 
-    const permissions = {
-      employees: group.employees,
-      commands: group.commands,
-      group: permGroup,
-      groupLabel: group.label,
-    };
+    // If "tam" selected, skip asking for more
+    if (permGroup !== "tam") {
+      // Save and ask if they want more
+      await updateSession(ctx.userId, "permission_select", { selectedGroups });
 
-    // Create auth user + profile + invite code
-    const { data: authUser, error: authErr } = await supabase.auth.admin.createUser({
-      email: `emp_${Date.now()}_${randomBytes(4).toString("hex")}@placeholder.upudev.nl`,
-      email_confirm: true,
-      user_metadata: { name: d.name },
-    });
+      // Build remaining options (exclude already selected)
+      const remainingRows = Object.entries(EMPLOYEE_GROUPS)
+        .filter(([key]) => key !== "tam" && !selectedGroups.includes(key))
+        .map(([key, g]) => ({
+          id: `calisanekle:perm:${key}`,
+          title: `${key === "satis" ? "💰" : key === "finans" ? "💳" : key === "depo" ? "📦" : "🏷"} ${g.label}`,
+          description: g.employees.map(e => e).join(", ").substring(0, 72),
+        }));
 
-    if (authErr || !authUser.user) {
-      await endSession(ctx.userId);
-      await sendButtons(ctx.phone, "❌ Çalışan oluşturma hatası.", [{ id: "cmd:menu", title: "Ana Menü" }]);
-      return;
+      if (remainingRows.length > 0) {
+        // Ask to add more or finalize
+        await sendButtons(ctx.phone,
+          `✅ Eklenen: ${selectedLabels.join(", ")}\n\nBaşka yetki grubu eklemek ister misiniz?`,
+          [
+            { id: "calisanekle:perm_more:yes", title: "➕ Ekle" },
+            { id: "calisanekle:perm_more:no", title: "✅ Yeterli, Oluştur" },
+          ],
+        );
+        return;
+      }
     }
 
-    await supabase.from("profiles").insert({
-      id: authUser.user.id,
-      tenant_id: ctx.tenantId,
-      display_name: d.name as string,
-      role: "employee",
-      permissions,
-      invited_by: ctx.userId,
-      metadata: { position: d.position },
-    });
+    // Finalize — merge all selected groups (or "tam" for everything)
+    const finalGroups = permGroup === "tam" ? ["tam"] : selectedGroups;
+    const allEmployees = [...new Set(finalGroups.flatMap(g => EMPLOYEE_GROUPS[g]?.employees || []))];
+    const allCommands = [...new Set(finalGroups.flatMap(g => EMPLOYEE_GROUPS[g]?.commands || []))];
+    const groupLabels = finalGroups.map(g => EMPLOYEE_GROUPS[g]?.label || g);
 
-    await supabase.from("invite_codes").insert({
-      tenant_id: ctx.tenantId,
-      user_id: authUser.user.id,
-      code,
-      status: "pending",
-    });
+    const permissions = {
+      employees: allEmployees,
+      commands: allCommands,
+      groups: finalGroups,
+      groupLabel: groupLabels.join(" + "),
+    };
 
-    await supabase.from("subscriptions").insert({
-      tenant_id: ctx.tenantId,
-      user_id: authUser.user.id,
-      plan: "trial",
-      status: "active",
-    });
-
-    await endSession(ctx.userId);
-
-    await sendButtons(ctx.phone,
-      `✅ Çalışan oluşturuldu!\n\n` +
-      `👤 ${d.name}\n` +
-      `💼 ${d.position}\n` +
-      `🔑 Yetki: ${group.label}\n\n` +
-      `📋 Kayıt Kodu: *${code}*\n\n` +
-      `Bu kodu çalışana gönderin. WhatsApp'tan bota "Kayıt Kodu: ${code}" yazarak sisteme giriş yapacak.`,
-      [
-        { id: "cmd:calisanyonet", title: "👥 Çalışanlar" },
-        { id: "cmd:menu", title: "Ana Menü" },
-      ],
-    );
+    await createEmployeeWithPermissions(ctx, d, permissions);
     return;
+  }
+
+  if (parts[0] === "perm_more") {
+    if (parts[1] === "yes") {
+      // Show remaining groups
+      const supabase = getServiceClient();
+      const { data: sess } = await supabase
+        .from("command_sessions").select("data").eq("user_id", ctx.userId).single();
+      const d = (sess?.data || {}) as Record<string, unknown>;
+      const selectedGroups = (d.selectedGroups as string[]) || [];
+
+      const remainingRows = Object.entries(EMPLOYEE_GROUPS)
+        .filter(([key]) => key !== "tam" && !selectedGroups.includes(key))
+        .map(([key, g]) => ({
+          id: `calisanekle:perm:${key}`,
+          title: `${key === "satis" ? "💰" : key === "finans" ? "💳" : key === "depo" ? "📦" : "🏷"} ${g.label}`,
+          description: g.employees.map(e => e).join(", ").substring(0, 72),
+        }));
+
+      if (remainingRows.length > 0) {
+        await sendList(ctx.phone, "Eklemek istediğiniz grubu seçin:", "Yetki Seç", [
+          { title: "Kalan Gruplar", rows: remainingRows },
+        ]);
+      }
+      return;
+    }
+    if (parts[1] === "no") {
+      // Finalize with current selections
+      const supabase = getServiceClient();
+      const { data: sess } = await supabase
+        .from("command_sessions").select("data").eq("user_id", ctx.userId).single();
+      if (!sess) { await endSession(ctx.userId); return; }
+      const d = sess.data as Record<string, unknown>;
+      const finalGroups = (d.selectedGroups as string[]) || [];
+      const allEmployees = [...new Set(finalGroups.flatMap(g => EMPLOYEE_GROUPS[g]?.employees || []))];
+      const allCommands = [...new Set(finalGroups.flatMap(g => EMPLOYEE_GROUPS[g]?.commands || []))];
+      const groupLabels = finalGroups.map(g => EMPLOYEE_GROUPS[g]?.label || g);
+
+      const permissions = {
+        employees: allEmployees,
+        commands: allCommands,
+        groups: finalGroups,
+        groupLabel: groupLabels.join(" + "),
+      };
+
+      await createEmployeeWithPermissions(ctx, d, permissions);
+      return;
+    }
   }
 
   if (parts[0] === "sil" && parts[1]) {
