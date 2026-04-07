@@ -10,6 +10,7 @@ import {
   Truck, CreditCard, BarChart3,
 } from 'lucide-react';
 import BayiDashboardContent from './bayi-content';
+import DealerDashboardContent from './dealer-content';
 
 interface DashboardMetrics {
   totalUsers: number;
@@ -85,6 +86,7 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [tenantKey, setTenantKey] = useState('emlak');
   const [userId, setUserId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     const hostname = window.location.host;
@@ -92,7 +94,14 @@ export default function DashboardPage() {
     if (tenant) setTenantKey(tenant.key);
 
     const storedUserId = localStorage.getItem('upu_user_id');
-    if (storedUserId) setUserId(storedUserId);
+    if (storedUserId) {
+      setUserId(storedUserId);
+      // Fetch user role
+      fetch(`/api/auth/user-role?userId=${storedUserId}`)
+        .then(r => r.json())
+        .then(d => { if (d.role) setUserRole(d.role); })
+        .catch(() => {});
+    }
 
     fetch('/api/dashboard/metrics')
       .then(res => res.json())
@@ -102,7 +111,19 @@ export default function DashboardPage() {
 
   const tenant = getTenantByKey(tenantKey);
 
-  // Bayi tenant gets its own rich dashboard
+  // Dealer gets catalog/order dashboard
+  if (tenantKey === 'bayi' && userId && userRole === 'dealer') {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 mb-6">
+          {tenant?.icon} Bayi Paneli
+        </h1>
+        <DealerDashboardContent userId={userId} />
+      </div>
+    );
+  }
+
+  // Bayi admin gets full dashboard
   if (tenantKey === 'bayi' && userId) {
     return (
       <div>
