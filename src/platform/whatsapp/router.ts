@@ -1083,9 +1083,13 @@ async function handleDegistir(ctx: WaContext): Promise<void> {
     return;
   }
 
+  const currentTenantName = Object.values(tenantMap).find(t => t.saas_type === ctx.tenantKey)?.name || ctx.tenantKey;
   let text = "🔄 *Değiştir*\n\n";
-  text += `Mevcut: *${tenantMap[profiles.find(p => p.role === ctx.role)?.tenant_id || ""]?.name || ctx.tenantKey}*`;
-  if (currentViewRole) text += ` (${currentViewRole} görünümü)`;
+  text += `Mevcut: *${currentTenantName}*`;
+  if (currentViewRole) {
+    const roleLabels: Record<string, string> = { dealer: "Bayi", employee: "Çalışan", admin: "Admin" };
+    text += ` (${roleLabels[currentViewRole] || currentViewRole} görünümü)`;
+  }
   text += "\n\nNe yapmak istersiniz?";
 
   await sendList(ctx.phone, text, "Seçin", [{ title: "Seçenekler", rows }]);
