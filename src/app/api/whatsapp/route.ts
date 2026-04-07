@@ -263,28 +263,43 @@ export async function POST(req: NextRequest) {
           `Şimdi sizi tanıyalım — birkaç soru soracağım.`
         );
 
-        // Start onboarding if available
+        // Start role-specific onboarding
         const tenantKey = tenantInfo?.saas_type || "bayi";
-        const onbFlow = getOnboardingFlow(tenantKey);
-        if (onbFlow) {
-          await initOnboarding(authUser.user.id, inviteLink.tenant_id, tenantKey);
-          const state = await getOnboardingState(authUser.user.id);
-          if (state) {
-            const onbCtx: WaContext = {
-              phone, userId: authUser.user.id, tenantId: inviteLink.tenant_id,
-              tenantKey, userName: name || phone, locale: "tr",
-              messageId: "", text: "", interactiveId: "",
-              role: (inviteLink.role as WaContext["role"]) || "dealer",
-              permissions: (inviteLink.permissions as Record<string, unknown>) || {},
-              dealerId: null,
-            };
-            await sendOnboardingStep(onbCtx, state);
-          }
+        const dealerRole = (inviteLink.role as string) || "dealer";
+
+        if (dealerRole === "dealer") {
+          // Dealer onboarding — collect dealer info
+          const { startDealerOnboarding } = await import("@/tenants/bayi/commands/dealer-onboarding");
+          const onbCtx: WaContext = {
+            phone, userId: authUser.user.id, tenantId: inviteLink.tenant_id,
+            tenantKey, userName: name || phone, locale: "tr",
+            messageId: "", text: "", interactiveId: "",
+            role: "dealer", permissions: {}, dealerId: null,
+          };
+          await startDealerOnboarding(onbCtx);
         } else {
-          const { sendButtons: sendBtns } = await import("@/platform/whatsapp/send");
-          await sendBtns(phone, "Başlamak için Ana Menü'ye tıklayın:", [
-            { id: "cmd:menu", title: "📋 Ana Menü" },
-          ]);
+          // Admin/employee onboarding — use standard flow
+          const onbFlow = getOnboardingFlow(tenantKey);
+          if (onbFlow) {
+            await initOnboarding(authUser.user.id, inviteLink.tenant_id, tenantKey);
+            const state = await getOnboardingState(authUser.user.id);
+            if (state) {
+              const onbCtx: WaContext = {
+                phone, userId: authUser.user.id, tenantId: inviteLink.tenant_id,
+                tenantKey, userName: name || phone, locale: "tr",
+                messageId: "", text: "", interactiveId: "",
+                role: (dealerRole as WaContext["role"]),
+                permissions: (inviteLink.permissions as Record<string, unknown>) || {},
+                dealerId: null,
+              };
+              await sendOnboardingStep(onbCtx, state);
+            }
+          } else {
+            const { sendButtons: sendBtns } = await import("@/platform/whatsapp/send");
+            await sendBtns(phone, "Başlamak için Ana Menü'ye tıklayın:", [
+              { id: "cmd:menu", title: "📋 Ana Menü" },
+            ]);
+          }
         }
 
         logEvent({ eventType: "signup", eventName: "multi_invite_used", userId: authUser.user.id, tenantId: inviteLink.tenant_id, phone, metadata: { code: linkCode, role: inviteLink.role } });

@@ -57,6 +57,9 @@ import {
   handleCalisanYonet, handleTalimat, handleTalimatCallback, handleTalimatStep,
 } from "./calisan";
 
+// Dealer onboarding
+import { handleDealerOnboardStep, handleDealerOnboardCallback } from "./dealer-onboarding";
+
 // Bildirim (interactive notifications)
 import {
   handleKampanyaBildir, handleKampanyaBildirCallback,
@@ -146,6 +149,7 @@ export const bayiCommands: TenantCommandRegistry = {
     calisanekle: handleCalisanEkleStep,
     talimat: handleTalimatStep,
     duyuru: handleDuyuruStep,
+    dealer_onboard: handleDealerOnboardStep,
   },
   callbackPrefixes: {
     "siparis_bayi:": handleSiparisBayiCallback,
@@ -156,6 +160,7 @@ export const bayiCommands: TenantCommandRegistry = {
     "talimat_kisi:": handleTalimatCallback,
     "kmp_bildir:": handleKampanyaBildirCallback,
     "tahsilat_gonder:": handleTahsilatBildirCallback,
+    "donboard:": handleDealerOnboardCallback,
   },
   aliases: {
     "sipariş": "siparisler",
