@@ -419,7 +419,7 @@ export async function POST(req: NextRequest) {
     let tenantKey = "emlak";
     const { data: activeSession } = await supabase
       .from("saas_active_session")
-      .select("active_saas_key")
+      .select("active_saas_key, view_as_role")
       .eq("phone", phone)
       .maybeSingle();
 
@@ -448,7 +448,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Build context
+    // Build context — use view_as_role if set (for admin testing dealer/employee view)
+    const actualRole = (user.role as WaContext["role"]) || "admin";
+    const effectiveRole = activeSession?.view_as_role
+      ? (activeSession.view_as_role as WaContext["role"])
+      : actualRole;
+
     const ctx: WaContext = {
       phone,
       userId: user.id,
@@ -459,7 +464,7 @@ export async function POST(req: NextRequest) {
       messageId,
       text,
       interactiveId,
-      role: (user.role as WaContext["role"]) || "admin",
+      role: effectiveRole,
       permissions: (user.permissions as Record<string, unknown>) || {},
       dealerId: user.dealer_id || null,
     };

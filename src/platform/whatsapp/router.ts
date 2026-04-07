@@ -62,6 +62,45 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       return;
     }
 
+    // Degistir callbacks — SaaS switch + role switch
+    if (ctx.interactiveId.startsWith("degistir_saas:")) {
+      const switchedKey = ctx.interactiveId.replace("degistir_saas:", "");
+      const supabase = getServiceClient();
+      await supabase.from("saas_active_session").upsert({
+        phone: ctx.phone, active_saas_key: switchedKey, view_as_role: null,
+        updated_at: new Date().toISOString(),
+      });
+      const switchedTenant = getTenantByKey(switchedKey);
+      const switchedRegistry = REGISTRIES[switchedKey];
+      if (switchedTenant && switchedRegistry) {
+        await sendText(ctx.phone, `✅ *${switchedTenant.name}* sistemine geçildi.`);
+        await showMenu({ ...ctx, tenantKey: switchedKey, role: ctx.role }, switchedTenant, switchedRegistry);
+      }
+      return;
+    }
+    if (ctx.interactiveId.startsWith("degistir_role:")) {
+      const newRole = ctx.interactiveId.replace("degistir_role:", "");
+      const supabase = getServiceClient();
+      await supabase.from("saas_active_session").upsert({
+        phone: ctx.phone, active_saas_key: ctx.tenantKey,
+        view_as_role: newRole === "reset" ? null : newRole,
+        updated_at: new Date().toISOString(),
+      });
+      if (newRole === "reset") {
+        await sendText(ctx.phone, `✅ Kendi görünümünüze döndünüz.`);
+      } else {
+        const roleLabels: Record<string, string> = { dealer: "Bayi", employee: "Çalışan", admin: "Admin" };
+        await sendText(ctx.phone, `✅ ${roleLabels[newRole] || newRole} görünümüne geçildi.`);
+      }
+      // Refresh menu with new role view
+      const viewRole = newRole === "reset" ? ctx.role : newRole as WaContext["role"];
+      if (tenant) {
+        const reg = REGISTRIES[ctx.tenantKey];
+        if (reg) await showMenu({ ...ctx, role: viewRole }, tenant, reg);
+      }
+      return;
+    }
+
     // Admin panel callbacks
     if (ctx.interactiveId.startsWith("admin:")) {
       const adminUser = await isAdmin(ctx);
@@ -298,6 +337,10 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
   }
   if (firstWord === "webpanel" || firstWord === "panel" || firstWord === "dashboard") {
     await handleWebpanelShared(ctx, tenant);
+    return;
+  }
+  if (firstWord === "degistir" || firstWord === "değiştir" || firstWord === "switch") {
+    await handleDegistir(ctx);
     return;
   }
 
@@ -955,4 +998,95 @@ async function finalizeDraftEdit(ctx: WaContext, proposalId: string, newText: st
       { id: `agent_no:${proposalId}`, title: "❌ İptal" },
     ],
   );
+}
+
+// ── /degistir — SaaS + role switch ─────────────────────────────────────
+
+async function handleDegistir(ctx: WaContext): Promise<void> {
+  const supabase = getServiceClient();
+
+  // Get all SaaS profiles for this phone
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, tenant_id, display_name, role")
+    .eq("whatsapp_phone", ctx.phone);
+
+  if (!profiles?.length) {
+    await sendButtons(ctx.phone, "Kayıtlı hesap bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
+    return;
+  }
+
+  // Get tenant names
+  const tenantIds = [...new Set(profiles.map(p => p.tenant_id).filter(Boolean))];
+  const { data: tenants } = await supabase
+    .from("tenants")
+    .select("id, name, saas_type")
+    .in("id", tenantIds);
+
+  const tenantMap: Record<string, { name: string; saas_type: string }> = {};
+  for (const t of tenants || []) tenantMap[t.id] = { name: t.name, saas_type: t.saas_type };
+
+  // Check current view_as_role
+  const { data: session } = await supabase
+    .from("saas_active_session")
+    .select("view_as_role")
+    .eq("phone", ctx.phone)
+    .maybeSingle();
+
+  const currentViewRole = session?.view_as_role;
+
+  const rows: Array<{ id: string; title: string; description: string }> = [];
+
+  // SaaS switch options (if multiple SaaS)
+  const uniqueSaas = [...new Set(Object.values(tenantMap).map(t => t.saas_type))];
+  if (uniqueSaas.length > 1) {
+    for (const saasKey of uniqueSaas) {
+      const t = Object.values(tenantMap).find(tm => tm.saas_type === saasKey);
+      if (t && saasKey !== ctx.tenantKey) {
+        rows.push({
+          id: `degistir_saas:${saasKey}`,
+          title: `🔄 ${t.name}`.substring(0, 24),
+          description: `${saasKey} sistemine geç`,
+        });
+      }
+    }
+  }
+
+  // Role switch options (bayi tenant + admin role)
+  if (ctx.tenantKey === "bayi" && (ctx.role === "admin" || ctx.role === "user")) {
+    if (currentViewRole === "dealer") {
+      rows.push({
+        id: "degistir_role:reset",
+        title: "👔 Admin Görünümü",
+        description: "Kendi menünüze dönün",
+      });
+    } else {
+      rows.push({
+        id: "degistir_role:dealer",
+        title: "🏪 Bayi Görünümü",
+        description: "Bayinin gördüğü menüyü görün",
+      });
+    }
+    if (currentViewRole !== "employee") {
+      rows.push({
+        id: "degistir_role:employee",
+        title: "👤 Çalışan Görünümü",
+        description: "Çalışanın gördüğü menüyü görün",
+      });
+    }
+  }
+
+  if (rows.length === 0) {
+    await sendButtons(ctx.phone, "Değiştirilecek bir şey yok — tek SaaS ve tek rol kullanıyorsunuz.", [
+      { id: "cmd:menu", title: "Ana Menü" },
+    ]);
+    return;
+  }
+
+  let text = "🔄 *Değiştir*\n\n";
+  text += `Mevcut: *${tenantMap[profiles.find(p => p.role === ctx.role)?.tenant_id || ""]?.name || ctx.tenantKey}*`;
+  if (currentViewRole) text += ` (${currentViewRole} görünümü)`;
+  text += "\n\nNe yapmak istersiniz?";
+
+  await sendList(ctx.phone, text, "Seçin", [{ title: "Seçenekler", rows }]);
 }
