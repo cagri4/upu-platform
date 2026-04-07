@@ -469,6 +469,20 @@ export async function POST(req: NextRequest) {
       dealerId: user.dealer_id || null,
     };
 
+    // ── Check if dealer needs onboarding (dealer_id is null) ──
+    if (actualRole === "dealer" && !user.dealer_id && tenantKey === "bayi") {
+      // Check if dealer onboarding session is active
+      const { getSession: getDealerSession } = await import("@/platform/whatsapp/session");
+      const dealerSess = await getDealerSession(user.id);
+      if (!dealerSess || dealerSess.command !== "dealer_onboard") {
+        // Start dealer onboarding
+        const { startDealerOnboarding } = await import("@/tenants/bayi/commands/dealer-onboarding");
+        await startDealerOnboarding(ctx);
+        return NextResponse.json({ status: "ok" });
+      }
+      // If session active, fall through to step handler in routeCommand
+    }
+
     // ── Check onboarding state — intercept if not completed ──
     const onbState = await getOnboardingState(user.id);
     if (onbState && !onbState.completed_at) {
