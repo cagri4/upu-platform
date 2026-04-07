@@ -152,6 +152,10 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         await showExtensionSetup(ctx);
         return;
       }
+      if (cmd === "degistir") {
+        await handleDegistir(ctx);
+        return;
+      }
       const handler = registry.commands[cmd];
       if (handler) {
         const start = Date.now();
