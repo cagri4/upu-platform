@@ -51,6 +51,12 @@ import {
   handleDealerMesajStep,
 } from "./dealer";
 
+// Calisan management
+import {
+  handleCalisanEkle, handleCalisanEkleStep, handleCalisanEkleCallback,
+  handleCalisanYonet, handleTalimat, handleTalimatCallback, handleTalimatStep,
+} from "./calisan";
+
 const ph = createPlaceholderHandler("bayi");
 
 export const bayiCommands: TenantCommandRegistry = {
@@ -106,8 +112,10 @@ export const bayiCommands: TenantCommandRegistry = {
     yeniurun: handleYeniUrun,
     fiyatguncelle: handleFiyatGuncelle,
 
-    // ── Ozel ─────────────────────────────────────────
-    kullaniciekle: ph("kullaniciekle", "Yonetici", "Kullanici ekle"),
+    // ── Ekip Yönetimi ─────────────────────────────────
+    calisanekle: handleCalisanEkle,
+    calisanyonet: handleCalisanYonet,
+    talimat: handleTalimat,
 
     // ── Dealer commands ─────────────────────────────
     siparisver: handleDealerSiparisVer,
@@ -123,12 +131,16 @@ export const bayiCommands: TenantCommandRegistry = {
   stepHandlers: {
     siparisolustur: handleSiparisStep,
     dealer_mesaj: handleDealerMesajStep,
+    calisanekle: handleCalisanEkleStep,
+    talimat: handleTalimatStep,
   },
   callbackPrefixes: {
     "siparis_bayi:": handleSiparisBayiCallback,
     "siparis_urun:": handleSiparisUrunCallback,
     "siparis_devam:": handleSiparisDevamCallback,
     "siparis_onay:": handleSiparisOnayCallback,
+    "calisanekle:": handleCalisanEkleCallback,
+    "talimat_kisi:": handleTalimatCallback,
   },
   aliases: {
     "sipariş": "siparisler",

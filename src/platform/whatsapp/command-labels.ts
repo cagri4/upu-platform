@@ -83,6 +83,9 @@ export const COMMAND_LABELS: Record<string, string> = {
   faturalarim: "Faturalarım",
   odemelerim: "Ödeme geçmişim",
   fiyatlar: "Fiyat listesi",
+  calisanekle: "Çalışan ekle",
+  calisanyonet: "Çalışanları yönet",
+  talimat: "Talimat gönder",
   aktifkampanyalar: "Aktif kampanyalar",
   mesajgonder: "Firmaya mesaj gönder",
 
