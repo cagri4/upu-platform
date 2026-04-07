@@ -75,6 +75,17 @@ export const COMMAND_LABELS: Record<string, string> = {
   yeniurun: "Yeni ürün ekle",
   fiyatguncelle: "Fiyat güncelle",
 
+  // ── Bayi Dealer ──
+  siparisver: "Sipariş ver",
+  siparislerim: "Siparişlerim",
+  tekrarsiparis: "Son siparişi tekrarla",
+  bakiyem: "Bakiye durumum",
+  faturalarim: "Faturalarım",
+  odemelerim: "Ödeme geçmişim",
+  fiyatlar: "Fiyat listesi",
+  aktifkampanyalar: "Aktif kampanyalar",
+  mesajgonder: "Firmaya mesaj gönder",
+
   // ── Muhasebe ──
   fatura_yukle: "Fatura yükle",
   son_faturalar: "Son faturalar",

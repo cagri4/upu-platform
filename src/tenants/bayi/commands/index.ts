@@ -43,6 +43,14 @@ import { handleTeslimatlar, handleRota, handleKargoTakip } from "./lojistik";
 // Urun
 import { handleUrunler, handleFiyatListe, handleYeniUrun, handleFiyatGuncelle } from "./urunler";
 
+// Dealer-facing commands
+import {
+  handleDealerSiparisVer, handleDealerSiparislerim, handleDealerTekrarSiparis,
+  handleDealerBakiyem, handleDealerFaturalarim, handleDealerOdemelerim,
+  handleDealerUrunler, handleDealerKampanyalar, handleDealerMesajGonder,
+  handleDealerMesajStep,
+} from "./dealer";
+
 const ph = createPlaceholderHandler("bayi");
 
 export const bayiCommands: TenantCommandRegistry = {
@@ -100,9 +108,21 @@ export const bayiCommands: TenantCommandRegistry = {
 
     // ── Ozel ─────────────────────────────────────────
     kullaniciekle: ph("kullaniciekle", "Yonetici", "Kullanici ekle"),
+
+    // ── Dealer commands ─────────────────────────────
+    siparisver: handleDealerSiparisVer,
+    siparislerim: handleDealerSiparislerim,
+    tekrarsiparis: handleDealerTekrarSiparis,
+    bakiyem: handleDealerBakiyem,
+    faturalarim: handleDealerFaturalarim,
+    odemelerim: handleDealerOdemelerim,
+    fiyatlar: handleFiyatListe,
+    aktifkampanyalar: handleDealerKampanyalar,
+    mesajgonder: handleDealerMesajGonder,
   },
   stepHandlers: {
     siparisolustur: handleSiparisStep,
+    dealer_mesaj: handleDealerMesajStep,
   },
   callbackPrefixes: {
     "siparis_bayi:": handleSiparisBayiCallback,
