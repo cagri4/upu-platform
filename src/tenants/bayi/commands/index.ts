@@ -57,6 +57,9 @@ import {
   handleCalisanYonet, handleTalimat, handleTalimatCallback, handleTalimatStep,
 } from "./calisan";
 
+// Bayi davet
+import { handleBayiDavet } from "./bayi-davet";
+
 // Dealer onboarding
 import { handleDealerOnboardStep, handleDealerOnboardCallback } from "./dealer-onboarding";
 
@@ -126,6 +129,9 @@ export const bayiCommands: TenantCommandRegistry = {
     calisanekle: handleCalisanEkle,
     calisanyonet: handleCalisanYonet,
     talimat: handleTalimat,
+
+    // ── Bayi Davet ───────────────────────────────────
+    bayidavet: handleBayiDavet,
 
     // ── Bildirim / İletişim ─────────────────────────
     kampanyabildir: handleKampanyaBildir,

@@ -156,6 +156,12 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         await handleDegistir(ctx);
         return;
       }
+      // These are registry commands triggered from system menu
+      if (cmd === "calisanekle" || cmd === "bayidavet" || cmd === "calisanyonet") {
+        const reg = REGISTRIES[ctx.tenantKey];
+        const h = reg?.commands[cmd];
+        if (h) { await h(ctx); return; }
+      }
       const handler = registry.commands[cmd];
       if (handler) {
         const start = Date.now();
@@ -593,6 +599,12 @@ async function showMenu(
 
     const isActualAdmin = actualProfile?.role === "admin" || actualProfile?.role === "user";
     const hasViewMode = !!viewSession?.view_as_role;
+
+    // Admin shortcuts for bayi tenant
+    if (isActualAdmin && ctx.tenantKey === "bayi" && !hasViewMode) {
+      systemRows.push({ id: "cmd:calisanekle", title: "👥 Çalışan Ekle", description: "Yeni çalışan ekle ve yetki ver" });
+      systemRows.push({ id: "cmd:bayidavet", title: "🏪 Bayi Davet Linki", description: "Bayiler için davet linki oluştur" });
+    }
 
     if (isActualAdmin || hasViewMode) {
       systemRows.push({ id: "cmd:degistir", title: "🔄 Değiştir", description: "SaaS veya görünüm değiştir" });
