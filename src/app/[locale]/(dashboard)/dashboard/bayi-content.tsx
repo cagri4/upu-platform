@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Users, Package, AlertTriangle, TrendingUp,
   Truck, CreditCard, ShoppingCart, Clock, BarChart3,
-  TrendingDown, Minus,
+  TrendingDown, Minus, Box,
 } from 'lucide-react';
+import BayiProductsPanel from './bayi-products';
 
 interface InsightData {
   totalCommands: number;
@@ -73,7 +74,7 @@ function statusLabel(s: string): { text: string; color: string } {
 export default function BayiDashboardContent({ userId }: { userId: string }) {
   const [data, setData] = useState<BayiData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dealers' | 'orders' | 'stock' | 'collections' | 'insight'>('dealers');
+  const [activeTab, setActiveTab] = useState<'dealers' | 'orders' | 'stock' | 'collections' | 'products' | 'insight'>('dealers');
   const [insight, setInsight] = useState<InsightData | null>(null);
   const [insightLoading, setInsightLoading] = useState(false);
 
@@ -110,6 +111,7 @@ export default function BayiDashboardContent({ userId }: { userId: string }) {
           { key: 'orders' as const, label: 'Son Siparisler', count: data.recentOrders.length },
           { key: 'stock' as const, label: 'Kritik Stok', count: data.criticalStock.length },
           { key: 'collections' as const, label: 'Tahsilat', count: data.collections.length },
+          { key: 'products' as const, label: 'Urunler', count: 0 },
           { key: 'insight' as const, label: 'Insight', count: 0 },
         ].map(tab => (
           <button
@@ -131,6 +133,7 @@ export default function BayiDashboardContent({ userId }: { userId: string }) {
       {activeTab === 'orders' && <OrdersTable orders={data.recentOrders} />}
       {activeTab === 'stock' && <StockTable items={data.criticalStock} />}
       {activeTab === 'collections' && <CollectionsTable items={data.collections} />}
+      {activeTab === 'products' && <BayiProductsPanel userId={userId} />}
       {activeTab === 'insight' && <InsightPanel userId={userId} data={insight} loading={insightLoading} onLoad={() => {
         if (!insight && !insightLoading) {
           setInsightLoading(true);
