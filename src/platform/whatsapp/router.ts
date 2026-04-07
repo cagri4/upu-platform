@@ -573,8 +573,27 @@ async function showMenu(
     systemRows.push({ id: "cmd:uzanti", title: "🧩 Uzantı Kurulumu", description: "Chrome uzantısı bağlantısı" });
   }
 
-  // Degistir — always available
-  systemRows.push({ id: "cmd:degistir", title: "🔄 Değiştir", description: "SaaS veya görünüm değiştir" });
+  // Degistir — only for actual admins (or when view_as_role is active)
+  {
+    const supabaseCheck = getServiceClient();
+    const { data: actualProfile } = await supabaseCheck
+      .from("profiles")
+      .select("role")
+      .eq("id", ctx.userId)
+      .single();
+    const { data: viewSession } = await supabaseCheck
+      .from("saas_active_session")
+      .select("view_as_role")
+      .eq("phone", ctx.phone)
+      .maybeSingle();
+
+    const isActualAdmin = actualProfile?.role === "admin" || actualProfile?.role === "user";
+    const hasViewMode = !!viewSession?.view_as_role;
+
+    if (isActualAdmin || hasViewMode) {
+      systemRows.push({ id: "cmd:degistir", title: "🔄 Değiştir", description: "SaaS veya görünüm değiştir" });
+    }
+  }
 
   systemRows.push({ id: "cmd:hakkimizda", title: "ℹ️ Hakkımızda", description: "UPU Dev hakkında bilgi" });
 
