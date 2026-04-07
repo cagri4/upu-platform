@@ -171,10 +171,11 @@ async function finalizeDealerOnboarding(ctx: WaContext): Promise<void> {
     .insert({
       tenant_id: ctx.tenantId,
       user_id: ownerId || ctx.userId,
+      company_name: d.company_name as string,
       name: d.company_name as string,
       contact_name: d.contact_name as string,
       phone: ctx.phone,
-      email: d.email || null,
+      email: (d.email as string) || `dealer_${ctx.phone}@placeholder.upudev.nl`,
       tax_no: d.tax_no || null,
       city: d.city || null,
       district: d.district || null,
