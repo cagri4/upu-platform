@@ -77,11 +77,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, action: "updated" });
     } else {
       // Create
+      // Generate code if not provided
+      const code = product.sku || product.code || `P${Date.now().toString(36).toUpperCase()}`;
+
       const { data, error } = await supabase
         .from("bayi_products")
         .insert({
           tenant_id: profile.tenant_id,
           user_id: userId,
+          code,
           name: product.name,
           description: product.description,
           base_price: product.base_price,

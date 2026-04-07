@@ -140,6 +140,7 @@ export async function handleYeniUrunCallback(ctx: WaContext, data: string): Prom
   const { error } = await supabase.from("bayi_products").insert({
     tenant_id: ctx.tenantId,
     user_id: ctx.userId,
+    code: `P${Date.now().toString(36).toUpperCase()}`,
     name: d.name,
     category: d.category || null,
     base_price: d.price,

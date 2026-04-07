@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
       const product: Record<string, unknown> = {
         tenant_id: profile.tenant_id,
         user_id: userId,
+        code: `P${Date.now().toString(36).toUpperCase()}${i}`,
         is_active: true,
         unit: "adet",
         min_order: 1,

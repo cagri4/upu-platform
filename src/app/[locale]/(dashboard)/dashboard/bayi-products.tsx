@@ -70,12 +70,18 @@ export default function BayiProductsPanel({ userId }: { userId: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, product: editing }),
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.ok) {
         setShowForm(false);
         setEditing(emptyProduct);
         fetchProducts();
+      } else {
+        alert("Hata: " + (data.error || "Bilinmeyen hata"));
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      alert("Baglanti hatasi");
+    }
     finally { setSaving(false); }
   }
 
