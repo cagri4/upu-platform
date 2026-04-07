@@ -57,6 +57,13 @@ import {
   handleCalisanYonet, handleTalimat, handleTalimatCallback, handleTalimatStep,
 } from "./calisan";
 
+// Bildirim (interactive notifications)
+import {
+  handleKampanyaBildir, handleKampanyaBildirCallback,
+  handleTahsilatBildir, handleTahsilatBildirCallback,
+  handleDuyuru, handleDuyuruStep,
+} from "./bildirim";
+
 const ph = createPlaceholderHandler("bayi");
 
 export const bayiCommands: TenantCommandRegistry = {
@@ -117,6 +124,11 @@ export const bayiCommands: TenantCommandRegistry = {
     calisanyonet: handleCalisanYonet,
     talimat: handleTalimat,
 
+    // ── Bildirim / İletişim ─────────────────────────
+    kampanyabildir: handleKampanyaBildir,
+    tahsilatbildir: handleTahsilatBildir,
+    duyuru: handleDuyuru,
+
     // ── Dealer commands ─────────────────────────────
     siparisver: handleDealerSiparisVer,
     siparislerim: handleDealerSiparislerim,
@@ -133,6 +145,7 @@ export const bayiCommands: TenantCommandRegistry = {
     dealer_mesaj: handleDealerMesajStep,
     calisanekle: handleCalisanEkleStep,
     talimat: handleTalimatStep,
+    duyuru: handleDuyuruStep,
   },
   callbackPrefixes: {
     "siparis_bayi:": handleSiparisBayiCallback,
@@ -141,6 +154,8 @@ export const bayiCommands: TenantCommandRegistry = {
     "siparis_onay:": handleSiparisOnayCallback,
     "calisanekle:": handleCalisanEkleCallback,
     "talimat_kisi:": handleTalimatCallback,
+    "kmp_bildir:": handleKampanyaBildirCallback,
+    "tahsilat_gonder:": handleTahsilatBildirCallback,
   },
   aliases: {
     "sipariş": "siparisler",
