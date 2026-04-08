@@ -26,14 +26,6 @@ export const emlakOnboardingFlow: OnboardingFlow = {
       question: "Hangi bölgede çalışıyorsunuz?\n\n💡 Örnek: _Kadıköy, İstanbul_ veya _Antalya Merkez_",
     },
     {
-      key: "first_mulk",
-      question: "Harika! Şimdi ilk mülkünüzü ekleyelim mi?\n\nEklemek isterseniz sizi adım adım yönlendireceğim.",
-      buttons: [
-        { id: "onb:evet", title: "Evet, ekleyelim" },
-        { id: "onb:hayir", title: "Sonra eklerim" },
-      ],
-    },
-    {
       key: "briefing",
       question: "Her sabah size günlük brifing göndereyim mi?\n\nBrifing: aktif ilanlarınız, bugünkü görevleriniz ve pazar özeti içerir.",
       buttons: [
@@ -62,19 +54,12 @@ export const emlakOnboardingFlow: OnboardingFlow = {
     if (data.location) msg += `📍 Bölge: ${data.location}\n`;
     msg += `📋 Günlük brifing: ${data.briefing === "evet" ? "Aktif" : "Pasif"}\n`;
     msg += "\n💡 Bilgilerinizi dilediğiniz zaman Sistem Menüsü altından *Profilim* komutu ile düzenleyebilirsiniz.";
+    msg += "\n\n🏠 Şimdi ilk mülkünüzü ekleyelim!";
 
-    // If user chose to add first property, start mulkekle flow directly
-    if (data.first_mulk === "evet") {
-      await sendButtons(ctx.phone, msg + "\n\n🏠 Şimdi ilk mülkünüzü ekleyelim!", [
-        { id: "cmd:mulkekle", title: "🏠 Mülk Ekle" },
-        { id: "cmd:menu", title: "Ana Menü" },
-      ]);
-    } else {
-      await sendButtons(ctx.phone, msg + "\n\nBaşlamak için Ana Menü'ye tıklayın.", [
-        { id: "cmd:mulkekle", title: "🏠 Mülk Ekle" },
-        { id: "cmd:brifing", title: "📋 Brifing" },
-        { id: "cmd:menu", title: "Ana Menü" },
-      ]);
-    }
+    await sendButtons(ctx.phone, msg, [
+      { id: "cmd:mulkekle", title: "🏠 Mülk Ekle" },
+      { id: "cmd:brifing", title: "📋 Brifing" },
+      { id: "cmd:menu", title: "Ana Menü" },
+    ]);
   },
 };
