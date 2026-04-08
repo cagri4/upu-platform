@@ -53,16 +53,25 @@ export async function handleDealerOnboardStep(ctx: WaContext, session: CommandSe
       const supabase = getServiceClient();
       await supabase.from("profiles").update({ display_name: text }).eq("id", ctx.userId);
 
-      await sendList(ctx.phone, "📅 Kuruluş yılı:", "Yıl Seç", [
-        { title: "Kuruluş Yılı", rows: [
-          { id: "donboard:year:2020", title: "2020 ve sonrası" },
-          { id: "donboard:year:2015", title: "2015-2019" },
-          { id: "donboard:year:2010", title: "2010-2014" },
-          { id: "donboard:year:2005", title: "2005-2009" },
-          { id: "donboard:year:2000", title: "2000-2004" },
-          { id: "donboard:year:1990", title: "1990-1999" },
-          { id: "donboard:year:old", title: "1990 öncesi" },
-          { id: "donboard:year:skip", title: "Belirtme" },
+      await sendText(ctx.phone, "📅 Kuruluş yılı:\n\nÖrnek: 2010\n\n(\"geç\" ile atlayın)");
+      return;
+    }
+
+    case "founded_year": {
+      const year = skip ? null : text;
+      await updateSession(ctx.userId, "product_groups", { founded_year: year });
+      await sendList(ctx.phone, "📦 İlgilendiğiniz ürün grupları:", "Ürün Grubu", [
+        { title: "Ürün Grupları", rows: [
+          { id: "donboard:products:boya", title: "Boya & Vernik" },
+          { id: "donboard:products:insaat", title: "İnşaat Malzemesi" },
+          { id: "donboard:products:elektrik", title: "Elektrik & Aydınlatma" },
+          { id: "donboard:products:tesisat", title: "Tesisat & Sıhhi" },
+          { id: "donboard:products:hirdavat", title: "Hırdavat" },
+          { id: "donboard:products:klima", title: "Klima & Isıtma" },
+          { id: "donboard:products:mobilya", title: "Mobilya" },
+          { id: "donboard:products:gida", title: "Gıda" },
+          { id: "donboard:products:diger", title: "Diğer" },
+          { id: "donboard:products:hepsi", title: "Tümü" },
         ]},
       ]);
       return;
@@ -106,26 +115,6 @@ export async function handleDealerOnboardStep(ctx: WaContext, session: CommandSe
 
 export async function handleDealerOnboardCallback(ctx: WaContext, data: string): Promise<void> {
   const parts = data.replace("donboard:", "").split(":");
-
-  if (parts[0] === "year") {
-    const year = parts[1] === "skip" ? null : parts[1];
-    await updateSession(ctx.userId, "product_groups", { founded_year: year });
-    await sendList(ctx.phone, "📦 İlgilendiğiniz ürün grupları:", "Ürün Grubu", [
-      { title: "Ürün Grupları", rows: [
-        { id: "donboard:products:boya", title: "Boya & Vernik" },
-        { id: "donboard:products:insaat", title: "İnşaat Malzemesi" },
-        { id: "donboard:products:elektrik", title: "Elektrik & Aydınlatma" },
-        { id: "donboard:products:tesisat", title: "Tesisat & Sıhhi" },
-        { id: "donboard:products:hirdavat", title: "Hırdavat" },
-        { id: "donboard:products:klima", title: "Klima & Isıtma" },
-        { id: "donboard:products:mobilya", title: "Mobilya" },
-        { id: "donboard:products:gida", title: "Gıda" },
-        { id: "donboard:products:diger", title: "Diğer" },
-        { id: "donboard:products:hepsi", title: "Tümü" },
-      ]},
-    ]);
-    return;
-  }
 
   if (parts[0] === "products") {
     const productGroup = parts[1];
@@ -213,10 +202,8 @@ async function finalizeDealerOnboarding(ctx: WaContext): Promise<void> {
   if (d.city || d.district) summary += `📍 ${[d.district, d.city].filter(Boolean).join(", ")}\n`;
   if (d.email) summary += `📧 ${d.email}\n`;
   if (d.tax_no) summary += `🧾 VKN: ${d.tax_no}\n`;
-  summary += `\n💡 *Şunları deneyin:*\n`;
-  summary += `• "siparisver" — sipariş oluşturun\n`;
-  summary += `• "bakiyem" — bakiye durumunuz\n`;
-  summary += `• "fiyatlar" — güncel fiyat listesi`;
+  summary += `\n💡 Bilgilerinizi dilediğiniz zaman Sistem Menüsü altından *Profilim* komutu ile düzenleyebilirsiniz.\n`;
+  summary += `\nBaşlamak için Ana Menü'ye tıklayın.`;
 
   await sendButtons(ctx.phone, summary, [
     { id: "cmd:menu", title: "📋 Ana Menü" },
