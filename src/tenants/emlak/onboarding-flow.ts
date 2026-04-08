@@ -61,23 +61,18 @@ export const emlakOnboardingFlow: OnboardingFlow = {
     if (data.office_name) msg += `🏢 Ofis: ${data.office_name}\n`;
     if (data.location) msg += `📍 Bölge: ${data.location}\n`;
     msg += `📋 Günlük brifing: ${data.briefing === "evet" ? "Aktif" : "Pasif"}\n`;
-    msg += "\n💡 *Şunları deneyin:*\n";
-    if (data.location) {
-      msg += `• "fiyatsor ${data.location}" — bölgenizin fiyat analizi\n`;
-    } else {
-      msg += `• "fiyatsor" — bölgenizin fiyat analizi\n`;
-    }
-    msg += `• "mulkekle" — ilk mülkünüzü ekleyin\n`;
-    msg += `• "brifing" — günlük özetinizi görün`;
+    msg += "\n💡 Bilgilerinizi dilediğiniz zaman Sistem Menüsü altından *Profilim* komutu ile düzenleyebilirsiniz.";
 
-    // If user chose to add first property, start mulkekle flow
+    // If user chose to add first property, start mulkekle flow directly
     if (data.first_mulk === "evet") {
-      await sendButtons(ctx.phone, msg + "\n\nŞimdi ilk mülkünüzü ekleyelim:", [
-        { id: "cmd:mulkekle", title: "Mülk Ekle" },
+      await sendButtons(ctx.phone, msg + "\n\n🏠 Şimdi ilk mülkünüzü ekleyelim!", [
+        { id: "cmd:mulkekle", title: "🏠 Mülk Ekle" },
         { id: "cmd:menu", title: "Ana Menü" },
       ]);
     } else {
-      await sendButtons(ctx.phone, msg, [
+      await sendButtons(ctx.phone, msg + "\n\nBaşlamak için Ana Menü'ye tıklayın.", [
+        { id: "cmd:mulkekle", title: "🏠 Mülk Ekle" },
+        { id: "cmd:brifing", title: "📋 Brifing" },
         { id: "cmd:menu", title: "Ana Menü" },
       ]);
     }
