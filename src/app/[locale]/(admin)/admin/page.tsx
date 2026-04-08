@@ -290,14 +290,14 @@ function GenelTab({ stats, showInvite, setShowInvite, inviteForm, setInviteForm,
                         <span className="text-xs text-slate-400">WhatsApp Davet Linki:</span>
                         <div className="flex items-center gap-2 mt-1">
                           <a
-                            href={`https://wa.me/${tenant.whatsapp_phone}?text=${encodeURIComponent(`Kayit Kodu: ${lastResult.code} (Bu mesaji gonderin.)`)}`}
+                            href={`https://wa.me/${tenant.whatsapp_phone}?text=${encodeURIComponent(`Merhaba! Sisteme kayit olmak istiyorum. Kayit Kodum: ${lastResult.code}`)}`}
                             target="_blank"
                             className="text-sm text-indigo-400 hover:text-indigo-300 underline break-all"
                           >
                             wa.me link
                           </a>
                           <button
-                            onClick={() => copyToClipboard(`https://wa.me/${tenant.whatsapp_phone}?text=${encodeURIComponent(`Kayit Kodu: ${lastResult.code} (Bu mesaji gonderin.)`)}`)}
+                            onClick={() => copyToClipboard(`https://wa.me/${tenant.whatsapp_phone}?text=${encodeURIComponent(`Merhaba! Sisteme kayit olmak istiyorum. Kayit Kodum: ${lastResult.code}`)}`)}
                             className="text-indigo-400 hover:text-indigo-300"
                           >
                             <Copy className="w-3.5 h-3.5" />
