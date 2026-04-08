@@ -168,6 +168,8 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         try {
           await handler(ctx);
           logCommand(ctx, cmd, true, Date.now() - start);
+          const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+          triggerMissionCheck(ctx.userId, ctx.tenantKey, cmd, ctx.phone).catch(() => {});
         } catch (err) {
           logCommand(ctx, cmd, false, Date.now() - start, err instanceof Error ? err.message : String(err));
           throw err;
@@ -371,6 +373,9 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     try {
       await handler(ctx);
       logCommand(ctx, resolved, true, Date.now() - start);
+      // Gamification: check missions after successful command
+      const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+      triggerMissionCheck(ctx.userId, ctx.tenantKey, resolved, ctx.phone).catch(() => {});
     } catch (err) {
       logCommand(ctx, resolved, false, Date.now() - start, err instanceof Error ? err.message : String(err));
       throw err;
