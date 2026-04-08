@@ -2,6 +2,7 @@ import type { WaContext } from "@/platform/whatsapp/types";
 import { sendButtons } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
+import { getProgressSummary, updateStreak } from "@/platform/gamification/engine";
 
 export async function handleBrifing(ctx: WaContext): Promise<void> {
   try {
@@ -35,6 +36,13 @@ export async function handleBrifing(ctx: WaContext): Promise<void> {
       }
       text += `\nFiyat güncellemesi veya statü değişikliği gerekebilir.`;
     }
+
+    // Gamification progress
+    try {
+      await updateStreak(ctx.userId);
+      const progress = await getProgressSummary(ctx.userId, "emlak");
+      if (progress) text += `\n\n${progress}`;
+    } catch { /* don't break brifing if gamification fails */ }
 
     text += `\n\n📅 ${now.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`;
 
