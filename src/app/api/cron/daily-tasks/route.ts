@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { EMLAK_TASK_RULES } from "@/tenants/emlak/gamification";
+import { BAYI_ADMIN_TASK_RULES } from "@/tenants/bayi/gamification";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export async function GET() {
       // Get task rules based on tenant
       let rules: typeof EMLAK_TASK_RULES = [];
       if (tenantKey === "emlak") rules = EMLAK_TASK_RULES;
-      // TODO: add bayi, otel, muhasebe, market rules
+      else if (tenantKey === "bayi") rules = BAYI_ADMIN_TASK_RULES;
 
       // Generate tasks
       for (const rule of rules) {

@@ -11,6 +11,16 @@ import { getServiceClient } from "@/platform/auth/supabase";
 
 // ── Command → Mission mapping ───────────────────────────────────────
 
+// Import bayi mappings
+let bayiMissionMap: Record<string, Record<string, string>> | null = null;
+async function getBayiMap() {
+  if (!bayiMissionMap) {
+    const { BAYI_MISSION_MAP } = await import("@/tenants/bayi/gamification");
+    bayiMissionMap = BAYI_MISSION_MAP;
+  }
+  return bayiMissionMap;
+}
+
 const COMMAND_MISSION_MAP: Record<string, Record<string, string>> = {
   emlak: {
     // Portföy
@@ -62,10 +72,20 @@ export async function triggerMissionCheck(
     }
 
     // Check mission mapping
-    const tenantMap = COMMAND_MISSION_MAP[tenantKey];
-    if (!tenantMap) return;
+    let missionKey: string | undefined;
 
-    const missionKey = tenantMap[commandName];
+    if (tenantKey === "bayi") {
+      // Bayi has role-specific mappings
+      const bayiMap = await getBayiMap();
+      const supabase2 = getServiceClient();
+      const { data: prof } = await supabase2.from("profiles").select("role").eq("id", userId).single();
+      const role = prof?.role || "admin";
+      missionKey = bayiMap?.[role]?.[commandName];
+    } else {
+      const tenantMap = COMMAND_MISSION_MAP[tenantKey];
+      missionKey = tenantMap?.[commandName];
+    }
+
     if (!missionKey) return;
 
     // Try to complete mission
