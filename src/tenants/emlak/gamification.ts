@@ -210,6 +210,117 @@ export const EMLAK_TASK_RULES: TaskRule[] = [
         }));
     },
   },
+
+  // ── Kullanım bazlı görevler ─────────────────────────────
+
+  {
+    task_type: "mulk_ekle_gunluk",
+    title: "Yeni mülk ekle",
+    emoji: "➕",
+    command: "mulkekle",
+    points: 10,
+    check: async (userId, tenantId) => {
+      const supabase = getServiceClient();
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      // Check if user added any property today
+      const { data } = await supabase
+        .from("emlak_properties")
+        .select("id")
+        .eq("user_id", userId).eq("tenant_id", tenantId)
+        .gte("created_at", todayStart.toISOString())
+        .limit(1);
+      if (data?.length) return []; // Already added today
+      // Check if user has any properties at all
+      const { count } = await supabase
+        .from("emlak_properties")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId).eq("status", "aktif");
+      if ((count || 0) < 3) {
+        return [{ description: "Portföyünüzü güçlendirin — yeni mülk ekleyin (+10 puan)" }];
+      }
+      return [{ description: "Bugün henüz mülk eklemediniz. Portföyünüzü genişletin (+10 puan)" }];
+    },
+  },
+  {
+    task_type: "komut_kesif",
+    title: "Yeni özellik keşfet",
+    emoji: "🔍",
+    command: "",
+    points: 10,
+    check: async (userId, tenantId) => {
+      const supabase = getServiceClient();
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      // Get commands used in last 7 days
+      const { data: recentActivity } = await supabase
+        .from("bot_activity")
+        .select("action")
+        .eq("user_id", userId)
+        .gte("created_at", sevenDaysAgo);
+
+      const usedCommands = new Set((recentActivity || []).map(a => a.action));
+
+      // Commands that should be used but weren't
+      const importantCommands: Array<{ cmd: string; label: string; why: string }> = [
+        { cmd: "fiyatsor", label: "Fiyat sorgusu", why: "Doğru fiyat = hızlı satış" },
+        { cmd: "eslestir", label: "Müşteri eşleştir", why: "Eşleşme = satış fırsatı" },
+        { cmd: "sunum", label: "Sunum gönder", why: "Sunum = profesyonel izlenim" },
+        { cmd: "analiz", label: "Pazar analizi", why: "Piyasayı bilin, doğru fiyatlayın" },
+        { cmd: "trend", label: "Pazar trendi", why: "Trendi takip edin, önde olun" },
+        { cmd: "paylas", label: "Sosyal medya paylaş", why: "Paylaşım = görünürlük" },
+        { cmd: "degerle", label: "Mülk değerleme", why: "Mülkünüzün gerçek değerini bilin" },
+      ];
+
+      const unused = importantCommands.filter(c => !usedCommands.has(c.cmd));
+      if (unused.length === 0) return [];
+
+      // Pick one random unused command
+      const pick = unused[Math.floor(Math.random() * unused.length)];
+      return [{
+        description: `Bu hafta "${pick.label}" kullanmadınız. ${pick.why} (+10 puan)`,
+      }];
+    },
+  },
+  {
+    task_type: "brifing_oku",
+    title: "Brifing oku",
+    emoji: "📋",
+    command: "brifing",
+    points: 5,
+    check: async (userId) => {
+      const supabase = getServiceClient();
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const { data } = await supabase
+        .from("bot_activity")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("action", "brifing")
+        .gte("created_at", todayStart.toISOString())
+        .limit(1);
+      if (data?.length) return []; // Already read today
+      return [{ description: "Günlük brifinginizi okuyun — gününüzü planlayın (+5 puan)" }];
+    },
+  },
+  {
+    task_type: "portfoy_kontrol",
+    title: "Portföy kontrolü",
+    emoji: "📊",
+    command: "portfoyum",
+    points: 5,
+    check: async (userId) => {
+      const supabase = getServiceClient();
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from("bot_activity")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("action", "portfoyum")
+        .gte("created_at", threeDaysAgo)
+        .limit(1);
+      if (data?.length) return []; // Checked recently
+      return [{ description: "Portföyünüzü 3+ gündür kontrol etmediniz. Göz atın (+5 puan)" }];
+    },
+  },
 ];
 
 // ── Seed missions to DB ─────────────────────────────────────────────
