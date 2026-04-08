@@ -27,6 +27,22 @@
     {
       "path": "/api/cron/admin-alerts",
       "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/daily-tasks",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/notifications?slot=morning",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/notifications?slot=midday",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/notifications?slot=evening",
+      "schedule": "0 15 * * *"
     }
   ]
 }
