@@ -1,8 +1,13 @@
 /**
  * Cron: Inactivity Check — Proactive Re-engagement
  *
- * Fires every 15 minutes. Finds users who were recently active but have
- * stopped responding and nudges them about their currently active mission.
+ * Fires every 15 minutes, driven by a Supabase pg_cron job (not Vercel cron).
+ * Vercel Hobby plan rejects sub-daily schedules, so the tick comes from
+ * Supabase and hits this endpoint over HTTP via pg_net. Schedule lives in
+ * supabase/migrations/20260409130000_enable_cron_inactivity.sql.
+ *
+ * Finds users who were recently active but have stopped responding and
+ * nudges them about their currently active mission.
  *
  * This is the "Quest Director push" piece of the gamification engine —
  * the thing that makes the system feel like a coach instead of a dashboard.
