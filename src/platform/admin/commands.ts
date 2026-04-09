@@ -9,10 +9,12 @@ import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import type { WaContext } from "@/platform/whatsapp/types";
 
 // ── Admin phone list (fallback if DB metadata not set) ───────────────────
+// ADMIN_PHONE env var accepts comma-separated phones for multiple admins.
 
-const ADMIN_PHONES = [
-  process.env.ADMIN_PHONE || "905551234567",
-];
+const ADMIN_PHONES = (process.env.ADMIN_PHONE || "905551234567")
+  .split(",")
+  .map((p) => p.trim())
+  .filter(Boolean);
 
 // ── Check if user is platform admin ──────────────────────────────────────
 
