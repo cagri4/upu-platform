@@ -553,6 +553,12 @@ export async function handleMulkDuzenleStep(ctx: WaContext, session: CommandSess
     { id: `mulkdetay:${propertyId}`, title: "📋 Detay Gör" },
     { id: "cmd:menu", title: "Ana Menü" },
   ]);
+
+  // Gamification: mission fires ONLY after real data change, not on flow open
+  try {
+    const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+    await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_bilgi_updated", ctx.phone);
+  } catch { /* don't break main flow */ }
 }
 
 // ── Status change + feedback ─────────────────────────────────────────

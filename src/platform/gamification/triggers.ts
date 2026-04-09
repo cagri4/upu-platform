@@ -132,22 +132,28 @@ async function getBayiMap() {
 
 const COMMAND_MISSION_MAP: Record<string, Record<string, string>> = {
   emlak: {
-    // Portföy — triggered from finalizeProperty/processPortalUrl after actual creation
-    mulk_eklendi: "emlak_ilk_mulk",
-    mulkduzenle: "emlak_mulk_bilgi_tamamla",
+    // Portföy — mulk_eklendi and mulk_bilgi_updated are CUSTOM EVENTS fired
+    // from the success path of the corresponding flow, not on command open.
+    // This way "tamamlandı" only means "user actually did the thing", not
+    // "user opened the screen".
+    mulk_eklendi: "emlak_ilk_mulk",                // fired by finalizeProperty / processPortalUrl
+    mulk_bilgi_updated: "emlak_mulk_bilgi_tamamla", // fired by handleMulkDuzenleStep after successful field update
+    // fotograf is still mapped because photo upload happens in the web panel,
+    // not over WhatsApp — opening the command is the best signal we have.
     fotograf: "emlak_mulk_foto",
     fiyatsor: "emlak_fiyat_kontrol",
     degerle: "emlak_fiyat_kontrol",
-    // Müşteri
+    // Müşteri (flow starters — same caveat as fotograf, upgrade to custom
+    // events later if accuracy matters)
     musteriEkle: "emlak_ilk_musteri",
     eslestir: "emlak_ilk_eslestirme",
     sunum: "emlak_ilk_sunum",
     takipEt: "emlak_ilk_takip",
-    // Analiz
+    // Analiz — read-only, firing on command open is correct
     analiz: "emlak_ilk_analiz",
     trend: "emlak_ilk_analiz",
     rapor: "emlak_ilk_analiz",
-    // Organizasyon
+    // Organizasyon — brifing shows content on open, firing OK
     brifing: "emlak_ilk_brifing",
     // Medya
     paylas: "emlak_ilk_paylas",
