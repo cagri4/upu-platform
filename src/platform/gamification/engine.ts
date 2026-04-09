@@ -182,7 +182,7 @@ export async function completeMission(userId: string, missionKey: string): Promi
     }
   }
 
-  const message = mission.notification_template || `${mission.emoji || "✅"} ${mission.title} tamamlandı! +${mission.points} puan`;
+  const message = mission.notification_template || `${mission.emoji || "✅"} ${mission.title} tamamlandı!`;
 
   return {
     completed: true,

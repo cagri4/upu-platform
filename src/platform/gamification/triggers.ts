@@ -23,10 +23,8 @@ async function getBayiMap() {
 
 const COMMAND_MISSION_MAP: Record<string, Record<string, string>> = {
   emlak: {
-    // Portföy
-    mulkekle: "emlak_ilk_mulk",
-    tara: "emlak_ilk_mulk",
-    ekle: "emlak_ilk_mulk",
+    // Portföy — triggered from finalizeProperty/processPortalUrl after actual creation
+    mulk_eklendi: "emlak_ilk_mulk",
     mulkduzenle: "emlak_mulk_bilgi_tamamla",
     fotograf: "emlak_mulk_foto",
     fiyatsor: "emlak_fiyat_kontrol",

@@ -239,6 +239,12 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
       { id: "cmd:menu", title: "Ana Menü" },
     ],
   );
+
+  // Gamification: mission trigger
+  try {
+    const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+    await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_eklendi", ctx.phone);
+  } catch { /* don't break main flow */ }
 }
 
 // ── /ekle — Quick add (URL or guidance) ──────────────────────────────

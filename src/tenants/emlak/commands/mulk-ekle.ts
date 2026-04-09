@@ -576,6 +576,12 @@ async function finalizeProperty(ctx: WaContext): Promise<void> {
     [{ id: "cmd:portfoyum", title: "Portföyüm" }, { id: "cmd:menu", title: "Ana Menü" }],
   );
 
+  // Gamification: mission trigger
+  try {
+    const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+    await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_eklendi", ctx.phone);
+  } catch { /* don't break main flow */ }
+
   // Check for customer matches
   try {
     const { data: customers } = await supabase
