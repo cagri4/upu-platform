@@ -22,11 +22,11 @@ export const MISSION_CTA: Record<string, { hint: string; button: { id: string; t
   // Emlak — portföy chain
   emlak_mulk_bilgi_tamamla: {
     hint: "Mülkün bilgilerini tamamla — fiyat, m², oda sayısı",
-    button: { id: "cmd:mulkyonet", title: "✏️ Mülk Yönet" },
+    button: { id: "cmd:mulkduzenle", title: "✏️ Bilgileri Düzenle" },
   },
   emlak_mulk_foto: {
     hint: "Mülke fotoğraf ekle — fotoğraflı ilanlar 70% daha çok ilgi görür",
-    button: { id: "cmd:mulkyonet", title: "📸 Mülk Yönet" },
+    button: { id: "cmd:fotograf", title: "📸 Fotoğraf Ekle" },
   },
   emlak_fiyat_kontrol: {
     hint: "Piyasa fiyatını kontrol et — doğru fiyat = hızlı satış",

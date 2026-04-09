@@ -549,8 +549,8 @@ export async function handleMulkDuzenleStep(ctx: WaContext, session: CommandSess
 
   const fieldLabel = EDITABLE_FIELDS.find(f => f.key === field)?.label || field;
   await sendButtons(ctx.phone, `✅ ${fieldLabel} güncellendi.`, [
+    { id: `mulkduzenle:${propertyId}`, title: "↻ Başka Alan" },
     { id: `mulkdetay:${propertyId}`, title: "📋 Detay Gör" },
-    { id: "cmd:mulkyonet", title: "🔙 Mülk Yönet" },
     { id: "cmd:menu", title: "Ana Menü" },
   ]);
 }
