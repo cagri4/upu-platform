@@ -342,16 +342,16 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   if (field === "parking") {
     const parking = value === "belirtme" ? null : value === "yok" ? "Yok" : value;
     await updateSession(ctx.userId, "facade_select", { parking });
+    // Sahibinden's cephe field accepts ONLY 4 cardinal directions
+    // (see emlak-danismani-ai-asistanı/.../publishing.ts SAHIBINDEN_FIELDS).
+    // Intercardinal options were removed because the Chrome extension can't
+    // match a checkbox label that doesn't exist on the sahibinden form.
     await sendList(ctx.phone, "🧭 Cephe yönü:", "Cephe", [
       { title: "Cephe Yönü", rows: [
         { id: "mulkekle:facade:kuzey", title: "Kuzey" },
         { id: "mulkekle:facade:guney", title: "Güney" },
         { id: "mulkekle:facade:dogu", title: "Doğu" },
         { id: "mulkekle:facade:bati", title: "Batı" },
-        { id: "mulkekle:facade:kuzeydogu", title: "Kuzeydoğu" },
-        { id: "mulkekle:facade:kuzeybati", title: "Kuzeybatı" },
-        { id: "mulkekle:facade:guneydogu", title: "Güneydoğu" },
-        { id: "mulkekle:facade:guneybati", title: "Güneybatı" },
         { id: "mulkekle:facade:yok", title: "Belirtme" },
       ]},
     ]);
@@ -361,7 +361,6 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   if (field === "facade") {
     const facadeLabels: Record<string, string> = {
       kuzey: "Kuzey", guney: "Güney", dogu: "Doğu", bati: "Batı",
-      kuzeydogu: "Kuzeydoğu", kuzeybati: "Kuzeybatı", guneydogu: "Güneydoğu", guneybati: "Güneybatı",
     };
     const facade = value === "yok" ? null : facadeLabels[value] || value;
     await updateSession(ctx.userId, "deed_select", { facade });
