@@ -120,6 +120,14 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       }
     }
 
+    // Test state confirmation callback (sifirla)
+    if (ctx.interactiveId.startsWith("sifirla:")) {
+      const { handleSifirlaCallback } = await import("./test-state");
+      await handleSifirlaCallback(ctx, ctx.interactiveId);
+      logCommand(ctx, ctx.interactiveId, true);
+      return;
+    }
+
     // Platform-level callbacks
     if (ctx.interactiveId.startsWith("cmd:")) {
       const cmd = ctx.interactiveId.replace("cmd:", "");
@@ -324,6 +332,17 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         logCommand(ctx, `admin:${adminInput}`, true);
         return;
       }
+    }
+  }
+
+  // Test state commands (admin-only, defined in test-state.ts)
+  // /kaydet, /yukle, /sifirla — dev workflow accelerators
+  {
+    const { isTestStateCommand, routeTestStateCommand } = await import("./test-state");
+    if (isTestStateCommand(firstWord)) {
+      await routeTestStateCommand(ctx, firstWord);
+      logCommand(ctx, `test-state:${firstWord}`, true);
+      return;
     }
   }
 
