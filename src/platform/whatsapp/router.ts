@@ -311,6 +311,12 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     if (lower === "menu" || lower === "menü" || lower === "ana menü" || lower === "ana menu") {
       await endSession(ctx.userId);
       // Fall through to menu handling below
+    } else if (lower === "sifirla" || lower === "sıfırla" || lower === "yukle" || lower === "yükle" || lower === "kaydet") {
+      // Test state commands must bypass active sessions — otherwise the
+      // admin can't escape a mid-flow step to rollback. End the session
+      // and fall through to the normal routing which dispatches them.
+      await endSession(ctx.userId);
+      // fall through
     } else {
       // Profile edit sessions
       if (session.command === "profil_edit") {
