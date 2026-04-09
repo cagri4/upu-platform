@@ -124,7 +124,7 @@ export async function getUserMissions(userId: string, tenantKey: string): Promis
   }));
 }
 
-export async function completeMission(userId: string, missionKey: string): Promise<{ completed: boolean; points: number; nextMission: string | null; message: string }> {
+export async function completeMission(userId: string, missionKey: string): Promise<{ completed: boolean; points: number; nextMission: string | null; message: string; title: string; emoji: string }> {
   const supabase = getServiceClient();
 
   const { data: mission } = await supabase
@@ -133,7 +133,7 @@ export async function completeMission(userId: string, missionKey: string): Promi
     .eq("mission_key", missionKey)
     .single();
 
-  if (!mission) return { completed: false, points: 0, nextMission: null, message: "" };
+  if (!mission) return { completed: false, points: 0, nextMission: null, message: "", title: "", emoji: "" };
 
   // Check if already completed (non-repeatable)
   if (!mission.is_repeatable) {
@@ -145,7 +145,7 @@ export async function completeMission(userId: string, missionKey: string): Promi
       .maybeSingle();
 
     if (existing?.status === "completed") {
-      return { completed: false, points: 0, nextMission: null, message: "" };
+      return { completed: false, points: 0, nextMission: null, message: "", title: mission.title, emoji: mission.emoji };
     }
   }
 
@@ -189,6 +189,8 @@ export async function completeMission(userId: string, missionKey: string): Promi
     points: mission.points,
     nextMission: mission.next_mission,
     message,
+    title: mission.title,
+    emoji: mission.emoji || "✅",
   };
 }
 
@@ -265,6 +267,43 @@ export async function getWeeklyPerformance(userId: string, tenantKey: string): P
   const points = (completedTasks || []).reduce((sum, t) => sum + (t.points || 0), 0);
 
   return { tasksCompleted: completed, tasksTotal: total, stars, points, streak: streak.current };
+}
+
+// ── HUD Footer (active mission reminder) ────────────────────────────
+
+/**
+ * Returns a 1-line "active mission" reminder for appending to nav/menu
+ * responses. Mimics the heads-up display in games — keeps the user's
+ * current goal visible at all times so they don't get lost in menus.
+ *
+ * Returns empty string if no active mission (don't render anything).
+ */
+export async function getActiveMissionFooter(userId: string, tenantKey: string): Promise<string> {
+  const supabase = getServiceClient();
+
+  // Find all currently active (not yet completed) mission IDs for user
+  const { data: progresses } = await supabase
+    .from("user_mission_progress")
+    .select("mission_id")
+    .eq("user_id", userId)
+    .eq("status", "active");
+
+  if (!progresses || progresses.length === 0) return "";
+
+  // Pick the lowest sort_order mission scoped to this tenant
+  const ids = progresses.map(p => p.mission_id);
+  const { data: missions } = await supabase
+    .from("platform_missions")
+    .select("title, emoji, sort_order")
+    .in("id", ids)
+    .eq("tenant_key", tenantKey)
+    .order("sort_order")
+    .limit(1);
+
+  const mission = missions?.[0];
+  if (!mission) return "";
+
+  return `\n\n━━━━━━━━━━━━━\n🎯 *Aktif Görev:* ${mission.emoji || "○"} ${mission.title}`;
 }
 
 // ── Progress Summary (for brifing) ──────────────────────────────────

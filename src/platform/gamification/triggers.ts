@@ -5,9 +5,103 @@
  * İlgili misyonu tamamlar, kullanıcıya tebrik + sonraki görev gösterir.
  */
 
-import { completeMission, updateStreak, getUserMissions } from "./engine";
-import { sendText } from "@/platform/whatsapp/send";
+import { completeMission, updateStreak } from "./engine";
+import { sendText, sendButtons } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+
+// ── Next mission CTA map ────────────────────────────────────────────
+// Each next mission maps to a hint + single direct-action button.
+// Pushes the user to the next action without going through a menu —
+// frictionless next action / Quest Director pattern.
+const NEXT_MISSION_CTA: Record<string, { hint: string; button: { id: string; title: string } }> = {
+  // Emlak — portföy chain
+  emlak_mulk_bilgi_tamamla: {
+    hint: "Mülkün bilgilerini tamamla — fiyat, m², oda sayısı",
+    button: { id: "cmd:mulkyonet", title: "✏️ Mülk Yönet" },
+  },
+  emlak_mulk_foto: {
+    hint: "Mülke fotoğraf ekle — fotoğraflı ilanlar 70% daha çok ilgi görür",
+    button: { id: "cmd:mulkyonet", title: "📸 Mülk Yönet" },
+  },
+  emlak_fiyat_kontrol: {
+    hint: "Piyasa fiyatını kontrol et — doğru fiyat = hızlı satış",
+    button: { id: "cmd:fiyatsor", title: "💰 Fiyat Sor" },
+  },
+  // Emlak — müşteri chain
+  emlak_ilk_musteri: {
+    hint: "İlk müşterini ekle — eşleştirmeye başla",
+    button: { id: "cmd:musteriEkle", title: "👤 Müşteri Ekle" },
+  },
+  emlak_ilk_eslestirme: {
+    hint: "Müşterini uygun mülklerle eşleştir",
+    button: { id: "cmd:eslestir", title: "🤝 Eşleştir" },
+  },
+  emlak_ilk_sunum: {
+    hint: "Müşterine profesyonel bir sunum hazırla",
+    button: { id: "cmd:sunum", title: "🎯 Sunum Hazırla" },
+  },
+  emlak_ilk_takip: {
+    hint: "Sunum sonrası müşterini takip et",
+    button: { id: "cmd:takipEt", title: "📞 Takip Et" },
+  },
+  // Emlak — analiz/brifing/paylas
+  emlak_ilk_analiz: {
+    hint: "Bölgenin pazar durumunu incele",
+    button: { id: "cmd:analiz", title: "📊 Pazar Analizi" },
+  },
+  emlak_ilk_brifing: {
+    hint: "Günlük brifinginle gününü planla",
+    button: { id: "cmd:brifing", title: "📋 Brifing" },
+  },
+  emlak_ilk_paylas: {
+    hint: "Mülkünü sosyal medyada paylaş",
+    button: { id: "cmd:paylas", title: "📱 Paylaş" },
+  },
+
+  // Bayi admin chain
+  bayi_5_urun: {
+    hint: "Kataloğunu zenginleştir — daha çok ürün, daha çok sipariş",
+    button: { id: "cmd:yeniurun", title: "📦 Ürün Ekle" },
+  },
+  bayi_ilk_davet: {
+    hint: "Bayilerini sisteme davet et",
+    button: { id: "cmd:bayidavet", title: "🏪 Bayi Davet" },
+  },
+  bayi_ilk_kampanya: {
+    hint: "Bayilerine özel kampanya hazırla",
+    button: { id: "cmd:kampanyaolustur", title: "🎯 Kampanya" },
+  },
+  bayi_ilk_bildirim: {
+    hint: "Bayilerine duyuru veya bildirim gönder",
+    button: { id: "cmd:duyuru", title: "📢 Duyuru" },
+  },
+  bayi_ilk_calisan: {
+    hint: "Ekibini sisteme ekle",
+    button: { id: "cmd:calisanekle", title: "👥 Çalışan Ekle" },
+  },
+  bayi_ilk_brifing: {
+    hint: "Günlük brifinginle işlerini takip et",
+    button: { id: "cmd:ozet", title: "📋 Brifing" },
+  },
+
+  // Bayi dealer chain
+  dealer_ilk_siparis: {
+    hint: "Katalogdan ürün seçerek ilk siparişini ver",
+    button: { id: "cmd:siparisver", title: "🛒 Sipariş Ver" },
+  },
+  dealer_bakiye_kontrol: {
+    hint: "Güncel bakiyeni ve borç durumunu gör",
+    button: { id: "cmd:bakiyem", title: "💰 Bakiyem" },
+  },
+  dealer_fatura_incele: {
+    hint: "Fatura geçmişini görüntüle",
+    button: { id: "cmd:faturalarim", title: "📄 Faturalar" },
+  },
+  dealer_kampanya_incele: {
+    hint: "Aktif kampanya ve indirimleri gör",
+    button: { id: "cmd:aktifkampanyalar", title: "🎯 Kampanyalar" },
+  },
+};
 
 // ── Command → Mission mapping ───────────────────────────────────────
 
@@ -56,29 +150,47 @@ export async function triggerMissionCheck(
   phone: string,
 ): Promise<void> {
   try {
-    // Update streak
-    await updateStreak(userId);
+    // Update streak — capture current value for scoreboard
+    const streak = await updateStreak(userId);
 
-    // Ensure first mission is active (first-time init)
-    const missions = await getUserMissions(userId, tenantKey);
-    const firstMission = missions.find(m => m.sort_order === 1);
-    if (firstMission && !firstMission.progress) {
-      const supabase = getServiceClient();
-      await supabase.from("user_mission_progress").insert({
-        user_id: userId, mission_id: firstMission.id, status: "active",
-      });
+    // Ensure first mission is active (first-time init, role-aware)
+    // For bayi this matters because admin & dealer each have a sort_order=1.
+    // For other tenants we still scope by user role (defaults to "admin").
+    const supabase = getServiceClient();
+    const { data: prof0 } = await supabase
+      .from("profiles").select("role").eq("id", userId).single();
+    const userRole = prof0?.role || "admin";
+
+    const { data: firstMission } = await supabase
+      .from("platform_missions")
+      .select("id")
+      .eq("tenant_key", tenantKey)
+      .eq("role", userRole)
+      .order("sort_order")
+      .limit(1)
+      .maybeSingle();
+
+    if (firstMission) {
+      const { data: existing } = await supabase
+        .from("user_mission_progress")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("mission_id", firstMission.id)
+        .maybeSingle();
+      if (!existing) {
+        await supabase.from("user_mission_progress").insert({
+          user_id: userId, mission_id: firstMission.id, status: "active",
+        });
+      }
     }
 
-    // Check mission mapping
+    // Check mission mapping (reuse userRole from above)
     let missionKey: string | undefined;
 
     if (tenantKey === "bayi") {
       // Bayi has role-specific mappings
       const bayiMap = await getBayiMap();
-      const supabase2 = getServiceClient();
-      const { data: prof } = await supabase2.from("profiles").select("role").eq("id", userId).single();
-      const role = prof?.role || "admin";
-      missionKey = bayiMap?.[role]?.[commandName];
+      missionKey = bayiMap?.[userRole]?.[commandName];
     } else {
       const tenantMap = COMMAND_MISSION_MAP[tenantKey];
       missionKey = tenantMap?.[commandName];
@@ -89,29 +201,30 @@ export async function triggerMissionCheck(
     // Try to complete mission
     const result = await completeMission(userId, missionKey);
 
-    if (result.completed) {
-      // Send celebration message
-      let msg = `\n${result.message}`;
+    if (!result.completed) return;
 
-      // If there's a next mission, hint at it
-      if (result.nextMission) {
-        const nextHints: Record<string, string> = {
-          emlak_mulk_bilgi_tamamla: "\n\n💡 Sonraki görev: mülk bilgilerini tamamlayın",
-          emlak_mulk_foto: "\n\n💡 Sonraki görev: mülke fotoğraf ekleyin",
-          emlak_fiyat_kontrol: "\n\n💡 Sonraki görev: piyasa fiyatını kontrol edin",
-          emlak_ilk_musteri: "\n\n💡 Sonraki görev: ilk müşterinizi ekleyin",
-          emlak_ilk_eslestirme: "\n\n💡 Sonraki görev: müşteri-mülk eşleştirin",
-          emlak_ilk_sunum: "\n\n💡 Sonraki görev: müşteriye sunum gönderin",
-          emlak_ilk_takip: "\n\n💡 Sonraki görev: müşterinizi takip edin",
-          emlak_ilk_analiz: "\n\n💡 Sonraki görev: pazar analizi yapın",
-          emlak_ilk_brifing: "\n\n💡 Sonraki görev: günlük brifinginizi okuyun",
-          emlak_ilk_paylas: "\n\n💡 Sonraki görev: mülkünüzü paylaşın",
-        };
-        msg += nextHints[result.nextMission] || "";
+    // ── Scoreboard popup (game-style XP/level-up) ─────────────────
+    // Distinct from command response — clearly framed as a progress
+    // update so it doesn't feel like a duplicate message.
+    const sep = "━━━━━━━━━━━━━";
+    let msg = `${sep}\n🎮 *İLERLEME*\n`;
+    msg += `${result.emoji} ${result.title} ✓\n`;
+    msg += `🔥 Seri: ${streak.current} gün`;
+    if (streak.current >= 7) msg += " — harika!";
+    else if (streak.current === 1) msg += " — yeni başladın!";
+    msg += `\n${sep}`;
+
+    if (result.nextMission) {
+      const cta = NEXT_MISSION_CTA[result.nextMission];
+      if (cta) {
+        msg += `\n\n🎯 *Sonraki Görev*\n${cta.hint}`;
+        await sendButtons(phone, msg, [cta.button]);
       } else {
-        msg += "\n\n🌟 Tüm keşif görevlerini tamamladınız! Artık profesyonelsiniz.";
+        // No mapped CTA — send scoreboard only
+        await sendText(phone, msg);
       }
-
+    } else {
+      msg += "\n\n🌟 Tüm keşif görevlerini tamamladın! Artık profesyonelsin.";
       await sendText(phone, msg);
     }
   } catch (err) {

@@ -15,7 +15,7 @@ export const BAYI_ADMIN_MISSIONS = [
     description: "Kataloğunuza ilk ürünü ekleyerek başlayın", emoji: "📦",
     points: 20, sort_order: 1, is_repeatable: false,
     next_mission: "bayi_5_urun",
-    notification_template: "📦 İlk ürün eklendi! Kataloğunuz aktif. +20 puan",
+    notification_template: "📦 İlk ürün eklendi! Kataloğunuz aktif.",
   },
   {
     tenant_key: "bayi", role: "admin", category: "urun",
@@ -23,7 +23,7 @@ export const BAYI_ADMIN_MISSIONS = [
     description: "Kataloğunuzu zenginleştirin — daha çok ürün, daha çok sipariş", emoji: "🏷",
     points: 30, sort_order: 2, is_repeatable: false,
     next_mission: "bayi_ilk_davet",
-    notification_template: "🏷 5 ürün katalogda! Bayileriniz artık sipariş verebilir. +30 puan",
+    notification_template: "🏷 5 ürün katalogda! Bayileriniz artık sipariş verebilir.",
   },
   {
     tenant_key: "bayi", role: "admin", category: "bayi_agi",
@@ -31,7 +31,7 @@ export const BAYI_ADMIN_MISSIONS = [
     description: "Bayilerinizi sisteme davet edin", emoji: "🏪",
     points: 20, sort_order: 3, is_repeatable: false,
     next_mission: "bayi_ilk_kampanya",
-    notification_template: "🏪 Davet linki hazır! Bayilerinize gönderin. +20 puan",
+    notification_template: "🏪 Davet linki hazır! Bayilerinize gönderin.",
   },
   {
     tenant_key: "bayi", role: "admin", category: "satis",
@@ -39,7 +39,7 @@ export const BAYI_ADMIN_MISSIONS = [
     description: "Bayilerinize özel kampanya hazırlayın", emoji: "🎯",
     points: 25, sort_order: 4, is_repeatable: false,
     next_mission: "bayi_ilk_bildirim",
-    notification_template: "🎯 İlk kampanya oluşturuldu! +25 puan",
+    notification_template: "🎯 İlk kampanya oluşturuldu!",
   },
   {
     tenant_key: "bayi", role: "admin", category: "iletisim",
@@ -47,7 +47,7 @@ export const BAYI_ADMIN_MISSIONS = [
     description: "Kampanyayı veya duyuruyu bayilerinize iletin", emoji: "📢",
     points: 20, sort_order: 5, is_repeatable: false,
     next_mission: "bayi_ilk_calisan",
-    notification_template: "📢 Bildirim gönderildi! Bayileriniz bilgilendirildi. +20 puan",
+    notification_template: "📢 Bildirim gönderildi! Bayileriniz bilgilendirildi.",
   },
   {
     tenant_key: "bayi", role: "admin", category: "ekip",
@@ -55,7 +55,7 @@ export const BAYI_ADMIN_MISSIONS = [
     description: "Ekibinizi sisteme dahil edin", emoji: "👥",
     points: 20, sort_order: 6, is_repeatable: false,
     next_mission: "bayi_ilk_brifing",
-    notification_template: "👥 İlk çalışan eklendi! Ekibiniz büyüyor. +20 puan",
+    notification_template: "👥 İlk çalışan eklendi! Ekibiniz büyüyor.",
   },
   {
     tenant_key: "bayi", role: "admin", category: "organizasyon",
@@ -63,7 +63,7 @@ export const BAYI_ADMIN_MISSIONS = [
     description: "Günlük brifing ile işlerinizi takip edin", emoji: "📋",
     points: 10, sort_order: 7, is_repeatable: false,
     next_mission: null,
-    notification_template: "📋 Brifing okundu! Organize yönetici = başarılı iş. +10 puan\n\n🌟 Tüm keşif görevlerini tamamladınız!",
+    notification_template: "📋 Brifing okundu! Organize yönetici = başarılı iş.",
   },
 ];
 
@@ -76,7 +76,7 @@ export const BAYI_DEALER_MISSIONS = [
     description: "Mevcut ürünleri ve fiyatları görün", emoji: "📦",
     points: 10, sort_order: 1, is_repeatable: false,
     next_mission: "dealer_ilk_siparis",
-    notification_template: "📦 Kataloğu incelediniz! Artık sipariş verebilirsiniz. +10 puan",
+    notification_template: "📦 Kataloğu incelediniz! Artık sipariş verebilirsiniz.",
   },
   {
     tenant_key: "bayi", role: "dealer", category: "siparis",
@@ -84,7 +84,7 @@ export const BAYI_DEALER_MISSIONS = [
     description: "Katalogdan ürün seçerek ilk siparişinizi oluşturun", emoji: "🛒",
     points: 25, sort_order: 2, is_repeatable: false,
     next_mission: "dealer_bakiye_kontrol",
-    notification_template: "🛒 İlk sipariş verildi! Tebrikler! +25 puan",
+    notification_template: "🛒 İlk sipariş verildi! Tebrikler!",
   },
   {
     tenant_key: "bayi", role: "dealer", category: "finans",
@@ -92,7 +92,7 @@ export const BAYI_DEALER_MISSIONS = [
     description: "Güncel bakiyenizi ve borç durumunuzu görün", emoji: "💰",
     points: 10, sort_order: 3, is_repeatable: false,
     next_mission: "dealer_fatura_incele",
-    notification_template: "💰 Bakiye kontrol edildi! Finansınıza hakimsiniz. +10 puan",
+    notification_template: "💰 Bakiye kontrol edildi! Finansınıza hakimsiniz.",
   },
   {
     tenant_key: "bayi", role: "dealer", category: "finans",
@@ -100,7 +100,7 @@ export const BAYI_DEALER_MISSIONS = [
     description: "Fatura geçmişinizi görüntüleyin", emoji: "📄",
     points: 10, sort_order: 4, is_repeatable: false,
     next_mission: "dealer_kampanya_incele",
-    notification_template: "📄 Faturalar incelendi! +10 puan",
+    notification_template: "📄 Faturalar incelendi!",
   },
   {
     tenant_key: "bayi", role: "dealer", category: "kampanya",
@@ -108,7 +108,7 @@ export const BAYI_DEALER_MISSIONS = [
     description: "Aktif kampanya ve indirimleri görün", emoji: "🎯",
     points: 10, sort_order: 5, is_repeatable: false,
     next_mission: null,
-    notification_template: "🎯 Kampanyalar incelendi! +10 puan\n\n🌟 Sistemi tamamen keşfettiniz!",
+    notification_template: "🎯 Kampanyalar incelendi!",
   },
 ];
 

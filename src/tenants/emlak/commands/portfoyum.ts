@@ -2,6 +2,7 @@ import type { WaContext } from "@/platform/whatsapp/types";
 import { sendText, sendButtons } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
+import { getActiveMissionFooter } from "@/platform/gamification/engine";
 
 export async function handlePortfoyum(ctx: WaContext): Promise<void> {
   try {
@@ -36,6 +37,9 @@ export async function handlePortfoyum(ctx: WaContext): Promise<void> {
     if ((count || 0) > 5) {
       text += `...ve ${(count || 0) - 5} mülk daha`;
     }
+
+    // HUD: append active mission reminder (Quest Director pattern)
+    text += await getActiveMissionFooter(ctx.userId, ctx.tenantKey);
 
     await sendButtons(ctx.phone, text, [
       { id: "cmd:mulkyonet", title: "⚙️ Mülk Yönet" },

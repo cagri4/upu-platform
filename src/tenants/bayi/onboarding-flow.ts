@@ -52,18 +52,54 @@ export const bayiOnboardingFlow: OnboardingFlow = {
       },
     }).eq("id", ctx.userId);
 
-    // Build completion message
+    // ── Gamification kickoff ─────────────────────────────────────────
+    // Initialize streak (day 1) and activate first admin mission so the
+    // new firm owner lands on a concrete goal — Quest Director pattern.
+    const { updateStreak } = await import("@/platform/gamification/engine");
+    await updateStreak(ctx.userId);
+
+    // Find first bayi admin mission (role-aware)
+    const { data: firstMission } = await supabase
+      .from("platform_missions")
+      .select("id, title, description, emoji")
+      .eq("tenant_key", "bayi")
+      .eq("role", "admin")
+      .order("sort_order")
+      .limit(1)
+      .maybeSingle();
+
+    if (firstMission) {
+      const { data: existing } = await supabase
+        .from("user_mission_progress")
+        .select("id")
+        .eq("user_id", ctx.userId)
+        .eq("mission_id", firstMission.id)
+        .maybeSingle();
+      if (!existing) {
+        await supabase.from("user_mission_progress").insert({
+          user_id: ctx.userId,
+          mission_id: firstMission.id,
+          status: "active",
+        });
+      }
+    }
+
+    // Build focused Duolingo-style first message
     let msg = "✅ *Kurulum tamamlandı!*\n\n";
-    if (data.company_name) msg += `🏢 Firma: ${data.company_name}\n`;
-    if (data.dealer_count) msg += `📊 Bayi sayısı: ${data.dealer_count}\n`;
-    msg += `📋 Günlük brifing: ${data.briefing === "evet" ? "Aktif" : "Pasif"}\n`;
-    msg += "\n💡 *Şunları deneyin:*\n";
-    msg += `• "ozet" — günlük genel durumunuz\n`;
-    msg += `• "siparisler" — sipariş listesi\n`;
-    msg += `• "stok" — stok durumu`;
+    if (data.company_name) msg += `🏢 ${data.company_name}\n`;
+    if (data.dealer_count) msg += `📊 ${data.dealer_count} bayi\n`;
+    msg += `📋 Brifing: ${data.briefing === "evet" ? "Aktif" : "Pasif"}\n`;
+    msg += "\n🔥 *Seri: 1 gün* — bugün başladın!\n";
+
+    if (firstMission) {
+      msg += `\n🎯 *İlk Görevin*\n`;
+      msg += `${firstMission.emoji || "📦"} ${firstMission.title}\n`;
+      msg += `_${firstMission.description}_\n`;
+      msg += "\nHadi başlayalım 👇";
+    }
 
     await sendButtons(ctx.phone, msg, [
-      { id: "cmd:menu", title: "📋 Ana Menü" },
+      { id: "cmd:yeniurun", title: "📦 Ürün Ekle" },
     ]);
   },
 };

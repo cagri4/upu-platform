@@ -13,7 +13,7 @@ export const EMLAK_MISSIONS = [
     description: "Portföyünüze ilk mülkü ekleyerek başlayın", emoji: "🏠",
     points: 20, sort_order: 1, is_repeatable: false,
     next_mission: "emlak_mulk_bilgi_tamamla",
-    notification_template: "🏠 İlk mülkünüz eklendi! Artık portföyünüz aktif. +20 puan",
+    notification_template: "🏠 İlk mülkünüz eklendi! Artık portföyünüz aktif.",
   },
   {
     tenant_key: "emlak", role: "admin", category: "portfoy",
@@ -21,7 +21,7 @@ export const EMLAK_MISSIONS = [
     description: "Bir mülkün tüm bilgilerini eksiksiz doldurun", emoji: "📝",
     points: 15, sort_order: 2, is_repeatable: false,
     next_mission: "emlak_mulk_foto",
-    notification_template: "📝 Mülk bilgileri tam! Profesyonel bir portföy görünümü kazandınız. +15 puan",
+    notification_template: "📝 Mülk bilgileri tam! Profesyonel bir portföy görünümü kazandınız.",
   },
   {
     tenant_key: "emlak", role: "admin", category: "portfoy",
@@ -29,7 +29,7 @@ export const EMLAK_MISSIONS = [
     description: "Fotoğraflı mülkler %70 daha çok ilgi görür", emoji: "📸",
     points: 15, sort_order: 3, is_repeatable: false,
     next_mission: "emlak_fiyat_kontrol",
-    notification_template: "📸 Fotoğraf eklendi! Mülkünüz artık çok daha çekici. +15 puan",
+    notification_template: "📸 Fotoğraf eklendi! Mülkünüz artık çok daha çekici.",
   },
   {
     tenant_key: "emlak", role: "admin", category: "portfoy",
@@ -37,7 +37,7 @@ export const EMLAK_MISSIONS = [
     description: "Mülkünüzün fiyatını bölge ortalamasıyla karşılaştırın", emoji: "💰",
     points: 10, sort_order: 4, is_repeatable: false,
     next_mission: "emlak_ilk_musteri",
-    notification_template: "💰 Fiyat kontrolü yapıldı! Doğru fiyat = hızlı satış. +10 puan",
+    notification_template: "💰 Fiyat kontrolü yapıldı! Doğru fiyat = hızlı satış.",
   },
 
   // Satış Destek
@@ -47,7 +47,7 @@ export const EMLAK_MISSIONS = [
     description: "Müşteri havuzunuzu oluşturmaya başlayın", emoji: "👤",
     points: 20, sort_order: 5, is_repeatable: false,
     next_mission: "emlak_ilk_eslestirme",
-    notification_template: "👤 İlk müşteriniz eklendi! Artık eşleştirme yapabilirsiniz. +20 puan",
+    notification_template: "👤 İlk müşteriniz eklendi! Artık eşleştirme yapabilirsiniz.",
   },
   {
     tenant_key: "emlak", role: "admin", category: "musteri",
@@ -55,7 +55,7 @@ export const EMLAK_MISSIONS = [
     description: "Müşterinizi uygun mülklerle eşleştirin", emoji: "🤝",
     points: 20, sort_order: 6, is_repeatable: false,
     next_mission: "emlak_ilk_sunum",
-    notification_template: "🤝 Eşleştirme yapıldı! Müşteriniz için uygun mülkler bulundu. +20 puan",
+    notification_template: "🤝 Eşleştirme yapıldı! Müşteriniz için uygun mülkler bulundu.",
   },
   {
     tenant_key: "emlak", role: "admin", category: "musteri",
@@ -63,7 +63,7 @@ export const EMLAK_MISSIONS = [
     description: "Müşterinize profesyonel bir sunum hazırlayıp gönderin", emoji: "🎯",
     points: 25, sort_order: 7, is_repeatable: false,
     next_mission: "emlak_ilk_takip",
-    notification_template: "🎯 İlk sunumunuz gönderildi! Müşteriniz mülkleri inceleyecek. +25 puan",
+    notification_template: "🎯 İlk sunumunuz gönderildi! Müşteriniz mülkleri inceleyecek.",
   },
   {
     tenant_key: "emlak", role: "admin", category: "musteri",
@@ -71,7 +71,7 @@ export const EMLAK_MISSIONS = [
     description: "Sunum gönderdikten sonra müşterinizi takip edin", emoji: "📞",
     points: 15, sort_order: 8, is_repeatable: false,
     next_mission: "emlak_ilk_analiz",
-    notification_template: "📞 Takip yapıldı! Aktif takip satış şansını %40 artırır. +15 puan",
+    notification_template: "📞 Takip yapıldı! Aktif takip satış şansını %40 artırır.",
   },
 
   // Pazar Analisti
@@ -81,7 +81,7 @@ export const EMLAK_MISSIONS = [
     description: "Bölgenizdeki pazar durumunu inceleyin", emoji: "📊",
     points: 15, sort_order: 9, is_repeatable: false,
     next_mission: "emlak_ilk_brifing",
-    notification_template: "📊 Pazar analizi yapıldı! Bölgenizi tanıyorsunuz. +15 puan",
+    notification_template: "📊 Pazar analizi yapıldı! Bölgenizi tanıyorsunuz.",
   },
 
   // Medya
@@ -91,7 +91,7 @@ export const EMLAK_MISSIONS = [
     description: "Mülkünüzü sosyal medyada paylaşın", emoji: "📱",
     points: 10, sort_order: 10, is_repeatable: false,
     next_mission: null,
-    notification_template: "📱 Paylaşım yapıldı! Görünürlüğünüz arttı. +10 puan",
+    notification_template: "📱 Paylaşım yapıldı! Görünürlüğünüz arttı.",
   },
 
   // Sekreter
@@ -101,7 +101,7 @@ export const EMLAK_MISSIONS = [
     description: "Günlük brifing ile gününüzü planlayın", emoji: "📋",
     points: 10, sort_order: 11, is_repeatable: false,
     next_mission: "emlak_ilk_paylas",
-    notification_template: "📋 Brifing okundu! Organize danışman = başarılı danışman. +10 puan",
+    notification_template: "📋 Brifing okundu! Organize danışman = başarılı danışman.",
   },
 ];
 

@@ -519,6 +519,10 @@ async function showMenu(
     return;
   }
 
+  // HUD: show active mission first if exists (Quest Director pattern)
+  const { getActiveMissionFooter } = await import("@/platform/gamification/engine");
+  const hudFooter = await getActiveMissionFooter(ctx.userId, ctx.tenantKey);
+
   // Message 1: Favorites as list (user's or default, up to 10)
   const userFavs = await getUserFavorites(ctx.userId);
   const favCmds = userFavs.length > 0 ? userFavs : (tenant.defaultFavorites || []);
@@ -529,10 +533,13 @@ async function showMenu(
       description: "",
     }));
     await sendList(ctx.phone,
-      `${tenant.icon} *${tenant.name}*\n\n⭐ Favorilerim:\n\n_("menu" yazarak buraya dönebilirsiniz.)_`,
+      `${tenant.icon} *${tenant.name}*\n\n⭐ Favorilerim:\n\n_("menu" yazarak buraya dönebilirsiniz.)_${hudFooter}`,
       "Favoriler",
       [{ title: "Favorilerim", rows: favRows }],
     );
+  } else if (hudFooter) {
+    // No favorites but we have a HUD to show — send standalone
+    await sendText(ctx.phone, hudFooter.trim());
   }
 
   // Message 2: List with employees (filtered by role)
