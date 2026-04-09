@@ -302,6 +302,33 @@ export async function handleSifirlaCallback(ctx: WaContext, data: string): Promi
   }
 }
 
+// ── Auto-save hook (called by router before each tenant command) ──
+
+/**
+ * Silently snapshot the user's state. Called by router before each
+ * registry command execution so the admin can /yukle back to the moment
+ * right before their last command — no need to /kaydet manually.
+ *
+ * Errors are swallowed: auto-save must never break the main flow.
+ */
+export async function autoSaveSnapshotSilent(userId: string, tenantKey: string): Promise<void> {
+  try {
+    const snapshot = await captureSnapshot(userId, tenantKey);
+    const supabase = getServiceClient();
+    await supabase.from("user_test_snapshots").upsert(
+      {
+        user_id: userId,
+        tenant_key: tenantKey,
+        data: snapshot,
+        saved_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" },
+    );
+  } catch (err) {
+    console.error("[test-state:auto]", err);
+  }
+}
+
 // ── Router entry point ──────────────────────────────────────────────
 
 export function isTestStateCommand(lower: string): boolean {

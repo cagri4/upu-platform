@@ -168,10 +168,23 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       if (cmd === "calisanekle" || cmd === "bayidavet" || cmd === "calisanyonet") {
         const reg = REGISTRIES[ctx.tenantKey];
         const h = reg?.commands[cmd];
-        if (h) { await h(ctx); return; }
+        if (h) {
+          // Auto-save (admin dev workflow) before running state-changing command
+          if (await isAdmin(ctx)) {
+            const { autoSaveSnapshotSilent } = await import("./test-state");
+            await autoSaveSnapshotSilent(ctx.userId, ctx.tenantKey);
+          }
+          await h(ctx);
+          return;
+        }
       }
       const handler = registry.commands[cmd];
       if (handler) {
+        // Auto-save before state-changing command (admin only, dev workflow)
+        if (await isAdmin(ctx)) {
+          const { autoSaveSnapshotSilent } = await import("./test-state");
+          await autoSaveSnapshotSilent(ctx.userId, ctx.tenantKey);
+        }
         const start = Date.now();
         try {
           await handler(ctx);
@@ -388,6 +401,11 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
   // Check commands
   const handler = registry.commands[resolved];
   if (handler) {
+    // Auto-save before state-changing command (admin only, dev workflow)
+    if (await isAdmin(ctx)) {
+      const { autoSaveSnapshotSilent } = await import("./test-state");
+      await autoSaveSnapshotSilent(ctx.userId, ctx.tenantKey);
+    }
     const start = Date.now();
     try {
       await handler(ctx);
