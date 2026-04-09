@@ -9,11 +9,16 @@ import { completeMission, updateStreak } from "./engine";
 import { sendText, sendButtons } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 
-// ── Next mission CTA map ────────────────────────────────────────────
-// Each next mission maps to a hint + single direct-action button.
-// Pushes the user to the next action without going through a menu —
-// frictionless next action / Quest Director pattern.
-const NEXT_MISSION_CTA: Record<string, { hint: string; button: { id: string; title: string } }> = {
+// ── Mission CTA map ─────────────────────────────────────────────────
+// Each mission maps to a hint + single direct-action button.
+// Used by both the "next mission" scoreboard popup AND the inactivity
+// nudge (for resuming the currently active mission). Quest Director pattern.
+export const MISSION_CTA: Record<string, { hint: string; button: { id: string; title: string } }> = {
+  // Emlak — first mission
+  emlak_ilk_mulk: {
+    hint: "Portföyüne ilk mülkü ekle",
+    button: { id: "cmd:mulkekle", title: "🏠 Mülk Ekle" },
+  },
   // Emlak — portföy chain
   emlak_mulk_bilgi_tamamla: {
     hint: "Mülkün bilgilerini tamamla — fiyat, m², oda sayısı",
@@ -58,6 +63,11 @@ const NEXT_MISSION_CTA: Record<string, { hint: string; button: { id: string; tit
     button: { id: "cmd:paylas", title: "📱 Paylaş" },
   },
 
+  // Bayi — admin first mission
+  bayi_ilk_urun: {
+    hint: "Kataloğuna ilk ürünü ekle",
+    button: { id: "cmd:yeniurun", title: "📦 Ürün Ekle" },
+  },
   // Bayi admin chain
   bayi_5_urun: {
     hint: "Kataloğunu zenginleştir — daha çok ürün, daha çok sipariş",
@@ -84,6 +94,11 @@ const NEXT_MISSION_CTA: Record<string, { hint: string; button: { id: string; tit
     button: { id: "cmd:ozet", title: "📋 Brifing" },
   },
 
+  // Bayi — dealer first mission
+  dealer_katalog_incele: {
+    hint: "Mevcut ürünleri ve fiyatları görüntüle",
+    button: { id: "cmd:urunler", title: "📦 Katalog" },
+  },
   // Bayi dealer chain
   dealer_ilk_siparis: {
     hint: "Katalogdan ürün seçerek ilk siparişini ver",
@@ -215,7 +230,7 @@ export async function triggerMissionCheck(
     msg += `\n${sep}`;
 
     if (result.nextMission) {
-      const cta = NEXT_MISSION_CTA[result.nextMission];
+      const cta = MISSION_CTA[result.nextMission];
       if (cta) {
         msg += `\n\n🎯 *Sonraki Görev*\n${cta.hint}`;
         await sendButtons(phone, msg, [cta.button]);
