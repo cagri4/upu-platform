@@ -33,8 +33,8 @@ const FIELDS_PAGE_1 = [
   { key: "description", label: "Açıklama", dbColumn: "description", hint: "İlan açıklaması" },
   { key: "listing_type", label: "İlan Türü", dbColumn: "listing_type", hint: "satilik / kiralik" },
   { key: "type", label: "Mülk Tipi", dbColumn: "type", hint: "daire/villa/arsa vb." },
-  { key: "floor", label: "Kat", dbColumn: "floor", hint: "Örnek: 3" },
-  { key: "building_age", label: "Bina Yaşı", dbColumn: "building_age", hint: "Örnek: 5" },
+  { key: "floor", label: "Kat", dbColumn: "floor", hint: "Bodrum / Zemin / 1 / 2 / ... / 6-10 / 11+" },
+  { key: "building_age", label: "Bina Yaşı", dbColumn: "building_age", hint: "0 (Yeni) / 1-4 / 5-10 / 11-15 / 16-20 / 21+" },
 ];
 
 // Page 2: Konum + detaylar (ikinci sayfa)
@@ -43,22 +43,22 @@ const FIELDS_PAGE_2 = [
   { key: "location_district", label: "İlçe", dbColumn: "location_district", hint: "Örnek: Bodrum" },
   { key: "location_neighborhood", label: "Mahalle", dbColumn: "location_neighborhood", hint: "Örnek: Yalıkavak" },
   { key: "net_area", label: "Net Alan (m²)", dbColumn: "net_area", hint: "Örnek: 110" },
-  { key: "total_floors", label: "Toplam Kat", dbColumn: "total_floors", hint: "Örnek: 5" },
-  { key: "heating", label: "Isınma", dbColumn: "heating", hint: "Doğalgaz/Klima/Soba" },
-  { key: "parking", label: "Otopark", dbColumn: "parking", hint: "Açık/Kapalı/Yok" },
-  { key: "facade", label: "Cephe", dbColumn: "facade", hint: "Güney/Kuzey/Doğu/Batı" },
-  { key: "deed_type", label: "Tapu Durumu", dbColumn: "deed_type", hint: "Kat mülkiyeti/irtifak" },
+  { key: "total_floors", label: "Toplam Kat", dbColumn: "total_floors", hint: "1 / 2 / ... / 6-10 / 11-15 / 16-20 / 21+" },
+  { key: "heating", label: "Isınma", dbColumn: "heating", hint: "Kombi (Doğalgaz) / Merkezi / Yerden Isıtma / Klima / Soba / Yok" },
+  { key: "parking", label: "Otopark", dbColumn: "parking", hint: "Açık Otopark / Kapalı Otopark / Açık & Kapalı / Yok" },
+  { key: "facade", label: "Cephe", dbColumn: "facade", hint: "Kuzey / Güney / Doğu / Batı" },
+  { key: "deed_type", label: "Tapu Durumu", dbColumn: "deed_type", hint: "Kat Mülkiyetli / Kat İrtifaklı / Hisseli Tapu / Müstakil Tapulu" },
 ];
 
 // Page 3: Boolean + diğer
 const FIELDS_PAGE_3 = [
-  { key: "elevator", label: "Asansör", dbColumn: "elevator", hint: "Evet / Hayır" },
-  { key: "balcony", label: "Balkon", dbColumn: "balcony", hint: "Evet / Hayır" },
+  { key: "elevator", label: "Asansör", dbColumn: "elevator", hint: "Var / Yok (evet/hayır)" },
+  { key: "balcony", label: "Balkon", dbColumn: "balcony", hint: "Var / Yok (evet/hayır)" },
   { key: "swap", label: "Takas", dbColumn: "swap", hint: "Evet / Hayır" },
-  { key: "bathroom_count", label: "Banyo Sayısı", dbColumn: "bathroom_count", hint: "Örnek: 2" },
-  { key: "kitchen_type", label: "Mutfak Tipi", dbColumn: "kitchen_type", hint: "Açık/Kapalı/Amerikan" },
-  { key: "housing_type", label: "Yapı Tipi", dbColumn: "housing_type", hint: "Apartman/Site içi/Müstakil" },
-  { key: "usage_status", label: "Kullanım Durumu", dbColumn: "usage_status", hint: "Boş/Kiracılı/Sahibi" },
+  { key: "bathroom_count", label: "Banyo Sayısı", dbColumn: "bathroom_count", hint: "1 / 2 / 3 / 4+" },
+  { key: "kitchen_type", label: "Mutfak Tipi", dbColumn: "kitchen_type", hint: "Açık (Amerikan) / Kapalı" },
+  { key: "housing_type", label: "Konut Tipi", dbColumn: "housing_type", hint: "Ara Kat / En Üst Kat / Dubleks / Bahçe Dubleksi / Çatı Dubleksi / Tripleks" },
+  { key: "usage_status", label: "Kullanım Durumu", dbColumn: "usage_status", hint: "Boş / Kiracılı / Mülk Sahibi" },
   { key: "network_commission_note", label: "Komisyon Notu", dbColumn: "network_commission_note", hint: "Ortak pazar için not" },
 ];
 

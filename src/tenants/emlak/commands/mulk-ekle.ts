@@ -231,34 +231,35 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "phase") {
     if (value === "2") {
-      // Start Aşama 2 — Kat seçimi
+      // Aşama 2 — Kat seçimi (sahibinden label uyumlu)
       await updateSession(ctx.userId, "floor_select", {});
       await sendList(ctx.phone,
         "🏢 *Aşama 2/3 — Bina Bilgileri*\n\nKat seçin:",
         "Kat", [{ title: "Kat", rows: [
-          { id: "mulkekle:floor:giris", title: "Giriş Kat" },
-          { id: "mulkekle:floor:1", title: "1. Kat" },
-          { id: "mulkekle:floor:2", title: "2. Kat" },
-          { id: "mulkekle:floor:3", title: "3. Kat" },
-          { id: "mulkekle:floor:4", title: "4. Kat" },
-          { id: "mulkekle:floor:5", title: "5. Kat" },
-          { id: "mulkekle:floor:6", title: "6+ Kat" },
+          { id: "mulkekle:floor:Bodrum", title: "Bodrum" },
+          { id: "mulkekle:floor:Zemin", title: "Zemin" },
+          { id: "mulkekle:floor:1", title: "1" },
+          { id: "mulkekle:floor:2", title: "2" },
+          { id: "mulkekle:floor:3", title: "3" },
+          { id: "mulkekle:floor:4", title: "4" },
+          { id: "mulkekle:floor:5", title: "5" },
+          { id: "mulkekle:floor:6-10", title: "6-10" },
+          { id: "mulkekle:floor:11+", title: "11+" },
           { id: "mulkekle:floor:yok", title: "Belirtme" },
         ]}],
       );
       return;
     }
     if (value === "3") {
-      // Start Aşama 3 — Banyo sayısı
+      // Aşama 3 — Banyo (sahibinden label uyumlu: 1, 2, 3, 4+)
       await updateSession(ctx.userId, "bathroom_select", {});
       await sendList(ctx.phone,
         "🚿 *Aşama 3/3 — Detaylar*\n\nBanyo sayısı:",
         "Banyo", [{ title: "Banyo Sayısı", rows: [
-          { id: "mulkekle:bathroom:1", title: "1 Banyo" },
-          { id: "mulkekle:bathroom:2", title: "2 Banyo" },
-          { id: "mulkekle:bathroom:3", title: "3 Banyo" },
-          { id: "mulkekle:bathroom:4", title: "4 Banyo" },
-          { id: "mulkekle:bathroom:5", title: "5+ Banyo" },
+          { id: "mulkekle:bathroom:1", title: "1" },
+          { id: "mulkekle:bathroom:2", title: "2" },
+          { id: "mulkekle:bathroom:3", title: "3" },
+          { id: "mulkekle:bathroom:4+", title: "4+" },
           { id: "mulkekle:bathroom:yok", title: "Belirtme" },
         ]}],
       );
@@ -270,19 +271,21 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   // ═══ AŞAMA 2 ═══
 
   if (field === "floor") {
-    const floor = value === "giris" ? 0 : value === "yok" ? null : parseInt(value, 10) || null;
+    // Store the sahibinden-compatible label as text (not int).
+    // Sahibinden options: Bodrum, Zemin, 1..5, 6-10, 11+
+    const floor = value === "yok" ? null : value === "Bodrum" ? "Bodrum Kat" : value === "Zemin" ? "Zemin Kat" : value;
     await updateSession(ctx.userId, "totalfloors_select", { floor });
     await sendList(ctx.phone, "🏢 Toplam kat sayısı:", "Toplam Kat", [
       { title: "Toplam Kat", rows: [
-        { id: "mulkekle:totalfloors:1", title: "1 katlı" },
-        { id: "mulkekle:totalfloors:2", title: "2 katlı" },
-        { id: "mulkekle:totalfloors:3", title: "3 katlı" },
-        { id: "mulkekle:totalfloors:4", title: "4 katlı" },
-        { id: "mulkekle:totalfloors:5", title: "5 katlı" },
-        { id: "mulkekle:totalfloors:10", title: "6-10 katlı" },
-        { id: "mulkekle:totalfloors:15", title: "11-15 katlı" },
-        { id: "mulkekle:totalfloors:20", title: "16-20 katlı" },
-        { id: "mulkekle:totalfloors:30", title: "21+ katlı" },
+        { id: "mulkekle:totalfloors:1", title: "1" },
+        { id: "mulkekle:totalfloors:2", title: "2" },
+        { id: "mulkekle:totalfloors:3", title: "3" },
+        { id: "mulkekle:totalfloors:4", title: "4" },
+        { id: "mulkekle:totalfloors:5", title: "5" },
+        { id: "mulkekle:totalfloors:6-10", title: "6-10" },
+        { id: "mulkekle:totalfloors:11-15", title: "11-15" },
+        { id: "mulkekle:totalfloors:16-20", title: "16-20" },
+        { id: "mulkekle:totalfloors:21+", title: "21+" },
         { id: "mulkekle:totalfloors:yok", title: "Belirtme" },
       ]},
     ]);
@@ -290,18 +293,20 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   }
 
   if (field === "totalfloors") {
-    const tf = value === "yok" ? null : parseInt(value, 10) || null;
+    // Store as text label matching sahibinden options
+    const tf = value === "yok" ? null : value;
     await updateSession(ctx.userId, "buildingage_select", { total_floors: tf });
     await sendList(ctx.phone, "🏗 Bina yaşı:", "Bina Yaşı", [
       { title: "Bina Yaşı", rows: [
-        { id: "mulkekle:buildingage:0", title: "Sıfır Bina" },
-        { id: "mulkekle:buildingage:1", title: "1-5 Yıl" },
-        { id: "mulkekle:buildingage:6", title: "6-10 Yıl" },
-        { id: "mulkekle:buildingage:11", title: "11-15 Yıl" },
-        { id: "mulkekle:buildingage:16", title: "16-20 Yıl" },
-        { id: "mulkekle:buildingage:21", title: "21-25 Yıl" },
-        { id: "mulkekle:buildingage:26", title: "26-30 Yıl" },
-        { id: "mulkekle:buildingage:31", title: "31+ Yıl" },
+        { id: "mulkekle:buildingage:0", title: "0 (Yeni)" },
+        { id: "mulkekle:buildingage:1", title: "1" },
+        { id: "mulkekle:buildingage:2", title: "2" },
+        { id: "mulkekle:buildingage:3", title: "3" },
+        { id: "mulkekle:buildingage:4", title: "4" },
+        { id: "mulkekle:buildingage:5-10", title: "5-10" },
+        { id: "mulkekle:buildingage:11-15", title: "11-15" },
+        { id: "mulkekle:buildingage:16-20", title: "16-20" },
+        { id: "mulkekle:buildingage:21+", title: "21+" },
         { id: "mulkekle:buildingage:yok", title: "Belirtme" },
       ]},
     ]);
@@ -309,30 +314,36 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   }
 
   if (field === "buildingage") {
-    const age = value === "yok" ? null : parseInt(value, 10);
+    // Store as sahibinden's text label, e.g. "0 (Yeni)" or "5-10"
+    const age = value === "yok" ? null : value === "0" ? "0 (Yeni)" : value;
     await updateSession(ctx.userId, "heating_select", { building_age: age });
     await sendList(ctx.phone, "🔥 Isınma tipi:", "Isınma", [
       { title: "Isınma", rows: [
-        { id: "mulkekle:heating:dogalgaz", title: "Doğalgaz (Kombi)" },
-        { id: "mulkekle:heating:merkezi", title: "Merkezi Sistem" },
+        { id: "mulkekle:heating:kombi", title: "Kombi (Doğalgaz)" },
+        { id: "mulkekle:heating:merkezi", title: "Merkezi" },
+        { id: "mulkekle:heating:yerden", title: "Yerden Isıtma" },
         { id: "mulkekle:heating:klima", title: "Klima" },
         { id: "mulkekle:heating:soba", title: "Soba" },
-        { id: "mulkekle:heating:yerden", title: "Yerden Isıtma" },
-        { id: "mulkekle:heating:yok", title: "Belirtme" },
+        { id: "mulkekle:heating:yok_isinma", title: "Yok" },
+        { id: "mulkekle:heating:belirtme", title: "Belirtme" },
       ]},
     ]);
     return;
   }
 
   if (field === "heating") {
-    const heating = value === "yok" ? null : value;
+    const heatingLabels: Record<string, string> = {
+      kombi: "Kombi (Doğalgaz)", merkezi: "Merkezi", yerden: "Yerden Isıtma",
+      klima: "Klima", soba: "Soba", yok_isinma: "Yok",
+    };
+    const heating = value === "belirtme" ? null : (heatingLabels[value] || value);
     await updateSession(ctx.userId, "parking_select", { heating });
     await sendList(ctx.phone, "🅿️ Otopark:", "Otopark", [
       { title: "Otopark", rows: [
         { id: "mulkekle:parking:acik", title: "Açık Otopark" },
         { id: "mulkekle:parking:kapali", title: "Kapalı Otopark" },
         { id: "mulkekle:parking:acik_kapali", title: "Açık & Kapalı" },
-        { id: "mulkekle:parking:yok", title: "Otopark Yok" },
+        { id: "mulkekle:parking:yok", title: "Yok" },
         { id: "mulkekle:parking:belirtme", title: "Belirtme" },
       ]},
     ]);
@@ -340,7 +351,11 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   }
 
   if (field === "parking") {
-    const parking = value === "belirtme" ? null : value === "yok" ? "Yok" : value;
+    const parkingLabels: Record<string, string> = {
+      acik: "Açık Otopark", kapali: "Kapalı Otopark",
+      acik_kapali: "Açık & Kapalı", yok: "Yok",
+    };
+    const parking = value === "belirtme" ? null : (parkingLabels[value] || value);
     await updateSession(ctx.userId, "facade_select", { parking });
     // Sahibinden's cephe field accepts ONLY 4 cardinal directions
     // (see emlak-danismani-ai-asistanı/.../publishing.ts SAHIBINDEN_FIELDS).
@@ -378,19 +393,24 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   }
 
   if (field === "deed") {
+    // Sahibinden labels: Kat Mülkiyetli, Kat İrtifaklı, Hisseli Tapu, Müstakil Tapulu
     const deedLabels: Record<string, string> = {
-      kat_mulkiyeti: "Kat Mülkiyeti", kat_irtifaki: "Kat İrtifakı",
-      arsa_tapusu: "Arsa Tapusu", hisseli: "Hisseli Tapu", kooperatif: "Kooperatif",
+      kat_mulkiyeti: "Kat Mülkiyetli",
+      kat_irtifaki: "Kat İrtifaklı",
+      hisseli: "Hisseli Tapu",
+      mustakil_tapulu: "Müstakil Tapulu",
     };
     const deed = value === "yok" ? null : deedLabels[value] || value;
     await updateSession(ctx.userId, "housing_select", { deed_type: deed });
-    await sendList(ctx.phone, "🏗 Yapı tipi:", "Yapı Tipi", [
-      { title: "Yapı Tipi", rows: [
-        { id: "mulkekle:housing:apartman", title: "Apartman" },
-        { id: "mulkekle:housing:site_ici", title: "Site İçi" },
-        { id: "mulkekle:housing:mustakil", title: "Müstakil" },
-        { id: "mulkekle:housing:kooperatif", title: "Kooperatif" },
-        { id: "mulkekle:housing:rezidans", title: "Rezidans" },
+    // Sahibinden konut_tipi: Ara Kat, En Üst Kat, Dubleks, Bahçe Dubleksi, Çatı Dubleksi, Tripleks
+    await sendList(ctx.phone, "🏗 Konut Tipi:", "Konut Tipi", [
+      { title: "Konut Tipi", rows: [
+        { id: "mulkekle:housing:ara_kat", title: "Ara Kat" },
+        { id: "mulkekle:housing:en_ust_kat", title: "En Üst Kat" },
+        { id: "mulkekle:housing:dubleks", title: "Dubleks" },
+        { id: "mulkekle:housing:bahce_dubleksi", title: "Bahçe Dubleksi" },
+        { id: "mulkekle:housing:cati_dubleksi", title: "Çatı Dubleksi" },
+        { id: "mulkekle:housing:tripleks", title: "Tripleks" },
         { id: "mulkekle:housing:belirtme", title: "Belirtme" },
       ]},
     ]);
@@ -399,22 +419,24 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "housing") {
     const housingLabels: Record<string, string> = {
-      apartman: "Apartman", site_ici: "Site İçi", mustakil: "Müstakil",
-      kooperatif: "Kooperatif", rezidans: "Rezidans",
+      ara_kat: "Ara Kat", en_ust_kat: "En Üst Kat", dubleks: "Dubleks",
+      bahce_dubleksi: "Bahçe Dubleksi", cati_dubleksi: "Çatı Dubleksi", tripleks: "Tripleks",
     };
     const housing = value === "belirtme" ? null : housingLabels[value] || value;
     await updateSession(ctx.userId, "usage_select", { housing_type: housing });
+    // Sahibinden kullanım: Boş, Kiracılı, Mülk Sahibi
     await sendButtons(ctx.phone, "🔑 Kullanım durumu:", [
       { id: "mulkekle:usage:bos", title: "Boş" },
       { id: "mulkekle:usage:kiracili", title: "Kiracılı" },
-      { id: "mulkekle:usage:sahibi", title: "Sahibi Oturuyor" },
+      { id: "mulkekle:usage:mulk_sahibi", title: "Mülk Sahibi" },
     ]);
     return;
   }
 
   if (field === "usage") {
-    const usageLabels: Record<string, string> = { bos: "Boş", kiracili: "Kiracılı", sahibi: "Sahibi Oturuyor" };
+    const usageLabels: Record<string, string> = { bos: "Boş", kiracili: "Kiracılı", mulk_sahibi: "Mülk Sahibi" };
     await updateSession(ctx.userId, "swap_select", { usage_status: usageLabels[value] || value });
+    // Sahibinden takas: Evet / Hayır
     await sendButtons(ctx.phone, "🔄 Takas kabul edilir mi?", [
       { id: "mulkekle:swap:evet", title: "Evet" },
       { id: "mulkekle:swap:hayir", title: "Hayır" },
@@ -424,6 +446,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   }
 
   if (field === "swap") {
+    // Store as boolean for DB compat. fill-data endpoint converts to "Evet"/"Hayır" text for sahibinden.
     const swap = value === "evet" ? true : value === "hayir" ? false : null;
     await updateSession(ctx.userId, "phase2_done", { swap });
     await sendButtons(ctx.phone,
@@ -439,18 +462,19 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   // ═══ AŞAMA 3 ═══
 
   if (field === "bathroom") {
-    const bc = value === "yok" ? null : parseInt(value, 10) || null;
+    // Store sahibinden's exact label: "1", "2", "3", "4+"
+    const bc = value === "yok" ? null : value;
     await updateSession(ctx.userId, "kitchen_select", { bathroom_count: bc });
+    // Sahibinden mutfak: Açık (Amerikan) / Kapalı
     await sendButtons(ctx.phone, "🍳 Mutfak tipi:", [
-      { id: "mulkekle:kitchen:acik", title: "Açık Mutfak" },
-      { id: "mulkekle:kitchen:kapali", title: "Kapalı Mutfak" },
-      { id: "mulkekle:kitchen:amerikan", title: "Amerikan" },
+      { id: "mulkekle:kitchen:acik_amerikan", title: "Açık (Amerikan)" },
+      { id: "mulkekle:kitchen:kapali", title: "Kapalı" },
     ]);
     return;
   }
 
   if (field === "kitchen") {
-    const kitchenLabels: Record<string, string> = { acik: "Açık", kapali: "Kapalı", amerikan: "Amerikan" };
+    const kitchenLabels: Record<string, string> = { acik_amerikan: "Açık (Amerikan)", kapali: "Kapalı" };
     await updateSession(ctx.userId, "elevator_select", { kitchen_type: kitchenLabels[value] || value });
     await sendButtons(ctx.phone, "🛗 Asansör var mı?", [
       { id: "mulkekle:elevator:evet", title: "Evet" },
@@ -506,8 +530,12 @@ async function showSummaryAndConfirm(ctx: WaContext): Promise<void> {
 
   const loc = [d.neighborhood, d.district, d.city].filter(Boolean).join(", ");
   if (loc) s += `📍 ${loc}\n`;
-  if (d.floor !== undefined && d.floor !== null) { s += `🏢 ${d.floor === 0 ? "Giriş" : d.floor}. Kat`; if (d.total_floors) s += ` / ${d.total_floors}`; s += `\n`; }
-  if (d.building_age !== undefined && d.building_age !== null) s += `🏗 ${d.building_age} yaş\n`;
+  if (d.floor !== undefined && d.floor !== null) {
+    s += `🏢 Kat: ${d.floor}`;
+    if (d.total_floors) s += ` / ${d.total_floors}`;
+    s += `\n`;
+  }
+  if (d.building_age !== undefined && d.building_age !== null) s += `🏗 Bina yaşı: ${d.building_age}\n`;
   if (d.heating) s += `🔥 ${d.heating}\n`;
   if (d.parking) s += `🅿️ ${d.parking}\n`;
   if (d.facade) s += `🧭 ${d.facade}\n`;
@@ -515,7 +543,7 @@ async function showSummaryAndConfirm(ctx: WaContext): Promise<void> {
   if (d.housing_type) s += `🏗 ${d.housing_type}\n`;
   if (d.usage_status) s += `🔑 ${d.usage_status}\n`;
   if (d.swap === true) s += `🔄 Takas: Evet\n`;
-  if (d.bathroom_count) s += `🚿 ${d.bathroom_count} banyo\n`;
+  if (d.bathroom_count) s += `🚿 Banyo: ${d.bathroom_count}\n`;
   if (d.kitchen_type) s += `🍳 ${d.kitchen_type}\n`;
   if (d.elevator === true) s += `🛗 Asansör: Var\n`;
   if (d.balcony === true) s += `🏠 Balkon: Var\n`;
