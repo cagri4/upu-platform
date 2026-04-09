@@ -135,28 +135,40 @@ export async function completeMission(userId: string, missionKey: string): Promi
 
   if (!mission) return { completed: false, points: 0, nextMission: null, message: "", title: "", emoji: "" };
 
-  // Check if already completed (non-repeatable)
-  if (!mission.is_repeatable) {
-    const { data: existing } = await supabase
-      .from("user_mission_progress")
-      .select("id, status")
-      .eq("user_id", userId)
-      .eq("mission_id", mission.id)
-      .maybeSingle();
+  // Find any existing progress row for this mission (could be active from onboarding)
+  const { data: existing } = await supabase
+    .from("user_mission_progress")
+    .select("id, status")
+    .eq("user_id", userId)
+    .eq("mission_id", mission.id)
+    .maybeSingle();
 
-    if (existing?.status === "completed") {
-      return { completed: false, points: 0, nextMission: null, message: "", title: mission.title, emoji: mission.emoji };
-    }
+  // Already completed (non-repeatable) — no-op
+  if (!mission.is_repeatable && existing?.status === "completed") {
+    return { completed: false, points: 0, nextMission: null, message: "", title: mission.title, emoji: mission.emoji };
   }
 
-  // Complete mission
-  await supabase.from("user_mission_progress").upsert({
-    user_id: userId,
-    mission_id: mission.id,
-    status: "completed",
-    completed_at: new Date().toISOString(),
-    points_earned: mission.points,
-  });
+  // Complete mission: UPDATE existing row if present, INSERT otherwise.
+  // Explicit branch — not upsert — so we never leave an orphan active row
+  // next to a new completed row (which would poison HUD/active queries).
+  if (existing) {
+    await supabase
+      .from("user_mission_progress")
+      .update({
+        status: "completed",
+        completed_at: new Date().toISOString(),
+        points_earned: mission.points,
+      })
+      .eq("id", existing.id);
+  } else {
+    await supabase.from("user_mission_progress").insert({
+      user_id: userId,
+      mission_id: mission.id,
+      status: "completed",
+      completed_at: new Date().toISOString(),
+      points_earned: mission.points,
+    });
+  }
 
   // Activate next mission if exists
   if (mission.next_mission) {
@@ -278,32 +290,45 @@ export async function getWeeklyPerformance(userId: string, tenantKey: string): P
  *
  * Returns empty string if no active mission (don't render anything).
  */
-export async function getActiveMissionFooter(userId: string, tenantKey: string): Promise<string> {
+/**
+ * Returns the user's current active mission row (lowest sort_order among
+ * their active missions scoped to the tenant), or null if none.
+ * Used by HUD footer, menu row, and other Quest Director surfaces.
+ */
+export async function getActiveMission(userId: string, tenantKey: string): Promise<{ mission_key: string; title: string; emoji: string } | null> {
   const supabase = getServiceClient();
 
-  // Find all currently active (not yet completed) mission IDs for user
   const { data: progresses } = await supabase
     .from("user_mission_progress")
     .select("mission_id")
     .eq("user_id", userId)
     .eq("status", "active");
 
-  if (!progresses || progresses.length === 0) return "";
+  if (!progresses || progresses.length === 0) return null;
 
-  // Pick the lowest sort_order mission scoped to this tenant
   const ids = progresses.map(p => p.mission_id);
   const { data: missions } = await supabase
     .from("platform_missions")
-    .select("title, emoji, sort_order")
+    .select("mission_key, title, emoji, sort_order")
     .in("id", ids)
     .eq("tenant_key", tenantKey)
     .order("sort_order")
     .limit(1);
 
   const mission = missions?.[0];
-  if (!mission) return "";
+  if (!mission) return null;
 
-  return `\n\n━━━━━━━━━━━━━\n🎯 *Aktif Görev:* ${mission.emoji || "○"} ${mission.title}`;
+  return {
+    mission_key: mission.mission_key,
+    title: mission.title,
+    emoji: mission.emoji || "○",
+  };
+}
+
+export async function getActiveMissionFooter(userId: string, tenantKey: string): Promise<string> {
+  const mission = await getActiveMission(userId, tenantKey);
+  if (!mission) return "";
+  return `\n\n━━━━━━━━━━━━━\n🎯 *Aktif Görev:* ${mission.emoji} ${mission.title}`;
 }
 
 // ── Progress Summary (for brifing) ──────────────────────────────────

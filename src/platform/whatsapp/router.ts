@@ -519,27 +519,39 @@ async function showMenu(
     return;
   }
 
-  // HUD: show active mission first if exists (Quest Director pattern)
-  const { getActiveMissionFooter } = await import("@/platform/gamification/engine");
-  const hudFooter = await getActiveMissionFooter(ctx.userId, ctx.tenantKey);
+  // HUD: resolve active mission + its resume CTA (Quest Director pattern).
+  // Instead of a passive footer we render it as an actionable row at the
+  // top of the favorites list — single tap to resume the mission.
+  const { getActiveMission } = await import("@/platform/gamification/engine");
+  const { MISSION_CTA } = await import("@/platform/gamification/triggers");
+  const activeMission = await getActiveMission(ctx.userId, ctx.tenantKey);
+  const activeCta = activeMission ? MISSION_CTA[activeMission.mission_key] : null;
 
   // Message 1: Favorites as list (user's or default, up to 10)
   const userFavs = await getUserFavorites(ctx.userId);
   const favCmds = userFavs.length > 0 ? userFavs : (tenant.defaultFavorites || []);
-  if (favCmds.length > 0) {
-    const favRows = favCmds.slice(0, 10).map(cmd => ({
-      id: `cmd:${cmd}`,
-      title: (COMMAND_LABELS[cmd] || cmd).substring(0, 24),
-      description: "",
-    }));
+
+  const favRows = favCmds.slice(0, 10).map(cmd => ({
+    id: `cmd:${cmd}`,
+    title: (COMMAND_LABELS[cmd] || cmd).substring(0, 24),
+    description: "",
+  }));
+
+  // Prepend active mission as a clickable row (routes to its CTA button id)
+  if (activeMission && activeCta) {
+    favRows.unshift({
+      id: activeCta.button.id,
+      title: `🎯 ${activeMission.title}`.substring(0, 24),
+      description: `Aktif görev — ${activeCta.hint}`.substring(0, 72),
+    });
+  }
+
+  if (favRows.length > 0) {
     await sendList(ctx.phone,
-      `${tenant.icon} *${tenant.name}*\n\n⭐ Favorilerim:\n\n_("menu" yazarak buraya dönebilirsiniz.)_${hudFooter}`,
+      `${tenant.icon} *${tenant.name}*\n\n⭐ Favorilerim:\n\n_("menu" yazarak buraya dönebilirsiniz.)_`,
       "Favoriler",
-      [{ title: "Favorilerim", rows: favRows }],
+      [{ title: "Favorilerim", rows: favRows.slice(0, 10) }],
     );
-  } else if (hudFooter) {
-    // No favorites but we have a HUD to show — send standalone
-    await sendText(ctx.phone, hudFooter.trim());
   }
 
   // Message 2: List with employees (filtered by role)
