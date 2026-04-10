@@ -121,13 +121,10 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
     case "neighborhood": {
       const neighborhood = skip ? null : text;
       await updateSession(ctx.userId, "phase1_done", { neighborhood });
-      await sendButtons(ctx.phone,
-        "✅ *Aşama 1 tamamlandı* — Temel Bilgiler\n\nDevam etmek ister misiniz?",
-        [
-          { id: "mulkekle:phase:2", title: "▶ Bina Bilgileri" },
-          { id: "mulkekle:finalize:ok", title: "💾 Kaydet ve Bitir" },
-        ],
-      );
+      // Corridor: no "Kaydet ve Bitir" shortcut. Auto-continue to Phase 2.
+      await sendText(ctx.phone, "✅ *Aşama 1 tamamlandı* — Temel Bilgiler\n\nBina bilgilerine geçiyoruz...");
+      // Trigger phase 2 start directly
+      await handleMulkEkleCallback(ctx, "mulkekle:phase:2");
       return;
     }
 
@@ -449,13 +446,9 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
     // Store as boolean for DB compat. fill-data endpoint converts to "Evet"/"Hayır" text for sahibinden.
     const swap = value === "evet" ? true : value === "hayir" ? false : null;
     await updateSession(ctx.userId, "phase2_done", { swap });
-    await sendButtons(ctx.phone,
-      "✅ *Aşama 2 tamamlandı* — Bina Bilgileri\n\nDevam etmek ister misiniz?",
-      [
-        { id: "mulkekle:phase:3", title: "▶ Detaylar" },
-        { id: "mulkekle:finalize:ok", title: "💾 Kaydet ve Bitir" },
-      ],
-    );
+    // Corridor: auto-continue to Phase 3, no shortcut.
+    await sendText(ctx.phone, "✅ *Aşama 2 tamamlandı* — Bina Bilgileri\n\nDetaylara geçiyoruz...");
+    await handleMulkEkleCallback(ctx, "mulkekle:phase:3");
     return;
   }
 
