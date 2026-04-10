@@ -166,11 +166,17 @@ const COMMAND_MISSION_MAP: Record<string, Record<string, string>> = {
 
 // ── Trigger after command execution ─────────────────────────────────
 
+/**
+ * @param silent — if true, mission completes and XP is awarded but NO
+ *   WhatsApp popup message is sent. Used during field-edit flows where
+ *   the popup would interrupt the user's editing loop.
+ */
 export async function triggerMissionCheck(
   userId: string,
   tenantKey: string,
   commandName: string,
   phone: string,
+  silent = false,
 ): Promise<void> {
   try {
     // Update streak — capture current value for scoreboard
@@ -226,51 +232,54 @@ export async function triggerMissionCheck(
 
     if (!result.completed) return;
 
-    // ── Scoreboard popup (game-style XP/level-up) ─────────────────
-    const sep = "━━━━━━━━━━━━━";
-    let msg = `${sep}\n🎮 *İLERLEME*\n`;
-    msg += `${result.emoji} ${result.title} ✓\n`;
+    // In silent mode: mission completed, XP awarded, but no popup message.
+    // Used during field-edit loops where the popup would interrupt the user.
+    if (!silent) {
+      // ── Scoreboard popup (game-style XP/level-up) ─────────────────
+      const sep = "━━━━━━━━━━━━━";
+      let msg = `${sep}\n🎮 *İLERLEME*\n`;
+      msg += `${result.emoji} ${result.title} ✓\n`;
 
-    // Show XP earned + employee info if available
-    const xp = result.xpResult as { xp_added?: number; employee_key?: string; tier_changed?: boolean; new_tier?: number; rank_changed?: boolean; new_rank?: number } | null;
-    if (xp?.xp_added && xp.employee_key) {
-      const { getEmployee, TIER_NAMES, TIER_STARS } = await import("./employees");
-      const emp = getEmployee(tenantKey, xp.employee_key);
-      if (emp) {
-        msg += `${emp.icon} ${emp.name} +${xp.xp_added} XP\n`;
+      // Show XP earned + employee info if available
+      const xp = result.xpResult as { xp_added?: number; employee_key?: string; tier_changed?: boolean; new_tier?: number; rank_changed?: boolean; new_rank?: number } | null;
+      if (xp?.xp_added && xp.employee_key) {
+        const { getEmployee } = await import("./employees");
+        const emp = getEmployee(tenantKey, xp.employee_key);
+        if (emp) {
+          msg += `${emp.icon} ${emp.name} +${xp.xp_added} XP\n`;
+        }
       }
-    }
 
-    msg += `🔥 Seri: ${streak.current} gün`;
-    if (streak.current >= 7) msg += " — harika!";
-    else if (streak.current === 1) msg += " — yeni başladın!";
-    msg += `\n${sep}`;
+      msg += `🔥 Seri: ${streak.current} gün`;
+      if (streak.current >= 7) msg += " — harika!";
+      else if (streak.current === 1) msg += " — yeni başladın!";
+      msg += `\n${sep}`;
 
-    // Tier-up celebration (appended before next mission hint)
-    if (xp?.tier_changed && xp.new_tier) {
-      const { getEmployee, TIER_NAMES, TIER_STARS } = await import("./employees");
-      const emp = getEmployee(tenantKey, xp.employee_key!);
-      msg += `\n\n🎖 *KADEME ATLADI!*\n${emp?.icon || "⭐"} ${emp?.name || xp.employee_key} → ${TIER_NAMES[xp.new_tier]} ${TIER_STARS[xp.new_tier]}`;
-    }
+      // Tier-up celebration
+      if (xp?.tier_changed && xp.new_tier) {
+        const { getEmployee, TIER_NAMES, TIER_STARS } = await import("./employees");
+        const emp = getEmployee(tenantKey, xp.employee_key!);
+        msg += `\n\n🎖 *KADEME ATLADI!*\n${emp?.icon || "⭐"} ${emp?.name || xp.employee_key} → ${TIER_NAMES[xp.new_tier]} ${TIER_STARS[xp.new_tier]}`;
+      }
 
-    // Rank-up celebration
-    if (xp?.rank_changed && xp.new_rank) {
-      const { USER_RANK_NAMES } = await import("./employees");
-      msg += `\n\n🏆 *RÜTBE ATLADIN!*\n👤 ${USER_RANK_NAMES[xp.new_rank]}`;
-    }
+      // Rank-up celebration
+      if (xp?.rank_changed && xp.new_rank) {
+        const { USER_RANK_NAMES } = await import("./employees");
+        msg += `\n\n🏆 *RÜTBE ATLADIN!*\n👤 ${USER_RANK_NAMES[xp.new_rank]}`;
+      }
 
-    if (result.nextMission) {
-      const cta = MISSION_CTA[result.nextMission];
-      if (cta) {
-        msg += `\n\n🎯 *Sonraki Görev*\n${cta.hint}`;
-        await sendButtons(phone, msg, [cta.button]);
+      if (result.nextMission) {
+        const cta = MISSION_CTA[result.nextMission];
+        if (cta) {
+          msg += `\n\n🎯 *Sonraki Görev*\n${cta.hint}`;
+          await sendButtons(phone, msg, [cta.button]);
+        } else {
+          await sendText(phone, msg);
+        }
       } else {
-        // No mapped CTA — send scoreboard only
+        msg += "\n\n🌟 Tüm keşif görevlerini tamamladın! Artık profesyonelsin.";
         await sendText(phone, msg);
       }
-    } else {
-      msg += "\n\n🌟 Tüm keşif görevlerini tamamladın! Artık profesyonelsin.";
-      await sendText(phone, msg);
     }
 
     // Check cross-employee combo missions (Junior+ only)

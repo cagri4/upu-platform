@@ -855,10 +855,13 @@ export async function handleMulkDuzenleStep(ctx: WaContext, session: CommandSess
     { id: "cmd:menu", title: "Ana Menü" },
   ]);
 
-  // Gamification: mission fires ONLY after real data change, not on flow open
+  // Gamification: mission fires silently during field edits — XP is awarded
+  // but no popup message sent. The popup would interrupt the edit loop by
+  // showing [📸 Fotoğraf Ekle] which confuses the user mid-editing.
+  // The user sees their progress via /ekibim or menu HUD instead.
   try {
     const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-    await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_bilgi_updated", ctx.phone);
+    await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_bilgi_updated", ctx.phone, true);
   } catch { /* don't break main flow */ }
 }
 
