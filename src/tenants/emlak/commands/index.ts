@@ -123,6 +123,7 @@ export const emlakCommands: TenantCommandRegistry = {
     "st:": handleSatisTavsiyeCallback,
     "op:": handleOrtakPazarCallback,
     "foto_select:": handleFotografCallback,
+    "foto_done": handleFotografCallback,
     "paylas_select:": handlePaylasCallback,
     "pub:": handleYayinlaCallback,
     "dg:": handleDegerleCallback,

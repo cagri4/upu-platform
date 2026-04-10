@@ -141,6 +141,7 @@ const COMMAND_MISSION_MAP: Record<string, Record<string, string>> = {
     // fotograf is still mapped because photo upload happens in the web panel,
     // not over WhatsApp — opening the command is the best signal we have.
     fotograf: "emlak_mulk_foto",
+    mulk_foto_uploaded: "emlak_mulk_foto",
     fiyatsor: "emlak_fiyat_kontrol",
     degerle: "emlak_fiyat_kontrol",
     // Müşteri (flow starters — same caveat as fotograf, upgrade to custom

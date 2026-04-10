@@ -77,13 +77,30 @@ export async function handleFotografCallback(ctx: WaContext, data: string): Prom
       return;
     }
 
+    // Start foto_upload session — user can now send photos directly
+    await startSession(ctx.userId, ctx.tenantId, "foto_upload", "waiting_photo");
+    await updateSession(ctx.userId, "waiting_photo", { propertyId: propId, propertyTitle: prop.title });
+
     await sendButtons(ctx.phone,
-      `📷 *${prop.title}*\n\nMevcut: ${existing} | Kalan: ${remaining}\n\nFotoğrafları web panelden yükleyebilirsiniz. Fotoğraflar otomatik olarak optimize edilecek.`,
+      `📷 *${prop.title}*\n\nMevcut: ${existing} | Kalan: ${remaining}\n\n📱 Fotoğrafları şimdi gönderin — telefondan çekin veya galeriden seçin.\n\nBitirdiğinizde "Bitti" butonuna basın.`,
       [
-        { id: "cmd:webpanel", title: "Web Panel" },
-        { id: "cmd:menu", title: "Ana Menü" },
+        { id: "foto_done", title: "✅ Bitti" },
       ],
     );
+    return;
+  }
+
+  if (data === "foto_done") {
+    await endSession(ctx.userId);
+    await sendButtons(ctx.phone, "✅ Fotoğraf yükleme tamamlandı.", [
+      { id: "cmd:menu", title: "Ana Menü" },
+    ]);
+
+    // Gamification trigger
+    try {
+      const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+      await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_foto_uploaded", ctx.phone);
+    } catch { /* don't break */ }
     return;
   }
 }

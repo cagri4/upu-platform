@@ -122,16 +122,24 @@ function parseWebhook(payload: Record<string, unknown>) {
     const msg = messages[0];
     const contacts = (value?.contacts as Array<Record<string, unknown>>)?.[0];
 
+    // Extract image media_id if message is a photo
+    const imageData = msg.type === "image"
+      ? { mediaId: (msg.image as Record<string, string>)?.id || "", caption: (msg.image as Record<string, string>)?.caption || "" }
+      : null;
+
     return {
       phone: msg.from as string,
       name: (contacts?.profile as Record<string, string>)?.name || "",
       messageId: msg.id as string || "",
       type: msg.type as string,
-      text: msg.type === "text" ? ((msg.text as Record<string, string>)?.body || "").trim() : "",
+      text: msg.type === "text" ? ((msg.text as Record<string, string>)?.body || "").trim()
+        : msg.type === "image" ? (msg.image as Record<string, string>)?.caption?.trim() || ""
+        : "",
       interactiveId: msg.type === "interactive"
         ? ((msg.interactive as Record<string, Record<string, string>>)?.button_reply?.id ||
            (msg.interactive as Record<string, Record<string, string>>)?.list_reply?.id || "")
         : "",
+      imageMediaId: imageData?.mediaId || null,
     };
   } catch {
     return null;
@@ -163,8 +171,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "ok" });
     }
 
-    const { phone, name, messageId, text, interactiveId } = parsed;
-    console.log(`[wa-platform] ${phone}: ${text || interactiveId}`);
+    const { phone, name, messageId, text, interactiveId, imageMediaId } = parsed;
+    console.log(`[wa-platform] ${phone}: ${text || interactiveId || (imageMediaId ? "[image]" : "")}`);
 
     // Log incoming message (fire-and-forget)
     logEvent({ eventType: "message", eventName: "incoming", phone, metadata: { text: text?.substring(0, 200), interactiveId } });
@@ -494,6 +502,25 @@ export async function POST(req: NextRequest) {
         logError(ctx, onbErr instanceof Error ? onbErr.message : String(onbErr), { context: "onboarding" });
         await sendText(phone, "Kurulum sırasında hata oluştu. \"menu\" yazarak devam edebilirsiniz.");
       }
+      return NextResponse.json({ status: "ok" });
+    }
+
+    // ── Handle incoming photo for active foto_upload session ──
+    if (imageMediaId) {
+      const { getSession } = await import("@/platform/whatsapp/session");
+      const fotoSession = await getSession(user.id);
+      if (fotoSession?.command === "foto_upload") {
+        try {
+          const { handlePhotoUpload } = await import("@/platform/whatsapp/photo-upload");
+          await handlePhotoUpload(ctx, imageMediaId, fotoSession);
+        } catch (photoErr) {
+          console.error("[wa-platform] photo upload error:", photoErr);
+          await sendText(phone, "❌ Fotoğraf yüklenirken hata oluştu. Tekrar deneyin.");
+        }
+        return NextResponse.json({ status: "ok" });
+      }
+      // No active foto session — ignore image or tell user
+      await sendText(phone, "📷 Fotoğraf almak için önce /fotograf komutuyla mülk seçin.");
       return NextResponse.json({ status: "ok" });
     }
 
