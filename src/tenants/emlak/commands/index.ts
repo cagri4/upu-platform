@@ -15,7 +15,7 @@ import { handleSozlesmelerim, handleWebpanel, handleSozlesme, handleSozlesmeStep
 import { handleAnaliz, handleRapor } from "./analiz";
 
 // ── Newly ported commands ────────────────────────────────────────────
-import { handleMulkDetay, handleMulkDetayCallback, handleMulkDuzenle, handleMulkDuzenleCallback, handleMulkEditFieldCallback, handleMulkDuzenleStep, handleMulkSil, handleMulkSilCallback, handleMulkYonet, handleMulkYonetSelectCallback, handleMulkYonetActionCallback, handleAiDescCallback } from "./mulk-yonetim";
+import { handleMulkDetay, handleMulkDetayCallback, handleMulkDuzenle, handleMulkDuzenleCallback, handleMulkEditFieldCallback, handleMulkDuzenleStep, handleMulkSil, handleMulkSilCallback, handleMulkYonet, handleMulkYonetSelectCallback, handleMulkYonetActionCallback, handleAiDescCallback, handleAiDescWizardStep } from "./mulk-yonetim";
 import { handleTara, handleTaraStep, handleEkle } from "./portfolio";
 import { handleMusteriEkle, handleMusteriEkleStep, handleMusteriEkleCallback } from "./musteri-ekle";
 import { handleMusteriDuzenle, handleMusteriDuzenleCallback, handleMusteriDuzenleStep } from "./musteri-duzenle";
@@ -84,6 +84,7 @@ export const emlakCommands: TenantCommandRegistry = {
     musteriEkle: handleMusteriEkleStep,
     musteriDuzenle: handleMusteriDuzenleStep,
     mulkduzenle: handleMulkDuzenleStep,
+    ai_desc_wizard: handleAiDescWizardStep,
     hatirlatma: handleHatirlatmaStep,
     takipEt: handleTakipEtStep,
     mulkoner: handleMulkOnerStep,

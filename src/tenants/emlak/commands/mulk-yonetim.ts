@@ -450,27 +450,16 @@ export async function handleMulkEditFieldCallback(ctx: WaContext, data: string):
   const fieldDef = EDITABLE_FIELDS.find(f => f.key === field);
   if (!fieldDef) return;
 
-  // Special handling for "description" — offer AI generation if enough data
+  // Special handling for "description" — always offer AI generation
   if (field === "description") {
-    const supabase = getServiceClient();
-    const { data: prop } = await supabase
-      .from("emlak_properties")
-      .select("title, price, area, rooms, location_district, location_neighborhood, type, listing_type")
-      .eq("id", propId)
-      .single();
-
-    const hasEnoughData = prop?.title && prop?.price && prop?.area && prop?.rooms;
-    if (hasEnoughData) {
-      await sendButtons(ctx.phone,
-        `📝 *İlan Açıklaması*\n\nMülk bilgilerinize göre AI profesyonel açıklama oluşturabilir veya kendiniz yazabilirsiniz.`,
-        [
-          { id: `ai_desc:generate:${propId}`, title: "🤖 AI ile Oluştur" },
-          { id: `ai_desc:manual:${propId}`, title: "✏️ Kendin Yaz" },
-        ],
-      );
-      return;
-    }
-    // Not enough data — fall through to manual
+    await sendButtons(ctx.phone,
+      `📝 *İlan Açıklaması*\n\nAI profesyonel açıklama oluşturabilir (eksik bilgiler varsa önce sorar) veya kendiniz yazabilirsiniz.`,
+      [
+        { id: `ai_desc:generate:${propId}`, title: "🤖 AI ile Oluştur" },
+        { id: `ai_desc:manual:${propId}`, title: "✏️ Kendin Yaz" },
+      ],
+    );
+    return;
   }
 
   await startSession(ctx.userId, ctx.tenantId, "mulkduzenle", "waiting_value");
@@ -497,7 +486,7 @@ export async function handleAiDescCallback(ctx: WaContext, data: string): Promis
   }
 
   if (action === "generate" || action === "regenerate") {
-    // Fetch property data
+    // Fetch property data and check what's missing
     const { data: prop } = await supabase
       .from("emlak_properties")
       .select("*")
@@ -509,76 +498,48 @@ export async function handleAiDescCallback(ctx: WaContext, data: string): Promis
       return;
     }
 
-    await sendText(ctx.phone, "🤖 Açıklama oluşturuluyor...");
-
-    // Build property summary for AI
     const p = prop as Record<string, unknown>;
-    let info = "";
-    if (p.title) info += `Başlık: ${p.title}\n`;
-    if (p.listing_type) info += `Tür: ${p.listing_type === "satilik" ? "Satılık" : "Kiralık"}\n`;
-    if (p.type) info += `Mülk tipi: ${p.type}\n`;
-    if (p.price) info += `Fiyat: ${new Intl.NumberFormat("tr-TR").format(p.price as number)} TL\n`;
-    if (p.area) info += `Brüt alan: ${p.area} m²\n`;
-    if (p.net_area) info += `Net alan: ${p.net_area} m²\n`;
-    if (p.rooms) info += `Oda: ${p.rooms}\n`;
-    if (p.floor) info += `Kat: ${p.floor}\n`;
-    if (p.total_floors) info += `Toplam kat: ${p.total_floors}\n`;
-    if (p.building_age) info += `Bina yaşı: ${p.building_age}\n`;
-    if (p.heating) info += `Isınma: ${p.heating}\n`;
-    if (p.parking) info += `Otopark: ${p.parking}\n`;
-    if (p.facade) info += `Cephe: ${p.facade}\n`;
-    if (p.elevator) info += `Asansör: Var\n`;
-    if (p.balcony) info += `Balkon: Var\n`;
-    const loc = [p.location_neighborhood, p.location_district, p.location_city].filter(Boolean).join(", ");
-    if (loc) info += `Konum: ${loc}\n`;
-    if (p.deed_type) info += `Tapu: ${p.deed_type}\n`;
-    if (p.housing_type) info += `Konut tipi: ${p.housing_type}\n`;
 
-    try {
-      const { askClaude } = await import("@/platform/ai/claude");
-      const description = await askClaude(
-        `Sen profesyonel bir emlak danışmanısın. Türkiye'de emlak ilan açıklamaları yazıyorsun.
-Kurallar:
-- Türkçe yaz, profesyonel ve çekici bir dil kullan
-- 3-5 paragraf, toplam 150-250 kelime
-- Mülkün öne çıkan özelliklerini vurgula
-- Bölge avantajlarını belirt
-- Abartma, gerçekçi ol
-- Emoji kullanMA
-- "Detaylı bilgi için arayın" gibi iletişim cümleleri ekleME
-- Sadece açıklama metnini döndür, başka bir şey yazma`,
-        `Şu mülk için profesyonel bir ilan açıklaması yaz:\n\n${info}`,
-        500,
-      );
+    // 10 key fields for AI description quality
+    const KEY_FIELDS = [
+      { key: "title", db: "title", label: "İlan başlığı", question: "📌 İlan başlığını yazın:" },
+      { key: "price", db: "price", label: "Fiyat", question: "💰 Fiyatı yazın (örn: 4.5M, 75 bin):" },
+      { key: "area", db: "area", label: "Brüt m²", question: "📐 Brüt metrekare yazın (örn: 120):" },
+      { key: "rooms", db: "rooms", label: "Oda sayısı", question: "🛏 Oda sayısını yazın (örn: 3+1):" },
+      { key: "location_district", db: "location_district", label: "İlçe", question: "📍 İlçe yazın (örn: Bodrum):" },
+      { key: "floor", db: "floor", label: "Kat", question: "🏢 Bulunduğu kat (örn: 3, Zemin, Bodrum):" },
+      { key: "building_age", db: "building_age", label: "Bina yaşı", question: "🏗 Bina yaşı (örn: 0, 5-10, 21+):" },
+      { key: "heating", db: "heating", label: "Isınma", question: "🔥 Isınma tipi (Kombi/Merkezi/Klima/Soba):" },
+      { key: "facade", db: "facade", label: "Cephe", question: "🧭 Cephe yönü (Kuzey/Güney/Doğu/Batı):" },
+      { key: "elevator", db: "elevator", label: "Asansör", question: "🛗 Asansör var mı? (Evet/Hayır):" },
+    ];
 
-      if (!description) {
-        await sendText(ctx.phone, "❌ AI açıklama oluşturamadı. Manuel yazabilirsiniz.");
-        await startSession(ctx.userId, ctx.tenantId, "mulkduzenle", "waiting_value");
-        await updateSession(ctx.userId, "waiting_value", { propertyId: propId, field: "description", dbColumn: "description" });
-        return;
-      }
+    // Find which fields are empty
+    const missingFields = KEY_FIELDS.filter(f => {
+      const val = p[f.db];
+      return val === null || val === undefined || val === "";
+    });
 
-      // Show preview with approve/regenerate/manual buttons
-      await sendButtons(ctx.phone,
-        `📝 *AI Açıklama Önerisi:*\n\n${description.substring(0, 900)}`,
-        [
-          { id: `ai_desc:approve:${propId}`, title: "✅ Onayla" },
-          { id: `ai_desc:regenerate:${propId}`, title: "🔄 Yeniden Üret" },
-        ],
-      );
-
-      // Store generated description in session for approval
-      await startSession(ctx.userId, ctx.tenantId, "mulkduzenle", "ai_desc_pending");
-      await updateSession(ctx.userId, "ai_desc_pending", {
-        propertyId: propId,
-        field: "description",
-        dbColumn: "description",
-        aiDescription: description,
-      });
-    } catch (err) {
-      console.error("[ai-desc] error:", err);
-      await sendText(ctx.phone, "❌ AI hatası. Manuel yazabilirsiniz.");
+    if (missingFields.length === 0 || action === "regenerate") {
+      // All filled (or regenerate) — go directly to AI generation
+      await generateAndShowDescription(ctx, supabase, propId, p);
+      return;
     }
+
+    // Missing fields exist — start mini wizard
+    await startSession(ctx.userId, ctx.tenantId, "ai_desc_wizard", "asking_field");
+    await updateSession(ctx.userId, "asking_field", {
+      propertyId: propId,
+      missingFields: missingFields.map(f => ({ key: f.key, db: f.db, question: f.question })),
+      currentIndex: 0,
+      answers: {},
+    });
+
+    // Show what's missing and ask the first question
+    const missingList = missingFields.map(f => `❌ ${f.label}`).join("\n");
+    await sendText(ctx.phone,
+      `📝 AI açıklama için ${missingFields.length} bilgi eksik:\n\n${missingList}\n\nHızlıca dolduralım 👇\n\n${missingFields[0].question}`
+    );
     return;
   }
 
@@ -619,6 +580,156 @@ Kurallar:
       await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_bilgi_updated", ctx.phone);
     } catch { /* don't break */ }
     return;
+  }
+}
+
+// ── AI Description Wizard Step Handler ──────────────────────────────
+
+export async function handleAiDescWizardStep(ctx: WaContext, session: CommandSession): Promise<void> {
+  const text = ctx.text.trim();
+  if (!text) {
+    await sendText(ctx.phone, "Lütfen bir değer yazın.");
+    return;
+  }
+
+  const sessData = session.data as Record<string, unknown>;
+  const propertyId = sessData.propertyId as string;
+  const missingFields = sessData.missingFields as Array<{ key: string; db: string; question: string }>;
+  const currentIndex = (sessData.currentIndex as number) || 0;
+  const answers = (sessData.answers as Record<string, unknown>) || {};
+
+  // Parse the current answer
+  const currentField = missingFields[currentIndex];
+  let parsedValue: unknown = text;
+
+  // Type-specific parsing
+  if (currentField.key === "price") {
+    const cleaned = text.replace(/TL/gi, "").replace(/-/g, "").trim();
+    const mMatch = cleaned.match(/^(\d+(?:[.,]\d+)?)\s*(?:M|milyon)$/i);
+    if (mMatch) parsedValue = Math.round(parseFloat(mMatch[1].replace(",", ".")) * 1_000_000);
+    else {
+      const binMatch = cleaned.match(/^(\d+(?:[.,]\d+)?)\s*bin$/i);
+      if (binMatch) parsedValue = Math.round(parseFloat(binMatch[1].replace(",", ".")) * 1_000);
+      else parsedValue = parseInt(cleaned.replace(/[.\s]/g, "").replace(",", ""), 10) || text;
+    }
+  } else if (currentField.key === "area") {
+    parsedValue = parseInt(text.replace(/[^\d]/g, ""), 10) || text;
+  } else if (currentField.key === "elevator") {
+    const lower = text.toLowerCase();
+    if (["evet", "var", "1", "e"].includes(lower)) parsedValue = true;
+    else if (["hayır", "hayir", "yok", "0", "h"].includes(lower)) parsedValue = false;
+    else parsedValue = text;
+  }
+
+  // Save answer
+  answers[currentField.db] = parsedValue;
+
+  // Save to DB immediately
+  const supabase = getServiceClient();
+  await supabase.from("emlak_properties")
+    .update({ [currentField.db]: parsedValue })
+    .eq("id", propertyId)
+    .eq("user_id", ctx.userId);
+
+  const nextIndex = currentIndex + 1;
+
+  if (nextIndex < missingFields.length) {
+    // Ask next question
+    await updateSession(ctx.userId, "asking_field", {
+      ...sessData,
+      currentIndex: nextIndex,
+      answers,
+    });
+    await sendText(ctx.phone, `✅ Kaydedildi.\n\n${missingFields[nextIndex].question}`);
+  } else {
+    // All questions answered — generate AI description
+    await sendText(ctx.phone, `✅ Tüm bilgiler tamamlandı!\n\n🤖 Açıklama oluşturuluyor...`);
+
+    const { data: prop } = await supabase
+      .from("emlak_properties")
+      .select("*")
+      .eq("id", propertyId)
+      .single();
+
+    await endSession(ctx.userId);
+
+    if (prop) {
+      await generateAndShowDescription(ctx, supabase, propertyId, prop as Record<string, unknown>);
+    } else {
+      await sendText(ctx.phone, "❌ Mülk bulunamadı.");
+    }
+  }
+}
+
+// ── Generate AI Description Helper ──────────────────────────────────
+
+async function generateAndShowDescription(
+  ctx: WaContext,
+  supabase: ReturnType<typeof getServiceClient>,
+  propId: string,
+  p: Record<string, unknown>,
+): Promise<void> {
+  let info = "";
+  if (p.title) info += `Başlık: ${p.title}\n`;
+  if (p.listing_type) info += `Tür: ${p.listing_type === "satilik" ? "Satılık" : "Kiralık"}\n`;
+  if (p.type) info += `Mülk tipi: ${p.type}\n`;
+  if (p.price) info += `Fiyat: ${new Intl.NumberFormat("tr-TR").format(p.price as number)} TL\n`;
+  if (p.area) info += `Brüt alan: ${p.area} m²\n`;
+  if (p.net_area) info += `Net alan: ${p.net_area} m²\n`;
+  if (p.rooms) info += `Oda: ${p.rooms}\n`;
+  if (p.floor) info += `Kat: ${p.floor}\n`;
+  if (p.total_floors) info += `Toplam kat: ${p.total_floors}\n`;
+  if (p.building_age) info += `Bina yaşı: ${p.building_age}\n`;
+  if (p.heating) info += `Isınma: ${p.heating}\n`;
+  if (p.parking) info += `Otopark: ${p.parking}\n`;
+  if (p.facade) info += `Cephe: ${p.facade}\n`;
+  if (p.elevator) info += `Asansör: Var\n`;
+  if (p.balcony) info += `Balkon: Var\n`;
+  const loc = [p.location_neighborhood, p.location_district, p.location_city].filter(Boolean).join(", ");
+  if (loc) info += `Konum: ${loc}\n`;
+  if (p.deed_type) info += `Tapu: ${p.deed_type}\n`;
+  if (p.housing_type) info += `Konut tipi: ${p.housing_type}\n`;
+
+  try {
+    const { askClaude } = await import("@/platform/ai/claude");
+    const description = await askClaude(
+      `Sen profesyonel bir emlak danışmanısın. Türkiye'de emlak ilan açıklamaları yazıyorsun.
+Kurallar:
+- Türkçe yaz, profesyonel ve çekici bir dil kullan
+- 3-5 paragraf, toplam 150-250 kelime
+- Mülkün öne çıkan özelliklerini vurgula
+- Bölge avantajlarını belirt
+- Abartma, gerçekçi ol
+- Emoji kullanMA
+- "Detaylı bilgi için arayın" gibi iletişim cümleleri ekleME
+- Sadece açıklama metnini döndür, başka bir şey yazma`,
+      `Şu mülk için profesyonel bir ilan açıklaması yaz:\n\n${info}`,
+      500,
+    );
+
+    if (!description) {
+      await sendText(ctx.phone, "❌ AI açıklama oluşturamadı. Manuel yazabilirsiniz.");
+      return;
+    }
+
+    await sendButtons(ctx.phone,
+      `📝 *AI Açıklama Önerisi:*\n\n${description.substring(0, 900)}`,
+      [
+        { id: `ai_desc:approve:${propId}`, title: "✅ Onayla" },
+        { id: `ai_desc:regenerate:${propId}`, title: "🔄 Yeniden Üret" },
+      ],
+    );
+
+    await startSession(ctx.userId, ctx.tenantId, "mulkduzenle", "ai_desc_pending");
+    await updateSession(ctx.userId, "ai_desc_pending", {
+      propertyId: propId,
+      field: "description",
+      dbColumn: "description",
+      aiDescription: description,
+    });
+  } catch (err) {
+    console.error("[ai-desc] error:", err);
+    await sendText(ctx.phone, "❌ AI hatası. Manuel yazabilirsiniz.");
   }
 }
 
