@@ -377,17 +377,41 @@ export async function handleMulkDuzenleCallback(ctx: WaContext, data: string): P
   await showEditFieldPage(ctx.phone, propId, prop.title, 1);
 }
 
-// Show edit fields with pagination (max 10 rows per list)
+// Show edit fields with pagination — shows CURRENT values so user
+// knows what's filled and what's empty before picking a field.
 async function showEditFieldPage(phone: string, propId: string, title: string, page: number) {
+  const supabase = getServiceClient();
   const pages = [FIELDS_PAGE_1, FIELDS_PAGE_2, FIELDS_PAGE_3];
   const totalPages = pages.length;
   const fields = pages[page - 1] || FIELDS_PAGE_1;
 
-  const rows = fields.map(f => ({
-    id: `mulkedit:${f.key}:${propId}`,
-    title: f.label.substring(0, 24),
-    description: f.hint.substring(0, 72),
-  }));
+  // Fetch current property values to show in descriptions
+  const columns = fields.map(f => f.dbColumn).join(", ");
+  const { data: prop } = await supabase
+    .from("emlak_properties")
+    .select(columns)
+    .eq("id", propId)
+    .maybeSingle();
+
+  const propObj = (prop || {}) as Record<string, unknown>;
+  const rows = fields.map(f => {
+    const currentVal = propObj[f.dbColumn];
+    let desc: string;
+    if (currentVal !== null && currentVal !== undefined && currentVal !== "") {
+      // Show current value
+      const valStr = typeof currentVal === "boolean"
+        ? (currentVal ? "Evet" : "Hayır")
+        : String(currentVal);
+      desc = `Mevcut: ${valStr}`.substring(0, 72);
+    } else {
+      desc = `Boş — ${f.hint}`.substring(0, 72);
+    }
+    return {
+      id: `mulkedit:${f.key}:${propId}`,
+      title: f.label.substring(0, 24),
+      description: desc,
+    };
+  });
 
   // Add navigation row if not last page
   if (page < totalPages) {
