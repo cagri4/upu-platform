@@ -36,7 +36,7 @@ export const emlakCommands: TenantCommandRegistry = {
     // Portföy Sorumlusu
     portfoyum: handlePortfoyum,
     portfoy: handlePortfoyum,
-    mulkekle: handleMulkEkleMenu,
+    mulkekle: handleMulkEkle,
     mulkdetay: handleMulkDetay,
     mulkduzenle: handleMulkDuzenle,
     mulksil: handleMulkSil,
