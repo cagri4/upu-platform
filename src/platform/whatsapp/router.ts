@@ -377,6 +377,11 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     await handleEkibim(ctx);
     return;
   }
+  if (firstWord === "leaderboard" || firstWord === "siralama" || firstWord === "sıralama") {
+    const { handleLeaderboard } = await import("./leaderboard");
+    await handleLeaderboard(ctx);
+    return;
+  }
   if (firstWord === "kilavuz" || firstWord === "kılavuz") {
     await showGuide(ctx, tenant);
     return;
