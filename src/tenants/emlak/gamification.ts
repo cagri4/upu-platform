@@ -6,113 +6,122 @@ import { getServiceClient } from "@/platform/auth/supabase";
 // ── Keşif Misyonları (tek seferlik) ──────────────────────────────────
 
 export const EMLAK_MISSIONS = [
-  // Portföy Sorumlusu
+  // ── Discovery Tour: 1 mission per employee (WOW moments) ──
+  // Each of the first 5 missions introduces a DIFFERENT employee.
+  // User meets all 5 virtual employees before going deeper.
+
+  // 1. Portföy Sorumlusu — ilk mülk
   {
     tenant_key: "emlak", role: "admin", category: "portfoy",
     mission_key: "emlak_ilk_mulk", title: "İlk mülkünüzü ekleyin",
     description: "Portföyünüze ilk mülkü ekleyerek başlayın", emoji: "🏠",
     points: 20, sort_order: 1, is_repeatable: false,
-    next_mission: "emlak_mulk_bilgi_tamamla",
+    next_mission: "emlak_ilk_analiz",
     notification_template: "🏠 İlk mülkünüz eklendi! Artık portföyünüz aktif.",
     employee_key: "portfoy", xp_reward: 20,
   },
-  {
-    tenant_key: "emlak", role: "admin", category: "portfoy",
-    mission_key: "emlak_mulk_bilgi_tamamla", title: "Mülk bilgilerini tamamlayın",
-    description: "Bir mülkün tüm bilgilerini eksiksiz doldurun", emoji: "📝",
-    points: 15, sort_order: 2, is_repeatable: false,
-    next_mission: "emlak_mulk_foto",
-    notification_template: "📝 Mülk bilgileri tam! Profesyonel bir portföy görünümü kazandınız.",
-    employee_key: "portfoy", xp_reward: 15,
-  },
-  {
-    tenant_key: "emlak", role: "admin", category: "portfoy",
-    mission_key: "emlak_mulk_foto", title: "Mülke fotoğraf ekleyin",
-    description: "Fotoğraflı mülkler %70 daha çok ilgi görür", emoji: "📸",
-    points: 15, sort_order: 3, is_repeatable: false,
-    next_mission: "emlak_fiyat_kontrol",
-    notification_template: "📸 Fotoğraf eklendi! Mülkünüz artık çok daha çekici.",
-    employee_key: "portfoy", xp_reward: 15,
-  },
-  {
-    tenant_key: "emlak", role: "admin", category: "portfoy",
-    mission_key: "emlak_fiyat_kontrol", title: "Piyasa fiyatını kontrol edin",
-    description: "Mülkünüzün fiyatını bölge ortalamasıyla karşılaştırın", emoji: "💰",
-    points: 10, sort_order: 4, is_repeatable: false,
-    next_mission: "emlak_ilk_musteri",
-    notification_template: "💰 Fiyat kontrolü yapıldı! Doğru fiyat = hızlı satış.",
-    employee_key: "analist", xp_reward: 10,
-  },
-
-  // Satış Destek
-  {
-    tenant_key: "emlak", role: "admin", category: "musteri",
-    mission_key: "emlak_ilk_musteri", title: "İlk müşterinizi ekleyin",
-    description: "Müşteri havuzunuzu oluşturmaya başlayın", emoji: "👤",
-    points: 20, sort_order: 5, is_repeatable: false,
-    next_mission: "emlak_ilk_eslestirme",
-    notification_template: "👤 İlk müşteriniz eklendi! Artık eşleştirme yapabilirsiniz.",
-    employee_key: "satis", xp_reward: 20,
-  },
-  {
-    tenant_key: "emlak", role: "admin", category: "musteri",
-    mission_key: "emlak_ilk_eslestirme", title: "İlk eşleştirmeyi yapın",
-    description: "Müşterinizi uygun mülklerle eşleştirin", emoji: "🤝",
-    points: 20, sort_order: 6, is_repeatable: false,
-    next_mission: "emlak_ilk_sunum",
-    notification_template: "🤝 Eşleştirme yapıldı! Müşteriniz için uygun mülkler bulundu.",
-    employee_key: "satis", xp_reward: 20,
-  },
-  {
-    tenant_key: "emlak", role: "admin", category: "musteri",
-    mission_key: "emlak_ilk_sunum", title: "İlk sunumu gönderin",
-    description: "Müşterinize profesyonel bir sunum hazırlayıp gönderin", emoji: "🎯",
-    points: 25, sort_order: 7, is_repeatable: false,
-    next_mission: "emlak_ilk_takip",
-    notification_template: "🎯 İlk sunumunuz gönderildi! Müşteriniz mülkleri inceleyecek.",
-    employee_key: "satis", xp_reward: 25,
-  },
-  {
-    tenant_key: "emlak", role: "admin", category: "musteri",
-    mission_key: "emlak_ilk_takip", title: "İlk müşteri takibini yapın",
-    description: "Sunum gönderdikten sonra müşterinizi takip edin", emoji: "📞",
-    points: 15, sort_order: 8, is_repeatable: false,
-    next_mission: "emlak_ilk_analiz",
-    notification_template: "📞 Takip yapıldı! Aktif takip satış şansını %40 artırır.",
-    employee_key: "satis", xp_reward: 15,
-  },
-
-  // Pazar Analisti
+  // 2. Pazar Analisti — bölge analizi
   {
     tenant_key: "emlak", role: "admin", category: "analiz",
-    mission_key: "emlak_ilk_analiz", title: "İlk pazar analizini yapın",
+    mission_key: "emlak_ilk_analiz", title: "Bölgenizi analiz edin",
     description: "Bölgenizdeki pazar durumunu inceleyin", emoji: "📊",
-    points: 15, sort_order: 9, is_repeatable: false,
+    points: 15, sort_order: 2, is_repeatable: false,
     next_mission: "emlak_ilk_brifing",
     notification_template: "📊 Pazar analizi yapıldı! Bölgenizi tanıyorsunuz.",
     employee_key: "analist", xp_reward: 15,
   },
-
-  // Medya
-  {
-    tenant_key: "emlak", role: "admin", category: "medya",
-    mission_key: "emlak_ilk_paylas", title: "İlk sosyal medya paylaşımı",
-    description: "Mülkünüzü sosyal medyada paylaşın", emoji: "📱",
-    points: 10, sort_order: 10, is_repeatable: false,
-    next_mission: null,
-    notification_template: "📱 Paylaşım yapıldı! Görünürlüğünüz arttı.",
-    employee_key: "medya", xp_reward: 10,
-  },
-
-  // Sekreter
+  // 3. Sekreter — brifing
   {
     tenant_key: "emlak", role: "admin", category: "organizasyon",
-    mission_key: "emlak_ilk_brifing", title: "İlk brifinginizi okuyun",
+    mission_key: "emlak_ilk_brifing", title: "Brifinginizi okuyun",
     description: "Günlük brifing ile gününüzü planlayın", emoji: "📋",
-    points: 10, sort_order: 11, is_repeatable: false,
+    points: 10, sort_order: 3, is_repeatable: false,
     next_mission: "emlak_ilk_paylas",
     notification_template: "📋 Brifing okundu! Organize danışman = başarılı danışman.",
     employee_key: "sekreter", xp_reward: 10,
+  },
+  // 4. Medya Uzmanı — paylaş
+  {
+    tenant_key: "emlak", role: "admin", category: "medya",
+    mission_key: "emlak_ilk_paylas", title: "Mülkünüzü paylaşın",
+    description: "Mülkünüzü sosyal medyada paylaşın", emoji: "📱",
+    points: 10, sort_order: 4, is_repeatable: false,
+    next_mission: "emlak_ilk_musteri",
+    notification_template: "📱 Paylaşım yapıldı! Görünürlüğünüz arttı.",
+    employee_key: "medya", xp_reward: 10,
+  },
+  // 5. Satış Destek — ilk müşteri
+  {
+    tenant_key: "emlak", role: "admin", category: "musteri",
+    mission_key: "emlak_ilk_musteri", title: "İlk müşterinizi ekleyin",
+    description: "Müşteri havuzunuzu oluşturmaya başlayın", emoji: "🤝",
+    points: 20, sort_order: 5, is_repeatable: false,
+    next_mission: "emlak_mulk_bilgi_tamamla",
+    notification_template: "🤝 İlk müşteriniz eklendi! Artık eşleştirme yapabilirsiniz.",
+    employee_key: "satis", xp_reward: 20,
+  },
+
+  // ── Deeper missions: mastery of each employee ──
+
+  // 6. Portföy — bilgi tamamla
+  {
+    tenant_key: "emlak", role: "admin", category: "portfoy",
+    mission_key: "emlak_mulk_bilgi_tamamla", title: "Mülk bilgilerini tamamlayın",
+    description: "Bir mülkün tüm bilgilerini eksiksiz doldurun", emoji: "📝",
+    points: 15, sort_order: 6, is_repeatable: false,
+    next_mission: "emlak_mulk_foto",
+    notification_template: "📝 Mülk bilgileri tam! Profesyonel bir portföy görünümü kazandınız.",
+    employee_key: "portfoy", xp_reward: 15,
+  },
+  // 7. Portföy — fotoğraf
+  {
+    tenant_key: "emlak", role: "admin", category: "portfoy",
+    mission_key: "emlak_mulk_foto", title: "Mülke fotoğraf ekleyin",
+    description: "Fotoğraflı mülkler %70 daha çok ilgi görür", emoji: "📸",
+    points: 15, sort_order: 7, is_repeatable: false,
+    next_mission: "emlak_fiyat_kontrol",
+    notification_template: "📸 Fotoğraf eklendi! Mülkünüz artık çok daha çekici.",
+    employee_key: "portfoy", xp_reward: 15,
+  },
+  // 8. Analist — fiyat kontrol
+  {
+    tenant_key: "emlak", role: "admin", category: "portfoy",
+    mission_key: "emlak_fiyat_kontrol", title: "Piyasa fiyatını kontrol edin",
+    description: "Mülkünüzün fiyatını bölge ortalamasıyla karşılaştırın", emoji: "💰",
+    points: 10, sort_order: 8, is_repeatable: false,
+    next_mission: "emlak_ilk_eslestirme",
+    notification_template: "💰 Fiyat kontrolü yapıldı! Doğru fiyat = hızlı satış.",
+    employee_key: "analist", xp_reward: 10,
+  },
+  // 9. Satış — eşleştirme
+  {
+    tenant_key: "emlak", role: "admin", category: "musteri",
+    mission_key: "emlak_ilk_eslestirme", title: "İlk eşleştirmeyi yapın",
+    description: "Müşterinizi uygun mülklerle eşleştirin", emoji: "🤝",
+    points: 20, sort_order: 9, is_repeatable: false,
+    next_mission: "emlak_ilk_sunum",
+    notification_template: "🤝 Eşleştirme yapıldı! Müşteriniz için uygun mülkler bulundu.",
+    employee_key: "satis", xp_reward: 20,
+  },
+  // 10. Satış — sunum
+  {
+    tenant_key: "emlak", role: "admin", category: "musteri",
+    mission_key: "emlak_ilk_sunum", title: "İlk sunumu gönderin",
+    description: "Müşterinize profesyonel bir sunum hazırlayıp gönderin", emoji: "🎯",
+    points: 25, sort_order: 10, is_repeatable: false,
+    next_mission: "emlak_ilk_takip",
+    notification_template: "🎯 İlk sunumunuz gönderildi! Müşteriniz mülkleri inceleyecek.",
+    employee_key: "satis", xp_reward: 25,
+  },
+  // 11. Satış — takip
+  {
+    tenant_key: "emlak", role: "admin", category: "musteri",
+    mission_key: "emlak_ilk_takip", title: "İlk müşteri takibini yapın",
+    description: "Sunum gönderdikten sonra müşterinizi takip edin", emoji: "📞",
+    points: 15, sort_order: 11, is_repeatable: false,
+    next_mission: null,
+    notification_template: "📞 Takip yapıldı! Aktif takip satış şansını %40 artırır.",
+    employee_key: "satis", xp_reward: 15,
   },
 ];
 
