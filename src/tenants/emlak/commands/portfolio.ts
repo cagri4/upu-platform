@@ -232,15 +232,10 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
   info += `\n🔗 ${url.substring(0, 60)}...\n`;
   info += `\n⚠️ Fiyat, m² gibi bilgiler eksik — tamamlamak ister misiniz?`;
 
-  await sendButtons(ctx.phone, info,
-    [
-      { id: `mulkduzenle:${newProp.id}`, title: "✏️ Bilgileri Tamamla" },
-      { id: "cmd:portfoyum", title: "Portföyüm" },
-      { id: "cmd:menu", title: "Ana Menü" },
-    ],
-  );
+  // Send success as plain text — XP popup provides the corridor CTA.
+  await sendText(ctx.phone, info);
 
-  // Gamification: mission trigger
+  // Gamification: mission trigger (non-silent — major milestone popup)
   try {
     const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
     await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_eklendi", ctx.phone);

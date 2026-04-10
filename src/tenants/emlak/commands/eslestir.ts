@@ -172,8 +172,7 @@ async function runMatching(ctx: WaContext, customer: Record<string, unknown>): P
     text += `   ${stars(p.score)} (${p.score}/6) ${p.reasons.join(" ")}\n\n`;
   }
 
-  await sendButtons(ctx.phone, text, [
-    { id: "cmd:musterilerim", title: "Müşterilerim" },
-    { id: "cmd:menu", title: "Ana Menü" },
-  ]);
+  // Plain text results — router's silent trigger handles XP,
+  // no side-exit buttons that break the corridor.
+  await sendText(ctx.phone, text);
 }

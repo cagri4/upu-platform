@@ -46,10 +46,10 @@ export async function handleBrifing(ctx: WaContext): Promise<void> {
 
     text += `\n\n📅 ${now.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`;
 
+    // Single CTA — no side exits that break the corridor.
+    // Router's silent trigger handles XP for brifing mission.
     await sendButtons(ctx.phone, text, [
-      { id: "cmd:mulkyonet", title: "Mülk Yönet" },
-      { id: "cmd:portfoyum", title: "Portföyüm" },
-      { id: "cmd:menu", title: "Ana Menü" },
+      { id: "cmd:menu", title: "📋 Ana Menü" },
     ]);
     await logEvent(ctx.tenantId, ctx.userId, "brifing", `${propRes.count || 0} mülk, ${custRes.count || 0} müşteri`);
   } catch (err) {

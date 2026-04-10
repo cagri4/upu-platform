@@ -111,11 +111,10 @@ export async function handleFotografCallback(ctx: WaContext, data: string): Prom
     }
 
     await endSession(ctx.userId);
-    await sendButtons(ctx.phone, `✅ Fotoğraf yükleme tamamlandı${countMsg}.`, [
-      { id: "cmd:menu", title: "Ana Menü" },
-    ]);
+    // Plain text — XP popup will provide the next corridor CTA
+    await sendText(ctx.phone, `✅ Fotoğraf yükleme tamamlandı${countMsg}.`);
 
-    // Gamification trigger
+    // Gamification trigger (non-silent — foto milestone popup)
     try {
       const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
       await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_foto_uploaded", ctx.phone);

@@ -222,21 +222,17 @@ async function finalizeCustomer(ctx: WaContext, notes: string | null): Promise<v
   const ptArr = d.property_type as string[] | null;
   const ptStr = ptArr?.length ? ptArr.map(t => ptLabels[t] || t).join(", ") : "";
 
-  await sendButtons(ctx.phone,
-    `✅ Müşteri başarıyla eklendi!\n\n` +
+  // Plain text success — router's silent trigger handles XP.
+  // No side-exit buttons to avoid corridor breaks.
+  let successMsg = `✅ Müşteri başarıyla eklendi!\n\n` +
     `👤 ${d.name}\n📱 ${d.phone}\n🏷 ${labelMap[d.listing_type as string] || d.listing_type}\n` +
     (ptStr ? `🏠 ${ptStr}\n` : "") +
     (d.rooms ? `🛏 ${d.rooms}\n` : "") +
     budgetStr +
     (d.location ? `📍 ${d.location}\n` : "") +
-    (notes ? `📝 ${notes}\n` : ""),
-    [
-      { id: "cmd:musterilerim", title: "Müşterilerim" },
-      { id: "cmd:menu", title: "Ana Menü" },
-    ],
-  );
+    (notes ? `📝 ${notes}\n` : "");
 
-  // After insert succeeds, check for property matches
+  // Check for property matches — append info as text, no extra buttons
   try {
     const { data: properties } = await supabase
       .from("emlak_properties")
@@ -253,12 +249,11 @@ async function finalizeCustomer(ctx: WaContext, notes: string | null): Promise<v
         return true;
       });
       if (matches.length > 0) {
-        await sendButtons(ctx.phone,
-          `🏠 ${matches.length} mülkünüz yeni müşterinize uygun!`,
-          [{ id: "cmd:eslestir", title: "Eşleştir" }, { id: "cmd:menu", title: "Ana Menü" }],
-        );
+        successMsg += `\n🏠 ${matches.length} mülkünüz yeni müşterinize uygun!`;
       }
     }
   } catch { /* don't break main flow */ }
+
+  await sendText(ctx.phone, successMsg);
   await logEvent(ctx.tenantId, ctx.userId, "musteri_ekle", `${d.name}`);
 }

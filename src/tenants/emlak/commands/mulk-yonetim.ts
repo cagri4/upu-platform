@@ -571,13 +571,12 @@ export async function handleAiDescCallback(ctx: WaContext, data: string): Promis
     await sendButtons(ctx.phone, "✅ AI açıklama kaydedildi.", [
       { id: `mulkduzenle:${propId}`, title: "↻ Başka Alan" },
       { id: `mulkdetay:${propId}`, title: "📋 Detay Gör" },
-      { id: "cmd:menu", title: "Ana Menü" },
     ]);
 
-    // Gamification
+    // Gamification — silent like field edits (same flow context)
     try {
       const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-      await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_bilgi_updated", ctx.phone);
+      await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_bilgi_updated", ctx.phone, true);
     } catch { /* don't break */ }
     return;
   }

@@ -630,10 +630,8 @@ async function finalizeProperty(ctx: WaContext): Promise<void> {
       });
       if (matches.length > 0) {
         const names = matches.slice(0, 3).map((m) => m.name).join(", ");
-        await sendButtons(ctx.phone,
-          `🤝 ${matches.length} müşteriniz bu mülke uygun: ${names}`,
-          [{ id: "cmd:eslestir", title: "Eşleştir" }, { id: "cmd:menu", title: "Ana Menü" }],
-        );
+        // Plain text info — no buttons that would conflict with XP popup CTA
+        await sendText(ctx.phone, `🤝 ${matches.length} müşteriniz bu mülke uygun: ${names}`);
       }
     }
   } catch { /* don't break main flow */ }
