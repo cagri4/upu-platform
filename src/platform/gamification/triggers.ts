@@ -140,7 +140,8 @@ const COMMAND_MISSION_MAP: Record<string, Record<string, string>> = {
     mulk_bilgi_updated: "emlak_mulk_bilgi_tamamla", // fired by handleMulkDuzenleStep after successful field update
     // fotograf is still mapped because photo upload happens in the web panel,
     // not over WhatsApp — opening the command is the best signal we have.
-    fotograf: "emlak_mulk_foto",
+    // fotograf removed — mission fires from foto_done callback (mulk_foto_uploaded)
+    // not from opening the command.
     mulk_foto_uploaded: "emlak_mulk_foto",
     fiyatsor: "emlak_fiyat_kontrol",
     degerle: "emlak_fiyat_kontrol",

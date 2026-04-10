@@ -127,9 +127,7 @@ export async function handlePhotoUpload(
     return;
   }
 
-  // Download from WhatsApp
-  await sendText(ctx.phone, "📷 Fotoğraf yükleniyor...");
-
+  // Download from WhatsApp (no "yükleniyor" spam — just process silently)
   const media = await downloadWhatsAppMedia(mediaId);
   if (!media) {
     await sendText(ctx.phone, "❌ Fotoğraf indirilemedi. Tekrar gönderin.");
@@ -151,7 +149,14 @@ export async function handlePhotoUpload(
     sort_order: currentCount + 1,
   });
 
-  const newCount = currentCount + 1;
+  // Re-query actual count after insert (avoids race condition when
+  // multiple photos arrive simultaneously — each reads true count).
+  const { count: actualCount } = await supabase
+    .from("emlak_property_photos")
+    .select("id", { count: "exact", head: true })
+    .eq("property_id", propertyId);
+
+  const newCount = actualCount || 1;
   const remaining = 15 - newCount;
 
   if (remaining > 0) {
