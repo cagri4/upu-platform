@@ -80,14 +80,8 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
         await sendText(ctx.phone, "Geçerli metrekare yazın:");
         return;
       }
-      await updateSession(ctx.userId, "net_area", { m2 });
-      await sendText(ctx.phone, "📐 Net metrekare yazın:\n\nÖrnek: 110\n\n(\"geç\" ile atlayın)");
-      return;
-    }
-
-    case "net_area": {
-      const netArea = skip ? null : parseInt(text.replace(/[^\d]/g, ""), 10) || null;
-      await updateSession(ctx.userId, "rooms", { net_area: netArea });
+      // Skip net_area — go straight to rooms (fast flow)
+      await updateSession(ctx.userId, "rooms", { m2 });
       await sendList(ctx.phone, "🛏 Oda sayısını seçin:", "Oda Sayısı", [
         { title: "Oda Seçenekleri", rows: [
           { id: "mulkekle:rooms:1+0", title: "1+0 (Stüdyo)" },
@@ -113,18 +107,12 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
 
     case "district": {
       const district = skip ? null : text;
-      await updateSession(ctx.userId, "neighborhood", { district });
-      await sendText(ctx.phone, "📍 Mahalle/Semt yazın:\n\nÖrnek: Yalıkavak\n\n(\"geç\" ile atlayın)");
-      return;
-    }
-
-    case "neighborhood": {
-      const neighborhood = skip ? null : text;
-      await updateSession(ctx.userId, "phase1_done", { neighborhood });
-      // Corridor: no "Kaydet ve Bitir" shortcut. Auto-continue to Phase 2.
-      await sendText(ctx.phone, "✅ *Aşama 1 tamamlandı* — Temel Bilgiler\n\nBina bilgilerine geçiyoruz...");
-      // Trigger phase 2 start directly
-      await handleMulkEkleCallback(ctx, "mulkekle:phase:2");
+      await updateSession(ctx.userId, "finalize_ready", { district });
+      // Fast flow: finalize immediately after district.
+      // Neighborhood, phases 2+3 (kat/bina yaşı/ısınma/cephe/banyo/mutfak/
+      // asansör/balkon/açıklama/özellikler) are all skipped — user fills
+      // them later via "bilgi tamamla" mission + AI description wizard.
+      await finalizeProperty(ctx);
       return;
     }
 
@@ -202,25 +190,17 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   }
 
   if (field === "lt") {
-    await updateSession(ctx.userId, "property_type", { listing_type: value });
-    await sendList(ctx.phone, "🏠 Mülk tipini seçin:", "Mülk Tipi", [
-      { title: "Mülk Tipleri", rows: [
-        { id: "mulkekle:type:daire", title: "Daire" },
-        { id: "mulkekle:type:villa", title: "Villa" },
-        { id: "mulkekle:type:mustakil", title: "Müstakil Ev" },
-        { id: "mulkekle:type:rezidans", title: "Rezidans" },
-        { id: "mulkekle:type:arsa", title: "Arsa" },
-        { id: "mulkekle:type:isyeri", title: "İşyeri" },
-        { id: "mulkekle:type:dukkan", title: "Dükkan" },
-        { id: "mulkekle:type:buro_ofis", title: "Büro/Ofis" },
-      ]},
-    ]);
+    // Skip property_type selector (defaults to "daire", user can edit later).
+    // Go straight to location — fast flow.
+    await updateSession(ctx.userId, "city", { listing_type: value, type: "daire" });
+    await sendText(ctx.phone, "📍 Şehir yazın:\n\nÖrnek: Muğla");
     return;
   }
 
   if (field === "type") {
+    // Legacy callback — still works if triggered externally
     await updateSession(ctx.userId, "city", { type: value });
-    await sendText(ctx.phone, "📍 Şehir yazın:\n\nÖrnek: Muğla\n\n(\"geç\" ile atlayın)");
+    await sendText(ctx.phone, "📍 Şehir yazın:\n\nÖrnek: Muğla");
     return;
   }
 

@@ -65,20 +65,20 @@ export const emlakOnboardingFlow: OnboardingFlow = {
       });
     }
 
-    // Build focused Duolingo-style first message
+    // Narrative intro — explain WHY before asking WHAT
     let msg = "✅ *Kurulum tamamlandı!*\n\n";
     if (data.office_name) msg += `🏢 ${data.office_name}\n`;
     if (data.location) msg += `📍 ${data.location}\n`;
-    msg += `📋 Brifing: ${data.briefing === "evet" ? "Aktif" : "Pasif"}\n`;
-    msg += "\n🔥 *Seri: 1 gün* — bugün başladın!\n";
+    msg += `\n━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `\n🏢 *Ekibiniz hazır!*\n\n`;
+    msg += `5 sanal elemanınız sizin için çalışmaya başladı. `;
+    msg += `Görevleri tamamladıkça onları geliştirin — daha yetenekli elemanlar, daha çok satış.\n\n`;
+    msg += `🔥 *Seri: 1 gün* — bugün başladın!\n`;
 
     if (firstMission) {
       msg += `\n🎯 *İlk Görevin*\n`;
       msg += `${firstMission.emoji || "🏠"} ${firstMission.title}\n`;
-      msg += `_${firstMission.description}_\n`;
       msg += "\nHadi başlayalım 👇";
-    } else {
-      msg += "\n🏠 Şimdi ilk mülkünüzü ekleyelim!";
     }
 
     await sendButtons(ctx.phone, msg, [
