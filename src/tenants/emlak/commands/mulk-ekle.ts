@@ -597,13 +597,16 @@ async function finalizeProperty(ctx: WaContext): Promise<void> {
   const ltLabel = d.listing_type === "satilik" ? "Satılık" : "Kiralık";
   const location = [d.neighborhood, d.district, d.city].filter(Boolean).join(", ");
 
-  await sendButtons(ctx.phone,
+  // Gamification: trigger FIRST so the XP popup comes right after success msg
+  // and the popup's CTA becomes the ONLY next step (corridor pattern).
+  await sendText(ctx.phone,
     `✅ Mülk başarıyla eklendi!\n\n📋 ${d.title}\n💰 ${priceStr} TL\n📐 ${d.m2} m²\n🛏 ${d.rooms}\n🏷 ${ltLabel}` +
     (location ? `\n📍 ${location}` : ""),
-    [{ id: "cmd:portfoyum", title: "Portföyüm" }, { id: "cmd:menu", title: "Ana Menü" }],
   );
 
-  // Gamification: mission trigger
+  // Gamification: mission trigger — the XP popup provides the next-step CTA
+  // (e.g. [✏️ Bilgileri Düzenle]). No extra [Portföyüm][Ana Menü] buttons
+  // that would let the user stray from the corridor.
   try {
     const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
     await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_eklendi", ctx.phone);

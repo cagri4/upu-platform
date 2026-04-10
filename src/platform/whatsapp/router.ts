@@ -590,13 +590,14 @@ async function showMenu(
     description: "",
   }));
 
-  // Prepend active mission as a clickable row (routes to its CTA button id)
+  // ── Discovery mode: prominent "göreve devam et" button BEFORE lists ──
+  // This is a standalone sendButtons, immediately visible without opening
+  // any list. The corridor principle: user always sees their next step.
   if (activeMission && activeCta) {
-    favRows.unshift({
-      id: activeCta.button.id,
-      title: `🎯 ${activeMission.title}`.substring(0, 24),
-      description: `Aktif görev — ${activeCta.hint}`.substring(0, 72),
-    });
+    await sendButtons(ctx.phone,
+      `🎯 *Aktif Görev*\n${activeMission.emoji} ${activeMission.title}\n_${activeCta.hint}_`,
+      [activeCta.button],
+    );
   }
 
   if (favRows.length > 0) {

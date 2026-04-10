@@ -2,7 +2,8 @@ import type { WaContext } from "@/platform/whatsapp/types";
 import { sendText, sendButtons } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
-import { getActiveMissionFooter } from "@/platform/gamification/engine";
+import { getActiveMission } from "@/platform/gamification/engine";
+import { MISSION_CTA } from "@/platform/gamification/triggers";
 
 export async function handlePortfoyum(ctx: WaContext): Promise<void> {
   try {
@@ -38,14 +39,18 @@ export async function handlePortfoyum(ctx: WaContext): Promise<void> {
       text += `...ve ${(count || 0) - 5} mülk daha`;
     }
 
-    // HUD: append active mission reminder (Quest Director pattern)
-    text += await getActiveMissionFooter(ctx.userId, ctx.tenantKey);
+    // Discovery mode: if active mission exists, show mission CTA as primary button
+    const activeMission = await getActiveMission(ctx.userId, ctx.tenantKey);
+    const activeCta = activeMission ? MISSION_CTA[activeMission.mission_key] : null;
 
-    await sendButtons(ctx.phone, text, [
-      { id: "cmd:mulkyonet", title: "⚙️ Mülk Yönet" },
-      { id: "cmd:mulkekle", title: "➕ Mülk Ekle" },
-      { id: "cmd:menu", title: "Ana Menü" },
-    ]);
+    const buttons = [];
+    if (activeCta) {
+      buttons.push(activeCta.button); // Mission CTA first — corridor
+    }
+    buttons.push({ id: "cmd:mulkyonet", title: "⚙️ Mülk Yönet" });
+    if (!activeCta) buttons.push({ id: "cmd:mulkekle", title: "➕ Mülk Ekle" });
+
+    await sendButtons(ctx.phone, text, buttons.slice(0, 3));
     await logEvent(ctx.tenantId, ctx.userId, "portfoyum", `${count} mülk listelendi`);
   } catch (err) {
     await handleError(ctx, "emlak:portfoyum", err, "db");
