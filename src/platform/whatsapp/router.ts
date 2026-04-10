@@ -372,6 +372,11 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
   }
 
   // System commands (shared across all tenants)
+  if (firstWord === "ekibim" || firstWord === "ekip" || firstWord === "kariyer") {
+    const { handleEkibim } = await import("./ekibim");
+    await handleEkibim(ctx);
+    return;
+  }
   if (firstWord === "kilavuz" || firstWord === "kılavuz") {
     await showGuide(ctx, tenant);
     return;

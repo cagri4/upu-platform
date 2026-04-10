@@ -90,6 +90,39 @@ export async function updateStreak(userId: string): Promise<{ current: number; l
     updated_at: new Date().toISOString(),
   }).eq("user_id", userId);
 
+  // ── Streak milestone XP bonus ──────────────────────────────────
+  // Award bonus XP distributed across all employees at 7-day and 30-day milestones.
+  const MILESTONES: Record<number, number> = { 7: 50, 30: 300 };
+  const bonus = MILESTONES[newStreak];
+  if (bonus) {
+    try {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("tenant_id")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (prof?.tenant_id) {
+        const { addXp } = await import("./progression");
+        const { getEmployees } = await import("./employees");
+        // Determine tenant_key from active session
+        const { data: sess } = await supabase
+          .from("saas_active_session")
+          .select("tenant_key")
+          .eq("user_id", userId)
+          .maybeSingle();
+        const tenantKey = sess?.tenant_key || "emlak";
+        const employees = getEmployees(tenantKey);
+        const perEmployee = Math.round(bonus / Math.max(employees.length, 1));
+        for (const emp of employees) {
+          await addXp(userId, prof.tenant_id, tenantKey, emp.key, perEmployee, "streak", `streak_${newStreak}`);
+        }
+      }
+    } catch (err) {
+      console.error("[engine:streak:xp]", err);
+    }
+  }
+
   return { current: newStreak, longest: newLongest };
 }
 
@@ -252,24 +285,50 @@ export async function getDailyTasks(userId: string, tenantKey: string): Promise<
   return (data || []) as DailyTask[];
 }
 
-export async function completeDailyTask(userId: string, taskId: string): Promise<{ points: number }> {
+export async function completeDailyTask(userId: string, taskId: string, tenantKey?: string): Promise<{ points: number; xpAdded: number }> {
   const supabase = getServiceClient();
 
   const { data: task } = await supabase
     .from("user_daily_tasks")
-    .select("points, status")
+    .select("points, status, employee_key, xp_reward, tenant_key, user_id")
     .eq("id", taskId)
     .eq("user_id", userId)
     .single();
 
-  if (!task || task.status === "completed") return { points: 0 };
+  if (!task || task.status === "completed") return { points: 0, xpAdded: 0 };
 
   await supabase.from("user_daily_tasks").update({
     status: "completed",
     completed_at: new Date().toISOString(),
   }).eq("id", taskId);
 
-  return { points: task.points || 5 };
+  // Award XP to the employee tagged on this task
+  let xpAdded = 0;
+  if (task.employee_key) {
+    try {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("tenant_id")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (prof?.tenant_id) {
+        const { addXp } = await import("./progression");
+        const result = await addXp(
+          userId, prof.tenant_id, tenantKey || task.tenant_key || "emlak",
+          task.employee_key,
+          task.xp_reward || task.points || 5,
+          "daily_task",
+          taskId,
+        );
+        xpAdded = result.xp_added;
+      }
+    } catch (err) {
+      console.error("[engine:completeDailyTask:xp]", err);
+    }
+  }
+
+  return { points: task.points || 5, xpAdded };
 }
 
 // ── Performance ─────────────────────────────────────────────────────
