@@ -91,8 +91,27 @@ export async function handleFotografCallback(ctx: WaContext, data: string): Prom
   }
 
   if (data === "foto_done") {
+    // Get session to find property ID for count
+    const supabase = getServiceClient();
+    const { data: sess } = await supabase
+      .from("command_sessions")
+      .select("data")
+      .eq("user_id", ctx.userId)
+      .maybeSingle();
+    const sessData = (sess?.data || {}) as Record<string, unknown>;
+    const propId = sessData.propertyId as string;
+
+    let countMsg = "";
+    if (propId) {
+      const { count } = await supabase
+        .from("emlak_property_photos")
+        .select("id", { count: "exact", head: true })
+        .eq("property_id", propId);
+      countMsg = ` (${count || 0} fotoğraf)`;
+    }
+
     await endSession(ctx.userId);
-    await sendButtons(ctx.phone, "✅ Fotoğraf yükleme tamamlandı.", [
+    await sendButtons(ctx.phone, `✅ Fotoğraf yükleme tamamlandı${countMsg}.`, [
       { id: "cmd:menu", title: "Ana Menü" },
     ]);
 

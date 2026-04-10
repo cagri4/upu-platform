@@ -171,6 +171,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "ok" });
     }
 
+    // Silently ignore unsupported message types (reactions, stickers,
+    // location, contacts, group notifications, etc.). Only process
+    // text, interactive (buttons/lists), and image messages.
+    const supportedTypes = ["text", "interactive", "image"];
+    if (!supportedTypes.includes(parsed.type)) {
+      return NextResponse.json({ status: "ok" });
+    }
+
     const { phone, name, messageId, text, interactiveId, imageMediaId } = parsed;
     console.log(`[wa-platform] ${phone}: ${text || interactiveId || (imageMediaId ? "[image]" : "")}`);
 

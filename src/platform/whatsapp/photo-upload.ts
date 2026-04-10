@@ -149,26 +149,21 @@ export async function handlePhotoUpload(
     sort_order: currentCount + 1,
   });
 
-  // Re-query actual count after insert (avoids race condition when
-  // multiple photos arrive simultaneously — each reads true count).
+  // Silent accept — no per-photo confirmation message.
+  // When multiple photos arrive in parallel (WhatsApp sends each as a
+  // separate webhook call), sending individual "eklendi" messages causes
+  // race-condition counts and message spam. Instead, we acknowledge
+  // silently and let the user click "Bitti" to see the total.
+  //
+  // Only send a message if we hit the 15-photo limit.
   const { count: actualCount } = await supabase
     .from("emlak_property_photos")
     .select("id", { count: "exact", head: true })
     .eq("property_id", propertyId);
 
-  const newCount = actualCount || 1;
-  const remaining = 15 - newCount;
-
-  if (remaining > 0) {
+  if ((actualCount || 0) >= 15) {
     await sendButtons(ctx.phone,
-      `✅ Fotoğraf eklendi! (${newCount}/15)\n\nBaşka fotoğraf gönderin veya bitirin.`,
-      [
-        { id: "foto_done", title: "✅ Bitti" },
-      ],
-    );
-  } else {
-    await sendButtons(ctx.phone,
-      `✅ Fotoğraf eklendi! (15/15)\n\n📷 Maksimum limite ulaştınız.`,
+      `✅ ${actualCount} fotoğraf yüklendi! Maksimum limite ulaştınız.`,
       [{ id: "cmd:menu", title: "Ana Menü" }],
     );
     await endSession(ctx.userId);
@@ -179,4 +174,5 @@ export async function handlePhotoUpload(
       await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_foto_uploaded", ctx.phone);
     } catch { /* don't break */ }
   }
+  // Otherwise: silent. User sends more or clicks "Bitti".
 }
