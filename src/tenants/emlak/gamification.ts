@@ -124,6 +124,8 @@ export interface TaskRule {
   emoji: string;
   command: string;
   points: number;
+  employee_key: string;   // which virtual employee this task belongs to
+  xp_reward: number;      // XP awarded on completion
   check: (userId: string, tenantId: string) => Promise<Array<{ entityId?: string; description: string }>>;
 }
 
@@ -134,6 +136,8 @@ export const EMLAK_TASK_RULES: TaskRule[] = [
     emoji: "🏠",
     command: "mulkyonet",
     points: 5,
+    employee_key: "portfoy",
+    xp_reward: 5,
     check: async (userId, tenantId) => {
       const supabase = getServiceClient();
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -154,6 +158,8 @@ export const EMLAK_TASK_RULES: TaskRule[] = [
     emoji: "📝",
     command: "mulkyonet",
     points: 10,
+    employee_key: "portfoy",
+    xp_reward: 10,
     check: async (userId, tenantId) => {
       const supabase = getServiceClient();
       const { data } = await supabase
@@ -173,6 +179,8 @@ export const EMLAK_TASK_RULES: TaskRule[] = [
     emoji: "📞",
     command: "takipEt",
     points: 10,
+    employee_key: "satis",
+    xp_reward: 10,
     check: async (userId) => {
       const supabase = getServiceClient();
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -193,6 +201,8 @@ export const EMLAK_TASK_RULES: TaskRule[] = [
     emoji: "🎯",
     command: "sunum",
     points: 15,
+    employee_key: "satis",
+    xp_reward: 15,
     check: async (userId) => {
       const supabase = getServiceClient();
       // Müşteriler var ama sunum gönderilmemiş
@@ -230,6 +240,8 @@ export const EMLAK_TASK_RULES: TaskRule[] = [
     emoji: "➕",
     command: "mulkekle",
     points: 10,
+    employee_key: "portfoy",
+    xp_reward: 10,
     check: async (userId, tenantId) => {
       const supabase = getServiceClient();
       const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
@@ -258,6 +270,8 @@ export const EMLAK_TASK_RULES: TaskRule[] = [
     emoji: "🔍",
     command: "",
     points: 10,
+    employee_key: "analist",
+    xp_reward: 10,
     check: async (userId, tenantId) => {
       const supabase = getServiceClient();
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -298,6 +312,8 @@ export const EMLAK_TASK_RULES: TaskRule[] = [
     emoji: "📋",
     command: "brifing",
     points: 5,
+    employee_key: "sekreter",
+    xp_reward: 5,
     check: async (userId) => {
       const supabase = getServiceClient();
       const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
@@ -318,6 +334,8 @@ export const EMLAK_TASK_RULES: TaskRule[] = [
     emoji: "📊",
     command: "portfoyum",
     points: 5,
+    employee_key: "portfoy",
+    xp_reward: 5,
     check: async (userId) => {
       const supabase = getServiceClient();
       const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();

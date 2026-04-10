@@ -70,6 +70,8 @@ export async function GET() {
               command: rule.command,
               entity_id: match.entityId || null,
               points: rule.points,
+              employee_key: rule.employee_key || null,
+              xp_reward: rule.xp_reward || rule.points || 5,
               status: "pending",
               due_date: today,
             });

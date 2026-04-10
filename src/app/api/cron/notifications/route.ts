@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { sendText, sendButtons } from "@/platform/whatsapp/send";
 import { getDailyTasks, getStreak, getWeeklyPerformance } from "@/platform/gamification/engine";
+import { getActiveSeason } from "@/platform/gamification/progression";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,14 @@ async function sendMorningNotification(ctx: NotificationContext): Promise<boolea
   if (pendingTasks.length === 0 && streak.current === 0) return false;
 
   let msg = "";
+
+  // Active seasonal event banner
+  try {
+    const season = await getActiveSeason(ctx.tenantKey);
+    if (season) {
+      msg += `${season.title} — x${season.bonus_xp_multiplier} XP aktif!\n\n`;
+    }
+  } catch { /* ignore */ }
 
   // Streak message
   if (streak.current > 0) {

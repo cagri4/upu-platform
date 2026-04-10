@@ -270,6 +270,15 @@ export async function triggerMissionCheck(
       msg += "\n\n🌟 Tüm keşif görevlerini tamamladın! Artık profesyonelsin.";
       await sendText(phone, msg);
     }
+
+    // Check cross-employee combo missions (Junior+ only)
+    try {
+      const { checkCombos } = await import("./combos");
+      const { data: prof2 } = await supabase.from("profiles").select("tenant_id").eq("id", userId).maybeSingle();
+      if (prof2?.tenant_id) {
+        await checkCombos(userId, prof2.tenant_id, tenantKey, missionKey, phone);
+      }
+    } catch { /* combos are optional */ }
   } catch (err) {
     // Never let gamification break the main flow
     console.error("[gamification:trigger]", err);

@@ -121,6 +121,8 @@ export const BAYI_ADMIN_TASK_RULES: TaskRule[] = [
     emoji: "⚠️",
     command: "kritikstok",
     points: 10,
+    employee_key: "urun",
+    xp_reward: 10,
     check: async (userId, tenantId) => {
       const supabase = getServiceClient();
       const { data } = await supabase
@@ -140,6 +142,8 @@ export const BAYI_ADMIN_TASK_RULES: TaskRule[] = [
     emoji: "💳",
     command: "tahsilat",
     points: 10,
+    employee_key: "finans",
+    xp_reward: 10,
     check: async (userId, tenantId) => {
       const supabase = getServiceClient();
       const { data } = await supabase
@@ -159,6 +163,8 @@ export const BAYI_ADMIN_TASK_RULES: TaskRule[] = [
     emoji: "📦",
     command: "siparisler",
     points: 10,
+    employee_key: "siparis",
+    xp_reward: 10,
     check: async (userId, tenantId) => {
       const supabase = getServiceClient();
       const { data } = await supabase
