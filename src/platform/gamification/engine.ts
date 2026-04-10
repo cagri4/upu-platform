@@ -124,7 +124,7 @@ export async function getUserMissions(userId: string, tenantKey: string): Promis
   }));
 }
 
-export async function completeMission(userId: string, missionKey: string): Promise<{ completed: boolean; points: number; nextMission: string | null; message: string; title: string; emoji: string }> {
+export async function completeMission(userId: string, missionKey: string): Promise<{ completed: boolean; points: number; nextMission: string | null; message: string; title: string; emoji: string; xpResult?: unknown }> {
   const supabase = getServiceClient();
 
   const { data: mission } = await supabase
@@ -196,6 +196,34 @@ export async function completeMission(userId: string, missionKey: string): Promi
 
   const message = mission.notification_template || `${mission.emoji || "✅"} ${mission.title} tamamlandı!`;
 
+  // ── Award XP to the employee tagged on this mission ──────────────
+  let xpResult = null;
+  if (mission.employee_key && mission.xp_reward) {
+    try {
+      // Resolve tenant_id from user profile
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("tenant_id")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (prof?.tenant_id) {
+        const { addXp } = await import("./progression");
+        // Determine tenant_key from mission row
+        const tenantKey = mission.tenant_key || "emlak";
+        xpResult = await addXp(
+          userId, prof.tenant_id, tenantKey,
+          mission.employee_key,
+          mission.xp_reward,
+          "mission",
+          mission.mission_key,
+        );
+      }
+    } catch (err) {
+      console.error("[engine:completeMission:xp]", err);
+    }
+  }
+
   return {
     completed: true,
     points: mission.points,
@@ -203,6 +231,7 @@ export async function completeMission(userId: string, missionKey: string): Promi
     message,
     title: mission.title,
     emoji: mission.emoji || "✅",
+    xpResult,
   };
 }
 

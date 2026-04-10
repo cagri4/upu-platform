@@ -225,15 +225,37 @@ export async function triggerMissionCheck(
     if (!result.completed) return;
 
     // ── Scoreboard popup (game-style XP/level-up) ─────────────────
-    // Distinct from command response — clearly framed as a progress
-    // update so it doesn't feel like a duplicate message.
     const sep = "━━━━━━━━━━━━━";
     let msg = `${sep}\n🎮 *İLERLEME*\n`;
     msg += `${result.emoji} ${result.title} ✓\n`;
+
+    // Show XP earned + employee info if available
+    const xp = result.xpResult as { xp_added?: number; employee_key?: string; tier_changed?: boolean; new_tier?: number; rank_changed?: boolean; new_rank?: number } | null;
+    if (xp?.xp_added && xp.employee_key) {
+      const { getEmployee, TIER_NAMES, TIER_STARS } = await import("./employees");
+      const emp = getEmployee(tenantKey, xp.employee_key);
+      if (emp) {
+        msg += `${emp.icon} ${emp.name} +${xp.xp_added} XP\n`;
+      }
+    }
+
     msg += `🔥 Seri: ${streak.current} gün`;
     if (streak.current >= 7) msg += " — harika!";
     else if (streak.current === 1) msg += " — yeni başladın!";
     msg += `\n${sep}`;
+
+    // Tier-up celebration (appended before next mission hint)
+    if (xp?.tier_changed && xp.new_tier) {
+      const { getEmployee, TIER_NAMES, TIER_STARS } = await import("./employees");
+      const emp = getEmployee(tenantKey, xp.employee_key!);
+      msg += `\n\n🎖 *KADEME ATLADI!*\n${emp?.icon || "⭐"} ${emp?.name || xp.employee_key} → ${TIER_NAMES[xp.new_tier]} ${TIER_STARS[xp.new_tier]}`;
+    }
+
+    // Rank-up celebration
+    if (xp?.rank_changed && xp.new_rank) {
+      const { USER_RANK_NAMES } = await import("./employees");
+      msg += `\n\n🏆 *RÜTBE ATLADIN!*\n👤 ${USER_RANK_NAMES[xp.new_rank]}`;
+    }
 
     if (result.nextMission) {
       const cta = MISSION_CTA[result.nextMission];
