@@ -275,7 +275,16 @@ export async function handleSifirlaCallback(ctx: WaContext, data: string): Promi
 
   try {
     await wipeAllState(ctx.userId, ctx.tenantKey);
-    await sendText(ctx.phone, "✅ *Tüm verilerin silindi*\n\nOnboarding yeniden başlıyor...");
+
+    // Narrative intro BEFORE onboarding — user understands WHY first
+    await sendText(ctx.phone,
+      `✅ *Tüm verilerin silindi*\n\n` +
+      `━━━━━━━━━━━━━━━━━━━\n\n` +
+      `🏢 *Ekibiniz hazır!*\n\n` +
+      `5 sanal elemanınız sizin için çalışmaya başladı. ` +
+      `Görevleri tamamladıkça onları geliştirin — daha yetenekli elemanlar, daha çok satış.\n\n` +
+      `Önce sizi tanıyalım — 3 kısa soru.`
+    );
 
     // Re-init onboarding
     const { initOnboarding, getOnboardingFlow, sendOnboardingStep } = await import("./onboarding");

@@ -378,14 +378,15 @@ export async function POST(req: NextRequest) {
         const features = tenantCfg?.welcomeFeatures || "iş süreçlerinizi";
 
         if (onbFlow) {
-          const { sendButtons: sendBtns } = await import("@/platform/whatsapp/send");
-          await sendBtns(phone,
+          // Narrative intro — explain the concept before onboarding questions
+          await sendText(phone,
             `Merhaba ${userName}! 👋\n\n` +
             `*${tenantName}* sistemine hoş geldiniz!\n\n` +
-            `Bu sistem, WhatsApp üzerinden size yardımcı olan AI destekli sanal çalışanlardan oluşuyor. ` +
-            `${features} tek bir sohbetten halledebilirsiniz.\n\n` +
-            `Önce sizi hızlıca tanıyalım — birkaç kısa soru soracağım. Hazır mısınız?`,
-            [{ id: "cmd:menu", title: "📋 Ana Menü" }],
+            `━━━━━━━━━━━━━━━━━━━\n\n` +
+            `🏢 *Ekibiniz hazır!*\n\n` +
+            `5 sanal elemanınız sizin için çalışmaya başladı. ` +
+            `Görevleri tamamladıkça onları geliştirin — daha yetenekli elemanlar, daha çok satış.\n\n` +
+            `Önce sizi tanıyalım — 3 kısa soru.`
           );
 
           // Init onboarding and send first step
