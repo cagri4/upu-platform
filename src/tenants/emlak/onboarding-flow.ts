@@ -55,15 +55,12 @@ export const emlakOnboardingFlow: OnboardingFlow = {
     const { updateStreak, getUserMissions } = await import("@/platform/gamification/engine");
     await updateStreak(ctx.userId);
 
+    // Initialize quest state and activate first mission
+    const { ensureActiveMission } = await import("@/platform/gamification/quest-state");
+    await ensureActiveMission(ctx.userId, "emlak");
+
     const missions = await getUserMissions(ctx.userId, "emlak");
     const firstMission = missions.find(m => m.sort_order === 1);
-    if (firstMission && !firstMission.progress) {
-      await supabase.from("user_mission_progress").insert({
-        user_id: ctx.userId,
-        mission_id: firstMission.id,
-        status: "active",
-      });
-    }
 
     // Narrative intro — explain WHY before asking WHAT
     let msg = "✅ *Kurulum tamamlandı!*\n\n";

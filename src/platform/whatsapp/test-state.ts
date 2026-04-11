@@ -25,6 +25,7 @@ import { isAdmin } from "@/platform/admin/commands";
 
 const PLATFORM_TABLES = [
   "user_mission_progress",
+  "user_quest_state",
   "user_streaks",
   "user_daily_tasks",
   "user_performance",
