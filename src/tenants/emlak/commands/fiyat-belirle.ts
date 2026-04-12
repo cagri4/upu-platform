@@ -123,6 +123,11 @@ async function runPriceAnalysis(ctx: WaContext, property: PropertyRow): Promise<
     query = query.eq("location_district", property.location_district);
   }
 
+  // Filter by rooms (exact match — "2+1" = "2+1")
+  if (property.rooms) {
+    query = query.eq("rooms", property.rooms);
+  }
+
   // If neighborhood is set, prefer same neighborhood
   // but fall back to district if too few results
   let neighborhoodFilter = false;
@@ -142,14 +147,15 @@ async function runPriceAnalysis(ctx: WaContext, property: PropertyRow): Promise<
     }
   }
 
-  // Area range filter: ±30%
+  // Area range filter: ±15%
   if (property.area && property.area > 0) {
-    const minArea = Math.round(property.area * 0.7);
-    const maxArea = Math.round(property.area * 1.3);
+    const minArea = Math.round(property.area * 0.85);
+    const maxArea = Math.round(property.area * 1.15);
     query = query.gte("area", minArea).lte("area", maxArea);
   }
 
-  const { data: similar } = await query.limit(100);
+  // Fetch all matching — supabase default is 1000 rows, enough for filtered queries
+  const { data: similar } = await query.limit(1000);
 
   if (!similar || similar.length < 3) {
     // Too few results — show broader search
