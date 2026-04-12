@@ -259,4 +259,7 @@ async function showResults(ctx: WaContext, budget: number, semt: string | null):
     { id: "cmd:portfoyum", title: "Portföyüm" },
     { id: "cmd:menu", title: "Ana Menü" },
   ]);
+
+  const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+  await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulkoner", ctx.phone);
 }

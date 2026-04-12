@@ -165,4 +165,7 @@ async function createTracking(ctx: WaContext): Promise<void> {
     `✅ Piyasa takibi başlatıldı!\n\nHer sabah 08:00'de yeni ilanlar taranacak ve size bildirilecek.`,
   );
   await logEvent(ctx.tenantId, ctx.userId, "takip_et", "yeni takip oluşturuldu");
+
+  const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+  await triggerMissionCheck(ctx.userId, ctx.tenantKey, "takipEt", ctx.phone);
 }

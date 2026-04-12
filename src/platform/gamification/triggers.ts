@@ -107,7 +107,7 @@ const COMMAND_MISSION_MAP: Record<string, Record<string, string[]>> = {
     fiyatsor: ["emlak_c1_fiyatsor"],  // alias support
     brifing: ["emlak_c1_brifing"],
     paylas: ["emlak_c1_paylas"],
-    musteriEkle: ["emlak_c1_musteri", "emlak_c4_musteri2"],
+    musteri_eklendi: ["emlak_c1_musteri", "emlak_c4_musteri2"],
     mulkduzenle: ["emlak_c2_mulkduzenle"],
     analiz: ["emlak_c2_analiz"],
     favoriler: ["emlak_c2_favoriler"],

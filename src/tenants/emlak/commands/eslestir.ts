@@ -172,7 +172,9 @@ async function runMatching(ctx: WaContext, customer: Record<string, unknown>): P
     text += `   ${stars(p.score)} (${p.score}/6) ${p.reasons.join(" ")}\n\n`;
   }
 
-  // Plain text results — router's silent trigger handles XP,
-  // no side-exit buttons that break the corridor.
+  // Plain text results — manual trigger for mission check
   await sendText(ctx.phone, text);
+
+  const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+  await triggerMissionCheck(ctx.userId, ctx.tenantKey, "eslestir", ctx.phone);
 }

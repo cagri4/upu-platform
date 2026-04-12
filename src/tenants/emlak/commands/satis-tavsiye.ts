@@ -135,5 +135,8 @@ Aciklama: ${(prop.description as string) || "yok"}`,
       { id: "cmd:menu", title: "Ana Menü" },
     ]);
     await logEvent(ctx.tenantId, ctx.userId, "satis_tavsiye", `${title}`);
+
+    const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+    await triggerMissionCheck(ctx.userId, ctx.tenantKey, "satistavsiye", ctx.phone);
   }
 }

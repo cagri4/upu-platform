@@ -194,4 +194,7 @@ async function createReminder(ctx: WaContext): Promise<void> {
     `✅ Hatırlatma oluşturuldu!\n\n📋 ${topicLabel}\n📅 ${dateDisplay} — 🕐 ${d.time}\n\nSekreteriniz size zamanında hatırlatma yapacak.`,
   );
   await logEvent(ctx.tenantId, ctx.userId, "hatirlatma", `${topicLabel} — ${dateDisplay}`);
+
+  const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+  await triggerMissionCheck(ctx.userId, ctx.tenantKey, "hatirlatma", ctx.phone);
 }

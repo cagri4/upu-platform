@@ -497,6 +497,9 @@ async function generatePresentation(ctx: WaContext): Promise<void> {
   );
 
   await logEvent(ctx.tenantId, ctx.userId, "sunum_hazirlandi", `${customer.name} — ${props.length} mülk`);
+
+  const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+  await triggerMissionCheck(ctx.userId, ctx.tenantKey, "sunum", ctx.phone);
 }
 
 // ── /sunumlarim — List presentations ─────────────────────────────────
