@@ -190,9 +190,8 @@ async function createReminder(ctx: WaContext): Promise<void> {
   }
 
   const dateDisplay = dueAt.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" });
-  await sendButtons(ctx.phone,
+  await sendText(ctx.phone,
     `✅ Hatırlatma oluşturuldu!\n\n📋 ${topicLabel}\n📅 ${dateDisplay} — 🕐 ${d.time}\n\nSekreteriniz size zamanında hatırlatma yapacak.`,
-    [{ id: "cmd:menu", title: "Ana Menü" }],
   );
   await logEvent(ctx.tenantId, ctx.userId, "hatirlatma", `${topicLabel} — ${dateDisplay}`);
 }

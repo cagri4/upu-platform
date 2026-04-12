@@ -161,9 +161,8 @@ async function createTracking(ctx: WaContext): Promise<void> {
     return;
   }
 
-  await sendButtons(ctx.phone,
-    `✅ Piyasa takibi başlatıldı!\n\nHer sabah 08:00'de yeni ilanlar taranacak ve size bildirilecek.\n\nTakiplerinizi görmek için /takipEt yazın.`,
-    [{ id: "cmd:menu", title: "Ana Menü" }],
+  await sendText(ctx.phone,
+    `✅ Piyasa takibi başlatıldı!\n\nHer sabah 08:00'de yeni ilanlar taranacak ve size bildirilecek.`,
   );
   await logEvent(ctx.tenantId, ctx.userId, "takip_et", "yeni takip oluşturuldu");
 }

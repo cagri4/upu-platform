@@ -1,5 +1,5 @@
 import type { WaContext } from "@/platform/whatsapp/types";
-import { sendButtons } from "@/platform/whatsapp/send";
+import { sendText } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 import { getProgressSummary, updateStreak } from "@/platform/gamification/engine";
@@ -46,11 +46,8 @@ export async function handleBrifing(ctx: WaContext): Promise<void> {
 
     text += `\n\n📅 ${now.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`;
 
-    // Single CTA — no side exits that break the corridor.
-    // Router's silent trigger handles XP for brifing mission.
-    await sendButtons(ctx.phone, text, [
-      { id: "cmd:menu", title: "📋 Ana Menü" },
-    ]);
+    // Plain text — let router's triggerMissionCheck show the next mission CTA.
+    await sendText(ctx.phone, text);
     await logEvent(ctx.tenantId, ctx.userId, "brifing", `${propRes.count || 0} mülk, ${custRes.count || 0} müşteri`);
   } catch (err) {
     await handleError(ctx, "emlak:brifing", err, "db");

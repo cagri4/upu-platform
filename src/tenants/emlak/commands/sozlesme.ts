@@ -369,8 +369,7 @@ async function createSozlesme(ctx: WaContext): Promise<void> {
   const appUrl = "https://estateai.upudev.nl";
   const signLink = `${appUrl}/tr/sign/${signToken}`;
 
-  await sendButtons(ctx.phone,
+  await sendText(ctx.phone,
     `✅ Sözleşme hazırlandı!\n\n📋 ${d.property_title || d.property_address}\n👤 ${d.owner_name}\n\n🔗 İmza linki:\n${signLink}\n\nMüşteri linke tıklayarak imza atabilir.`,
-    [{ id: "cmd:menu", title: "Ana Menü" }],
   );
 }

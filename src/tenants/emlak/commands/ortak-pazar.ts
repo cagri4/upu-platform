@@ -131,7 +131,7 @@ export async function handleOrtakPazarCallback(ctx: WaContext, data: string): Pr
       text += "\n";
     }
 
-    await sendButtons(ctx.phone, text, [{ id: "cmd:menu", title: "Ana Menü" }]);
+    await sendText(ctx.phone, text);
     return;
   }
 }
