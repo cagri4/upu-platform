@@ -4,17 +4,15 @@
 
 import type { TenantCommandRegistry } from "@/platform/whatsapp/types";
 
-// ── Active commands (already ported) ────────────────────────────────
+// ── Active commands ────────────────────────────────────────────────
 import { handlePortfoyum } from "./portfoyum";
 import { handleMulkEkle, handleMulkEkleMenu, handleMulkEkleStep, handleMulkEkleCallback } from "./mulk-ekle";
-import { handleFiyatSor } from "./fiyat-sor";
+import { handleFiyatBelirle, handleFiyatBelirleCallback } from "./fiyat-belirle";
 import { handleBrifing } from "./brifing";
 import { handleMusteriler } from "./musteriler";
 import { handleGorevler } from "./gorevler";
 import { handleSozlesmelerim, handleWebpanel, handleSozlesme, handleSozlesmeStep, handleSozlesmeCallback } from "./sozlesme";
-import { handleAnaliz, handleRapor } from "./analiz";
-
-// ── Newly ported commands ────────────────────────────────────────────
+import { handleRapor } from "./rapor";
 import { handleMulkDetay, handleMulkDetayCallback, handleMulkDuzenle, handleMulkDuzenleCallback, handleMulkEditFieldCallback, handleMulkDuzenleStep, handleMulkSil, handleMulkSilCallback, handleMulkYonet, handleMulkYonetSelectCallback, handleMulkYonetActionCallback, handleAiDescCallback, handleAiDescWizardStep } from "./mulk-yonetim";
 import { handleTara, handleTaraStep, handleEkle } from "./portfolio";
 import { handleMusteriEkle, handleMusteriEkleStep, handleMusteriEkleCallback } from "./musteri-ekle";
@@ -26,8 +24,7 @@ import { handleSatisTavsiye, handleSatisTavsiyeCallback } from "./satis-tavsiye"
 import { handleOrtakPazar, handleOrtakPazarCallback } from "./ortak-pazar";
 import { handleFotograf, handleFotografCallback, handlePaylas, handlePaylasCallback, handleYayinla, handleYayinlaCallback } from "./medya";
 import { handleWebsitem, handleWebsitemStep, handleWebsitemCallback } from "./websitem-wizard";
-import { handleDegerle, handleDegerleCallback, handleMulkOner, handleMulkOnerStep } from "./degerle";
-import { handleTrend } from "./trend";
+import { handleMulkOner, handleMulkOnerStep } from "./degerle";
 import { handleHediyeler, handleHediyelerCallback } from "./hediyeler";
 import { handleSunum, handleSunumStep, handleSunumCallback, handleSunumlarim } from "./sunum";
 
@@ -63,12 +60,9 @@ export const emlakCommands: TenantCommandRegistry = {
     websitem: handleWebsitem,
 
     // Pazar Analisti
-    fiyatsor: handleFiyatSor,
-    degerle: handleDegerle,
+    fiyatbelirle: handleFiyatBelirle,
     mulkoner: handleMulkOner,
-    analiz: handleAnaliz,
     rapor: handleRapor,
-    trend: handleTrend,
 
     // Sekreter
     brifing: handleBrifing,
@@ -100,7 +94,6 @@ export const emlakCommands: TenantCommandRegistry = {
       } else if (method === "detayli") {
         await handleMulkEkle(ctx);
       } else if (method === "hizli") {
-        // Start quick add — just title, rest can be edited later
         const { startSession } = await import("@/platform/whatsapp/session");
         const { sendText } = await import("@/platform/whatsapp/send");
         await startSession(ctx.userId, ctx.tenantId, "mulkekle", "title");
@@ -128,7 +121,7 @@ export const emlakCommands: TenantCommandRegistry = {
     "ai_desc:": handleAiDescCallback,
     "paylas_select:": handlePaylasCallback,
     "pub:": handleYayinlaCallback,
-    "dg:": handleDegerleCallback,
+    "fb:": handleFiyatBelirleCallback,
     "hdy:": handleHediyelerCallback,
     "szl:": handleSozlesmeCallback,
     "snm:": handleSunumCallback,
@@ -140,8 +133,8 @@ export const emlakCommands: TenantCommandRegistry = {
     "portföyüm": "portfoyum",
     "müşteriler": "musterilerim",
     "müşterilerim": "musterilerim",
-    "fiyat": "fiyatsor",
-    "değerle": "degerle",
+    "fiyat": "fiyatbelirle",
+    "fiyatsor": "fiyatbelirle",
     "sözleşme": "sozlesme",
     "sözleşmelerim": "sozlesmelerim",
     "kontrat": "sozlesme",

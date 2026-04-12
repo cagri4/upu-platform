@@ -17,7 +17,7 @@ import { ensureActiveMission, checkChapterTransition, trackCommandUsed, getQuest
 export const MISSION_CTA: Record<string, { hint: string; button: { id: string; title: string } }> = {
   // ── Emlak Chapter 1: Çaylak ────────────────────────────────────────
   emlak_c1_mulkekle: { hint: "İlk mülkünüzü ekleyin", button: { id: "cmd:mulkekle", title: "🏠 Mülk Ekle" } },
-  emlak_c1_fiyatsor: { hint: "Bölge fiyat aralığını öğrenin", button: { id: "cmd:fiyatsor", title: "📊 Fiyat Sor" } },
+  emlak_c1_fiyatsor: { hint: "Mülkünüzün fiyatını analiz edin", button: { id: "cmd:fiyatbelirle", title: "📊 Fiyat Belirle" } },
   emlak_c1_brifing: { hint: "Günlük brifinginizi okuyun", button: { id: "cmd:brifing", title: "📋 Brifing" } },
   emlak_c1_paylas: { hint: "Mülkünüzü sosyal medyada paylaşın", button: { id: "cmd:paylas", title: "📱 Paylaş" } },
   emlak_c1_musteri: { hint: "İlk müşterinizi kaydedin", button: { id: "cmd:musteriEkle", title: "🤝 Müşteri Ekle" } },
@@ -103,7 +103,8 @@ const COMMAND_MISSION_MAP: Record<string, Record<string, string[]>> = {
     mulk_foto_uploaded: ["emlak_c2_fotograf"],
 
     // Commands
-    fiyatsor: ["emlak_c1_fiyatsor"],
+    fiyatbelirle: ["emlak_c1_fiyatsor"],
+    fiyatsor: ["emlak_c1_fiyatsor"],  // alias support
     brifing: ["emlak_c1_brifing"],
     paylas: ["emlak_c1_paylas"],
     musteriEkle: ["emlak_c1_musteri", "emlak_c4_musteri2"],
@@ -117,7 +118,7 @@ const COMMAND_MISSION_MAP: Record<string, Record<string, string[]>> = {
     gorevler: ["emlak_c2_gorevler"],
     uzanti: ["emlak_c2_uzanti"],
     mulkyonet: ["emlak_c3_mulkyonet"],
-    degerle: ["emlak_c3_degerle"],
+    // degerle removed — merged into fiyatbelirle
     hatirlatma: ["emlak_c3_hatirlatma"],
     yayinla: ["emlak_c3_yayinla"],
     sunum: ["emlak_c3_sunum", "emlak_c5_sunum2"],

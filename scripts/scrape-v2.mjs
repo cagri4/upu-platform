@@ -29,6 +29,8 @@ const isTestMode = process.argv.includes('--test');
 const headlessMode = process.argv.includes('--visible') ? false : 'new';
 const skipArg = process.argv.find(a => a.startsWith('--skip='));
 const skipCount = skipArg ? parseInt(skipArg.split('=')[1], 10) : 0;
+const takeArg = process.argv.find(a => a.startsWith('--take='));
+const takeCount = takeArg ? parseInt(takeArg.split('=')[1], 10) : 0;
 
 // ─── 38 URL (daily mode — fiyat bölmesi yok, 1000 sınırı daily'de aşılmaz) ──
 
@@ -251,7 +253,14 @@ function extractListings() {
 async function scrape() {
   // URL sırasını randomize et — her gece aynı sıra = tahmin edilebilir pattern
   const shuffled = [...ALL_URLS].sort(() => Math.random() - 0.5);
-  const urls = isTestMode ? shuffled.slice(skipCount, skipCount + 3) : shuffled;
+  let urls = isTestMode ? shuffled.slice(skipCount, skipCount + 3) : shuffled;
+  // --skip=N and --take=N for 2-part scraping (applied BEFORE shuffle, on original order)
+  if (!isTestMode && (skipCount > 0 || takeCount > 0)) {
+    const start = skipCount;
+    const end = takeCount > 0 ? start + takeCount : ALL_URLS.length;
+    const subset = ALL_URLS.slice(start, end);
+    urls = subset.sort(() => Math.random() - 0.5);
+  }
   const mode = isDailyMode ? 'DAILY' : isTestMode ? 'TEST' : 'FULL';
   console.log(`\n🏠 Scraper V2 [${mode}] — ${urls.length} URL\n`);
 
