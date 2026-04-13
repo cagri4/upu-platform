@@ -163,32 +163,101 @@ export async function handlePaylasCallback(ctx: WaContext, data: string): Promis
 
     const { data: prop } = await supabase
       .from("emlak_properties")
-      .select("id, title, type, listing_type, price, rooms, area, location_district, location_city")
+      .select("id, title, type, listing_type, price, rooms, area, location_district, location_city, location_neighborhood, features, interior_features, exterior_features, view_features, description")
       .eq("id", propId)
       .eq("user_id", ctx.userId)
       .single();
 
     if (!prop) {
-      await sendButtons(ctx.phone, "Mülk bulunamadı.", [{ id: "cmd:menu", title: "Ana Menü" }]);
+      await sendText(ctx.phone, "Mülk bulunamadı.");
       return;
     }
 
-    // Generate post template
-    const priceStr = prop.price ? `💰 Fiyat bilgisi için DM` : "";
-    const loc = [prop.location_district, prop.location_city].filter(Boolean).join(", ");
-    const listLabel = prop.listing_type === "satilik" ? "Satılık" : prop.listing_type === "kiralik" ? "Kiralık" : "";
+    // Minimum bilgi kontrolü
+    const missing: string[] = [];
+    if (!prop.title) missing.push("başlık");
+    if (!prop.type) missing.push("mülk tipi");
+    if (!prop.location_district) missing.push("ilçe");
+    if (!prop.listing_type) missing.push("satılık/kiralık");
 
-    let post = `🏠 ${listLabel} ${prop.type || "Mulk"}\n\n`;
-    post += `📍 ${loc}\n`;
-    if (prop.rooms) post += `🛏 ${prop.rooms}`;
-    if (prop.area) post += ` | 📐 ${prop.area}m²`;
-    post += `\n${priceStr}\n\n`;
-    post += `📲 Detay için mesaj atın!\n\n`;
-    post += `#emlak #${listLabel?.toLowerCase() || "ilan"} #${(prop.location_district as string || "").toLowerCase().replace(/\s/g, "")} #gayrimenkul`;
+    if (missing.length > 0) {
+      await sendText(ctx.phone,
+        `⚠️ Post oluşturmak için şu bilgiler gerekli:\n${missing.map(m => `• ${m}`).join("\n")}\n\nÖnce mülk bilgilerini tamamlayın.`,
+      );
+      return;
+    }
 
-    await sendText(ctx.phone, `📱 Instagram Postu:\n\n${post}\n\n_Metni kopyalayıp Instagram'a yapıştırın._`);
+    await sendText(ctx.phone, "✍️ AI post hazırlıyor...");
 
-    // Manual trigger — callback flow, router trigger fires too early
+    // Build property info for AI
+    const loc = [prop.location_neighborhood, prop.location_district, prop.location_city].filter(Boolean).join(", ");
+    const listLabel = prop.listing_type === "satilik" ? "Satılık" : prop.listing_type === "kiralik" ? "Kiralık" : prop.listing_type || "";
+    const allFeatures = [
+      ...(Array.isArray(prop.features) ? prop.features : []),
+      ...(Array.isArray(prop.interior_features) ? prop.interior_features : []),
+      ...(Array.isArray(prop.exterior_features) ? prop.exterior_features : []),
+      ...(Array.isArray(prop.view_features) ? prop.view_features : []),
+    ].filter(Boolean);
+
+    const propertyInfo = JSON.stringify({
+      baslik: prop.title,
+      tip: prop.type,
+      islem: listLabel,
+      konum: loc,
+      ilce: prop.location_district,
+      mahalle: prop.location_neighborhood || "",
+      oda: prop.rooms || "",
+      metrekare: prop.area || "",
+      fiyat: prop.price ? `${formatPrice(prop.price)} TL` : "Fiyat bilgisi için DM",
+      ozellikler: allFeatures.slice(0, 10),
+      aciklama: (prop.description || "").substring(0, 200),
+    });
+
+    const { askClaude } = await import("@/platform/ai/claude");
+    const aiPost = await askClaude(
+      `Sen profesyonel bir emlak sosyal medya uzmanısın. Instagram postu yazıyorsun.
+
+Kurallar:
+- Türkçe yaz, akıcı ve çekici
+- İlk satır dikkat çekici emoji + başlık
+- Mülkün öne çıkan 3-4 özelliğini vurgula
+- Konumu ve bölgenin cazibesini belirt
+- "Fiyat bilgisi için DM" yaz (direkt fiyat yazma)
+- "Detay ve randevu için DM" ile bitir
+- Sonuna 8-12 hashtag ekle (#emlak #gayrimenkul + bölge + tip + özellikler)
+- Maksimum 150 kelime
+- Emoji kullan ama abartma`,
+      `Bu mülk için Instagram postu yaz:\n${propertyInfo}`,
+      300,
+    );
+
+    let finalPost: string;
+    if (aiPost && aiPost.length > 20) {
+      finalPost = aiPost;
+    } else {
+      // Fallback — AI çalışmazsa basit şablon
+      finalPost = `🏠 ${listLabel} ${prop.type || "Mülk"}\n\n📍 ${loc}\n`;
+      if (prop.rooms) finalPost += `🛏 ${prop.rooms}`;
+      if (prop.area) finalPost += ` | 📐 ${prop.area}m²`;
+      finalPost += `\n💰 Fiyat bilgisi için DM\n📲 Detay için mesaj atın!\n\n`;
+      finalPost += `#emlak #${listLabel?.toLowerCase() || "ilan"} #${(prop.location_district as string || "").toLowerCase().replace(/\s/g, "")} #gayrimenkul`;
+    }
+
+    let msg = `📱 *Instagram Postunuz Hazır!*\n\n`;
+    msg += `━━━━━━━━━━━━━\n\n`;
+    msg += finalPost;
+    msg += `\n\n━━━━━━━━━━━━━\n\n`;
+    msg += `👆 _Metni basılı tutarak kopyalayın ve Instagram'a yapıştırın._\n\n`;
+    msg += `📸 *Fotoğraf önerileri:*\n`;
+    msg += `• İlk fotoğraf: evin dışından genel görünüm\n`;
+    msg += `• 2-3: salon ve mutfak\n`;
+    msg += `• 4-5: yatak odaları\n`;
+    msg += `• Son: manzara veya bahçe (varsa)\n`;
+    msg += `• Doğal ışıkta çekin, geniş açı kullanın`;
+
+    await sendText(ctx.phone, msg);
+
+    // Manual trigger — callback flow
     const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
     await triggerMissionCheck(ctx.userId, ctx.tenantKey, "paylas", ctx.phone);
     return;
