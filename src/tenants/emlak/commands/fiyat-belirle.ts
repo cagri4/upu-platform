@@ -169,25 +169,29 @@ async function runPriceAnalysis(ctx: WaContext, property: PropertyRow): Promise<
     return;
   }
 
-  // Calculate stats
-  const prices = similar.map(p => p.price as number).filter(p => p > 0);
-  const areas = similar.map(p => p.area as number).filter(a => a > 0);
+  // Calculate stats — trim 10% outliers from each end
+  const rawPrices = similar.map(p => p.price as number).filter(p => p > 0);
+  const sortedAll = [...rawPrices].sort((a, b) => a - b);
+  const trimCount = Math.floor(sortedAll.length * 0.1);
+  const prices = trimCount > 0 ? sortedAll.slice(trimCount, -trimCount) : sortedAll;
 
   const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
+  const minPrice = prices[0];
+  const maxPrice = prices[prices.length - 1];
 
   // Median
-  const sorted = [...prices].sort((a, b) => a - b);
-  const medianPrice = sorted[Math.floor(sorted.length / 2)];
+  const medianPrice = prices[Math.floor(prices.length / 2)];
 
-  // m² unit price
-  const m2Prices: number[] = [];
+  // m² unit price (also trimmed)
+  const rawM2Prices: number[] = [];
   for (const s of similar) {
     if (s.price && s.area && s.price > 0 && s.area > 0) {
-      m2Prices.push(Math.round(s.price / s.area));
+      rawM2Prices.push(Math.round(s.price / s.area));
     }
   }
+  const sortedM2 = rawM2Prices.sort((a, b) => a - b);
+  const trimM2 = Math.floor(sortedM2.length * 0.1);
+  const m2Prices = trimM2 > 0 ? sortedM2.slice(trimM2, -trimM2) : sortedM2;
   const avgM2Price = m2Prices.length > 0
     ? Math.round(m2Prices.reduce((a, b) => a + b, 0) / m2Prices.length)
     : 0;
@@ -217,7 +221,7 @@ async function runPriceAnalysis(ctx: WaContext, property: PropertyRow): Promise<
   if (property.rooms) text += ` · ${property.rooms}`;
   text += `\n\n`;
 
-  text += `🔍 *${similar.length} benzer ilan bulundu*\n\n`;
+  text += `🔍 *${similar.length} benzer ilan bulundu* (${rawPrices.length} toplam, uç değerler kırpıldı)\n\n`;
   text += `💰 *Fiyat Aralığı*\n`;
   text += `   Min: ${fmt(minPrice)} TL\n`;
   text += `   Medyan: ${fmt(medianPrice)} TL\n`;
