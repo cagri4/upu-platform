@@ -294,8 +294,9 @@ async function scrape() {
   for (let i = 0; i < urls.length; i++) {
     const { url: baseUrl, listing_type, property_type } = urls[i];
     const dateParam = daysCount === 1 ? 'date=1day' : `date=${daysCount}days`;
+    // pagingSize MUST NOT be combined with date filter — sahibinden ignores date when pagingSize is set
     const categoryUrl = isDateFiltered
-      ? baseUrl + (baseUrl.includes('?') ? `&${dateParam}&pagingSize=50` : `?${dateParam}&pagingSize=50`)
+      ? baseUrl + (baseUrl.includes('?') ? `&${dateParam}` : `?${dateParam}`)
       : baseUrl + (baseUrl.includes('?') ? '&pagingSize=50' : '?pagingSize=50');
 
     if (completedUrls.has(baseUrl)) {
