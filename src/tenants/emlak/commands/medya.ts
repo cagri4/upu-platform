@@ -186,9 +186,11 @@ export async function handlePaylasCallback(ctx: WaContext, data: string): Promis
     post += `📲 Detay için mesaj atın!\n\n`;
     post += `#emlak #${listLabel?.toLowerCase() || "ilan"} #${(prop.location_district as string || "").toLowerCase().replace(/\s/g, "")} #gayrimenkul`;
 
-    await sendButtons(ctx.phone, `📱 Instagram Postu:\n\n${post}\n\n_Metni kopyalayıp Instagram'a yapıştırın._`, [
-      { id: "cmd:menu", title: "Ana Menü" },
-    ]);
+    await sendText(ctx.phone, `📱 Instagram Postu:\n\n${post}\n\n_Metni kopyalayıp Instagram'a yapıştırın._`);
+
+    // Manual trigger — callback flow, router trigger fires too early
+    const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+    await triggerMissionCheck(ctx.userId, ctx.tenantKey, "paylas", ctx.phone);
     return;
   }
 }
