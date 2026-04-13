@@ -590,16 +590,19 @@ async function showMenu(
     description: "",
   }));
 
-  // ── Discovery mode: prominent "göreve devam et" button BEFORE lists ──
-  // This is a standalone sendButtons, immediately visible without opening
-  // any list. The corridor principle: user always sees their next step.
+  // ── Corridor lock: active mission = ONLY show mission CTA ──────────
+  // When user has an active mission, menu shows ONLY the mission button.
+  // No favorites, no employees, no distractions. Pure corridor.
+  // Full menu unlocks when all missions are done (endgame) or no active mission.
   if (activeMission && activeCta) {
     await sendButtons(ctx.phone,
       `🎯 *Aktif Görev*\n${activeMission.emoji} ${activeMission.title}\n_${activeCta.hint}_`,
       [activeCta.button],
     );
+    return; // Corridor: nothing else shown
   }
 
+  // ── Full menu (no active mission — endgame or between chapters) ────
   if (favRows.length > 0) {
     await sendList(ctx.phone,
       `${tenant.icon} *${tenant.name}*\n\n⭐ Favorilerim:\n\n_("menu" yazarak buraya dönebilirsiniz.)_`,
@@ -608,19 +611,16 @@ async function showMenu(
     );
   }
 
-  // Message 2: List with employees (filtered by role)
   let visibleEmployees = tenant.employees;
 
   if (ctx.role === "dealer") {
-    // Dealers see only dealer-facing employees (defined in tenant config or fallback to first)
     const dealerEmpKeys = tenant.dealerEmployees || [];
     if (dealerEmpKeys.length > 0) {
       visibleEmployees = tenant.employees.filter(e => dealerEmpKeys.includes(e.key));
     } else {
-      visibleEmployees = []; // No dealer employees defined → show none
+      visibleEmployees = [];
     }
   } else if (ctx.role === "employee") {
-    // Employees see only permitted employees
     const permittedEmps = (ctx.permissions?.employees as string[]) || [];
     if (permittedEmps.length > 0) {
       visibleEmployees = tenant.employees.filter(e => permittedEmps.includes(e.key));
