@@ -83,3 +83,21 @@ if [ -n "$TOTAL" ] && [ "$TOTAL" -gt 0 ] 2>/dev/null; then
 else
   echo "$(date '+%Y-%m-%d %H:%M') — ⏭️ DB Import atlandı (ilan yok)" >> "$LOG_FILE"
 fi
+
+# 4. Cleanup — 30 günden eski ilanları sil (sadece part2'de, günde 1 kez yeterli)
+if [ "$PART" = "part2" ] || [ "$PART" = "full" ]; then
+  CLEANUP_OUT=$($NODE -e "
+    const {createClient} = require('@supabase/supabase-js');
+    const c = createClient('$SUPABASE_URL', '$SUPABASE_SERVICE_ROLE_KEY');
+    async function run() {
+      const d30 = new Date(Date.now() - 30*24*60*60*1000).toISOString();
+      const {count: before} = await c.from('emlak_properties').select('*',{count:'exact',head:true}).eq('source_portal','sahibinden');
+      await c.from('emlak_properties').delete().eq('source_portal','sahibinden').lt('listing_date', d30);
+      await c.from('emlak_properties').delete().eq('source_portal','sahibinden').is('listing_date', null).lt('created_at', d30);
+      const {count: after} = await c.from('emlak_properties').select('*',{count:'exact',head:true}).eq('source_portal','sahibinden');
+      console.log('Silinen: ' + (before - after) + ' ilan (30+ gun eski)');
+    }
+    run();
+  " 2>&1)
+  echo "$(date '+%Y-%m-%d %H:%M') — 🧹 Cleanup: $CLEANUP_OUT" >> "$LOG_FILE"
+fi
