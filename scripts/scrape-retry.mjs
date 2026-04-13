@@ -99,7 +99,7 @@ async function scrape() {
 
   for (let i = 0; i < RETRY_URLS.length; i++) {
     const { url: baseUrl, listing_type, property_type } = RETRY_URLS[i];
-    const categoryUrl = baseUrl + '?date=7days&pagingSize=50';
+    const categoryUrl = baseUrl + '?date=7days';
 
     console.log(`\n🔷 [${i + 1}/${RETRY_URLS.length}] ${listing_type}/${property_type}`);
 

@@ -293,11 +293,10 @@ async function scrape() {
 
   for (let i = 0; i < urls.length; i++) {
     const { url: baseUrl, listing_type, property_type } = urls[i];
-    const dateParam = daysCount === 1 ? 'date=1day' : `date=${daysCount}days`;
-    // pagingSize MUST NOT be combined with date filter — sahibinden ignores date when pagingSize is set
+    // pagingSize breaks date filter on sahibinden — never use it
     const categoryUrl = isDateFiltered
-      ? baseUrl + (baseUrl.includes('?') ? `&${dateParam}` : `?${dateParam}`)
-      : baseUrl + (baseUrl.includes('?') ? '&pagingSize=50' : '?pagingSize=50');
+      ? baseUrl + (baseUrl.includes('?') ? `&date=${daysCount === 1 ? '1day' : daysCount + 'days'}` : `?date=${daysCount === 1 ? '1day' : daysCount + 'days'}`)
+      : baseUrl;
 
     if (completedUrls.has(baseUrl)) {
       console.log(`⏭️  [${i + 1}/${urls.length}] zaten tamamlanmış — ${property_type}`);
@@ -305,6 +304,7 @@ async function scrape() {
     }
 
     console.log(`\n🔷 [${i + 1}/${urls.length}] ${listing_type}/${property_type}`);
+    console.log(`  🔗 ${categoryUrl}`);
 
     let pageNum = 0;
     let currentUrl = categoryUrl;
