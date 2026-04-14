@@ -42,7 +42,7 @@ COOKIE_COUNT=$(echo "$COOKIE_OUT" | grep -oP '\d+ cookie' | head -1)
 echo "$DATE — ✅ Cookie: $COOKIE_COUNT" >> "$LOG_FILE"
 
 # 2. Scrape — partiye göre URL seçimi
-SCRAPE_ARGS="--days=2"
+SCRAPE_ARGS="--days=1"
 if [ "$PART" = "part1" ]; then
   SCRAPE_ARGS="$SCRAPE_ARGS --take=19"
 elif [ "$PART" = "part2" ]; then

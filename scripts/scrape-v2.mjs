@@ -293,9 +293,12 @@ async function scrape() {
 
   for (let i = 0; i < urls.length; i++) {
     const { url: baseUrl, listing_type, property_type } = urls[i];
-    // pagingSize breaks date filter on sahibinden — never use it
+    // Sahibinden valid date values: 1day, 3days, 7days, 15days, 30days
+    // 2days, 4days etc. are IGNORED by sahibinden → returns ALL listings
+    const VALID_DATES = { 1: '1day', 3: '3days', 7: '7days', 15: '15days', 30: '30days' };
+    const dateValue = VALID_DATES[daysCount] || VALID_DATES[Object.keys(VALID_DATES).map(Number).find(d => d >= daysCount) || 3];
     const categoryUrl = isDateFiltered
-      ? baseUrl + (baseUrl.includes('?') ? `&date=${daysCount === 1 ? '1day' : daysCount + 'days'}` : `?date=${daysCount === 1 ? '1day' : daysCount + 'days'}`)
+      ? baseUrl + (baseUrl.includes('?') ? `&date=${dateValue}` : `?date=${dateValue}`)
       : baseUrl;
 
     if (completedUrls.has(baseUrl)) {
