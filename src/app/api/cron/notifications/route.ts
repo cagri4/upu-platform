@@ -115,19 +115,28 @@ async function sendEveningNotification(ctx: NotificationContext): Promise<boolea
   const perf = await getWeeklyPerformance(ctx.userId, ctx.tenantKey);
   const streak = await getStreak(ctx.userId);
   const tasks = await getDailyTasks(ctx.userId, ctx.tenantKey);
-  const completed = tasks.filter(t => t.status === "completed").length;
+  const completed = tasks.filter(t => t.status === "completed");
+  const pending = tasks.filter(t => t.status === "pending");
   const total = tasks.length;
 
   if (total === 0) return false;
 
   let msg = `📊 *Günün Özeti*\n\n`;
 
-  if (completed === total && total > 0) {
-    msg += `🎉 Tüm görevleri tamamladınız! (${completed}/${total})\n`;
-  } else if (completed > 0) {
-    msg += `✅ ${completed}/${total} görev tamamlandı\n`;
-  } else {
-    msg += `○ Bugün görev tamamlanmadı\n`;
+  // Show each task's status
+  for (const t of completed) {
+    msg += `✅ ${t.emoji || "○"} ${t.title}\n`;
+  }
+  for (const t of pending) {
+    msg += `○ ${t.emoji || "○"} ${t.title}\n`;
+  }
+
+  msg += `\n`;
+
+  if (completed.length === total && total > 0) {
+    msg += `🎉 Tüm görevler tamamlandı!\n`;
+  } else if (completed.length > 0) {
+    msg += `${completed.length}/${total} görev tamamlandı\n`;
   }
 
   // Streak
@@ -142,10 +151,10 @@ async function sendEveningNotification(ctx: NotificationContext): Promise<boolea
   msg += `${starStr} Bu hafta: ${perf.tasksCompleted}/${perf.tasksTotal}\n`;
 
   // Motivational closer
-  if (completed === total && total > 0) {
-    msg += `\n💪 Yarın da böyle devam!`;
+  if (completed.length === total && total > 0) {
+    msg += `\n💪 Yarın da böyle devam! İyi akşamlar.`;
   } else {
-    msg += `\n💡 Yarın daha iyi olacak. İyi geceler!`;
+    msg += `\n💡 Yarın daha iyi olacak. İyi akşamlar!`;
   }
 
   await sendText(ctx.phone, msg);
