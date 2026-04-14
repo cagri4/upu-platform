@@ -100,4 +100,9 @@ if [ "$PART" = "part2" ] || [ "$PART" = "full" ]; then
     run();
   " 2>&1)
   echo "$(date '+%Y-%m-%d %H:%M') — 🧹 Cleanup: $CLEANUP_OUT" >> "$LOG_FILE"
+
+  # 5. Tracking notifications — yeni ilanları takip eden kullanıcılara bildir
+  DEPLOY_URL="${DEPLOY_URL:-https://upu-platform.vercel.app}"
+  NOTIFY_OUT=$(curl -s "${DEPLOY_URL}/api/cron/tracking-notify" 2>&1)
+  echo "$(date '+%Y-%m-%d %H:%M') — 🔔 Takip bildirimi: $NOTIFY_OUT" >> "$LOG_FILE"
 fi
