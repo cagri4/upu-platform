@@ -102,36 +102,37 @@ const COMMAND_MISSION_MAP: Record<string, Record<string, string[]>> = {
     mulk_bilgi_updated: ["emlak_c2_mulkduzenle"],
     mulk_foto_uploaded: ["emlak_c2_fotograf"],
 
-    // Commands
-    fiyatbelirle: ["emlak_c1_fiyatsor"],
-    fiyatsor: ["emlak_c1_fiyatsor"],  // alias support
+    // ── Router-safe commands (single-step, trigger on open is correct) ──
     brifing: ["emlak_c1_brifing"],
-    paylas: ["emlak_c1_paylas"],
-    musteri_eklendi: ["emlak_c1_musteri", "emlak_c4_musteri2"],
-    mulkduzenle: ["emlak_c2_mulkduzenle"],
     analiz: ["emlak_c2_analiz"],
     favoriler: ["emlak_c2_favoriler"],
-    fotograf: ["emlak_c2_fotograf"],
-    eslestir: ["emlak_c2_eslestir", "emlak_c5_eslestir2"],
     tara: ["emlak_c2_tara"],
     webpanel: ["emlak_c2_webpanel"],
     gorevler: ["emlak_c2_gorevler"],
     uzanti: ["emlak_c2_uzanti"],
     mulkyonet: ["emlak_c3_mulkyonet"],
-    // degerle removed — merged into fiyatbelirle
-    hatirlatma: ["emlak_c3_hatirlatma"],
     yayinla: ["emlak_c3_yayinla"],
-    sunum: ["emlak_c3_sunum", "emlak_c5_sunum2"],
-    takipEt: ["emlak_c3_takip"],
     trend: ["emlak_c3_trend"],
-    mulkoner: ["emlak_c4_mulkoner"],
     sozlesme: ["emlak_c4_sozlesme"],
     websitem: ["emlak_c4_websitem", "emlak_c5_websitem2"],
-    satistavsiye: ["emlak_c4_satistavsiye"],
     rapor: ["emlak_c4_rapor"],
     ortakpazar: ["emlak_c5_ortakpazar"],
     hediyeler: ["emlak_c5_hediyeler"],
     portfoyum: ["emlak_c5_portfoyum"],
+
+    // ── Manual-trigger-only (callback/multi-step, trigger from success handler) ──
+    // These are NOT triggered by router — only by manual triggerMissionCheck calls
+    // in their respective callback/step handlers.
+    fiyatbelirle: ["emlak_c1_fiyatsor"],
+    fiyatsor: ["emlak_c1_fiyatsor"],  // alias
+    paylas: ["emlak_c1_paylas"],
+    musteri_eklendi: ["emlak_c1_musteri", "emlak_c4_musteri2"],
+    eslestir: ["emlak_c2_eslestir", "emlak_c5_eslestir2"],
+    hatirlatma: ["emlak_c3_hatirlatma"],
+    sunum: ["emlak_c3_sunum", "emlak_c5_sunum2"],
+    takipEt: ["emlak_c3_takip"],
+    satistavsiye: ["emlak_c4_satistavsiye"],
+    mulkoner: ["emlak_c4_mulkoner"],
   },
 };
 

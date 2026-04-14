@@ -186,11 +186,20 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
           await autoSaveSnapshotSilent(ctx.userId, ctx.tenantKey);
         }
         const start = Date.now();
+        // Commands that handle their own trigger (callback/multi-step flows).
+        // Router must NOT trigger these — they fire from success handlers.
+        const SELF_TRIGGERING_COMMANDS = new Set([
+          "fiyatbelirle", "fiyatsor", "paylas", "musteriEkle", "eslestir",
+          "hatirlatma", "sunum", "takipEt", "satistavsiye", "mulkoner",
+          "fotograf", "mulkekle",
+        ]);
         try {
           await handler(ctx);
           logCommand(ctx, cmd, true, Date.now() - start);
-          const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-          await triggerMissionCheck(ctx.userId, ctx.tenantKey, cmd, ctx.phone).catch(() => {});
+          if (!SELF_TRIGGERING_COMMANDS.has(cmd)) {
+            const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+            await triggerMissionCheck(ctx.userId, ctx.tenantKey, cmd, ctx.phone).catch(() => {});
+          }
         } catch (err) {
           logCommand(ctx, cmd, false, Date.now() - start, err instanceof Error ? err.message : String(err));
           throw err;
@@ -423,12 +432,18 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       await autoSaveSnapshotSilent(ctx.userId, ctx.tenantKey);
     }
     const start = Date.now();
+    const SELF_TRIGGERING = new Set([
+      "fiyatbelirle", "fiyatsor", "paylas", "musteriEkle", "eslestir",
+      "hatirlatma", "sunum", "takipEt", "satistavsiye", "mulkoner",
+      "fotograf", "mulkekle",
+    ]);
     try {
       await handler(ctx);
       logCommand(ctx, resolved, true, Date.now() - start);
-      // Gamification: check missions after successful command
-      const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-      await triggerMissionCheck(ctx.userId, ctx.tenantKey, resolved, ctx.phone).catch(() => {});
+      if (!SELF_TRIGGERING.has(resolved)) {
+        const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
+        await triggerMissionCheck(ctx.userId, ctx.tenantKey, resolved, ctx.phone).catch(() => {});
+      }
     } catch (err) {
       logCommand(ctx, resolved, false, Date.now() - start, err instanceof Error ? err.message : String(err));
       throw err;
