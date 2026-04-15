@@ -190,9 +190,19 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   }
 
   if (field === "lt") {
-    // Skip property_type selector (defaults to "daire", user can edit later).
-    // Go straight to location — fast flow.
-    await updateSession(ctx.userId, "city", { listing_type: value, type: "daire" });
+    // Detect type from title
+    const { data: sess } = await getServiceClient().from("command_sessions").select("data").eq("user_id", ctx.userId).single();
+    const title = ((sess?.data as Record<string, unknown>)?.title as string || "").toLowerCase();
+    let detectedType = "daire";
+    if (title.includes("villa")) detectedType = "villa";
+    else if (title.includes("müstakil") || title.includes("mustakil")) detectedType = "mustakil";
+    else if (title.includes("arsa")) detectedType = "arsa";
+    else if (title.includes("rezidans")) detectedType = "rezidans";
+    else if (title.includes("yazlık") || title.includes("yazlik")) detectedType = "yazlik";
+    else if (title.includes("dükkan") || title.includes("dukkan")) detectedType = "dukkan";
+    else if (title.includes("ofis") || title.includes("büro")) detectedType = "buro_ofis";
+
+    await updateSession(ctx.userId, "city", { listing_type: value, type: detectedType });
     await sendText(ctx.phone, "📍 Şehir yazın:\n\nÖrnek: Muğla");
     return;
   }
