@@ -407,8 +407,12 @@ export async function POST(req: NextRequest) {
         const tenantKey = uTenant?.saas_type || "emlak";
 
         await sendText(phone,
-          `Hos geldiniz!\n\n*${uTenant?.name || "Sistem"}*'e basariyla kaydoldunuz.\n\n` +
-          `Simdi sizi taniyalim — birkac soru soracagim.`
+          `🏢 *Ofisinize Hoş Geldiniz!*\n\n` +
+          `*${uTenant?.name || "Sistem"}*'e başarıyla kaydoldunuz.\n\n` +
+          `━━━━━━━━━━━━━━━━━━━\n\n` +
+          `Sanal elemanlarınız sizin için çalışmaya hazır! ` +
+          `Birazdan sistemi kullanarak personelinizi tanıyacak ve ilk görevinizi alacaksınız.\n\n` +
+          `Önce sizi tanıyalım — birkaç kısa soru.`
         );
 
         // Start onboarding flow for this tenant
