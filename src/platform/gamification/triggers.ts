@@ -39,7 +39,7 @@ export const MISSION_CTA: Record<string, { hint: string; button: { id: string; t
   emlak_c3_hatirlatma: { hint: "Hatırlatma kurun", button: { id: "cmd:hatirlatma", title: "⏰ Hatırlatma" } },
   emlak_c3_yayinla: { hint: "Mülklerinizi yayına hazırlayın", button: { id: "cmd:yayinla", title: "📡 Yayınla" } },
   emlak_c3_sunum: { hint: "Müşterinize sunum hazırlayın", button: { id: "cmd:sunum", title: "🎯 Sunum" } },
-  emlak_c3_takip: { hint: "Piyasa takibi kurun", button: { id: "cmd:takipEt", title: "📡 Takip Kur" } },
+  emlak_c3_takip: { hint: "Müşterinizi takip edin", button: { id: "cmd:musteriTakip", title: "📞 Müşteri Takip" } },
   emlak_c3_trend: { hint: "Pazar trendini inceleyin", button: { id: "cmd:trend", title: "📈 Trend" } },
 
   // ── Emlak Chapter 4: Profesyonel ───────────────────────────────────
@@ -132,6 +132,7 @@ const COMMAND_MISSION_MAP: Record<string, Record<string, string[]>> = {
     sunum: ["emlak_c3_sunum", "emlak_c5_sunum2"],
     takipEt: ["emlak_c3_takip"],
     satistavsiye: ["emlak_c4_satistavsiye"],
+    musteriTakip: ["emlak_c3_takip"],
     mulkoner: ["emlak_c4_mulkoner"],
   },
 };

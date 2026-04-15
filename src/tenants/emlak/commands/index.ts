@@ -21,6 +21,7 @@ import { handleEslestir, handleEslestirCallback } from "./eslestir";
 import { handleHatirlatma, handleHatirlatmaStep, handleHatirlatmaCallback } from "./hatirlatma";
 import { handleTakipEt, handleTakipEtStep, handleTakipEtCallback } from "./takip-et";
 import { handleSatisTavsiye, handleSatisTavsiyeCallback } from "./satis-tavsiye";
+import { handleMusteriTakip, handleMusteriTakipCallback } from "./musteri-takip";
 import { handleOrtakPazar, handleOrtakPazarCallback } from "./ortak-pazar";
 import { handleFotograf, handleFotografCallback, handlePaylas, handlePaylasCallback, handleYayinla, handleYayinlaCallback } from "./medya";
 import { handleWebsitem, handleWebsitemStep, handleWebsitemCallback } from "./websitem-wizard";
@@ -50,6 +51,7 @@ export const emlakCommands: TenantCommandRegistry = {
     takipEt: handleTakipEt,
     satistavsiye: handleSatisTavsiye,
     ortakpazar: handleOrtakPazar,
+    musteriTakip: handleMusteriTakip,
     sunum: handleSunum,
     sunumlarim: handleSunumlarim,
 
@@ -115,6 +117,7 @@ export const emlakCommands: TenantCommandRegistry = {
     "htrt:": handleHatirlatmaCallback,
     "tkp:": handleTakipEtCallback,
     "st:": handleSatisTavsiyeCallback,
+    "mt:": handleMusteriTakipCallback,
     "op:": handleOrtakPazarCallback,
     "foto_select:": handleFotografCallback,
     "foto_done": handleFotografCallback,

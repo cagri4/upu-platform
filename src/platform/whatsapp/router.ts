@@ -191,7 +191,7 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         const SELF_TRIGGERING_COMMANDS = new Set([
           "fiyatbelirle", "fiyatsor", "paylas", "musteriEkle", "eslestir",
           "hatirlatma", "sunum", "takipEt", "satistavsiye", "mulkoner",
-          "fotograf", "mulkekle",
+          "fotograf", "mulkekle", "musteriTakip",
         ]);
         try {
           await handler(ctx);

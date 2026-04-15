@@ -498,6 +498,17 @@ async function generatePresentation(ctx: WaContext): Promise<void> {
 
   await logEvent(ctx.tenantId, ctx.userId, "sunum_hazirlandi", `${customer.name} — ${props.length} mülk`);
 
+  // Auto set follow-up: 3 days after presentation
+  try {
+    const supabase = (await import("@/platform/auth/supabase")).getServiceClient();
+    const followupDate = new Date(Date.now() + 3 * 86400000).toISOString();
+    await supabase.from("emlak_customers").update({
+      pipeline_stage: "sunum_yapildi",
+      last_contact_date: new Date().toISOString(),
+      next_followup_date: followupDate,
+    }).eq("id", customer.id);
+  } catch { /* don't break sunum flow */ }
+
   const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
   await triggerMissionCheck(ctx.userId, ctx.tenantKey, "sunum", ctx.phone);
 }

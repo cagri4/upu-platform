@@ -172,6 +172,40 @@ export const EMLAK_TASK_RULES: TaskRule[] = [
     },
   },
 
+  // ── Müşteri takip görevi ─────────────────────────────
+  {
+    task_type: "musteri_takip_gunluk",
+    title: "Müşteri takip et",
+    emoji: "📞",
+    command: "musteriTakip",
+    points: 15,
+    employee_key: "satis",
+    xp_reward: 25,
+    check: async (userId) => {
+      const supabase = getServiceClient();
+      const now = new Date();
+      // Takip tarihi geçmiş veya 7+ gün temas edilmemiş müşteriler
+      const { data: overdue } = await supabase
+        .from("emlak_customers")
+        .select("id, name, next_followup_date, last_contact_date, pipeline_stage")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .not("pipeline_stage", "in", '("kapandi","iptal")')
+        .or(`next_followup_date.lte.${now.toISOString()},last_contact_date.is.null`)
+        .limit(3);
+
+      return (overdue || []).map(c => {
+        const days = c.last_contact_date
+          ? Math.floor((now.getTime() - new Date(c.last_contact_date).getTime()) / 86400000)
+          : null;
+        const desc = days !== null
+          ? `${c.name} — ${days} gündür temas yok (+25 XP)`
+          : `${c.name} — henüz temas edilmedi (+25 XP)`;
+        return { entityId: c.id, description: desc };
+      });
+    },
+  },
+
   // ── Kullanım bazlı görevler ─────────────────────────────
 
   {
