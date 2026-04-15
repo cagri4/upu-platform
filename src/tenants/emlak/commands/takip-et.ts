@@ -46,7 +46,8 @@ export async function handleTakipEt(ctx: WaContext): Promise<void> {
       const tip = (cr.property_type as string) || "Hepsi";
       const loc = (cr.location as string) || "Tüm bölgeler";
       const m2 = cr.m2_label as string || "";
-      text += `${i + 1}. ${lt} ${tip} — ${loc}${m2 ? ` — ${m2}` : ""}\n`;
+      const lb = cr.listed_by === "sahibi" ? " · sahibinden" : cr.listed_by === "emlakci" ? " · emlak ofisi" : "";
+      text += `${i + 1}. ${lt} ${tip} — ${loc}${m2 ? ` — ${m2}` : ""}${lb}\n`;
     }
 
     const rows = existing.map((c, i) => ({
@@ -161,9 +162,22 @@ export async function handleTakipEtCallback(ctx: WaContext, data: string): Promi
     const m2Max = range?.max || 9999;
     const m2Label = range?.label || rangeKey;
 
-    await updateSession(ctx.userId, "search", { m2_min: m2Min, m2_max: m2Max, m2_label: m2Label });
+    await updateSession(ctx.userId, "listed_by", { m2_min: m2Min, m2_max: m2Max, m2_label: m2Label });
 
-    // Run search and show results
+    // Ask: kimden?
+    await sendButtons(ctx.phone, "Kimden?", [
+      { id: "tkp:lb:sahibi", title: "Sahibinden" },
+      { id: "tkp:lb:emlakci", title: "Emlak Ofisinden" },
+      { id: "tkp:lb:hepsi", title: "Farketmez" },
+    ]);
+    return;
+  }
+
+  // Listed by selection
+  if (data.startsWith("tkp:lb:")) {
+    const value = data.replace("tkp:lb:", "");
+    await updateSession(ctx.userId, "search", { listed_by: value === "hepsi" ? null : value });
+
     await runSearchAndShowResults(ctx);
     return;
   }
@@ -217,11 +231,12 @@ async function runSearchAndShowResults(ctx: WaContext): Promise<void> {
   const m2Min = (d.m2_min as number) || 0;
   const m2Max = (d.m2_max as number) || 9999;
   const m2Label = (d.m2_label as string) || "";
+  const listedBy = (d.listed_by as string) || null;
 
   // Build query
   let query = supabase
     .from("emlak_properties")
-    .select("title, price, area, rooms, location_neighborhood, source_url")
+    .select("title, price, area, rooms, location_neighborhood, source_url, listed_by")
     .eq("status", "aktif")
     .gt("price", 0);
 
@@ -239,6 +254,9 @@ async function runSearchAndShowResults(ctx: WaContext): Promise<void> {
   }
   if (m2Max < 9999) {
     query = query.lte("area", m2Max);
+  }
+  if (listedBy) {
+    query = query.eq("listed_by", listedBy);
   }
 
   const { data: results } = await query.order("created_at", { ascending: false }).limit(10);
@@ -265,7 +283,8 @@ async function runSearchAndShowResults(ctx: WaContext): Promise<void> {
     if (r.rooms) details.push(r.rooms);
     if (r.price) details.push(`${fmt(r.price)} TL`);
     if (details.length) msg += `   ${details.join(" — ")}\n`;
-    if (r.location_neighborhood) msg += `   📍 ${r.location_neighborhood}\n`;
+    const kimden = r.listed_by === "sahibi" ? "sahibinden" : r.listed_by === "emlakci" ? "emlak ofisi" : "";
+    if (r.location_neighborhood || kimden) msg += `   📍 ${[r.location_neighborhood, kimden].filter(Boolean).join(" · ")}\n`;
     if (r.source_url) msg += `   ${r.source_url}\n`;
     msg += "\n";
   }
@@ -303,6 +322,7 @@ async function saveTracking(ctx: WaContext): Promise<void> {
       listing_type: d.listing_type,
       property_type: d.property_type,
       location: d.location,
+      listed_by: d.listed_by || null,
       m2_min: d.m2_min,
       m2_max: d.m2_max,
       m2_label: d.m2_label,
@@ -363,7 +383,7 @@ export async function sendTrackingNotifications(): Promise<number> {
       // Build query for new listings (last 24h)
       let query = supabase
         .from("emlak_properties")
-        .select("title, price, area, rooms, location_neighborhood, source_url")
+        .select("title, price, area, rooms, location_neighborhood, source_url, listed_by")
         .eq("status", "aktif")
         .gte("created_at", yesterday)
         .gt("price", 0);
@@ -384,6 +404,9 @@ export async function sendTrackingNotifications(): Promise<number> {
       if (cr.m2_max && (cr.m2_max as number) < 9999) {
         query = query.lte("area", cr.m2_max as number);
       }
+      if (cr.listed_by) {
+        query = query.eq("listed_by", cr.listed_by as string);
+      }
 
       const { data: results } = await query.order("created_at", { ascending: false }).limit(5);
 
@@ -402,7 +425,8 @@ export async function sendTrackingNotifications(): Promise<number> {
         if (r.rooms) details.push(r.rooms);
         if (r.price) details.push(`${fmt(r.price)} TL`);
         if (details.length) msg += `   ${details.join(" — ")}\n`;
-        if (r.location_neighborhood) msg += `   📍 ${r.location_neighborhood}\n`;
+        const kimden = r.listed_by === "sahibi" ? "sahibinden" : r.listed_by === "emlakci" ? "emlak ofisi" : "";
+        if (r.location_neighborhood || kimden) msg += `   📍 ${[r.location_neighborhood, kimden].filter(Boolean).join(" · ")}\n`;
         if (r.source_url) msg += `   ${r.source_url}\n`;
         msg += "\n";
       }

@@ -14,13 +14,17 @@ puppeteerExtra.use(StealthPlugin());
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Sadece başarısız olan 5 URL
+// Başarısız olan kategoriler
 const RETRY_URLS = [
-  { url: 'https://www.sahibinden.com/satilik-arsa/mugla-bodrum', listing_type: 'satilik', property_type: 'arsa' },
+  { url: 'https://www.sahibinden.com/kiralik-bina/mugla-bodrum', listing_type: 'kiralik', property_type: 'bina' },
+  { url: 'https://www.sahibinden.com/kiralik-butik-otel/mugla-bodrum', listing_type: 'kiralik', property_type: 'butik_otel' },
+  { url: 'https://www.sahibinden.com/satilik-is-yeri-dukkan-magaza/mugla-bodrum', listing_type: 'satilik', property_type: 'dukkan' },
   { url: 'https://www.sahibinden.com/satilik-yazlik/mugla-bodrum', listing_type: 'satilik', property_type: 'yazlik' },
-  { url: 'https://www.sahibinden.com/kiralik-yali-dairesi/mugla-bodrum', listing_type: 'kiralik', property_type: 'yali_dairesi' },
-  { url: 'https://www.sahibinden.com/kiralik-mustakil-ev/mugla-bodrum', listing_type: 'kiralik', property_type: 'mustakil' },
+  { url: 'https://www.sahibinden.com/satilik-ciftlik-evi/mugla-bodrum', listing_type: 'satilik', property_type: 'ciftlik_evi' },
+  { url: 'https://www.sahibinden.com/kiralik-devre-mulk/mugla-bodrum', listing_type: 'kiralik', property_type: 'devre_mulk' },
+  { url: 'https://www.sahibinden.com/satilik-butik-otel/mugla-bodrum', listing_type: 'satilik', property_type: 'butik_otel' },
   { url: 'https://www.sahibinden.com/satilik-villa/mugla-bodrum', listing_type: 'satilik', property_type: 'villa' },
+  { url: 'https://www.sahibinden.com/satilik-devre-mulk/mugla-bodrum', listing_type: 'satilik', property_type: 'devre_mulk' },
 ];
 
 const OUTPUT_FILE = path.join(__dirname, 'output', 'v2-retry.json');
