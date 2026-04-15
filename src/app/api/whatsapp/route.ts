@@ -325,7 +325,7 @@ export async function POST(req: NextRequest) {
 
     // ── Check universal invite link (any tenant) ──
     // Match standalone 6-8 char hex codes against invite_links table
-    const universalCodeMatch = text ? text.trim().toUpperCase().match(/^([A-F0-9]{6,8})$/) : null;
+    const universalCodeMatch = text ? text.trim().toUpperCase().match(/(?:^|\s|:)\s*([A-F0-9]{6,8})\s*$/) : null;
     if (universalCodeMatch) {
       const uCode = universalCodeMatch[1];
       const { data: uLink } = await supabase
