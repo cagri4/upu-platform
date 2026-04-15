@@ -22,6 +22,7 @@ interface UserProfile {
   phone: string;
   whatsapp_phone: string;
   tenant_id: string;
+  role: string;
   created_at: string;
 }
 

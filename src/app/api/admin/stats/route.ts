@@ -33,7 +33,7 @@ export async function GET() {
     // Get all users with details
     const { data: users } = await supabase
       .from('profiles')
-      .select('id, display_name, email, phone, whatsapp_phone, tenant_id, created_at')
+      .select('id, display_name, email, phone, whatsapp_phone, tenant_id, role, created_at')
       .order('created_at', { ascending: false });
 
     // Enrich tenants with whatsappPhone from config
