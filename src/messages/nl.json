@@ -11,11 +11,61 @@
         "sekreter": { "name": "Secretaresse", "description": "Briefing & taken" }
       }
     },
-    "bayi": { "name": "Dealerbeheer", "description": "AI-aangedreven dealerbeheersysteem" },
-    "muhasebe": { "name": "Boekhoudassistent", "description": "AI-aangedreven boekhoudteam" },
-    "otel": { "name": "Hotelbeheer", "description": "AI-aangedreven hotelbeheersysteem" },
-    "siteyonetim": { "name": "Vastgoedbeheer", "description": "AI-aangedreven vastgoedbeheerteam" },
-    "market": { "name": "Marktbeheer", "description": "AI-aangedreven marktbeheersysteem" }
+    "bayi": {
+      "name": "Dealerbeheer",
+      "description": "AI-aangedreven virtueel team voor dealernetwerkbeheer",
+      "employees": {
+        "asistan": { "name": "Assistent", "description": "Dagelijks overzicht, agenda & herinneringen" },
+        "satisMuduru": { "name": "Verkoopmanager", "description": "Campagnes, offertes & prestatieanalyse" },
+        "satisTemsilcisi": { "name": "Verkoopmedewerker", "description": "Bestellingen, productsuggesties & bezoekbeheer" },
+        "muhasebeci": { "name": "Boekhouder", "description": "Saldo, factuurbeheer & rekeningoverzichten" },
+        "tahsildar": { "name": "Incassomedewerker", "description": "Openstaande betalingen & incassobeheer" },
+        "depocu": { "name": "Magazijnmedewerker", "description": "Voorraadstatus, kritieke voorraad & leveringsbeheer" },
+        "lojistikci": { "name": "Logistiek Coordinator", "description": "Leveringsplanning & zendingtracking" },
+        "urunYoneticisi": { "name": "Productmanager", "description": "Productcatalogus & prijslijsten" },
+        "ekipYonetimi": { "name": "Teambeheer", "description": "Medewerker- & dealercommunicatie" },
+        "bayiAsistan": { "name": "Dealerassistent", "description": "Bestellingen, saldo, catalogus & acties" }
+      }
+    },
+    "muhasebe": {
+      "name": "Boekhoudassistent",
+      "description": "AI-aangedreven virtueel team voor boekhoudkantoren",
+      "employees": {
+        "faturaUzmani": { "name": "Factuurspecialist", "description": "e-Factuur upload, zoeken & rekeningcodevoorstellen" },
+        "sekreter": { "name": "Secretaresse", "description": "Belastingkalender, afspraken & belastingplichtingenbeheer" },
+        "vergiUzmani": { "name": "Belastingspecialist", "description": "BTW-berekening, belastingrapporten & aangiftecontrole" },
+        "tahsilatUzmani": { "name": "Incassospecialist", "description": "Debiteurenbeheer, achterstallige betalingen & cashflow" }
+      }
+    },
+    "otel": {
+      "name": "Hotelbeheer",
+      "description": "AI-aangedreven virtueel team voor hotels",
+      "employees": {
+        "resepsiyon": { "name": "Receptie", "description": "Gastontvangst, berichtenbeheer & escalatie" },
+        "rezervasyon": { "name": "Reserveringsspecialist", "description": "Beschikbaarheid, prijzen & in-/uitchecken" },
+        "katHizmetleri": { "name": "Huishouding", "description": "Kamerstatus, schoonmaak & taakverdeling" },
+        "misafirDeneyimi": { "name": "Gastbeleving", "description": "Kennisbank, aanbevelingen & beoordelingenbeheer" }
+      }
+    },
+    "siteyonetim": {
+      "name": "Vastgoedbeheer",
+      "description": "AI-aangedreven virtueel team voor woningbeheer",
+      "employees": {
+        "muhasebeci": { "name": "Boekhouder", "description": "Servicekosten, schuldstatus, inkomsten-uitgaven & aanslagen" },
+        "sekreter": { "name": "Secretaresse", "description": "Aankondigingen, vergaderoproepen & bewonercommunicatie" },
+        "teknisyen": { "name": "Technicus", "description": "Storingsmelding, onderhoud & reparatiebeheer" },
+        "hukukMusaviri": { "name": "Juridisch Adviseur", "description": "Vastgoedwetgeving, rechten & verplichtingen" }
+      }
+    },
+    "market": {
+      "name": "Marktbeheer",
+      "description": "AI-aangedreven voorraad- & verkoopbeheer voor supermarkten",
+      "employees": {
+        "stokSorumlusu": { "name": "Voorraadbeheerder", "description": "Producten, voorraad, houdbaarheidsdatums & categoriebeheer" },
+        "siparisYoneticisi": { "name": "Bestelbeheerder", "description": "Leveranciers, bestellingen & leveringsbeheer" },
+        "finansAnalisti": { "name": "Financieel Analist", "description": "Prijzen, acties, verkoop & kassarapporten" }
+      }
+    }
   },
   "common": {
     "login": "Inloggen",

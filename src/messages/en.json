@@ -11,11 +11,61 @@
         "sekreter": { "name": "Secretary", "description": "Briefing & tasks" }
       }
     },
-    "bayi": { "name": "Dealer Management", "description": "AI-powered dealer management system" },
-    "muhasebe": { "name": "Accounting Assistant", "description": "AI-powered accounting office team" },
-    "otel": { "name": "Hotel Management", "description": "AI-powered hotel management system" },
-    "siteyonetim": { "name": "Property Management", "description": "AI-powered property management team" },
-    "market": { "name": "Market Management", "description": "AI-powered market management system" }
+    "bayi": {
+      "name": "Dealer Management",
+      "description": "AI-powered virtual team for dealer network management",
+      "employees": {
+        "asistan": { "name": "Assistant", "description": "Daily summary, calendar & reminders" },
+        "satisMuduru": { "name": "Sales Manager", "description": "Campaigns, quotes & performance analysis" },
+        "satisTemsilcisi": { "name": "Sales Representative", "description": "Order taking, product suggestions & visit management" },
+        "muhasebeci": { "name": "Accountant", "description": "Balance, invoice tracking & account statements" },
+        "tahsildar": { "name": "Collection Officer", "description": "Due payments & collection tracking" },
+        "depocu": { "name": "Warehouse Clerk", "description": "Stock status, critical stock & supply management" },
+        "lojistikci": { "name": "Logistics Coordinator", "description": "Delivery planning & shipment tracking" },
+        "urunYoneticisi": { "name": "Product Manager", "description": "Product catalog & price lists" },
+        "ekipYonetimi": { "name": "Team Management", "description": "Employee & dealer communications" },
+        "bayiAsistan": { "name": "Dealer Assistant", "description": "Orders, balance, catalog & promotions" }
+      }
+    },
+    "muhasebe": {
+      "name": "Accounting Assistant",
+      "description": "AI-powered virtual team for accounting offices",
+      "employees": {
+        "faturaUzmani": { "name": "Invoice Processing Specialist", "description": "e-Invoice upload, search & account code suggestions" },
+        "sekreter": { "name": "Secretary", "description": "Tax calendar, appointments & taxpayer management" },
+        "vergiUzmani": { "name": "Tax Specialist", "description": "VAT calculation, tax reports & declaration review" },
+        "tahsilatUzmani": { "name": "Collection Specialist", "description": "Receivables tracking, overdue payments & cash flow" }
+      }
+    },
+    "otel": {
+      "name": "Hotel Management",
+      "description": "AI-powered virtual team for hotels",
+      "employees": {
+        "resepsiyon": { "name": "Front Desk", "description": "Guest reception, messaging & escalation" },
+        "rezervasyon": { "name": "Reservation Specialist", "description": "Availability, pricing & check-in/out" },
+        "katHizmetleri": { "name": "Housekeeping", "description": "Room status, cleaning & task assignment" },
+        "misafirDeneyimi": { "name": "Guest Experience", "description": "Knowledge base, recommendations & review management" }
+      }
+    },
+    "siteyonetim": {
+      "name": "Property Management",
+      "description": "AI-powered virtual team for residential management",
+      "employees": {
+        "muhasebeci": { "name": "Accountant", "description": "Dues, debt status, income-expense & assessments" },
+        "sekreter": { "name": "Secretary", "description": "Announcements, meeting calls & resident communications" },
+        "teknisyen": { "name": "Technician", "description": "Fault reporting, maintenance & repair tracking" },
+        "hukukMusaviri": { "name": "Legal Counsel", "description": "Property law regulations, rights & obligations" }
+      }
+    },
+    "market": {
+      "name": "Market Management",
+      "description": "AI-powered stock & sales management for markets",
+      "employees": {
+        "stokSorumlusu": { "name": "Stock Manager", "description": "Products, inventory, expiry dates & category management" },
+        "siparisYoneticisi": { "name": "Order Manager", "description": "Supplier, order & delivery management" },
+        "finansAnalisti": { "name": "Financial Analyst", "description": "Pricing, promotions, sales & register reports" }
+      }
+    }
   },
   "common": {
     "login": "Login",

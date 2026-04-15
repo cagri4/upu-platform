@@ -11,11 +11,61 @@
         "sekreter": { "name": "Sekreter", "description": "Brifing ve görevler" }
       }
     },
-    "bayi": { "name": "Bayi Yönetimi", "description": "AI destekli bayi yönetim sistemi" },
-    "muhasebe": { "name": "Muhasebe Asistanı", "description": "AI destekli muhasebe büro ekibi" },
-    "otel": { "name": "Otel Yönetimi", "description": "AI destekli otel yönetim sistemi" },
-    "siteyonetim": { "name": "Site Yönetimi", "description": "AI destekli site yönetim ekibi" },
-    "market": { "name": "Market Yönetimi", "description": "AI destekli market yönetim sistemi" }
+    "bayi": {
+      "name": "Bayi Yönetimi",
+      "description": "Bayi ağı yönetimi için AI destekli sanal ekip",
+      "employees": {
+        "asistan": { "name": "Asistan", "description": "Günlük özet, takvim ve hatırlatmalar" },
+        "satisMuduru": { "name": "Satış Müdürü", "description": "Kampanya, teklif ve performans analizi" },
+        "satisTemsilcisi": { "name": "Satış Temsilcisi", "description": "Sipariş alma, ürün önerisi, ziyaret yönetimi" },
+        "muhasebeci": { "name": "Muhasebeci", "description": "Bakiye, fatura takibi ve hesap ekstresi" },
+        "tahsildar": { "name": "Tahsildar", "description": "Vadesi gelen ödemeler ve tahsilat takibi" },
+        "depocu": { "name": "Depocu", "description": "Stok durumu, kritik stok ve tedarik yönetimi" },
+        "lojistikci": { "name": "Lojistikçi", "description": "Teslimat planlaması ve kargo takibi" },
+        "urunYoneticisi": { "name": "Ürün Yöneticisi", "description": "Ürün kataloğu ve fiyat listesi" },
+        "ekipYonetimi": { "name": "Ekip Yönetimi", "description": "Çalışan ve bayi iletişimi" },
+        "bayiAsistan": { "name": "Bayi Asistanı", "description": "Sipariş, bakiye, katalog ve kampanyalar" }
+      }
+    },
+    "muhasebe": {
+      "name": "Muhasebe Asistanı",
+      "description": "Muhasebe büroları için AI destekli sanal ekip",
+      "employees": {
+        "faturaUzmani": { "name": "Fatura İşleme Uzmanı", "description": "e-Fatura yükleme, arama ve hesap kodu önerisi" },
+        "sekreter": { "name": "Sekreter", "description": "Beyanname takvimi, randevu ve mükellef yönetimi" },
+        "vergiUzmani": { "name": "Vergi Uzmanı", "description": "KDV hesaplama, vergi raporu ve beyanname kontrol" },
+        "tahsilatUzmani": { "name": "Tahsilat Uzmanı", "description": "Alacak takibi, geciken ödemeler ve nakit akış" }
+      }
+    },
+    "otel": {
+      "name": "Otel Yönetimi",
+      "description": "Oteller için AI destekli sanal ekip",
+      "employees": {
+        "resepsiyon": { "name": "Resepsiyon", "description": "Misafir karşılama, mesaj yönetimi ve eskalasyon" },
+        "rezervasyon": { "name": "Rezervasyon Uzmanı", "description": "Müsaitlik, fiyat sorgulama ve check-in/out" },
+        "katHizmetleri": { "name": "Kat Hizmetleri", "description": "Oda durumu, temizlik ve görev atama" },
+        "misafirDeneyimi": { "name": "Misafir Deneyimi", "description": "Bilgi bankası, tavsiye ve yorum yönetimi" }
+      }
+    },
+    "siteyonetim": {
+      "name": "Site Yönetimi",
+      "description": "Konut ve site yönetimi için AI destekli sanal ekip",
+      "employees": {
+        "muhasebeci": { "name": "Muhasebeci", "description": "Aidat, borç durumu, gelir-gider ve tahakkuk" },
+        "sekreter": { "name": "Sekreter", "description": "Duyuru, toplantı çağrısı ve sakin iletişimi" },
+        "teknisyen": { "name": "Teknisyen", "description": "Arıza bildirimi, bakım ve onarım takibi" },
+        "hukukMusaviri": { "name": "Hukuk Müşaviri", "description": "KMK mevzuatı, hak ve yükümlülükler" }
+      }
+    },
+    "market": {
+      "name": "Market Yönetimi",
+      "description": "Marketler için AI destekli stok ve satış yönetimi",
+      "employees": {
+        "stokSorumlusu": { "name": "Stok Sorumlusu", "description": "Ürün, stok, SKT ve kategori yönetimi" },
+        "siparisYoneticisi": { "name": "Sipariş Yöneticisi", "description": "Tedarikçi, sipariş ve teslimat yönetimi" },
+        "finansAnalisti": { "name": "Finans Analisti", "description": "Fiyat, kampanya, satış ve kasa raporları" }
+      }
+    }
   },
   "common": {
     "login": "Giriş Yap",
