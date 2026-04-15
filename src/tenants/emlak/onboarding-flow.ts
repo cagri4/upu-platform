@@ -19,6 +19,15 @@ export const emlakOnboardingFlow: OnboardingFlow = {
 
   steps: [
     {
+      key: "display_name",
+      question: "Adınız ve soyadınız?\n\n💡 Örnek: _Ahmet Yılmaz_",
+      onComplete: async (ctx, value) => {
+        // Update profile display_name with the user's real name
+        const supabase = getServiceClient();
+        await supabase.from("profiles").update({ display_name: value }).eq("id", ctx.userId);
+      },
+    },
+    {
       key: "office_name",
       question: "Ofisinizin veya şirketinizin adı nedir?\n\n💡 Örnek: _ABC Emlak_, _Yılmaz Gayrimenkul_\n\n🔒 Verileriniz güvenli şekilde saklanır.",
     },

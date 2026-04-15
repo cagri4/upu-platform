@@ -503,7 +503,7 @@ export async function POST(req: NextRequest) {
             `🏢 *Ekibiniz hazır!*\n\n` +
             `5 sanal elemanınız sizin için çalışmaya başladı. ` +
             `Görevleri tamamladıkça onları geliştirin — daha yetenekli elemanlar, daha çok satış.\n\n` +
-            `Önce sizi tanıyalım — 3 kısa soru.`
+            `Önce sizi tanıyalım — birkaç kısa soru.`
           );
 
           // Init onboarding and send first step
