@@ -30,54 +30,44 @@ interface DashboardMetrics {
 }
 
 function getTenantCards(tenantKey: string, m: DashboardMetrics) {
-  const common = [
-    { title: 'Kullanıcılar', value: m.totalUsers, icon: Users, color: 'text-blue-500' },
-    { title: 'Aktif Abonelik', value: m.activeSubscriptions, icon: Building2, color: 'text-green-500' },
-    { title: 'Toplam Komut', value: m.totalCommands, icon: MessageSquare, color: 'text-purple-500' },
-  ];
-
   switch (tenantKey) {
     case 'emlak':
       return [
-        ...common,
-        { title: 'Mülkler', value: m.propertyCount ?? '-', icon: Home, color: 'text-indigo-500' },
-        { title: 'Müşteriler', value: m.customerCount ?? '-', icon: ClipboardList, color: 'text-orange-500' },
+        { title: 'Mülklerim', value: m.propertyCount ?? 0, icon: Home, color: 'text-indigo-500' },
+        { title: 'Müşterilerim', value: m.customerCount ?? 0, icon: ClipboardList, color: 'text-orange-500' },
+        { title: 'Komutlarım', value: m.totalCommands, icon: MessageSquare, color: 'text-purple-500' },
       ];
     case 'bayi':
       return [
-        ...common,
-        { title: 'Siparişler', value: m.orderCount ?? '-', icon: Package, color: 'text-orange-500' },
-        { title: 'Kritik Stok', value: m.stockAlerts ?? '-', icon: AlertTriangle, color: 'text-red-500' },
-        { title: 'Teslimatlar', value: '-', icon: Truck, color: 'text-cyan-500' },
+        { title: 'Siparişlerim', value: m.orderCount ?? 0, icon: Package, color: 'text-orange-500' },
+        { title: 'Kritik Stok', value: m.stockAlerts ?? 0, icon: AlertTriangle, color: 'text-red-500' },
+        { title: 'Komutlarım', value: m.totalCommands, icon: MessageSquare, color: 'text-purple-500' },
       ];
     case 'muhasebe':
       return [
-        ...common,
-        { title: 'Faturalar', value: m.invoiceCount ?? '-', icon: FileText, color: 'text-orange-500' },
-        { title: 'Mükellefler', value: '-', icon: CreditCard, color: 'text-teal-500' },
+        { title: 'Faturalarım', value: m.invoiceCount ?? 0, icon: FileText, color: 'text-orange-500' },
+        { title: 'Komutlarım', value: m.totalCommands, icon: MessageSquare, color: 'text-purple-500' },
       ];
     case 'otel':
       return [
-        ...common,
-        { title: 'Rezervasyonlar', value: m.reservationCount ?? '-', icon: Hotel, color: 'text-orange-500' },
-        { title: 'Odalar', value: m.roomCount ?? '-', icon: Building2, color: 'text-cyan-500' },
+        { title: 'Rezervasyonlar', value: m.reservationCount ?? 0, icon: Hotel, color: 'text-orange-500' },
+        { title: 'Odalar', value: m.roomCount ?? 0, icon: Building2, color: 'text-cyan-500' },
+        { title: 'Komutlarım', value: m.totalCommands, icon: MessageSquare, color: 'text-purple-500' },
       ];
     case 'siteyonetim':
       return [
-        ...common,
-        { title: 'Arızalar', value: m.complaintCount ?? '-', icon: AlertTriangle, color: 'text-red-500' },
-        { title: 'Raporlar', value: '-', icon: BarChart3, color: 'text-teal-500' },
+        { title: 'Arızalar', value: m.complaintCount ?? 0, icon: AlertTriangle, color: 'text-red-500' },
+        { title: 'Komutlarım', value: m.totalCommands, icon: MessageSquare, color: 'text-purple-500' },
       ];
     case 'market':
       return [
-        ...common,
-        { title: 'Ürünler', value: m.productCount ?? '-', icon: ShoppingCart, color: 'text-orange-500' },
-        { title: 'Kritik Stok', value: m.stockAlerts ?? '-', icon: AlertTriangle, color: 'text-red-500' },
+        { title: 'Ürünlerim', value: m.productCount ?? 0, icon: ShoppingCart, color: 'text-orange-500' },
+        { title: 'Kritik Stok', value: m.stockAlerts ?? 0, icon: AlertTriangle, color: 'text-red-500' },
+        { title: 'Komutlarım', value: m.totalCommands, icon: MessageSquare, color: 'text-purple-500' },
       ];
     default:
       return [
-        ...common,
-        { title: 'Bu Ay', value: '-', icon: TrendingUp, color: 'text-orange-500' },
+        { title: 'Komutlarım', value: m.totalCommands, icon: MessageSquare, color: 'text-purple-500' },
       ];
   }
 }
