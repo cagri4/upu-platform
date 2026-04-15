@@ -56,11 +56,9 @@ export default function AdminPage() {
   const [insight, setInsight] = useState<InsightData | null>(null);
   const [loading, setLoading] = useState(true);
   const [insightLoading, setInsightLoading] = useState(false);
-  const [showInvite, setShowInvite] = useState<string | null>(null);
-  const [inviteForm, setInviteForm] = useState({ name: '', email: '', phone: '' });
-  const [creating, setCreating] = useState(false);
-  const [lastResult, setLastResult] = useState<{ code: string; name: string } | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [inviteLinks, setInviteLinks] = useState<Record<string, { code: string; usedCount: number; maxUses: number | null }>>({});
+  const [linkLoading, setLinkLoading] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => { fetchStats(); }, []);
 
@@ -93,29 +91,26 @@ export default function AdminPage() {
     } catch (err) { console.error(err); }
   }
 
-  async function createInvite(tenantId: string) {
-    if (!inviteForm.name) return;
-    setCreating(true);
+  async function getOrCreateLink(tenantId: string) {
+    setLinkLoading(tenantId);
     try {
       const res = await fetch('/api/admin/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenantId, ...inviteForm }),
+        body: JSON.stringify({ tenantId, type: 'link' }),
       });
       const data = await res.json();
       if (res.ok) {
-        setLastResult({ code: data.inviteCode, name: data.name });
-        setInviteForm({ name: '', email: '', phone: '' });
-        fetchStats();
+        setInviteLinks(prev => ({ ...prev, [tenantId]: { code: data.code, usedCount: data.usedCount, maxUses: data.maxUses } }));
       }
     } catch (err) { console.error(err); }
-    finally { setCreating(false); }
+    finally { setLinkLoading(null); }
   }
 
-  function copyToClipboard(text: string) {
+  function copyToClipboard(text: string, key: string) {
     navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
   }
 
   if (loading) {
@@ -167,10 +162,9 @@ export default function AdminPage() {
       </div>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {tab === 'genel' && <GenelTab stats={stats} showInvite={showInvite} setShowInvite={setShowInvite}
-          inviteForm={inviteForm} setInviteForm={setInviteForm} creating={creating}
-          createInvite={createInvite} lastResult={lastResult} copied={copied}
-          copyToClipboard={copyToClipboard} deleteUser={deleteUser} />}
+        {tab === 'genel' && <GenelTab stats={stats} inviteLinks={inviteLinks}
+          linkLoading={linkLoading} getOrCreateLink={getOrCreateLink}
+          copied={copied} copyToClipboard={copyToClipboard} deleteUser={deleteUser} />}
         {tab === 'insight' && <InsightTab data={insight} loading={insightLoading} onRefresh={fetchInsight} />}
       </main>
     </div>
@@ -179,17 +173,13 @@ export default function AdminPage() {
 
 // ── Genel Tab ──────────────────────────────────────────────────────
 
-function GenelTab({ stats, showInvite, setShowInvite, inviteForm, setInviteForm, creating, createInvite, lastResult, copied, copyToClipboard, deleteUser }: {
+function GenelTab({ stats, inviteLinks, linkLoading, getOrCreateLink, copied, copyToClipboard, deleteUser }: {
   stats: Stats | null;
-  showInvite: string | null;
-  setShowInvite: (v: string | null) => void;
-  inviteForm: { name: string; email: string; phone: string };
-  setInviteForm: (v: { name: string; email: string; phone: string }) => void;
-  creating: boolean;
-  createInvite: (tenantId: string) => void;
-  lastResult: { code: string; name: string } | null;
-  copied: boolean;
-  copyToClipboard: (text: string) => void;
+  inviteLinks: Record<string, { code: string; usedCount: number; maxUses: number | null }>;
+  linkLoading: string | null;
+  getOrCreateLink: (tenantId: string) => void;
+  copied: string | null;
+  copyToClipboard: (text: string, key: string) => void;
   deleteUser: (userId: string, name: string) => void;
 }) {
   return (
@@ -238,77 +228,48 @@ function GenelTab({ stats, showInvite, setShowInvite, inviteForm, setInviteForm,
                   <ExternalLink className="w-3.5 h-3.5" /> Ac
                 </a>
               </div>
-              <button
-                onClick={() => { setShowInvite(showInvite === tenant.id ? null : tenant.id); }}
-                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 transition text-sm"
-              >
-                <UserPlus className="w-4 h-4" /> Kullanici Ekle
-              </button>
-            </div>
-
-            {/* Invite form */}
-            {showInvite === tenant.id && (
-              <div className="border-t border-slate-700 p-5 bg-slate-850">
-                <div className="space-y-3">
-                  <input
-                    placeholder="Ad Soyad *"
-                    value={inviteForm.name}
-                    onChange={e => setInviteForm({ ...inviteForm, name: e.target.value })}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-                  />
-                  <input
-                    placeholder="E-posta"
-                    value={inviteForm.email}
-                    onChange={e => setInviteForm({ ...inviteForm, email: e.target.value })}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-                  />
-                  <input
-                    placeholder="Telefon"
-                    value={inviteForm.phone}
-                    onChange={e => setInviteForm({ ...inviteForm, phone: e.target.value })}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-                  />
-                  <button
-                    onClick={() => createInvite(tenant.id)}
-                    disabled={creating || !inviteForm.name}
-                    className="w-full py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition disabled:opacity-50"
-                  >
-                    {creating ? 'Olusturuluyor...' : 'Olustur'}
-                  </button>
-
-                  {lastResult && (
-                    <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 space-y-2">
-                      <p className="text-sm text-green-400">{lastResult.name} olusturuldu!</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-400">Kod:</span>
-                        <span className="font-mono text-lg font-bold text-green-300">{lastResult.code}</span>
-                        <button onClick={() => copyToClipboard(lastResult.code)} className="text-green-400 hover:text-green-300">
-                          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        </button>
-                      </div>
-                      <div>
-                        <span className="text-xs text-slate-400">WhatsApp Davet Linki:</span>
-                        <div className="flex items-center gap-2 mt-1">
-                          <a
-                            href={`https://wa.me/${tenant.whatsapp_phone}?text=${encodeURIComponent(`Merhaba! Sisteme kayit olmak istiyorum. Kayit Kodum: ${lastResult.code}`)}`}
-                            target="_blank"
-                            className="text-sm text-indigo-400 hover:text-indigo-300 underline break-all"
-                          >
-                            wa.me link
-                          </a>
-                          <button
-                            onClick={() => copyToClipboard(`https://wa.me/${tenant.whatsapp_phone}?text=${encodeURIComponent(`Merhaba! Sisteme kayit olmak istiyorum. Kayit Kodum: ${lastResult.code}`)}`)}
-                            className="text-indigo-400 hover:text-indigo-300"
-                          >
-                            <Copy className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
+              {!inviteLinks[tenant.id] ? (
+                <button
+                  onClick={() => getOrCreateLink(tenant.id)}
+                  disabled={linkLoading === tenant.id}
+                  className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 transition text-sm disabled:opacity-50"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  {linkLoading === tenant.id ? 'Olusturuluyor...' : 'Davet Linki Olustur'}
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-400">Davet Kodu:</span>
+                      <span className="font-mono text-sm font-bold text-green-300">{inviteLinks[tenant.id].code}</span>
                     </div>
-                  )}
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>Kullanim: {inviteLinks[tenant.id].usedCount}{inviteLinks[tenant.id].maxUses ? `/${inviteLinks[tenant.id].maxUses}` : ' (sinirsiz)'}</span>
+                    </div>
+                    <div className="flex gap-2 mt-1">
+                      <button
+                        onClick={() => {
+                          const waLink = `https://wa.me/${tenant.whatsapp_phone}?text=${encodeURIComponent(inviteLinks[tenant.id].code)}`;
+                          copyToClipboard(waLink, `wa-${tenant.id}`);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition text-xs"
+                      >
+                        {copied === `wa-${tenant.id}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copied === `wa-${tenant.id}` ? 'Kopyalandi!' : 'wa.me Linki Kopyala'}
+                      </button>
+                      <button
+                        onClick={() => copyToClipboard(inviteLinks[tenant.id].code, `code-${tenant.id}`)}
+                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition text-xs"
+                      >
+                        {copied === `code-${tenant.id}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        Kod
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         ))}
       </div>
