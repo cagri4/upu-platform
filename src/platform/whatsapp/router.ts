@@ -527,14 +527,12 @@ async function handleWebpanelShared(ctx: WaContext, tenant: ReturnType<typeof ge
     });
 
     const magicUrl = `${appUrl}/auth/magic?token=${token}`;
-    await sendButtons(ctx.phone,
+    await sendText(ctx.phone,
       `🖥 Web Panel\n\nAşağıdaki linke tıklayarak giriş yapın:\n\n${magicUrl}\n\n⏱ 15 dakika geçerli.`,
-      [{ id: "cmd:menu", title: "Ana Menü" }],
     );
   } catch {
-    await sendButtons(ctx.phone,
+    await sendText(ctx.phone,
       `🖥 Web Panel\n\n${appUrl}/tr/login`,
-      [{ id: "cmd:menu", title: "Ana Menü" }],
     );
   }
 }
