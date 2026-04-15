@@ -137,11 +137,11 @@ export default function DashboardPage() {
         {cards.map((card) => (
           <Card key={card.title}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">{card.title}</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-700">{card.title}</CardTitle>
               <card.icon className={`h-5 w-5 ${card.color}`} />
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{card.value}</p>
+              <p className="text-2xl font-bold text-slate-900">{card.value}</p>
             </CardContent>
           </Card>
         ))}
