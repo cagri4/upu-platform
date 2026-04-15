@@ -251,7 +251,7 @@ function GenelTab({ stats, inviteLinks, linkLoading, getOrCreateLink, copied, co
                     <div className="flex gap-2 mt-1">
                       <button
                         onClick={() => {
-                          const waLink = `https://wa.me/${tenant.whatsapp_phone}?text=${encodeURIComponent(inviteLinks[tenant.id].code)}`;
+                          const waLink = `https://wa.me/${tenant.whatsapp_phone}?text=${encodeURIComponent(`Merhaba! Sisteme kayıt olmak istiyorum. Davet kodum: ${inviteLinks[tenant.id].code}`)}`;
                           copyToClipboard(waLink, `wa-${tenant.id}`);
                         }}
                         className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition text-xs"
