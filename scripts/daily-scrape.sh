@@ -1,13 +1,15 @@
 #!/bin/bash
-# Günlük Sahibinden Scraper — 2 Partili Cron Job
+# Günlük Sahibinden Scraper V3 — 3 Partili Cron Job
 #
-# Parti 1: Gece 03:00 → İlk 19 URL (büyük kategoriler)
-# Parti 2: Gece 04:30 → Son 19 URL (küçük kategoriler)
+# Parti 1: Gece 03:00 → İlk 25 URL
+# Parti 2: Gece 04:30 → Sonraki 25 URL
+# Parti 3: Gece 06:00 → Son 26 URL
 #
 # Kullanım:
-#   ./daily-scrape.sh          → Tüm URL'ler (eski davranış)
-#   ./daily-scrape.sh part1    → İlk 19 URL
-#   ./daily-scrape.sh part2    → Son 19 URL
+#   ./daily-scrape.sh          → Tüm URL'ler
+#   ./daily-scrape.sh part1    → İlk 25 URL
+#   ./daily-scrape.sh part2    → Sonraki 25 URL
+#   ./daily-scrape.sh part3    → Son 26 URL
 
 export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
 
@@ -41,15 +43,17 @@ fi
 COOKIE_COUNT=$(echo "$COOKIE_OUT" | grep -oP '\d+ cookie' | head -1)
 echo "$DATE — ✅ Cookie: $COOKIE_COUNT" >> "$LOG_FILE"
 
-# 2. Scrape — partiye göre URL seçimi
+# 2. Scrape V3 — partiye göre URL seçimi (76 URL toplam)
 SCRAPE_ARGS="--days=1"
 if [ "$PART" = "part1" ]; then
-  SCRAPE_ARGS="$SCRAPE_ARGS --take=19"
+  SCRAPE_ARGS="$SCRAPE_ARGS --take=25"
 elif [ "$PART" = "part2" ]; then
-  SCRAPE_ARGS="$SCRAPE_ARGS --skip=19"
+  SCRAPE_ARGS="$SCRAPE_ARGS --skip=25 --take=25"
+elif [ "$PART" = "part3" ]; then
+  SCRAPE_ARGS="$SCRAPE_ARGS --skip=50"
 fi
 
-$NODE scripts/scrape-v2.mjs $SCRAPE_ARGS > "$SCRAPE_DETAIL" 2>&1
+$NODE scripts/scrape-v3.mjs $SCRAPE_ARGS > "$SCRAPE_DETAIL" 2>&1
 SCRAPE_EXIT=$?
 
 TOTAL=$(grep -oP 'Toplam: \K\d+' "$SCRAPE_DETAIL")
@@ -64,9 +68,9 @@ else
   echo "$DATE2 — ✅ Scrape [$PART] OK — $URL_DONE URL, $TOTAL ilan" >> "$LOG_FILE"
 fi
 
-# 3. DB'ye import
+# 3. DB'ye import (V3)
 if [ -n "$TOTAL" ] && [ "$TOTAL" -gt 0 ] 2>/dev/null; then
-  IMPORT_OUT=$($NODE scripts/import-v2.mjs 2>&1)
+  IMPORT_OUT=$($NODE scripts/import-v3.mjs 2>&1)
   IMPORT_EXIT=$?
   DATE3=$(date '+%Y-%m-%d %H:%M')
 
@@ -84,8 +88,8 @@ else
   echo "$(date '+%Y-%m-%d %H:%M') — ⏭️ DB Import atlandı (ilan yok)" >> "$LOG_FILE"
 fi
 
-# 4. Cleanup — 30 günden eski ilanları sil (sadece part2'de, günde 1 kez yeterli)
-if [ "$PART" = "part2" ] || [ "$PART" = "full" ]; then
+# 4. Cleanup + notifications (sadece son partide, günde 1 kez)
+if [ "$PART" = "part3" ] || [ "$PART" = "full" ]; then
   CLEANUP_OUT=$($NODE -e "
     const {createClient} = require('@supabase/supabase-js');
     const c = createClient('$SUPABASE_URL', '$SUPABASE_SERVICE_ROLE_KEY');
@@ -101,7 +105,7 @@ if [ "$PART" = "part2" ] || [ "$PART" = "full" ]; then
   " 2>&1)
   echo "$(date '+%Y-%m-%d %H:%M') — 🧹 Cleanup: $CLEANUP_OUT" >> "$LOG_FILE"
 
-  # 5. Tracking notifications — yeni ilanları takip eden kullanıcılara bildir
+  # 5. Tracking notifications
   DEPLOY_URL="${DEPLOY_URL:-https://upu-platform.vercel.app}"
   NOTIFY_OUT=$(curl -s "${DEPLOY_URL}/api/cron/tracking-notify" 2>&1)
   echo "$(date '+%Y-%m-%d %H:%M') — 🔔 Takip bildirimi: $NOTIFY_OUT" >> "$LOG_FILE"
