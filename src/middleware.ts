@@ -32,12 +32,14 @@ export function middleware(req: NextRequest) {
   // Locale detection + redirect
   const pathLocale = pathname.split("/")[1];
   if (!LOCALES.includes(pathLocale)) {
-    // No locale in path → redirect to default locale
     const locale = req.cookies.get("NEXT_LOCALE")?.value || DEFAULT_LOCALE;
     const url = req.nextUrl.clone();
     url.pathname = `/${locale}${pathname}`;
     return NextResponse.redirect(url);
   }
+
+  // Tell next-intl which locale is active
+  response.headers.set("x-next-intl-locale", pathLocale);
 
   return response;
 }
