@@ -275,7 +275,7 @@ function GenelTab({ stats, inviteLinks, linkLoading, getOrCreateLink, copied, co
       </div>
 
       {/* All Users Table */}
-      <h2 className="text-lg font-semibold mt-10 mb-4">Tum Kullanicilar ({stats?.users?.length || 0})</h2>
+      <h2 className="text-lg font-semibold mt-10 mb-4">Tum Kullanicilar ({stats?.users?.filter(u => u.role !== 'system').length || 0})</h2>
       <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -293,7 +293,7 @@ function GenelTab({ stats, inviteLinks, linkLoading, getOrCreateLink, copied, co
               {(!stats?.users || stats.users.length === 0) ? (
                 <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">Henuz kullanici yok</td></tr>
               ) : (
-                stats.users.map((u) => {
+                stats.users.filter((u) => u.role !== 'system').map((u) => {
                   const tenantName = stats.tenants.find(t => t.id === u.tenant_id)?.name || '-';
                   return (
                     <tr key={u.id} className="border-b border-slate-700 hover:bg-slate-750">
