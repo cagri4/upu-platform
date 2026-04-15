@@ -77,6 +77,11 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
           <div className="flex items-center gap-3">
             <a href="#features" className="text-sm text-slate-300 hover:text-white hidden md:block">{t("nav_features")}</a>
             <a href="#pricing" className="text-sm text-slate-300 hover:text-white hidden md:block">{t("nav_pricing")}</a>
+            <div className="flex items-center gap-1 text-sm">
+              <Link href={`/tr`} className={`px-1.5 py-0.5 rounded ${locale === "tr" ? "text-white bg-white/20" : "text-slate-400 hover:text-white"}`}>TR</Link>
+              <Link href={`/en`} className={`px-1.5 py-0.5 rounded ${locale === "en" ? "text-white bg-white/20" : "text-slate-400 hover:text-white"}`}>EN</Link>
+              <Link href={`/nl`} className={`px-1.5 py-0.5 rounded ${locale === "nl" ? "text-white bg-white/20" : "text-slate-400 hover:text-white"}`}>NL</Link>
+            </div>
             <Link href={`/${locale}/login`} className="text-sm text-slate-300 hover:text-white">{t("nav_login")}</Link>
             <Link href={`/${locale}/register`} className="text-sm bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1.5 rounded-lg transition">
               {t("nav_free_trial")}
