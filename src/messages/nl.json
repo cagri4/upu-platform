@@ -1,4 +1,22 @@
 {
+  "tenants": {
+    "emlak": {
+      "name": "Makelaarskantoor",
+      "description": "AI-aangedreven virtueel kantoortteam voor makelaars",
+      "employees": {
+        "portfoy": { "name": "Portefeuillebeheerder", "description": "Vastgoedbeheer" },
+        "satis": { "name": "Verkoopondersteuning", "description": "Klant & matching" },
+        "medya": { "name": "Media Specialist", "description": "Foto's & publicatie" },
+        "pazar": { "name": "Marktanalist", "description": "Prijzen & analyse" },
+        "sekreter": { "name": "Secretaresse", "description": "Briefing & taken" }
+      }
+    },
+    "bayi": { "name": "Dealerbeheer", "description": "AI-aangedreven dealerbeheersysteem" },
+    "muhasebe": { "name": "Boekhoudassistent", "description": "AI-aangedreven boekhoudteam" },
+    "otel": { "name": "Hotelbeheer", "description": "AI-aangedreven hotelbeheersysteem" },
+    "siteyonetim": { "name": "Vastgoedbeheer", "description": "AI-aangedreven vastgoedbeheerteam" },
+    "market": { "name": "Marktbeheer", "description": "AI-aangedreven marktbeheersysteem" }
+  },
   "common": {
     "login": "Inloggen",
     "register": "Registreren",

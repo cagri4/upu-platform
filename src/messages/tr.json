@@ -1,4 +1,22 @@
 {
+  "tenants": {
+    "emlak": {
+      "name": "Emlak Ofisi",
+      "description": "Emlak danışmanları için AI destekli sanal ofis ekibi",
+      "employees": {
+        "portfoy": { "name": "Portföy Sorumlusu", "description": "Mülk yönetimi" },
+        "satis": { "name": "Satış Destek Uzmanı", "description": "Müşteri ve eşleştirme" },
+        "medya": { "name": "Medya Uzmanı", "description": "Fotoğraf ve yayın" },
+        "pazar": { "name": "Pazar Analisti", "description": "Fiyat ve analiz" },
+        "sekreter": { "name": "Sekreter", "description": "Brifing ve görevler" }
+      }
+    },
+    "bayi": { "name": "Bayi Yönetimi", "description": "AI destekli bayi yönetim sistemi" },
+    "muhasebe": { "name": "Muhasebe Asistanı", "description": "AI destekli muhasebe büro ekibi" },
+    "otel": { "name": "Otel Yönetimi", "description": "AI destekli otel yönetim sistemi" },
+    "siteyonetim": { "name": "Site Yönetimi", "description": "AI destekli site yönetim ekibi" },
+    "market": { "name": "Market Yönetimi", "description": "AI destekli market yönetim sistemi" }
+  },
   "common": {
     "login": "Giriş Yap",
     "register": "Kayıt Ol",

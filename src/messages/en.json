@@ -1,4 +1,22 @@
 {
+  "tenants": {
+    "emlak": {
+      "name": "Real Estate Office",
+      "description": "AI-powered virtual office team for real estate agents",
+      "employees": {
+        "portfoy": { "name": "Portfolio Manager", "description": "Property management" },
+        "satis": { "name": "Sales Support", "description": "Customer & matching" },
+        "medya": { "name": "Media Specialist", "description": "Photos & publishing" },
+        "pazar": { "name": "Market Analyst", "description": "Pricing & analysis" },
+        "sekreter": { "name": "Secretary", "description": "Briefing & tasks" }
+      }
+    },
+    "bayi": { "name": "Dealer Management", "description": "AI-powered dealer management system" },
+    "muhasebe": { "name": "Accounting Assistant", "description": "AI-powered accounting office team" },
+    "otel": { "name": "Hotel Management", "description": "AI-powered hotel management system" },
+    "siteyonetim": { "name": "Property Management", "description": "AI-powered property management team" },
+    "market": { "name": "Market Management", "description": "AI-powered market management system" }
+  },
   "common": {
     "login": "Login",
     "register": "Register",

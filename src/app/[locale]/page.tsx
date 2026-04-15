@@ -65,6 +65,7 @@ import type { TenantConfig } from "@/tenants/config";
 
 async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale: string }) {
   const t = await getTranslations("landing");
+  const tt = await getTranslations(`tenants.${tenant.key}` as "tenants");
   return (
     <div className="min-h-screen">
       {/* ── Navbar ── */}
@@ -72,7 +73,7 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xl">{tenant.icon}</span>
-            <span className="text-white font-semibold">{tenant.name}</span>
+            <span className="text-white font-semibold">{tt("name")}</span>
           </div>
           <div className="flex items-center gap-3">
             <a href="#features" className="text-sm text-slate-300 hover:text-white hidden md:block">{t("nav_features")}</a>
@@ -96,7 +97,7 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
           <div className="inline-block bg-indigo-500/20 text-indigo-300 text-sm px-4 py-1 rounded-full mb-6">
             {t("hero_badge", { count: tenant.employees.length })}
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">{tenant.description}</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">{tt("description")}</h1>
           <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
             {t("hero_subtitle")}
           </p>
@@ -129,8 +130,8 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
             {tenant.employees.map((emp) => (
               <div key={emp.key} className="bg-slate-50 rounded-2xl p-6 hover:shadow-lg transition border border-slate-100">
                 <div className="text-3xl mb-3">{emp.icon}</div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-1">{emp.name}</h3>
-                <p className="text-slate-500 text-sm mb-4">{emp.description}</p>
+                <h3 className="text-lg font-semibold text-slate-900 mb-1">{tt(`employees.${emp.key}.name` as "name")}</h3>
+                <p className="text-slate-500 text-sm mb-4">{tt(`employees.${emp.key}.description` as "name")}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {emp.commands.slice(0, 5).map((cmd) => (
                     <span key={cmd} className="text-xs bg-indigo-50 text-indigo-600 rounded-full px-2.5 py-0.5 font-medium">{cmd}</span>
@@ -236,7 +237,7 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-xl">{tenant.icon}</span>
-                <span className="text-white font-semibold">{tenant.name}</span>
+                <span className="text-white font-semibold">{tt("name")}</span>
               </div>
               <p className="text-sm">{t("footer_tagline")}</p>
             </div>
