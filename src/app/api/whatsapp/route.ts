@@ -278,7 +278,7 @@ export async function POST(req: NextRequest) {
         const dealerRole = (inviteLink.role as string) || "dealer";
 
         await sendText(phone,
-          `🏢 *Hoş Geldiniz!*\n\n` +
+          `👋 *Merhaba!*\n\n` +
           `Yapay zeka destekli çalışanlardan oluşan sanal ofisinize hoş geldiniz!\n\n` +
           `Personeliniz sizin talimatlarınızla ve kendi yetenekleriyle 7/24 sizin için çalışacak, satış yapmanız için size sürekli destek olacak.`
         );
@@ -406,7 +406,7 @@ export async function POST(req: NextRequest) {
         const tenantKey = uTenant?.saas_type || "emlak";
 
         await sendText(phone,
-          `🏢 *Hoş Geldiniz!*\n\n` +
+          `👋 *Merhaba!*\n\n` +
           `Yapay zeka destekli çalışanlardan oluşan sanal ofisinize hoş geldiniz!\n\n` +
           `Personeliniz sizin talimatlarınızla ve kendi yetenekleriyle 7/24 sizin için çalışacak, satış yapmanız için size sürekli destek olacak.`
         );

@@ -35,7 +35,7 @@ export type IntroConfig = {
 
 const emlakIntro: IntroConfig = {
   tenantKey: "emlak",
-  introPrompt: "👥 Şimdi sanal elemanlarınızı tanıyalım.\n\nHer birine sırayla tıklayın — yeteneklerini öğrenin.",
+  introPrompt: "👥 Şimdi sanal elemanlarınızı tanıyalım.\n\nŞimdi sırayla onlarla tanışın ve yeteneklerini öğrenin.",
   firstStepKey: "sekreter",
   firstButtonTitle: "👩‍💼 Sekreter",
   steps: [
@@ -46,7 +46,7 @@ const emlakIntro: IntroConfig = {
       body:
         "👩‍💼 *Sekreter*\n\n" +
         "Ofisinizin akışını düzende tutan yardımcınız.\n\n" +
-        "*Size her gün:*\n" +
+        "*Sizin için her gün:*\n" +
         "• Günün randevularınızı ve gösterim planınızı hatırlatır\n" +
         "• Süresi biten sözleşme ve kira takibini yapar, önceden uyarır\n" +
         "• Geciken görevleri listeler, önceliklendirir\n" +
@@ -62,10 +62,10 @@ const emlakIntro: IntroConfig = {
       body:
         "💼 *Satış Destek*\n\n" +
         "Müşteri ilişkilerinizi kontrol altında tutan asistanınız.\n\n" +
-        "*Size her gün:*\n" +
-        "• Müşterilerinizi kayıt eder, arama/mesaj/gösterim geçmişini tutar\n" +
+        "*Sizin için:*\n" +
+        "• Müşterilerinizi kayıt eder\n" +
         "• Müşteri kriterlerine uygun mülkleri otomatik eşleştirir\n" +
-        "• Sıcak müşterileri ve soğuk temasa geçilmesi gerekenleri ayırt eder\n" +
+        "• Sıcak müşterilerinizi ve soğuk temasa geçilmesi gerekenleri ayırt eder\n" +
         "• Kriterleriniz değiştiğinde yeni uygun ilanları tarar, bildirir\n\n" +
         "Hiçbir müşteri fırsatı gözden kaçmaz.",
       nextKey: "portfoy",
@@ -78,7 +78,7 @@ const emlakIntro: IntroConfig = {
       body:
         "📁 *Portföy Sorumlusu*\n\n" +
         "Mülk portföyünüzü sürekli denetleyen uzmanınız.\n\n" +
-        "*Size her gün:*\n" +
+        "*Sizin için:*\n" +
         "• Eksik bilgisi olan (m², oda, açıklama) mülkleri tespit eder, tamamlatır\n" +
         "• Uzun süredir satılmayan bayat ilanları işaretler\n" +
         "• Toplam portföy değerinizi ve ortalama satış sürenizi raporlar\n" +
@@ -94,7 +94,7 @@ const emlakIntro: IntroConfig = {
       body:
         "📸 *Medya Uzmanı*\n\n" +
         "Mülklerinizin tanıtımını üstlenen yaratıcı ekip üyeniz.\n\n" +
-        "*Size her gün:*\n" +
+        "*Sizin için:*\n" +
         "• Fotoğrafı eksik ilanlarınızı tespit eder, hatırlatır\n" +
         "• İstediğiniz mülk için profesyonel sunum dosyası hazırlar\n" +
         "• Instagram/sosyal medya için hazır post metni ve görsel üretir\n" +
@@ -110,7 +110,7 @@ const emlakIntro: IntroConfig = {
       body:
         "📊 *Pazar Analisti*\n\n" +
         "Bölgenizdeki piyasa hareketlerini sizden önce gören analistiniz.\n\n" +
-        "*Size her gün:*\n" +
+        "*Sizin için:*\n" +
         "• Gecelik taramayla bölgenizde yeni çıkan ilanları sabah raporlar\n" +
         "• Mülkleriniz için piyasa ortalamasıyla fiyat karşılaştırması yapar\n" +
         "• Hangi mahallede fiyatların yükseldiğini/düştüğünü bildirir\n" +

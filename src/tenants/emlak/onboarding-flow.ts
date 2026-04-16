@@ -75,6 +75,7 @@ export const emlakOnboardingFlow: OnboardingFlow = {
     let msg = "✅ *Kurulum tamamlandı!*\n\n";
     if (data.office_name) msg += `🏢 ${data.office_name}\n`;
     if (data.location) msg += `📍 ${data.location}\n`;
+    msg += `\nBilgilerinizi daha sonra güncellemek için her zaman *"menü"* yazıp, gelen menüden *Sistem Komutları* altında bulunan *Profilim* komutuna tıklayarak güncelleyebilirsiniz.\n`;
     msg += `\n━━━━━━━━━━━━━━━━━━━\n`;
     msg += `\n🏢 *Ekibiniz hazır!*\n\n`;
     msg += `5 sanal elemanınız sizin için çalışmaya başladı. `;
@@ -84,7 +85,7 @@ export const emlakOnboardingFlow: OnboardingFlow = {
     if (firstMission) {
       msg += `\n🎯 *İlk Görevin*\n`;
       msg += `${firstMission.emoji || "🏠"} ${firstMission.title}\n`;
-      msg += "\nHadi başlayalım 👇";
+      msg += `\nHadi başlayalım! Aşağıdaki komuta tıklayın — *Portföy Sorumlunuz* 📁 sizden bilgiler alarak ilk mülkünüzü ekleyecek.`;
     }
 
     await sendButtons(ctx.phone, msg, [
