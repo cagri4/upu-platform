@@ -237,8 +237,6 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
 
   // Gamification: mission trigger (non-silent — major milestone popup)
   try {
-    const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-    await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_eklendi", ctx.phone);
   } catch { /* don't break main flow */ }
 }
 

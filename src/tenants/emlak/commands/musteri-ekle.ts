@@ -257,6 +257,4 @@ async function finalizeCustomer(ctx: WaContext, notes: string | null): Promise<v
   await sendText(ctx.phone, successMsg);
   await logEvent(ctx.tenantId, ctx.userId, "musteri_ekle", `${d.name}`);
 
-  const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-  await triggerMissionCheck(ctx.userId, ctx.tenantKey, "musteri_eklendi", ctx.phone);
 }

@@ -195,6 +195,4 @@ async function createReminder(ctx: WaContext): Promise<void> {
   );
   await logEvent(ctx.tenantId, ctx.userId, "hatirlatma", `${topicLabel} — ${dateDisplay}`);
 
-  const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-  await triggerMissionCheck(ctx.userId, ctx.tenantKey, "hatirlatma", ctx.phone);
 }

@@ -124,8 +124,6 @@ export async function handleTakipEtCallback(ctx: WaContext, data: string): Promi
   if (data === "tkp:nosave") {
     await endSession(ctx.userId);
     await sendText(ctx.phone, "Tamam, takibe alınmadı.");
-    const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-    await triggerMissionCheck(ctx.userId, ctx.tenantKey, "takipEt", ctx.phone);
     return;
   }
 
@@ -342,8 +340,6 @@ async function saveTracking(ctx: WaContext): Promise<void> {
   );
   await logEvent(ctx.tenantId, ctx.userId, "takip_et", "yeni takip oluşturuldu");
 
-  const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-  await triggerMissionCheck(ctx.userId, ctx.tenantKey, "takipEt", ctx.phone);
 }
 
 // ── Morning notification (called by cron after scrape) ─────────────

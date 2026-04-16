@@ -116,8 +116,6 @@ export async function handleFotografCallback(ctx: WaContext, data: string): Prom
 
     // Gamification trigger (non-silent — foto milestone popup)
     try {
-      const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-      await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_foto_uploaded", ctx.phone);
     } catch { /* don't break */ }
     return;
   }
@@ -258,8 +256,6 @@ Kurallar:
     await sendText(ctx.phone, msg);
 
     // Manual trigger — callback flow
-    const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-    await triggerMissionCheck(ctx.userId, ctx.tenantKey, "paylas", ctx.phone);
     return;
   }
 }

@@ -205,8 +205,6 @@ export async function handleMusteriTakipCallback(ctx: WaContext, data: string): 
 
     await logEvent(ctx.tenantId, ctx.userId, "musteri_takip", `${contactType} — ${result}`);
 
-    const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-    await triggerMissionCheck(ctx.userId, ctx.tenantKey, "musteriTakip", ctx.phone);
     return;
   }
 

@@ -170,8 +170,6 @@ export async function handlePhotoUpload(
 
     // Gamification trigger
     try {
-      const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-      await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_foto_uploaded", ctx.phone);
     } catch { /* don't break */ }
   }
   // Otherwise: silent. User sends more or clicks "Bitti".

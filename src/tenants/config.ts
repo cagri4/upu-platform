@@ -55,7 +55,7 @@ const TENANTS: Record<string, TenantConfig> = {
     ],
     commandMap: {},
     guide: "",
-    defaultFavorites: ["brifing", "portfoyum", "fiyatbelirle"],
+    defaultFavorites: ["mulkekle", "fiyatbelirle", "musteriEkle", "sunum", "eslestir", "hatirlatma", "webpanel"],
   },
   bayi: {
     key: "bayi",

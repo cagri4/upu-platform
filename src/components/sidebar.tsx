@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import type { TenantConfig } from '@/tenants/config';
 import {
   LayoutDashboard, Settings, X, ChevronRight, User, Building2, Phone, MapPin,
-  Home, Users, Target, Clock, BarChart3, FileText, UserCog,
+  Home, Users, Clock, BarChart3, FileText,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -23,13 +23,11 @@ const COMMON_ITEMS = [
 // Tenant-specific nav items — emlak gets the full panel
 const EMLAK_ITEMS = [
   { href: '/dashboard',  label: 'Panel',         icon: LayoutDashboard },
-  { href: '/quest',      label: 'Görevlerim',    icon: Target },
   { href: '/properties', label: 'Mülklerim',     icon: Home },
   { href: '/customers',  label: 'Müşterilerim',  icon: Users },
   { href: '/reminders',  label: 'Hatırlatmalar', icon: Clock },
   { href: '/contracts',  label: 'Sözleşmeler',   icon: FileText },
   { href: '/reports',    label: 'Rapor',         icon: BarChart3 },
-  { href: '/agents',     label: 'Elemanlarım',   icon: UserCog },
   { href: '/settings',   label: 'Ayarlar',       icon: Settings },
 ];
 

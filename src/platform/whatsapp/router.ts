@@ -194,20 +194,9 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
           await autoSaveSnapshotSilent(ctx.userId, ctx.tenantKey);
         }
         const start = Date.now();
-        // Commands that handle their own trigger (callback/multi-step flows).
-        // Router must NOT trigger these — they fire from success handlers.
-        const SELF_TRIGGERING_COMMANDS = new Set([
-          "fiyatbelirle", "fiyatsor", "paylas", "musteriEkle", "eslestir",
-          "hatirlatma", "sunum", "takipEt", "satistavsiye", "mulkoner",
-          "fotograf", "mulkekle", "musteriTakip",
-        ]);
         try {
           await handler(ctx);
           logCommand(ctx, cmd, true, Date.now() - start);
-          if (!SELF_TRIGGERING_COMMANDS.has(cmd)) {
-            const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-            await triggerMissionCheck(ctx.userId, ctx.tenantKey, cmd, ctx.phone).catch(() => {});
-          }
         } catch (err) {
           logCommand(ctx, cmd, false, Date.now() - start, err instanceof Error ? err.message : String(err));
           throw err;
@@ -389,16 +378,6 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
   }
 
   // System commands (shared across all tenants)
-  if (firstWord === "ekibim" || firstWord === "ekip" || firstWord === "kariyer") {
-    const { handleEkibim } = await import("./ekibim");
-    await handleEkibim(ctx);
-    return;
-  }
-  if (firstWord === "leaderboard" || firstWord === "siralama" || firstWord === "sıralama") {
-    const { handleLeaderboard } = await import("./leaderboard");
-    await handleLeaderboard(ctx);
-    return;
-  }
   if (firstWord === "kilavuz" || firstWord === "kılavuz") {
     await showGuide(ctx, tenant);
     return;
@@ -440,18 +419,9 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       await autoSaveSnapshotSilent(ctx.userId, ctx.tenantKey);
     }
     const start = Date.now();
-    const SELF_TRIGGERING = new Set([
-      "fiyatbelirle", "fiyatsor", "paylas", "musteriEkle", "eslestir",
-      "hatirlatma", "sunum", "takipEt", "satistavsiye", "mulkoner",
-      "fotograf", "mulkekle",
-    ]);
     try {
       await handler(ctx);
       logCommand(ctx, resolved, true, Date.now() - start);
-      if (!SELF_TRIGGERING.has(resolved)) {
-        const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-        await triggerMissionCheck(ctx.userId, ctx.tenantKey, resolved, ctx.phone).catch(() => {});
-      }
     } catch (err) {
       logCommand(ctx, resolved, false, Date.now() - start, err instanceof Error ? err.message : String(err));
       throw err;
@@ -543,11 +513,6 @@ async function handleWebpanelShared(ctx: WaContext, tenant: ReturnType<typeof ge
       `🖥 Web Panel\n\n${appUrl}/tr/login`,
     );
   }
-
-  // Mission check + corridor nudge — prevents dead end
-  const { triggerMissionCheck, nudgeToCorridor } = await import("@/platform/gamification/triggers");
-  const completed = await triggerMissionCheck(ctx.userId, ctx.tenantKey, "webpanel", ctx.phone);
-  if (!completed) await nudgeToCorridor(ctx.userId, ctx.tenantKey, ctx.phone);
 }
 
 // ── Guide command (generic — same structure for all SaaS) ────────────────
@@ -556,12 +521,10 @@ async function showGuide(ctx: WaContext, tenant: ReturnType<typeof getTenantByKe
   if (!tenant) return;
 
   let text = `📖 *${tenant.name} — Kullanım Kılavuzu*\n\n`;
-  text += `Bu sistem WhatsApp üzerinden çalışan AI destekli bir sanal eleman platformudur.\n\n`;
+  text += `Bu sistem WhatsApp üzerinden çalışan AI destekli bir asistandır.\n\n`;
   text += `*Nasıl Kullanılır:*\n\n`;
-  text += `1️⃣ *Menüyü açın*\n"menu" yazın veya aşağıdaki Ana Menü butonuna tıklayın.\n\n`;
-  text += `2️⃣ *Ekip üyenizi seçin*\nMenüden "Ekibi Çağır" butonuna tıklayın. Sanal elemanlarınız listelenecek.\n\n`;
-  text += `3️⃣ *Komutları görün*\nBir eleman seçtiğinizde, o elemanın yapabileceği işlemler görünür.\n\n`;
-  text += `4️⃣ *Komutu seçin*\nUygun komutu tıklayın — sistem sizi adım adım yönlendirecek.\n\n`;
+  text += `1️⃣ *Menüyü açın*\n"menu" yazın veya aşağıdaki butona tıklayın.\n\n`;
+  text += `2️⃣ *Komutu seçin*\nListeden ihtiyacınız olan komutu seçin — sistem sizi adım adım yönlendirir.\n\n`;
   text += `*Diğer bilgiler:*\n`;
   text += `• İşlem sırasında "iptal" yazarak vazgeçebilirsiniz\n`;
   text += `• "webpanel" ile tarayıcıdan giriş yapabilirsiniz`;
@@ -593,20 +556,12 @@ async function showMenu(
   tenant: ReturnType<typeof getTenantByKey>,
   _registry: TenantCommandRegistry,
 ) {
-  if (!tenant || !tenant.employees.length) {
+  if (!tenant) {
     await sendText(ctx.phone, "Yardım için yöneticinize başvurun.");
     return;
   }
 
-  // HUD: resolve active mission + its resume CTA (Quest Director pattern).
-  // Instead of a passive footer we render it as an actionable row at the
-  // top of the favorites list — single tap to resume the mission.
-  const { getActiveMission } = await import("@/platform/gamification/engine");
-  const { MISSION_CTA } = await import("@/platform/gamification/triggers");
-  const activeMission = await getActiveMission(ctx.userId, ctx.tenantKey);
-  const activeCta = activeMission ? MISSION_CTA[activeMission.mission_key] : null;
-
-  // Message 1: Favorites as list (user's or default, up to 10)
+  // Flat command list — all killer commands directly accessible, no corridor.
   const userFavs = await getUserFavorites(ctx.userId);
   const favCmds = userFavs.length > 0 ? userFavs : (tenant.defaultFavorites || []);
 
@@ -616,56 +571,11 @@ async function showMenu(
     description: "",
   }));
 
-  // ── Corridor lock: active mission = ONLY show mission CTA ──────────
-  // When user has an active mission, menu shows ONLY the mission button.
-  // No favorites, no employees, no distractions. Pure corridor.
-  // Full menu unlocks when all missions are done (endgame) or no active mission.
-  if (activeMission && activeCta) {
-    await sendButtons(ctx.phone,
-      `🎯 *Aktif Görev*\n${activeMission.emoji} ${activeMission.title}\n_${activeCta.hint}_`,
-      [activeCta.button],
-    );
-    return; // Corridor: nothing else shown
-  }
-
-  // ── Full menu (no active mission — endgame or between chapters) ────
   if (favRows.length > 0) {
     await sendList(ctx.phone,
-      `${tenant.icon} *${tenant.name}*\n\n⭐ Favorilerim:\n\n_("menu" yazarak buraya dönebilirsiniz.)_`,
-      "Favoriler",
-      [{ title: "Favorilerim", rows: favRows.slice(0, 10) }],
-    );
-  }
-
-  let visibleEmployees = tenant.employees;
-
-  if (ctx.role === "dealer") {
-    const dealerEmpKeys = tenant.dealerEmployees || [];
-    if (dealerEmpKeys.length > 0) {
-      visibleEmployees = tenant.employees.filter(e => dealerEmpKeys.includes(e.key));
-    } else {
-      visibleEmployees = [];
-    }
-  } else if (ctx.role === "employee") {
-    const permittedEmps = (ctx.permissions?.employees as string[]) || [];
-    if (permittedEmps.length > 0) {
-      visibleEmployees = tenant.employees.filter(e => permittedEmps.includes(e.key));
-    }
-  }
-
-  const empRows = visibleEmployees.map((emp) => ({
-    id: `emp:${emp.key}`,
-    title: `${emp.icon} ${emp.name}`.substring(0, 24),
-    description: emp.description.substring(0, 72),
-  })).slice(0, 10);
-
-  if (empRows.length > 0) {
-    await sendList(ctx.phone,
-      "Bir sanal eleman seçin:",
-      "Ekibi Çağır",
-      [
-        { title: "Sanal Elemanlar", rows: empRows },
-      ],
+      `${tenant.icon} *${tenant.name}*\n\n_("menu" yazarak buraya dönebilirsiniz.)_`,
+      "Komutlar",
+      [{ title: "Komutlar", rows: favRows.slice(0, 10) }],
     );
   }
 
@@ -673,11 +583,6 @@ async function showMenu(
   const systemRows = [
     { id: "cmd:profilim", title: "👤 Profilim", description: "Profil bilgileri ve düzenleme" },
   ];
-
-  // Favorites — not for dealers (too few commands)
-  if (ctx.role !== "dealer") {
-    systemRows.push({ id: "cmd:favoriler", title: "⭐ Favoriler", description: "Favori komutları düzenle" });
-  }
 
   systemRows.push({ id: "cmd:kilavuz", title: "📖 Kılavuz", description: "Kullanım rehberi" });
   systemRows.push({ id: "cmd:webpanel", title: "🖥 Web Panel", description: "Tarayıcıdan giriş yap" });
@@ -879,9 +784,9 @@ async function showEmployeeCommands(
       [{ title: emp.name, rows }],
     );
   }
-  // Navigation: back to employee list + main menu
+  // Navigation: back to main menu
   await sendButtons(ctx.phone, "Veya:", [
-    { id: "cmd:menu", title: "👥 Ekibi Çağır" },
+    { id: "cmd:menu", title: "📋 Ana Menü" },
   ]);
 }
 

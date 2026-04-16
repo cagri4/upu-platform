@@ -591,8 +591,6 @@ async function finalizeProperty(ctx: WaContext): Promise<void> {
   // (e.g. [✏️ Bilgileri Düzenle]). No extra [Portföyüm][Ana Menü] buttons
   // that would let the user stray from the corridor.
   try {
-    const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-    await triggerMissionCheck(ctx.userId, ctx.tenantKey, "mulk_eklendi", ctx.phone);
   } catch { /* don't break main flow */ }
 
   // Check for customer matches

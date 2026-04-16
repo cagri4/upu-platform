@@ -255,6 +255,4 @@ async function runPriceAnalysis(ctx: WaContext, property: PropertyRow): Promise<
 
   // Manual trigger — fiyatbelirle uses callback flow (list → select → analyze)
   // so router's post-command trigger fires too early (before analysis).
-  const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-  await triggerMissionCheck(ctx.userId, ctx.tenantKey, "fiyatbelirle", ctx.phone);
 }

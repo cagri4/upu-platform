@@ -2,11 +2,10 @@
  * Emlak SaaS — Onboarding Flow
  *
  * Steps:
- *   1. office_name  — Ofis/şirket adı (serbest metin)
- *   2. location     — Çalıştığınız bölge (serbest metin)
- *   3. briefing     — Günlük brifing göndereyim mi? (Evet/Hayır)
- *
- * onFinish kicks off gamification: streak day 1 + first mission active.
+ *   1. display_name — Adınız soyadınız
+ *   2. office_name  — Ofis/şirket adı
+ *   3. location     — Çalıştığınız bölge
+ *   4. briefing     — Sabah pazartarama raporu opt-in
  */
 
 import type { OnboardingFlow } from "@/platform/whatsapp/onboarding";
@@ -22,7 +21,6 @@ export const emlakOnboardingFlow: OnboardingFlow = {
       key: "display_name",
       question: "Adınız ve soyadınız?\n\n💡 Örnek: _Ahmet Yılmaz_",
       onComplete: async (ctx, value) => {
-        // Update profile display_name with the user's real name
         const supabase = getServiceClient();
         await supabase.from("profiles").update({ display_name: value }).eq("id", ctx.userId);
       },
@@ -37,7 +35,7 @@ export const emlakOnboardingFlow: OnboardingFlow = {
     },
     {
       key: "briefing",
-      question: "Her sabah size günlük brifing göndereyim mi?\n\nBrifing: aktif ilanlarınız, bugünkü görevleriniz ve pazar özeti içerir.",
+      question: "Her sabah size pazartarama raporu göndereyim mi?\n\nRapor: aktif ilanlarınız, bugünkü görevleriniz ve bölgenizdeki yeni ilanlar özeti içerir.",
       buttons: [
         { id: "onb:evet", title: "Evet, gönder" },
         { id: "onb:hayir", title: "Hayır, gerek yok" },
@@ -48,7 +46,6 @@ export const emlakOnboardingFlow: OnboardingFlow = {
   onFinish: async (ctx, data) => {
     const supabase = getServiceClient();
 
-    // Save office name and location to profile metadata
     await supabase.from("profiles").update({
       metadata: {
         office_name: data.office_name || null,
@@ -58,35 +55,12 @@ export const emlakOnboardingFlow: OnboardingFlow = {
       },
     }).eq("id", ctx.userId);
 
-    // ── Gamification kickoff ─────────────────────────────────────────
-    // Initialize streak (day 1) and activate first mission so the new
-    // user lands on a concrete goal — Duolingo-style.
-    const { updateStreak, getUserMissions } = await import("@/platform/gamification/engine");
-    await updateStreak(ctx.userId);
-
-    // Initialize quest state and activate first mission
-    const { ensureActiveMission } = await import("@/platform/gamification/quest-state");
-    await ensureActiveMission(ctx.userId, "emlak");
-
-    const missions = await getUserMissions(ctx.userId, "emlak");
-    const firstMission = missions.find(m => m.sort_order === 1);
-
-    // Narrative intro — explain WHY before asking WHAT
     let msg = "✅ *Kurulum tamamlandı!*\n\n";
     if (data.office_name) msg += `🏢 ${data.office_name}\n`;
     if (data.location) msg += `📍 ${data.location}\n`;
-    msg += `\nBilgilerinizi daha sonra güncellemek için her zaman *"menü"* yazıp, gelen menüden *Sistem Komutları* altında bulunan *Profilim* komutuna tıklayarak güncelleyebilirsiniz.\n`;
+    msg += `\nBilgilerinizi daha sonra güncellemek için her zaman *"menü"* yazıp, açılan listeden *Profilim* komutunu kullanabilirsiniz.\n`;
     msg += `\n━━━━━━━━━━━━━━━━━━━\n`;
-    msg += `\n🏢 *Ekibiniz hazır!*\n\n`;
-    msg += `5 sanal elemanınız sizin için çalışmaya başladı. `;
-    msg += `Görevleri tamamladıkça onları geliştirin — daha yetenekli elemanlar, daha çok satış.\n\n`;
-    msg += `🔥 *Seri: 1 gün* — bugün başladın!\n`;
-
-    if (firstMission) {
-      msg += `\n🎯 *İlk Görevin*\n`;
-      msg += `${firstMission.emoji || "🏠"} ${firstMission.title}\n`;
-      msg += `\nHadi başlayalım! Aşağıdaki komuta tıklayın — *Portföy Sorumlunuz* 📁 sizden bilgiler alarak ilk mülkünüzü ekleyecek.`;
-    }
+    msg += `\nHazırsın! Mülk eklemek için alttaki butona tıkla, ya da istediğin zaman *"menü"* yazarak tüm komutları gör.`;
 
     await sendButtons(ctx.phone, msg, [
       { id: "cmd:mulkekle", title: "🏠 Mülk Ekle" },

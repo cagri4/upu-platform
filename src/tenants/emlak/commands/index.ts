@@ -1,19 +1,15 @@
 /**
  * Emlak Tenant — Command Registry
+ *
+ * Killer commands only. Gamification removed. Single-assistant UX.
  */
 
 import type { TenantCommandRegistry } from "@/platform/whatsapp/types";
 
-// ── Active commands ────────────────────────────────────────────────
-import { handlePortfoyum } from "./portfoyum";
 import { handleMulkEkle, handleMulkEkleMenu, handleMulkEkleStep, handleMulkEkleCallback } from "./mulk-ekle";
 import { handleFiyatBelirle, handleFiyatBelirleCallback } from "./fiyat-belirle";
-import { handleBrifing } from "./brifing";
 import { handleMusteriler } from "./musteriler";
-import { handleGorevler } from "./gorevler";
 import { handleSozlesmelerim, handleWebpanel, handleSozlesme, handleSozlesmeStep, handleSozlesmeCallback } from "./sozlesme";
-import { handleRapor } from "./rapor";
-import { handleMulkDetay, handleMulkDetayCallback, handleMulkDuzenle, handleMulkDuzenleCallback, handleMulkEditFieldCallback, handleMulkDuzenleStep, handleMulkSil, handleMulkSilCallback, handleMulkYonet, handleMulkYonetSelectCallback, handleMulkYonetActionCallback, handleAiDescCallback, handleAiDescWizardStep } from "./mulk-yonetim";
 import { handleTara, handleTaraStep, handleEkle } from "./portfolio";
 import { handleMusteriEkle, handleMusteriEkleStep, handleMusteriEkleCallback } from "./musteri-ekle";
 import { handleMusteriDuzenle, handleMusteriDuzenleCallback, handleMusteriDuzenleStep } from "./musteri-duzenle";
@@ -22,70 +18,42 @@ import { handleHatirlatma, handleHatirlatmaStep, handleHatirlatmaCallback } from
 import { handleTakipEt, handleTakipEtStep, handleTakipEtCallback } from "./takip-et";
 import { handleSatisTavsiye, handleSatisTavsiyeCallback } from "./satis-tavsiye";
 import { handleMusteriTakip, handleMusteriTakipCallback } from "./musteri-takip";
-import { handleOrtakPazar, handleOrtakPazarCallback } from "./ortak-pazar";
-import { handleFotograf, handleFotografCallback, handlePaylas, handlePaylasCallback, handleYayinla, handleYayinlaCallback } from "./medya";
-import { handleWebsitem, handleWebsitemStep, handleWebsitemCallback } from "./websitem-wizard";
-import { handleMulkOner, handleMulkOnerStep } from "./degerle";
-import { handleHediyeler, handleHediyelerCallback } from "./hediyeler";
+import { handleFotograf, handleFotografCallback, handlePaylas, handlePaylasCallback } from "./medya";
 import { handleSunum, handleSunumStep, handleSunumCallback, handleSunumlarim } from "./sunum";
 
 export const emlakCommands: TenantCommandRegistry = {
   commands: {
-    // Portföy Sorumlusu
-    portfoyum: handlePortfoyum,
-    portfoy: handlePortfoyum,
+    // Core killer commands
     mulkekle: handleMulkEkle,
-    mulkdetay: handleMulkDetay,
-    mulkduzenle: handleMulkDuzenle,
-    mulksil: handleMulkSil,
-    mulkyonet: handleMulkYonet,
-    tara: handleTara,
-    ekle: handleEkle,
-
-    // Satış Destek
-    musterilerim: handleMusteriler,
+    fiyatbelirle: handleFiyatBelirle,
     musteriEkle: handleMusteriEkle,
-    musteriDuzenle: handleMusteriDuzenle,
+    musteriTakip: handleMusteriTakip,
+    sunum: handleSunum,
     eslestir: handleEslestir,
+
+    // Supporting (hidden but working)
+    musterilerim: handleMusteriler,
+    musteriDuzenle: handleMusteriDuzenle,
     hatirlatma: handleHatirlatma,
     takipEt: handleTakipEt,
     satistavsiye: handleSatisTavsiye,
-    ortakpazar: handleOrtakPazar,
-    musteriTakip: handleMusteriTakip,
-    sunum: handleSunum,
     sunumlarim: handleSunumlarim,
-
-    // Medya Uzmanı
     fotograf: handleFotograf,
-    yayinla: handleYayinla,
     paylas: handlePaylas,
-    websitem: handleWebsitem,
-
-    // Pazar Analisti
-    fiyatbelirle: handleFiyatBelirle,
-    mulkoner: handleMulkOner,
-    rapor: handleRapor,
-
-    // Sekreter
-    brifing: handleBrifing,
-    gorevler: handleGorevler,
     sozlesme: handleSozlesme,
     sozlesmelerim: handleSozlesmelerim,
-    hediyeler: handleHediyeler,
     webpanel: handleWebpanel,
+    tara: handleTara,
+    ekle: handleEkle,
   },
   stepHandlers: {
     mulkekle: handleMulkEkleStep,
     tara: handleTaraStep,
     musteriEkle: handleMusteriEkleStep,
     musteriDuzenle: handleMusteriDuzenleStep,
-    mulkduzenle: handleMulkDuzenleStep,
-    ai_desc_wizard: handleAiDescWizardStep,
     hatirlatma: handleHatirlatmaStep,
     takipEt: handleTakipEtStep,
-    mulkoner: handleMulkOnerStep,
     sozlesme: handleSozlesmeStep,
-    websitem: handleWebsitemStep,
     sunum: handleSunumStep,
   },
   callbackPrefixes: {
@@ -103,13 +71,6 @@ export const emlakCommands: TenantCommandRegistry = {
       }
     },
     "mulkekle:": handleMulkEkleCallback,
-    "mulkdetay:": handleMulkDetayCallback,
-    "mulkduzenle:": handleMulkDuzenleCallback,
-    "mulkedit:": handleMulkEditFieldCallback,
-    "mulksil:": handleMulkSilCallback,
-    "mulksil_ok:": handleMulkSilCallback,
-    "mulkyonet_select:": handleMulkYonetSelectCallback,
-    "mulkyonet_act:": handleMulkYonetActionCallback,
     "mustekle:": handleMusteriEkleCallback,
     "md_select:": handleMusteriDuzenleCallback,
     "md_edit:": handleMusteriDuzenleCallback,
@@ -118,22 +79,14 @@ export const emlakCommands: TenantCommandRegistry = {
     "tkp:": handleTakipEtCallback,
     "st:": handleSatisTavsiyeCallback,
     "mt:": handleMusteriTakipCallback,
-    "op:": handleOrtakPazarCallback,
     "foto_select:": handleFotografCallback,
     "foto_done": handleFotografCallback,
-    "ai_desc:": handleAiDescCallback,
     "paylas_select:": handlePaylasCallback,
-    "pub:": handleYayinlaCallback,
     "fb:": handleFiyatBelirleCallback,
-    "hdy:": handleHediyelerCallback,
     "szl:": handleSozlesmeCallback,
     "snm:": handleSunumCallback,
-    "websitem_action:": handleWebsitemCallback,
-    "websitem_theme:": handleWebsitemCallback,
   },
   aliases: {
-    "portföy": "portfoyum",
-    "portföyüm": "portfoyum",
     "müşteriler": "musterilerim",
     "müşterilerim": "musterilerim",
     "fiyat": "fiyatbelirle",

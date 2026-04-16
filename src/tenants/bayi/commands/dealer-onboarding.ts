@@ -194,37 +194,6 @@ async function finalizeDealerOnboarding(ctx: WaContext): Promise<void> {
     await supabase.from("profiles").update({ email: d.email as string }).eq("id", ctx.userId);
   }
 
-  // ── Gamification kickoff ──────────────────────────────────────────
-  // Initialize streak (day 1) and activate first dealer mission so the
-  // new dealer lands on a concrete goal — Quest Director pattern.
-  const { updateStreak } = await import("@/platform/gamification/engine");
-  await updateStreak(ctx.userId);
-
-  const { data: firstMission } = await supabase
-    .from("platform_missions")
-    .select("id, title, description, emoji")
-    .eq("tenant_key", "bayi")
-    .eq("role", "dealer")
-    .order("sort_order")
-    .limit(1)
-    .maybeSingle();
-
-  if (firstMission) {
-    const { data: existing } = await supabase
-      .from("user_mission_progress")
-      .select("id")
-      .eq("user_id", ctx.userId)
-      .eq("mission_id", firstMission.id)
-      .maybeSingle();
-    if (!existing) {
-      await supabase.from("user_mission_progress").insert({
-        user_id: ctx.userId,
-        mission_id: firstMission.id,
-        status: "active",
-      });
-    }
-  }
-
   let summary = `✅ *Kayıt tamamlandı!*\n\n`;
   summary += `🏢 ${d.company_name}\n`;
   summary += `👤 ${d.contact_name}\n`;
@@ -234,14 +203,7 @@ async function finalizeDealerOnboarding(ctx: WaContext): Promise<void> {
   if (d.email) summary += `📧 ${d.email}\n`;
   if (d.tax_no) summary += `🧾 VKN: ${d.tax_no}\n`;
   summary += `\n💡 Bilgilerinizi *Profilim* komutu ile düzenleyebilirsiniz.\n`;
-  summary += "\n🔥 *Seri: 1 gün* — bugün başladın!\n";
-
-  if (firstMission) {
-    summary += `\n🎯 *İlk Görevin*\n`;
-    summary += `${firstMission.emoji || "📦"} ${firstMission.title}\n`;
-    summary += `_${firstMission.description}_\n`;
-    summary += "\nHadi başlayalım 👇";
-  }
+  summary += `\nHazırsınız! Katalogu görmek için alttaki butona tıklayın.`;
 
   await sendButtons(ctx.phone, summary, [
     { id: "cmd:urunler", title: "📦 Katalog" },

@@ -175,6 +175,4 @@ async function runMatching(ctx: WaContext, customer: Record<string, unknown>): P
   // Plain text results — manual trigger for mission check
   await sendText(ctx.phone, text);
 
-  const { triggerMissionCheck } = await import("@/platform/gamification/triggers");
-  await triggerMissionCheck(ctx.userId, ctx.tenantKey, "eslestir", ctx.phone);
 }
