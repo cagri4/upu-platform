@@ -332,6 +332,9 @@ export async function seedEmlakMissions(): Promise<number> {
   const supabase = getServiceClient();
   let count = 0;
 
+  // Upsert: insert if new, update existing to keep DB in sync with code.
+  // Insert-only caused stale chains (e.g. deleted next_mission references)
+  // to linger in DB across structural changes.
   for (const m of EMLAK_MISSIONS) {
     const { data: existing } = await supabase
       .from("platform_missions")
@@ -339,7 +342,9 @@ export async function seedEmlakMissions(): Promise<number> {
       .eq("mission_key", m.mission_key)
       .maybeSingle();
 
-    if (!existing) {
+    if (existing) {
+      await supabase.from("platform_missions").update(m).eq("id", existing.id);
+    } else {
       await supabase.from("platform_missions").insert(m);
       count++;
     }
