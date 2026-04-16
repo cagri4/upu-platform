@@ -275,7 +275,10 @@ export async function POST(req: NextRequest) {
         const tenantCfg = tenantInfo ? getTenantByKey(tenantInfo.saas_type) : null;
 
         await sendText(phone,
-          `✅ Hoş geldiniz!\n\n*${tenantInfo?.name || "Sistem"}*'e başarıyla kaydoldunuz.\n\n` +
+          `🏢 *Hoş Geldiniz!*\n\n` +
+          `Ofisinizde bulunan yapay zeka destekli sanal elemanlarınızın sahip olduğu yetenekler size yardımcı olacak ve daha fazla satış yapmanız için destek olacak.\n\n` +
+          `━━━━━━━━━━━━━━━━━━━\n\n` +
+          `Elemanlarınız hiç yorulmadan 7/24 sizin için çalışmaya hazır! ` +
           `Şimdi sizi tanıyalım — birkaç soru soracağım.`
         );
 
@@ -407,10 +410,10 @@ export async function POST(req: NextRequest) {
         const tenantKey = uTenant?.saas_type || "emlak";
 
         await sendText(phone,
-          `🏢 *Ofisinize Hoş Geldiniz!*\n\n` +
-          `*${uTenant?.name || "Sistem"}*'e başarıyla kaydoldunuz.\n\n` +
+          `🏢 *Hoş Geldiniz!*\n\n` +
+          `Ofisinizde bulunan yapay zeka destekli sanal elemanlarınızın sahip olduğu yetenekler size yardımcı olacak ve daha fazla satış yapmanız için destek olacak.\n\n` +
           `━━━━━━━━━━━━━━━━━━━\n\n` +
-          `Sanal elemanlarınız sizin için çalışmaya hazır! ` +
+          `Elemanlarınız hiç yorulmadan 7/24 sizin için çalışmaya hazır! ` +
           `Birazdan sistemi kullanarak personelinizi tanıyacak ve ilk görevinizi alacaksınız.\n\n` +
           `Önce sizi tanıyalım — birkaç kısa soru.`
         );
