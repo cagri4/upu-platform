@@ -29,7 +29,7 @@ export const MISSION_CTA: Record<string, { hint: string; button: { id: string; t
   emlak_c2_fotograf: { hint: "Mülkünüze fotoğraf yükleyin", button: { id: "cmd:fotograf", title: "📸 Fotoğraf" } },
   emlak_c2_eslestir: { hint: "Müşterinizi mülklerle eşleştirin", button: { id: "cmd:eslestir", title: "🤝 Eşleştir" } },
   emlak_c2_tara: { hint: "Portal linkinden mülk çekin", button: { id: "cmd:tara", title: "🔗 Link Tara" } },
-  emlak_c2_webpanel: { hint: "Web paneline giriş yapın", button: { id: "cmd:webpanel", title: "🖥 Web Panel" } },
+  emlak_c3_webpanel: { hint: "Web paneline giriş yapın", button: { id: "cmd:webpanel", title: "🖥 Web Panel" } },
   emlak_c2_gorevler: { hint: "Bekleyen hatırlatmalarınızı kontrol edin", button: { id: "cmd:gorevler", title: "📋 Görevler" } },
   emlak_c2_uzanti: { hint: "Chrome uzantısını kurun", button: { id: "cmd:uzanti", title: "🔌 Uzantı" } },
 
@@ -107,7 +107,7 @@ const COMMAND_MISSION_MAP: Record<string, Record<string, string[]>> = {
     analiz: ["emlak_c2_analiz"],
     favoriler: ["emlak_c2_favoriler"],
     tara: ["emlak_c2_tara"],
-    webpanel: ["emlak_c2_webpanel"],
+    webpanel: ["emlak_c3_webpanel"],
     gorevler: ["emlak_c2_gorevler"],
     uzanti: ["emlak_c2_uzanti"],
     mulkyonet: ["emlak_c3_mulkyonet"],
