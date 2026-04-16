@@ -33,7 +33,9 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
     `• Senin vereceğin kriterlere göre piyasayı tararım, yeni fırsatları raporlarım\n` +
     `• Bütün portföyünü ve bilgilerini tek seferde paylaşabileceğin, sana özel bir web sayfası yaparım\n` +
     `• Müşteri takibi için hatırlatmalar tutar, zamanında iletirim\n` +
-    `• Mülklerin için satış hedefli müşteri konuşmaları hazırlarım\n\n` +
+    `• Mülklerin için satış hedefli müşteri konuşmaları hazırlarım\n` +
+    `• Mülklerin için AI destekli ilan açıklaması yazarım\n` +
+    `• Instagram ve sosyal medya için hashtag'li paylaşım metni üretirim\n\n` +
     `Önce seni tanıyayım — kısa birkaç soru.`,
     [{ id: `intro:${ctx.tenantKey}:start`, title: "🚀 Başlayalım" }],
   );
