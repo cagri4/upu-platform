@@ -128,6 +128,14 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       return;
     }
 
+    // Employee intro flow callbacks (post-signup tour)
+    if (ctx.interactiveId.startsWith("intro:")) {
+      const { handleIntroCallback } = await import("./intro");
+      await handleIntroCallback(ctx, ctx.interactiveId);
+      logCommand(ctx, ctx.interactiveId, true);
+      return;
+    }
+
     // Platform-level callbacks
     if (ctx.interactiveId.startsWith("cmd:")) {
       const cmd = ctx.interactiveId.replace("cmd:", "");
