@@ -277,13 +277,9 @@ export async function POST(req: NextRequest) {
         const tenantKey = tenantInfo?.saas_type || "bayi";
         const dealerRole = (inviteLink.role as string) || "dealer";
 
-        await sendText(phone,
-          `👋 *Merhaba!*\n\n` +
-          `Yapay zeka destekli çalışanlardan oluşan sanal ofisinize hoş geldiniz!\n\n` +
-          `Personeliniz sizin talimatlarınızla ve kendi yetenekleriyle 7/24 sizin için çalışacak, satış yapmanız için size sürekli destek olacak.`
-        );
+        // No separate welcome text — intro flow (startIntro) sends a single
+        // combined greeting. Fallback for non-intro tenants sends its own below.
 
-        // Try intro flow first (emlak etc.); fall back to direct onboarding
         const onbCtx: WaContext = {
           phone, userId: authUser.user.id, tenantId: inviteLink.tenant_id,
           tenantKey, userName: name || phone, locale: "tr",
@@ -297,12 +293,13 @@ export async function POST(req: NextRequest) {
         const introStarted = dealerRole === "dealer" ? false : await startIntro(onbCtx);
 
         if (!introStarted) {
+          // Non-intro tenants / dealers — short welcome then onboarding
+          await sendText(phone, `👋 *Merhaba!*\n\nSisteme hoş geldin. Önce seni tanıyayım — birkaç kısa soru.`);
+
           if (dealerRole === "dealer") {
-            // Dealer onboarding — collect dealer info
             const { startDealerOnboarding } = await import("@/tenants/bayi/commands/dealer-onboarding");
             await startDealerOnboarding({ ...onbCtx, role: "dealer" });
           } else {
-            // Admin/employee onboarding — use standard flow
             const onbFlow = getOnboardingFlow(tenantKey);
             if (onbFlow) {
               await initOnboarding(authUser.user.id, inviteLink.tenant_id, tenantKey);
@@ -405,11 +402,7 @@ export async function POST(req: NextRequest) {
 
         const tenantKey = uTenant?.saas_type || "emlak";
 
-        await sendText(phone,
-          `👋 *Merhaba!*\n\n` +
-          `Yapay zeka destekli çalışanlardan oluşan sanal ofisinize hoş geldiniz!\n\n` +
-          `Personeliniz sizin talimatlarınızla ve kendi yetenekleriyle 7/24 sizin için çalışacak, satış yapmanız için size sürekli destek olacak.`
-        );
+        // No separate welcome text — intro flow sends the single combined greeting.
 
         const onbCtx: WaContext = {
           phone, userId: authUser.user.id, tenantId: uLink.tenant_id,
@@ -425,6 +418,7 @@ export async function POST(req: NextRequest) {
         const introStarted = await startIntro(onbCtx);
 
         if (!introStarted) {
+          await sendText(phone, `👋 *Merhaba!*\n\nSisteme hoş geldin. Önce seni tanıyayım — birkaç kısa soru.`);
           const onbFlow = getOnboardingFlow(tenantKey);
           if (onbFlow) {
             await initOnboarding(authUser.user.id, uLink.tenant_id, tenantKey);
