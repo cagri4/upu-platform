@@ -20,6 +20,7 @@ import { handleSatisTavsiye, handleSatisTavsiyeCallback } from "./satis-tavsiye"
 import { handleMusteriTakip, handleMusteriTakipCallback } from "./musteri-takip";
 import { handleFotograf, handleFotografCallback, handlePaylas, handlePaylasCallback } from "./medya";
 import { handleSunum, handleSunumStep, handleSunumCallback, handleSunumlarim } from "./sunum";
+import { handleIpucu, handleTipCallback } from "./ipucu";
 
 export const emlakCommands: TenantCommandRegistry = {
   commands: {
@@ -45,6 +46,7 @@ export const emlakCommands: TenantCommandRegistry = {
     webpanel: handleWebpanel,
     tara: handleTara,
     ekle: handleEkle,
+    ipucu: handleIpucu,
   },
   stepHandlers: {
     mulkekle: handleMulkEkleStep,
@@ -85,6 +87,7 @@ export const emlakCommands: TenantCommandRegistry = {
     "fb:": handleFiyatBelirleCallback,
     "szl:": handleSozlesmeCallback,
     "snm:": handleSunumCallback,
+    "tip:": handleTipCallback,
   },
   aliases: {
     "müşteriler": "musterilerim",
@@ -100,5 +103,9 @@ export const emlakCommands: TenantCommandRegistry = {
     "sunumlar": "sunumlarim",
     "sunumlarım": "sunumlarim",
     "prezentasyon": "sunum",
+    "ipuclari": "ipucu",
+    "ipuçları": "ipucu",
+    "tip": "ipucu",
+    "tipler": "ipucu",
   },
 };
