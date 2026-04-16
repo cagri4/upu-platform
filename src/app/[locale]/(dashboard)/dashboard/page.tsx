@@ -93,7 +93,8 @@ export default function DashboardPage() {
         .catch(() => {});
     }
 
-    fetch('/api/dashboard/metrics')
+    const metricsUrl = storedUserId ? `/api/dashboard/metrics?userId=${storedUserId}` : '/api/dashboard/metrics';
+    fetch(metricsUrl)
       .then(res => res.json())
       .then(setMetrics)
       .catch(console.error);

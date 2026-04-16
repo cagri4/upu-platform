@@ -150,7 +150,7 @@ export async function triggerMissionCheck(
   commandName: string,
   phone: string,
   silent = false,
-): Promise<void> {
+): Promise<boolean> {
   try {
     // Update streak
     const streak = await updateStreak(userId);
@@ -176,7 +176,7 @@ export async function triggerMissionCheck(
     } else {
       const tenantMap = COMMAND_MISSION_MAP[tenantKey];
       const candidates = tenantMap?.[commandName];
-      if (!candidates || candidates.length === 0) return;
+      if (!candidates || candidates.length === 0) return false;
 
       // Get user's active mission — if it's one of the candidates, use it.
       // Otherwise try each candidate in order (earliest chapter first).
@@ -213,11 +213,11 @@ export async function triggerMissionCheck(
       }
     }
 
-    if (!missionKey) return;
+    if (!missionKey) return false;
 
     // Try to complete mission
     const result = await completeMission(userId, missionKey);
-    if (!result.completed) return;
+    if (!result.completed) return false;
 
     // ── Check chapter transition ─────────────────────────────────
     const transition = await checkChapterTransition(userId, tenantKey);
@@ -294,7 +294,36 @@ export async function triggerMissionCheck(
         await checkCombos(userId, prof2.tenant_id, tenantKey, missionKey, phone);
       }
     } catch { /* combos are optional */ }
+
+    return true;
   } catch (err) {
     console.error("[gamification:trigger]", err);
+    return false;
+  }
+}
+
+// ── Corridor nudge ──────────────────────────────────────────────────
+//
+// After a non-mission action (e.g. opening the web panel, viewing help),
+// pulls the user back to their currently active mission. No-op if there
+// is no active mission (endgame or between chapters).
+
+export async function nudgeToCorridor(
+  userId: string,
+  tenantKey: string,
+  phone: string,
+): Promise<void> {
+  try {
+    const { getActiveMission } = await import("./engine");
+    const active = await getActiveMission(userId, tenantKey);
+    if (!active) return;
+    const cta = MISSION_CTA[active.mission_key];
+    if (!cta) return;
+    await sendButtons(phone,
+      `🎯 *Göreve Devam*\n${active.emoji || "🎯"} ${active.title}\n_${cta.hint}_`,
+      [cta.button],
+    );
+  } catch (err) {
+    console.error("[gamification:nudgeToCorridor]", err);
   }
 }

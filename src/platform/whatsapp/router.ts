@@ -543,6 +543,11 @@ async function handleWebpanelShared(ctx: WaContext, tenant: ReturnType<typeof ge
       `🖥 Web Panel\n\n${appUrl}/tr/login`,
     );
   }
+
+  // Mission check + corridor nudge — prevents dead end
+  const { triggerMissionCheck, nudgeToCorridor } = await import("@/platform/gamification/triggers");
+  const completed = await triggerMissionCheck(ctx.userId, ctx.tenantKey, "webpanel", ctx.phone);
+  if (!completed) await nudgeToCorridor(ctx.userId, ctx.tenantKey, ctx.phone);
 }
 
 // ── Guide command (generic — same structure for all SaaS) ────────────────

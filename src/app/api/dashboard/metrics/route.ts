@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const tenantKey = req.headers.get("x-tenant-key") || "emlak";
+    const userId = req.nextUrl.searchParams.get("userId");
     const supabase = getServiceClient();
 
     // Get tenant
@@ -31,10 +32,13 @@ export async function GET(req: NextRequest) {
       .eq("tenant_id", tenant.id)
       .eq("status", "active");
 
-    const { count: cmdCount } = await supabase
+    // User-scoped command count when userId present
+    let cmdCountQuery = supabase
       .from("bot_activity")
       .select("*", { count: "exact", head: true })
       .eq("tenant_id", tenant.id);
+    if (userId) cmdCountQuery = cmdCountQuery.eq("user_id", userId);
+    const { count: cmdCount } = await cmdCountQuery;
 
     const base = {
       totalUsers: userCount || 0,
@@ -47,13 +51,19 @@ export async function GET(req: NextRequest) {
     const extra: Record<string, number | undefined> = {};
 
     if (tenantKey === "emlak") {
-      const { count: propCount } = await supabase
+      // User-scoped properties/customers when userId present, else tenant-wide
+      let propQuery = supabase
         .from("emlak_properties")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", tenant.id);
-      const { count: custCount } = await supabase
+        .select("*", { count: "exact", head: true });
+      if (userId) propQuery = propQuery.eq("user_id", userId);
+      const { count: propCount } = await propQuery;
+
+      let custQuery = supabase
         .from("emlak_customers")
         .select("*", { count: "exact", head: true });
+      if (userId) custQuery = custQuery.eq("user_id", userId);
+      const { count: custCount } = await custQuery;
+
       extra.propertyCount = propCount ?? 0;
       extra.customerCount = custCount ?? 0;
     }
