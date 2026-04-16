@@ -276,10 +276,9 @@ export async function POST(req: NextRequest) {
 
         await sendText(phone,
           `🏢 *Hoş Geldiniz!*\n\n` +
-          `Ofisinizde bulunan yapay zeka destekli sanal elemanlarınızın sahip olduğu yetenekler size yardımcı olacak ve daha fazla satış yapmanız için destek olacak.\n\n` +
+          `Yapay zeka destekli sanal çalışanlarınız, sahip olduğu yeteneklerle 7/24 hiç yorulmadan sizin için çalışacak ve daha fazla satış yapmanız için destek olacak.\n\n` +
           `━━━━━━━━━━━━━━━━━━━\n\n` +
-          `Elemanlarınız hiç yorulmadan 7/24 sizin için çalışmaya hazır! ` +
-          `Şimdi sizi tanıyalım — birkaç soru soracağım.`
+          `Birazdan sistemi kullanarak personelinizi tanıyacak ve ilk görevinizi alacaksınız.`
         );
 
         // Start role-specific onboarding
@@ -411,11 +410,9 @@ export async function POST(req: NextRequest) {
 
         await sendText(phone,
           `🏢 *Hoş Geldiniz!*\n\n` +
-          `Ofisinizde bulunan yapay zeka destekli sanal elemanlarınızın sahip olduğu yetenekler size yardımcı olacak ve daha fazla satış yapmanız için destek olacak.\n\n` +
+          `Yapay zeka destekli sanal çalışanlarınız, sahip olduğu yeteneklerle 7/24 hiç yorulmadan sizin için çalışacak ve daha fazla satış yapmanız için destek olacak.\n\n` +
           `━━━━━━━━━━━━━━━━━━━\n\n` +
-          `Elemanlarınız hiç yorulmadan 7/24 sizin için çalışmaya hazır! ` +
-          `Birazdan sistemi kullanarak personelinizi tanıyacak ve ilk görevinizi alacaksınız.\n\n` +
-          `Önce sizi tanıyalım — birkaç kısa soru.`
+          `Birazdan sistemi kullanarak personelinizi tanıyacak ve ilk görevinizi alacaksınız.`
         );
 
         // Start onboarding flow for this tenant
