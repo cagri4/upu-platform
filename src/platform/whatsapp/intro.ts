@@ -26,7 +26,14 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
 
   await sendButtons(ctx.phone,
     `👋 *Merhaba!*\n\n` +
-    `Ben UPU — senin AI asistanın. Mülk ekleme, müşteri yönetimi, pazar tarama, sunum hazırlama — tekrar eden her süreçte yanındayım. Sen komut ver, ben hallederim.\n\n` +
+    `Ben UPU — senin kişisel AI asistanın. 7/24 hiç yorulmadan yanındayım, satışlarını artırmak için çalışıyorum.\n\n` +
+    `*Senin için:*\n` +
+    `• Müşterine özel sunum hazırlarım, magic link ile gönderirim\n` +
+    `• Yetkilendirme sözleşmesini doldururum, e-imzaya hazır ederim\n` +
+    `• Piyasayı sabahları tararım, yeni fırsatları raporlarım\n` +
+    `• Portföyünü büyük ekranda görebileceğin web panel sunarım\n` +
+    `• Mülklerinin fiyatını piyasaya göre analiz ederim\n` +
+    `• Müşterilerini takip eder, sıcak tutmanı hatırlatırım\n\n` +
     `Önce seni tanıyayım — kısa birkaç soru.`,
     [{ id: `intro:${ctx.tenantKey}:start`, title: "🚀 Başlayalım" }],
   );
