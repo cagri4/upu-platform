@@ -54,7 +54,8 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
     `• Her sabah bölgenizdeki yeni ilanları tarayıp size raporlarım\n` +
     `• Mülklerinizi kaydeder, uygun açıklamalar yazarım\n` +
     `• Müşterilerinizi kayıt altına alır, takip eder, öneriler sunarım\n` +
-    `• Mülkünüzü tek tıkla sahibinden.com'a yüklerim\n\n` +
+    `• Mülkünüzü tek tıkla sahibinden.com'a yüklerim\n` +
+    `• İstediğiniz mülkünüzü, belli kriterlere göre portföy arayan diğer emlak danışmanlarıyla kapalı özel bir platformda paylaşırım\n\n` +
     `Şimdi birlikte bir başlangıç yapalım ve bölgenizdeki ilanları tarayalım.\n\nBölgenizi seçin:`,
     "Bölge Seç",
     [{
