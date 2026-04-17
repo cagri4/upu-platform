@@ -35,7 +35,7 @@ export const emlakOnboardingFlow: OnboardingFlow = {
     },
     {
       key: "briefing",
-      question: "Her sabah size pazartarama raporu göndereyim mi?\n\nRapor: aktif ilanlarınız, bugünkü görevleriniz ve bölgenizdeki yeni ilanlar özeti içerir.",
+      question: "Her sabah sana genel durum raporu göndereyim mi?\n\nRaporda: eklediğin mülk sayısı, fotoğraf/açıklama gibi eksikler, müşteri sayın, varsa piyasa tarama sonuçların, randevu ve hatırlatmalar gibi bilgiler yer alır.",
       buttons: [
         { id: "onb:evet", title: "Evet, gönder" },
         { id: "onb:hayir", title: "Hayır, gerek yok" },
