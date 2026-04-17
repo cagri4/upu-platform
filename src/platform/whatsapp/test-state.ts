@@ -258,7 +258,7 @@ export async function handleSifirla(ctx: WaContext): Promise<void> {
 
   await sendButtons(
     ctx.phone,
-    "⚠️ *DİKKAT*\n\nBu komut tüm verilerini SİLECEK:\n• Mülkler, müşteriler, sunumlar\n• Mission state, streak, tasks\n• Onboarding kaydı\n• Kaydedilmiş snapshot\n\nProfilin (telefon, hesap) duruyor ama onboarding sıfırdan başlayacak.\n\nEmin misin?",
+    "⚠️ *DİKKAT*\n\nBu komut tüm verilerini SİLECEK:\n• Mülkler, müşteriler, sunumlar\n• Onboarding kaydı\n• Kaydedilmiş snapshot\n\nProfilin (telefon, hesap) duruyor ama onboarding sıfırdan başlayacak.\n\nEmin misin?",
     [
       { id: "sifirla:confirm", title: "🗑 Evet, sil" },
       { id: "cmd:menu", title: "İptal" },
@@ -277,14 +277,9 @@ export async function handleSifirlaCallback(ctx: WaContext, data: string): Promi
   try {
     await wipeAllState(ctx.userId, ctx.tenantKey);
 
-    // Narrative intro BEFORE onboarding — user understands WHY first
     await sendText(ctx.phone,
       `✅ *Tüm verilerin silindi*\n\n` +
-      `━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🏢 *Ekibiniz hazır!*\n\n` +
-      `5 sanal elemanınız sizin için çalışmaya başladı. ` +
-      `Görevleri tamamladıkça onları geliştirin — daha yetenekli elemanlar, daha çok satış.\n\n` +
-      `Önce sizi tanıyalım — birkaç kısa soru.`
+      `Önce seni tanıyayım — birkaç kısa soru.`
     );
 
     // Re-init onboarding
