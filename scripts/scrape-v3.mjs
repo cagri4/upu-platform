@@ -176,7 +176,10 @@ function parseRow(tds, propertyType) {
 
   const mahalle = '';
   const tarih = tds[n - 3]?.text || '';
-  const fiyatRaw = tds[n - 4]?.text || '';
+  // Arsa listings have an extra "m² Fiyatı" column before date,
+  // so total Fiyat is at n-5 instead of n-4.
+  const fiyatIdx = ARSA_TYPES.has(propertyType) ? n - 5 : n - 4;
+  const fiyatRaw = tds[fiyatIdx]?.text || '';
   const fiyat = parsePrice(fiyatRaw);
 
   let m2 = 0;
