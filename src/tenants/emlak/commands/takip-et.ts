@@ -336,9 +336,15 @@ async function saveTracking(ctx: WaContext): Promise<void> {
   }
 
   await sendText(ctx.phone,
-    "✅ Takibe alındı!\n\nHer sabah yeni ilanlar taranacak ve kriterlerinize uyanlar bildirilecek.",
+    "✅ Takibe alındı!\n\nHer sabah yeni ilanlar taranacak ve kriterlerine uyanlar bildirilecek.",
   );
   await logEvent(ctx.tenantId, ctx.userId, "takip_et", "yeni takip oluşturuldu");
+
+  // Discovery chain: advance after tarama kuruldu
+  try {
+    const { advanceDiscovery } = await import("@/platform/whatsapp/discovery-chain");
+    await advanceDiscovery(ctx.userId, ctx.phone, "tarama_kuruldu");
+  } catch { /* don't break flow */ }
 
 }
 

@@ -52,18 +52,12 @@ export const emlakOnboardingFlow: OnboardingFlow = {
         location: data.location || null,
         briefing_enabled: data.briefing === "evet",
         onboarding_completed: true,
+        discovery_step: 0,
       },
     }).eq("id", ctx.userId);
 
-    let msg = "✅ *Kurulum tamamlandı!*\n\n";
-    if (data.office_name) msg += `🏢 ${data.office_name}\n`;
-    if (data.location) msg += `📍 ${data.location}\n`;
-    msg += `\nBilgilerinizi daha sonra güncellemek için her zaman *"menü"* yazıp, açılan listeden *Profilim* komutunu kullanabilirsiniz.\n`;
-    msg += `\n━━━━━━━━━━━━━━━━━━━\n`;
-    msg += `\nHazırsın! Mülk eklemek için alttaki butona tıkla, ya da istediğin zaman *"menü"* yazarak tüm komutları gör.`;
-
-    await sendButtons(ctx.phone, msg, [
-      { id: "cmd:mulkekle", title: "🏠 Mülk Ekle" },
-    ]);
+    // Start discovery chain — guided flow through killer features
+    const { startDiscoveryChain } = await import("@/platform/whatsapp/discovery-chain");
+    await startDiscoveryChain(ctx.userId, ctx.phone, data.office_name as string, data.location as string);
   },
 };

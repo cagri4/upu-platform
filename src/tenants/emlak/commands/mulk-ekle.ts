@@ -587,10 +587,10 @@ async function finalizeProperty(ctx: WaContext): Promise<void> {
     (location ? `\n📍 ${location}` : ""),
   );
 
-  // Gamification: mission trigger — the XP popup provides the next-step CTA
-  // (e.g. [✏️ Bilgileri Düzenle]). No extra [Portföyüm][Ana Menü] buttons
-  // that would let the user stray from the corridor.
+  // Discovery chain: advance if user is in guided first-use flow
   try {
+    const { advanceDiscovery } = await import("@/platform/whatsapp/discovery-chain");
+    await advanceDiscovery(ctx.userId, ctx.phone, "mulk_eklendi");
   } catch { /* don't break main flow */ }
 
   // Check for customer matches

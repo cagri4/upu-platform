@@ -509,6 +509,12 @@ async function generatePresentation(ctx: WaContext): Promise<void> {
     }).eq("id", customer.id);
   } catch { /* don't break sunum flow */ }
 
+  // Discovery chain: advance after sunum created
+  try {
+    const { advanceDiscovery } = await import("@/platform/whatsapp/discovery-chain");
+    await advanceDiscovery(ctx.userId, ctx.phone, "sunum_hazir");
+  } catch { /* don't break flow */ }
+
 }
 
 // ── /sunumlarim — List presentations ─────────────────────────────────
