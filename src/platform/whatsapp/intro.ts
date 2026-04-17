@@ -50,7 +50,7 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
     `👋 Merhaba! Ben UPU, sizin kişisel AI asistanınızım. 7/24 satışlarınızı artırmak için çalışacağım.\n\n` +
     `*Yapabileceklerimden bazıları:*\n\n` +
     `• Mülkleriniz için satış odaklı sunumlar hazırlarım\n` +
-    `• Tüm portföyünüzü ve bilgilerinizi paylaşabileceğiniz size özel bir web sayfası oluştururum\n` +
+    `• Sizin için, tüm portföyünüzü ve bilgilerinizi paylaşabileceğiniz bir web sayfası yaparım\n` +
     `• Her sabah bölgenizdeki yeni ilanları tarayıp size raporlarım\n` +
     `• Mülklerinizi kaydeder, uygun açıklamalar yazarım\n` +
     `• Müşterilerinizi kayıt altına alır, takip eder, öneriler sunarım\n` +
