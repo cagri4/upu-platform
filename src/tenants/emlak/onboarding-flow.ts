@@ -70,6 +70,6 @@ export const emlakOnboardingFlow: OnboardingFlow = {
 
     // Start discovery chain — guided flow through killer features
     const { startDiscoveryChain } = await import("@/platform/whatsapp/discovery-chain");
-    await startDiscoveryChain(ctx.userId, ctx.phone, data.office_name as string, data.location as string, data.email as string, data.experience_years as string);
+    await startDiscoveryChain(ctx.userId, ctx.phone, data.display_name as string, data.office_name as string, data.location as string, data.email as string, data.experience_years as string);
   },
 };

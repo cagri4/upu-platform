@@ -111,17 +111,19 @@ export async function advanceDiscovery(
  * Start the discovery chain — called from onboarding completion.
  * Sets step to 0 and sends the first prompt.
  */
-export async function startDiscoveryChain(userId: string, phone: string, officeName?: string, location?: string, email?: string, experienceYears?: string): Promise<void> {
+export async function startDiscoveryChain(userId: string, phone: string, displayName?: string, officeName?: string, location?: string, email?: string, experienceYears?: string): Promise<void> {
   await setDiscoveryStep(userId, 0);
 
   let msg = "✅ *Kurulum tamamlandı!*\n\n";
+  if (displayName) msg += `👤 ${displayName}\n`;
   if (officeName) msg += `🏢 ${officeName}\n`;
   if (location) msg += `📍 ${location}\n`;
   if (email) msg += `📧 ${email}\n`;
   if (experienceYears) msg += `📅 ${experienceYears} yıl tecrübe\n`;
   msg += `📱 ${phone}\n`;
+  msg += `\nBu bilgileri daha sonra *"menü"* → *Sistem Komutları* → *Profilim* kısmından düzenleyebilirsiniz.\n`;
   msg += `\n━━━━━━━━━━━━━━━━━━━\n\n`;
-  msg += `Hadi müşterine gönderebileceğin etkileyici bir sunum hazırlayalım! Bunun için önce bir mülk ekleyelim.`;
+  msg += `Şimdi devam ediyoruz! Hadi müşterine gönderebileceğin etkileyici bir sunum hazırlayalım — bunun için önce bir mülk ekleyelim.`;
 
   await sendButtons(phone, msg, [
     { id: "cmd:mulkekle", title: "🏠 Mülk Ekle" },
