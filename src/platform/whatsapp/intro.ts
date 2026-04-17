@@ -48,7 +48,7 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
 
   await sendList(ctx.phone,
     `👋 Merhaba! Ben UPU, sizin kişisel AI asistanınızım. 7/24 satışlarınızı artırmak için çalışacağım.\n\n` +
-    `*Sizin için neler yaparım?*\n\n` +
+    `*Yapabileceklerimden bazıları:*\n\n` +
     `• Mülkleriniz için satış hedefli sunumlar hazırlarım\n` +
     `• Size özel bir web sayfası oluşturup tüm portföyünüzü paylaşılabilir yaparım\n` +
     `• Her sabah bölgenizdeki yeni ilanları tarayıp size raporlarım\n` +
