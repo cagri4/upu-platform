@@ -27,6 +27,11 @@ const PROPERTY_TYPES = [
   { id: "vf:type:villa", title: "Villa" },
   { id: "vf:type:daire", title: "Daire" },
   { id: "vf:type:arsa", title: "Arsa" },
+  { id: "vf:type:mustakil", title: "Müstakil Ev" },
+  { id: "vf:type:rezidans", title: "Rezidans" },
+  { id: "vf:type:dukkan", title: "Dükkan" },
+  { id: "vf:type:buro_ofis", title: "Büro / Ofis" },
+  { id: "vf:type:hepsi", title: "Hepsi" },
 ];
 
 const LISTED_BY = [
@@ -88,9 +93,10 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
       updated_at: new Date().toISOString(),
     });
 
-    await sendButtons(ctx.phone,
+    await sendList(ctx.phone,
       `Hangi mülk tipini görmek istersiniz?`,
-      PROPERTY_TYPES,
+      "Tip Seç",
+      [{ title: "Mülk Tipleri", rows: PROPERTY_TYPES.map(t => ({ id: t.id, title: t.title, description: "" })) }],
     );
     return;
   }
@@ -127,8 +133,11 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
     // Query actual DB
     let query = sb.from("emlak_properties")
       .select("location_neighborhood, price", { count: "exact" })
-      .ilike("location_district", `%${region}%`)
-      .eq("type", propertyType);
+      .ilike("location_district", `%${region}%`);
+
+    if (propertyType !== "hepsi") {
+      query = query.eq("type", propertyType);
+    }
 
     if (listedBy !== "hepsi") {
       query = query.eq("listed_by", listedBy === "sahibi" ? "sahibi" : "emlakci");
