@@ -17,14 +17,10 @@ export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
   await sendButtons(ctx.phone,
     "🏠 *Mülk Ekle*\n\nNasıl eklemek istersiniz?",
     [
-      { id: "mulkekle_method:link", title: "🔗 Link yapıştır" },
-      { id: "mulkekle_method:detayli", title: "📝 Detaylı ekle" },
-      { id: "mulkekle_method:hizli", title: "⚡ Hızlı ekle" },
+      { id: "mulkekle_method:link", title: "🔗 Sahibinden linki" },
+      { id: "mulkekle_method:detayli", title: "📝 Manuel ekle" },
     ],
   );
-  await sendButtons(ctx.phone, "Veya:", [
-    { id: "cmd:menu", title: "📋 Ana Menü" },
-  ]);
 }
 
 // ── Start detaylı flow ─────────────────────────────────────────────────
@@ -107,16 +103,25 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
 
     case "district": {
       const district = skip ? null : text;
-      await updateSession(ctx.userId, "finalize_ready", { district });
-      // Fast flow: finalize immediately after district.
-      // Neighborhood, phases 2+3 (kat/bina yaşı/ısınma/cephe/banyo/mutfak/
-      // asansör/balkon/açıklama/özellikler) are all skipped — user fills
-      // them later via "bilgi tamamla" mission + AI description wizard.
-      await finalizeProperty(ctx);
+      await updateSession(ctx.userId, "neighborhood", { district });
+      await sendText(ctx.phone, "📍 Mahalle yazın:\n\nÖrnek: Yalıkavak, Bitez\n\n(\"geç\" ile atlayın)");
       return;
     }
 
-    // ── AŞAMA 3: Açıklama + Özellikler (serbest metin) ──
+    case "neighborhood": {
+      const neighborhood = skip ? null : text;
+      await updateSession(ctx.userId, "net_area", { neighborhood });
+      await sendText(ctx.phone, "📐 Net metrekare yazın:\n\nÖrnek: 95\n\n(\"geç\" ile atlayın)");
+      return;
+    }
+
+    case "net_area": {
+      const netArea = skip ? null : parseInt(text.replace(/[^\d]/g, ""), 10) || null;
+      await updateSession(ctx.userId, "floor_select", { net_area: netArea });
+      // Continue to floor LIST (callback-based chain: floor → totalfloors → buildingage → heating → ... → finalize)
+      await handleMulkEkleCallback(ctx, "mulkekle:phase:2");
+      return;
+    }
 
     case "description": {
       const desc = skip ? null : text;
@@ -160,8 +165,8 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
 
     case "transport_input": {
       const transport = skip ? null : text;
-      await updateSession(ctx.userId, "phase3_done", { transportation: transport });
-      await showSummaryAndConfirm(ctx);
+      await updateSession(ctx.userId, "finalize_ready", { transportation: transport });
+      await finalizeProperty(ctx);
       return;
     }
 
@@ -433,12 +438,18 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   }
 
   if (field === "swap") {
-    // Store as boolean for DB compat. fill-data endpoint converts to "Evet"/"Hayır" text for sahibinden.
     const swap = value === "evet" ? true : value === "hayir" ? false : null;
-    await updateSession(ctx.userId, "phase2_done", { swap });
-    // Corridor: auto-continue to Phase 3, no shortcut.
-    await sendText(ctx.phone, "✅ *Aşama 2 tamamlandı* — Bina Bilgileri\n\nDetaylara geçiyoruz...");
-    await handleMulkEkleCallback(ctx, "mulkekle:phase:3");
+    await updateSession(ctx.userId, "bathroom_select", { swap });
+    // Continue to bathroom
+    await sendList(ctx.phone, "🚿 Banyo sayısı:", "Banyo", [
+      { title: "Banyo Sayısı", rows: [
+        { id: "mulkekle:bathroom:1", title: "1" },
+        { id: "mulkekle:bathroom:2", title: "2" },
+        { id: "mulkekle:bathroom:3", title: "3" },
+        { id: "mulkekle:bathroom:4+", title: "4+" },
+        { id: "mulkekle:bathroom:yok", title: "Belirtme" },
+      ]},
+    ]);
     return;
   }
 

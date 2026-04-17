@@ -25,7 +25,7 @@ import { handleIpucu, handleTipCallback } from "./ipucu";
 export const emlakCommands: TenantCommandRegistry = {
   commands: {
     // Core killer commands
-    mulkekle: handleMulkEkle,
+    mulkekle: handleMulkEkleMenu,
     fiyatbelirle: handleFiyatBelirle,
     musteriEkle: handleMusteriEkle,
     musteriTakip: handleMusteriTakip,
