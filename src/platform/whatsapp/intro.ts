@@ -49,13 +49,13 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   await sendList(ctx.phone,
     `👋 Merhaba! Ben UPU, sizin kişisel AI asistanınızım. 7/24 satışlarınızı artırmak için çalışacağım.\n\n` +
     `*Yapabileceklerimden bazıları:*\n\n` +
-    `• Mülkleriniz için satış odaklı sunumlar hazırlarım.\n` +
-    `• Sizin için, tüm portföyünüzü ve bilgilerinizi paylaşabileceğiniz bir web sayfası yaparım.\n` +
-    `• Her sabah bölgenizdeki yeni ilanları tarayıp size raporlarım.\n` +
-    `• Mülklerinizi kaydeder, uygun açıklamalar yazarım.\n` +
-    `• Müşterilerinizi kayıt altına alır, takip eder, öneriler sunarım.\n` +
-    `• Mülkünüzü tek tıkla sahibinden.com'a yüklerim.\n` +
-    `• İstediğiniz mülkü, yalnızca portföy arayan emlak danışmanlarına açık, özel bir platformda paylaşırım.\n\n` +
+    `• Müşterinize 2 dakikada profesyonel sunum hazırlar, tek link ile gönderirim.\n` +
+    `• Müşterinize gösterebileceğiniz, tüm portföyünüzün yer aldığı profesyonel bir web sayfası yaparım.\n` +
+    `• Rakiplerinizden önce yeni fırsatları yakalarım — her sabah bölgenizdeki yeni ilanları otomatik raporlarım.\n` +
+    `• İlan açıklamalarınızı AI ile yazar, dikkat çeken satış odaklı metinler oluştururum.\n` +
+    `• Hiçbir müşterinizi unutmam — ne zaman aramanız gerektiğini takip eder, size hatırlatırım.\n` +
+    `• Sahibinden.com'a ilan yüklemenizi 30 dakikadan 3 dakikaya indiririm.\n` +
+    `• Dilediğiniz portföyünüzü, mülk arayan emlak danışmanlarıyla işbirliği yaparak, kısa sürede satılmasını sağlarım.\n\n` +
     `Şimdi birlikte bir başlangıç yapalım ve bölgenizdeki ilanları tarayalım.\n\nBölgenizi seçin:`,
     "Bölge Seç",
     [{
