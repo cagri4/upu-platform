@@ -128,8 +128,8 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       return;
     }
 
-    // Employee intro flow callbacks (post-signup tour)
-    if (ctx.interactiveId.startsWith("intro:")) {
+    // Value-first intro flow callbacks (post-signup: region → type → listed → results → onboarding)
+    if (ctx.interactiveId.startsWith("vf:") || ctx.interactiveId.startsWith("intro:")) {
       const { handleIntroCallback } = await import("./intro");
       await handleIntroCallback(ctx, ctx.interactiveId);
       logCommand(ctx, ctx.interactiveId, true);
