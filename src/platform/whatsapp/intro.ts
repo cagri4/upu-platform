@@ -109,8 +109,32 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
     const region = (sess?.data as Record<string, string>)?.region || "bodrum";
 
     await sb.from("command_sessions").update({
-      step: "listed",
+      step: "listing",
       data: { region, property_type: propertyType },
+      updated_at: new Date().toISOString(),
+    }).eq("user_id", ctx.userId).eq("command", "_intro");
+
+    await sendButtons(ctx.phone,
+      `Satılık mı, kiralık mı?`,
+      [
+        { id: "vf:listing:satilik", title: "Satılık" },
+        { id: "vf:listing:kiralik", title: "Kiralık" },
+        { id: "vf:listing:hepsi", title: "Hepsi" },
+      ],
+    );
+    return;
+  }
+
+  if (step === "listing") {
+    const listingType = parts[2];
+    const sb = getServiceClient();
+    const { data: sess } = await sb.from("command_sessions")
+      .select("data").eq("user_id", ctx.userId).eq("command", "_intro").maybeSingle();
+    const d = (sess?.data as Record<string, string>) || {};
+
+    await sb.from("command_sessions").update({
+      step: "listed",
+      data: { ...d, listing_type: listingType },
       updated_at: new Date().toISOString(),
     }).eq("user_id", ctx.userId).eq("command", "_intro");
 
@@ -129,6 +153,7 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
     const d = (sess?.data as Record<string, string>) || {};
     const region = d.region || "bodrum";
     const propertyType = d.property_type || "villa";
+    const listingType = d.listing_type || "hepsi";
 
     // Query actual DB
     let query = sb.from("emlak_properties")
@@ -137,6 +162,10 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
 
     if (propertyType !== "hepsi") {
       query = query.eq("type", propertyType);
+    }
+
+    if (listingType !== "hepsi") {
+      query = query.eq("listing_type", listingType);
     }
 
     if (listedBy !== "hepsi") {
@@ -171,9 +200,10 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
 
     const regionLabel = region.charAt(0).toUpperCase() + region.slice(1);
     const typeLabel = propertyType === "hepsi" ? "Tüm Tipler" : propertyType.charAt(0).toUpperCase() + propertyType.slice(1);
+    const listingLabel = listingType === "hepsi" ? "" : listingType === "satilik" ? "Satılık " : "Kiralık ";
     const listedLabel = listedBy === "hepsi" ? "Tümü" : listedBy === "sahibi" ? "Sahibinden" : "Emlak Ofisi";
 
-    let msg = `📊 *${regionLabel} — ${typeLabel} — ${listedLabel}*\n\n`;
+    let msg = `📊 *${regionLabel} — ${listingLabel}${typeLabel} — ${listedLabel}*\n\n`;
     msg += `Aktif ilan: *${count || 0}*\n`;
     msg += `Dün eklenen: *${newCount || 0}* yeni ilan\n`;
     if (avgPrice > 0) {
