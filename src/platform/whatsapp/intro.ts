@@ -20,6 +20,7 @@ import {
   sendOnboardingStep,
 } from "./onboarding";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { startSession, updateSession, getSession, endSession } from "./session";
 
 const INTRO_TENANTS = new Set(["emlak"]);
 
@@ -85,16 +86,8 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
 
   if (step === "region") {
     const region = parts[2];
-    // Store region in session for later use
-    const sb = getServiceClient();
-    await sb.from("command_sessions").upsert({
-      user_id: ctx.userId,
-      tenant_id: ctx.tenantId,
-      command: "_intro",
-      step: "type",
-      data: { region },
-      updated_at: new Date().toISOString(),
-    });
+    await startSession(ctx.userId, ctx.tenantId, "_intro", "type");
+    await updateSession(ctx.userId, "type", { region });
 
     await sendList(ctx.phone,
       `Hangi mülk tipini görmek istersiniz?`,
@@ -106,16 +99,7 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
 
   if (step === "type") {
     const propertyType = parts[2];
-    const sb = getServiceClient();
-    const { data: sess } = await sb.from("command_sessions")
-      .select("data").eq("user_id", ctx.userId).eq("command", "_intro").maybeSingle();
-    const region = (sess?.data as Record<string, string>)?.region || "bodrum";
-
-    await sb.from("command_sessions").update({
-      step: "listing",
-      data: { region, property_type: propertyType },
-      updated_at: new Date().toISOString(),
-    }).eq("user_id", ctx.userId).eq("command", "_intro");
+    await updateSession(ctx.userId, "listing", { property_type: propertyType });
 
     await sendButtons(ctx.phone,
       `Satılık mı, kiralık mı?`,
@@ -130,16 +114,7 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
 
   if (step === "listing") {
     const listingType = parts[2];
-    const sb = getServiceClient();
-    const { data: sess } = await sb.from("command_sessions")
-      .select("data").eq("user_id", ctx.userId).eq("command", "_intro").maybeSingle();
-    const d = (sess?.data as Record<string, string>) || {};
-
-    await sb.from("command_sessions").update({
-      step: "listed",
-      data: { ...d, listing_type: listingType },
-      updated_at: new Date().toISOString(),
-    }).eq("user_id", ctx.userId).eq("command", "_intro");
+    await updateSession(ctx.userId, "listed", { listing_type: listingType });
 
     await sendButtons(ctx.phone,
       `Kimin ilanlarını görelim?`,
@@ -150,15 +125,16 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
 
   if (step === "listed") {
     const listedBy = parts[2];
-    const sb = getServiceClient();
-    const { data: sess } = await sb.from("command_sessions")
-      .select("data").eq("user_id", ctx.userId).eq("command", "_intro").maybeSingle();
+    const sess = await getSession(ctx.userId);
     const d = (sess?.data as Record<string, string>) || {};
     const region = d.region || "bodrum";
-    const propertyType = d.property_type || "villa";
+    const propertyType = d.property_type || "hepsi";
     const listingType = d.listing_type || "hepsi";
 
+    await endSession(ctx.userId);
+
     // Query actual DB
+    const sb = getServiceClient();
     let query = sb.from("emlak_properties")
       .select("location_neighborhood, price", { count: "exact" })
       .ilike("location_district", `%${region}%`);
@@ -220,9 +196,6 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
     }
     msg += `\nBu taramayı ileride otomatik hale getirebilirsiniz — her sabah size gelir.\n\n`;
     msg += `Şimdi sizi tanıyayım! 👇`;
-
-    // Clean up session
-    await sb.from("command_sessions").delete().eq("user_id", ctx.userId).eq("command", "_intro");
 
     await sendButtons(ctx.phone, msg, [
       { id: "vf:start", title: "🚀 Devam Et" },
