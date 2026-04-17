@@ -53,7 +53,7 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
     `• Size özel bir web sayfası oluşturup tüm portföyünüzü paylaşılabilir yaparım\n` +
     `• Her sabah bölgenizdeki yeni ilanları tarayıp size raporlarım\n` +
     `• Müşterilerinizi kayıt altına alır, takip eder, öneriler sunarım\n\n` +
-    `Hemen göstereyim — bölgenizi seçin:`,
+    `Şimdi birlikte bir başlangıç yapalım ve bölgenizdeki ilanları tarayalım.\n\nBölgenizi seçin:`,
     "Bölge Seç",
     [{
       title: "Bölgeler",
