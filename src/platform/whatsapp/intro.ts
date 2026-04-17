@@ -145,6 +145,16 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
 
     const { data: props, count } = await query.limit(1000);
 
+    // Count yesterday's new listings
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    let newQuery = sb.from("emlak_properties")
+      .select("*", { count: "exact", head: true })
+      .ilike("location_district", `%${region}%`)
+      .gte("created_at", yesterday);
+    if (propertyType !== "hepsi") newQuery = newQuery.eq("type", propertyType);
+    if (listedBy !== "hepsi") newQuery = newQuery.eq("listed_by", listedBy === "sahibi" ? "sahibi" : "emlakci");
+    const { count: newCount } = await newQuery;
+
     // Group by neighborhood
     const byHood: Record<string, number> = {};
     let totalPrice = 0;
@@ -160,11 +170,12 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
       .slice(0, 5);
 
     const regionLabel = region.charAt(0).toUpperCase() + region.slice(1);
-    const typeLabel = propertyType.charAt(0).toUpperCase() + propertyType.slice(1);
+    const typeLabel = propertyType === "hepsi" ? "Tüm Tipler" : propertyType.charAt(0).toUpperCase() + propertyType.slice(1);
     const listedLabel = listedBy === "hepsi" ? "Tümü" : listedBy === "sahibi" ? "Sahibinden" : "Emlak Ofisi";
 
     let msg = `📊 *${regionLabel} — ${typeLabel} — ${listedLabel}*\n\n`;
-    msg += `Toplam: *${count || 0}* ilan\n`;
+    msg += `Aktif ilan: *${count || 0}*\n`;
+    msg += `Dün eklenen: *${newCount || 0}* yeni ilan\n`;
     if (avgPrice > 0) {
       msg += `Ortalama fiyat: *${new Intl.NumberFormat("tr-TR").format(avgPrice)} ₺*\n`;
     }
