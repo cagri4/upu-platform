@@ -277,29 +277,31 @@ export async function handleSifirlaCallback(ctx: WaContext, data: string): Promi
   try {
     await wipeAllState(ctx.userId, ctx.tenantKey);
 
-    await sendText(ctx.phone,
-      `✅ *Tüm verilerin silindi*\n\n` +
-      `Önce seni tanıyayım — birkaç kısa soru.`
-    );
+    await sendText(ctx.phone, `✅ *Tüm verilerin silindi*`);
 
-    // Re-init onboarding
-    const { initOnboarding, getOnboardingFlow, sendOnboardingStep } = await import("./onboarding");
-    await initOnboarding(ctx.userId, ctx.tenantId, ctx.tenantKey);
+    // Start from the very beginning — value-first intro flow
+    const { startIntro } = await import("./intro");
+    const introStarted = await startIntro(ctx);
 
-    const flow = getOnboardingFlow(ctx.tenantKey);
-    if (flow && flow.steps.length > 0) {
-      const state = {
-        user_id: ctx.userId,
-        tenant_key: ctx.tenantKey,
-        current_step: flow.steps[0].key,
-        business_info: {},
-        completed_at: null,
-      };
-      await sendOnboardingStep(ctx, state);
-    } else {
-      await sendButtons(ctx.phone, "Hazır. Menüye git.", [
-        { id: "cmd:menu", title: "📋 Ana Menü" },
-      ]);
+    if (!introStarted) {
+      // Non-intro tenant fallback — direct onboarding
+      const { initOnboarding, getOnboardingFlow, sendOnboardingStep } = await import("./onboarding");
+      await initOnboarding(ctx.userId, ctx.tenantId, ctx.tenantKey);
+      const flow = getOnboardingFlow(ctx.tenantKey);
+      if (flow && flow.steps.length > 0) {
+        const state = {
+          user_id: ctx.userId,
+          tenant_key: ctx.tenantKey,
+          current_step: flow.steps[0].key,
+          business_info: {},
+          completed_at: null,
+        };
+        await sendOnboardingStep(ctx, state);
+      } else {
+        await sendButtons(ctx.phone, "Hazır. Menüye git.", [
+          { id: "cmd:menu", title: "📋 Ana Menü" },
+        ]);
+      }
     }
   } catch (err) {
     console.error("[test-state:sifirla]", err);
