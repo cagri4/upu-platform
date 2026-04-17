@@ -111,13 +111,15 @@ export async function advanceDiscovery(
  * Start the discovery chain — called from onboarding completion.
  * Sets step to 0 and sends the first prompt.
  */
-export async function startDiscoveryChain(userId: string, phone: string, officeName?: string, location?: string): Promise<void> {
+export async function startDiscoveryChain(userId: string, phone: string, officeName?: string, location?: string, email?: string, experienceYears?: string): Promise<void> {
   await setDiscoveryStep(userId, 0);
 
   let msg = "✅ *Kurulum tamamlandı!*\n\n";
   if (officeName) msg += `🏢 ${officeName}\n`;
   if (location) msg += `📍 ${location}\n`;
-  msg += `\nBilgilerini güncellemek için *"menü"* → *Profilim*.\n`;
+  if (email) msg += `📧 ${email}\n`;
+  if (experienceYears) msg += `📅 ${experienceYears} yıl tecrübe\n`;
+  msg += `📱 ${phone}\n`;
   msg += `\n━━━━━━━━━━━━━━━━━━━\n\n`;
   msg += `Hadi müşterine gönderebileceğin etkileyici bir sunum hazırlayalım! Bunun için önce bir mülk ekleyelim.`;
 

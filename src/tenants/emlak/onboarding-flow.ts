@@ -4,8 +4,10 @@
  * Steps:
  *   1. display_name — Adınız soyadınız
  *   2. office_name  — Ofis/şirket adı
- *   3. location     — Çalıştığınız bölge
- *   4. briefing     — Sabah pazartarama raporu opt-in
+ *   3. location         — Çalıştığınız bölge
+ *   4. email            — E-posta adresi
+ *   5. experience_years — Kaç yıldır emlakçılık
+ *   6. briefing         — Sabah pazartarama raporu opt-in
  */
 
 import type { OnboardingFlow } from "@/platform/whatsapp/onboarding";
@@ -34,6 +36,14 @@ export const emlakOnboardingFlow: OnboardingFlow = {
       question: "Hangi bölgede çalışıyorsunuz?\n\n💡 Örnek: _Kadıköy, İstanbul_ veya _Antalya Merkez_",
     },
     {
+      key: "email",
+      question: "E-posta adresiniz nedir?\n\n💡 Örnek: _ahmet@canemlak.com_",
+    },
+    {
+      key: "experience_years",
+      question: "Kaç yıldır emlakçılık yapıyorsunuz?\n\n💡 Örnek: _5_",
+    },
+    {
       key: "briefing",
       question: "Her sabah sana genel durum raporu göndereyim mi?\n\nRaporda: eklediğin mülk sayısı, fotoğraf/açıklama gibi eksikler, müşteri sayın, varsa piyasa tarama sonuçların, randevu ve hatırlatmalar gibi bilgiler yer alır.",
       buttons: [
@@ -50,6 +60,8 @@ export const emlakOnboardingFlow: OnboardingFlow = {
       metadata: {
         office_name: data.office_name || null,
         location: data.location || null,
+        email: data.email || null,
+        experience_years: data.experience_years || null,
         briefing_enabled: data.briefing === "evet",
         onboarding_completed: true,
         discovery_step: 0,
@@ -58,6 +70,6 @@ export const emlakOnboardingFlow: OnboardingFlow = {
 
     // Start discovery chain — guided flow through killer features
     const { startDiscoveryChain } = await import("@/platform/whatsapp/discovery-chain");
-    await startDiscoveryChain(ctx.userId, ctx.phone, data.office_name as string, data.location as string);
+    await startDiscoveryChain(ctx.userId, ctx.phone, data.office_name as string, data.location as string, data.email as string, data.experience_years as string);
   },
 };
