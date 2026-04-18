@@ -1,6 +1,6 @@
 import type { WaContext } from "@/platform/whatsapp/types";
 import type { CommandSession } from "@/platform/whatsapp/session";
-import { startSession, updateSession, endSession } from "@/platform/whatsapp/session";
+import { startSession, updateSession, endSession, getSession } from "@/platform/whatsapp/session";
 import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 
@@ -123,49 +123,25 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
       return;
     }
 
-    case "description": {
-      const desc = skip ? null : text;
-      await updateSession(ctx.userId, "features_input", { description: desc });
-      await sendText(ctx.phone,
-        "🏷 İç özellikler yazın (virgülle ayırın):\n\n" +
-        "Örnek: Ankastre mutfak, Jakuzi, Giyinme odası\n\n(\"geç\" ile atlayın)"
-      );
-      return;
-    }
-
-    case "features_input": {
-      const features = skip ? null : text;
-      await updateSession(ctx.userId, "exterior_input", { interior_features: features });
-      await sendText(ctx.phone,
-        "🌿 Dış özellikler yazın (virgülle ayırın):\n\n" +
-        "Örnek: Yüzme havuzu, Bahçe, Güvenlik\n\n(\"geç\" ile atlayın)"
-      );
-      return;
-    }
-
-    case "exterior_input": {
-      const ext = skip ? null : text;
-      await updateSession(ctx.userId, "view_input", { exterior_features: ext });
-      await sendText(ctx.phone,
-        "🏔 Manzara yazın (virgülle ayırın):\n\n" +
-        "Örnek: Deniz, Doğa, Göl, Şehir\n\n(\"geç\" ile atlayın)"
-      );
-      return;
-    }
-
-    case "view_input": {
-      const view = skip ? null : text;
-      await updateSession(ctx.userId, "transport_input", { view_features: view });
-      await sendText(ctx.phone,
-        "🚌 Ulaşım bilgisi yazın:\n\n" +
-        "Örnek: Metro 500m, Otobüs 200m\n\n(\"geç\" ile atlayın)"
-      );
-      return;
-    }
+    // description/features now handled via callback-based list selection
+    // old text steps removed — see intfeat/extfeat/viewfeat callbacks + desc_choice
 
     case "transport_input": {
       const transport = skip ? null : text;
-      await updateSession(ctx.userId, "finalize_ready", { transportation: transport });
+      await updateSession(ctx.userId, "desc_choice", { transportation: transport });
+      await sendButtons(ctx.phone,
+        "📝 *İlan Açıklaması*\n\nAçıklamayı nasıl eklemek istersiniz?\n\nAI seçerseniz, girdiğiniz tüm bilgileri kullanarak etkileyici bir açıklama yazarım.",
+        [
+          { id: "mulkekle:desc_choice:ai", title: "🤖 AI Yazsın" },
+          { id: "mulkekle:desc_choice:manual", title: "✍️ Kendim Yazayım" },
+          { id: "mulkekle:desc_choice:skip", title: "⏭ Geç" },
+        ],
+      );
+      return;
+    }
+
+    case "description_text": {
+      await updateSession(ctx.userId, "finalize_ready", { description: text });
       await finalizeProperty(ctx);
       return;
     }
@@ -487,10 +463,193 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   }
 
   if (field === "balcony") {
-    await updateSession(ctx.userId, "description", { balcony: value === "evet" });
-    await sendText(ctx.phone,
-      "📝 Açıklama yazın:\n\nMülkü tanımlayan detaylı metin.\n\n(\"geç\" ile atlayın)"
-    );
+    await updateSession(ctx.userId, "int_features_select", { balcony: value === "evet" });
+    // Start feature selection chain
+    await sendList(ctx.phone, "🏷 İç özellik seçin:\n\nBirden fazla seçebilirsiniz — her seçimden sonra soracağım.", "Özellik Seç", [
+      { title: "İç Özellikler", rows: [
+        { id: "mulkekle:intfeat:ankastre", title: "Ankastre Mutfak" },
+        { id: "mulkekle:intfeat:jakuzi", title: "Jakuzi" },
+        { id: "mulkekle:intfeat:klima", title: "Klima" },
+        { id: "mulkekle:intfeat:giyinme", title: "Giyinme Odası" },
+        { id: "mulkekle:intfeat:ebeveyn", title: "Ebeveyn Banyosu" },
+        { id: "mulkekle:intfeat:vestiyer", title: "Vestiyer" },
+        { id: "mulkekle:intfeat:beyaz", title: "Beyaz Eşya" },
+        { id: "mulkekle:intfeat:bitmis", title: "✅ Seçimi Bitir" },
+      ]},
+    ]);
+    return;
+  }
+
+  // ═══ İÇ ÖZELLİKLER (tekrarlı seçim) ═══
+
+  if (field === "intfeat") {
+    const labels: Record<string, string> = {
+      ankastre: "Ankastre Mutfak", jakuzi: "Jakuzi", klima: "Klima",
+      giyinme: "Giyinme Odası", ebeveyn: "Ebeveyn Banyosu",
+      vestiyer: "Vestiyer", beyaz: "Beyaz Eşya",
+    };
+    if (value === "menu") {
+      await sendList(ctx.phone, "🏷 İç özellik seçin:", "Özellik Seç", [
+        { title: "İç Özellikler", rows: [
+          { id: "mulkekle:intfeat:ankastre", title: "Ankastre Mutfak" },
+          { id: "mulkekle:intfeat:jakuzi", title: "Jakuzi" },
+          { id: "mulkekle:intfeat:klima", title: "Klima" },
+          { id: "mulkekle:intfeat:giyinme", title: "Giyinme Odası" },
+          { id: "mulkekle:intfeat:ebeveyn", title: "Ebeveyn Banyosu" },
+          { id: "mulkekle:intfeat:vestiyer", title: "Vestiyer" },
+          { id: "mulkekle:intfeat:beyaz", title: "Beyaz Eşya" },
+          { id: "mulkekle:intfeat:bitmis", title: "✅ Seçimi Bitir" },
+        ]},
+      ]);
+      return;
+    }
+    if (value === "bitmis") {
+      // Move to dış özellikler
+      await updateSession(ctx.userId, "ext_features_select", {});
+      await sendList(ctx.phone, "🌿 Dış özellik seçin:", "Özellik Seç", [
+        { title: "Dış Özellikler", rows: [
+          { id: "mulkekle:extfeat:havuz", title: "Yüzme Havuzu" },
+          { id: "mulkekle:extfeat:bahce", title: "Bahçe" },
+          { id: "mulkekle:extfeat:guvenlik", title: "Güvenlik" },
+          { id: "mulkekle:extfeat:otopark_alani", title: "Otopark Alanı" },
+          { id: "mulkekle:extfeat:tenis", title: "Tenis Kortu" },
+          { id: "mulkekle:extfeat:cocuk", title: "Çocuk Parkı" },
+          { id: "mulkekle:extfeat:jenerator", title: "Jeneratör" },
+          { id: "mulkekle:extfeat:bitmis", title: "✅ Seçimi Bitir" },
+        ]},
+      ]);
+    } else {
+      // Add to list
+      const sess = await getSession(ctx.userId);
+      const existing = ((sess?.data as Record<string, unknown>)?.interior_features as string) || "";
+      const added = existing ? `${existing}, ${labels[value] || value}` : (labels[value] || value);
+      await updateSession(ctx.userId, "int_features_select", { interior_features: added });
+      await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi.\n\nBaşka özellik eklemek ister misiniz?`, [
+        { id: "mulkekle:intfeat:bitmis", title: "Bitir" },
+        { id: "mulkekle:intfeat:menu", title: "➕ Başka Ekle" },
+      ]);
+    }
+    return;
+  }
+
+  // ═══ DIŞ ÖZELLİKLER (tekrarlı seçim) ═══
+
+  if (field === "extfeat") {
+    const labels: Record<string, string> = {
+      havuz: "Yüzme Havuzu", bahce: "Bahçe", guvenlik: "Güvenlik",
+      otopark_alani: "Otopark Alanı", tenis: "Tenis Kortu",
+      cocuk: "Çocuk Parkı", jenerator: "Jeneratör",
+    };
+    if (value === "menu") {
+      await sendList(ctx.phone, "🌿 Dış özellik seçin:", "Özellik Seç", [
+        { title: "Dış Özellikler", rows: [
+          { id: "mulkekle:extfeat:havuz", title: "Yüzme Havuzu" },
+          { id: "mulkekle:extfeat:bahce", title: "Bahçe" },
+          { id: "mulkekle:extfeat:guvenlik", title: "Güvenlik" },
+          { id: "mulkekle:extfeat:otopark_alani", title: "Otopark Alanı" },
+          { id: "mulkekle:extfeat:tenis", title: "Tenis Kortu" },
+          { id: "mulkekle:extfeat:cocuk", title: "Çocuk Parkı" },
+          { id: "mulkekle:extfeat:jenerator", title: "Jeneratör" },
+          { id: "mulkekle:extfeat:bitmis", title: "✅ Seçimi Bitir" },
+        ]},
+      ]);
+      return;
+    }
+    if (value === "bitmis") {
+      // Move to manzara
+      await updateSession(ctx.userId, "view_select", {});
+      await sendList(ctx.phone, "🏔 Manzara seçin:", "Manzara Seç", [
+        { title: "Manzara", rows: [
+          { id: "mulkekle:viewfeat:deniz", title: "Deniz" },
+          { id: "mulkekle:viewfeat:doga", title: "Doğa" },
+          { id: "mulkekle:viewfeat:gol", title: "Göl" },
+          { id: "mulkekle:viewfeat:sehir", title: "Şehir" },
+          { id: "mulkekle:viewfeat:havuz_m", title: "Havuz" },
+          { id: "mulkekle:viewfeat:dag", title: "Dağ" },
+          { id: "mulkekle:viewfeat:bitmis", title: "✅ Seçimi Bitir" },
+        ]},
+      ]);
+    } else {
+      const sess = await getSession(ctx.userId);
+      const existing = ((sess?.data as Record<string, unknown>)?.exterior_features as string) || "";
+      const added = existing ? `${existing}, ${labels[value] || value}` : (labels[value] || value);
+      await updateSession(ctx.userId, "ext_features_select", { exterior_features: added });
+      await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi. Başka?`, [
+        { id: "mulkekle:extfeat:bitmis", title: "Bitir" },
+        { id: "mulkekle:extfeat:menu", title: "➕ Başka Ekle" },
+      ]);
+    }
+    return;
+  }
+
+  // ═══ MANZARA (tekrarlı seçim) ═══
+
+  if (field === "viewfeat") {
+    const labels: Record<string, string> = {
+      deniz: "Deniz", doga: "Doğa", gol: "Göl", sehir: "Şehir",
+      havuz_m: "Havuz", dag: "Dağ",
+    };
+    if (value === "menu") {
+      await sendList(ctx.phone, "🏔 Manzara seçin:", "Manzara Seç", [
+        { title: "Manzara", rows: [
+          { id: "mulkekle:viewfeat:deniz", title: "Deniz" },
+          { id: "mulkekle:viewfeat:doga", title: "Doğa" },
+          { id: "mulkekle:viewfeat:gol", title: "Göl" },
+          { id: "mulkekle:viewfeat:sehir", title: "Şehir" },
+          { id: "mulkekle:viewfeat:havuz_m", title: "Havuz" },
+          { id: "mulkekle:viewfeat:dag", title: "Dağ" },
+          { id: "mulkekle:viewfeat:bitmis", title: "✅ Seçimi Bitir" },
+        ]},
+      ]);
+      return;
+    }
+    if (value === "bitmis") {
+      // Move to ulaşım (text — simple)
+      await updateSession(ctx.userId, "transport_input", {});
+      await sendText(ctx.phone, "🚌 Ulaşım bilgisi yazın:\n\nÖrnek: Metro 500m, Otobüs 200m\n\n(\"geç\" ile atlayın)");
+    } else {
+      const sess = await getSession(ctx.userId);
+      const existing = ((sess?.data as Record<string, unknown>)?.view_features as string) || "";
+      const added = existing ? `${existing}, ${labels[value] || value}` : (labels[value] || value);
+      await updateSession(ctx.userId, "view_select", { view_features: added });
+      await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi. Başka?`, [
+        { id: "mulkekle:viewfeat:bitmis", title: "Bitir" },
+        { id: "mulkekle:viewfeat:menu", title: "➕ Başka Ekle" },
+      ]);
+    }
+    return;
+  }
+
+  // ═══ AÇIKLAMA (AI / Manuel / Geç) ═══
+
+  if (field === "desc_choice") {
+    if (value === "ai") {
+      // Generate AI description from all collected data
+      const sess = await getSession(ctx.userId);
+      const d = (sess?.data as Record<string, unknown>) || {};
+      try {
+        const { generatePropertyDescription } = await import("@/platform/ai/claude");
+        const aiDesc = await generatePropertyDescription(d);
+        await updateSession(ctx.userId, "finalize_ready", { description: aiDesc, ai_description: aiDesc });
+        await sendButtons(ctx.phone,
+          `🤖 *AI Açıklama:*\n\n${aiDesc.substring(0, 800)}\n\n${aiDesc.length > 800 ? "..." : ""}`,
+          [
+            { id: "mulkekle:finalize:ok", title: "✅ Kullan ve Kaydet" },
+            { id: "mulkekle:desc_choice:manual", title: "✍️ Kendim Yazayım" },
+          ],
+        );
+      } catch {
+        await sendText(ctx.phone, "AI açıklama oluşturulamadı. Kendiniz yazın veya geçin.");
+        await updateSession(ctx.userId, "description_text", {});
+      }
+    } else if (value === "manual") {
+      await updateSession(ctx.userId, "description_text", {});
+      await sendText(ctx.phone, "📝 İlan açıklamasını yazın:");
+    } else {
+      // skip
+      await updateSession(ctx.userId, "finalize_ready", {});
+      await finalizeProperty(ctx);
+    }
     return;
   }
 
