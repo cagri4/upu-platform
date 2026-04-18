@@ -53,6 +53,7 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
     `• Müşterinize 2 dakikada profesyonel sunum hazırlar, tek link ile gönderirim.\n` +
     `• Müşterinize gösterebileceğiniz, tüm portföyünüzün yer aldığı profesyonel bir web sayfası yaparım.\n` +
     `• Rakiplerinizden önce yeni fırsatları yakalarım — her sabah bölgenizdeki yeni ilanları otomatik raporlarım.\n` +
+    `• *Portföyünüzü büyütürüm* — sahibinden ilanlarının sahiplerini bulup, hazır AI mesajıyla tek tık iletişim kurmanızı sağlarım.\n` +
     `• İlan açıklamalarınızı AI ile yazar, dikkat çeken satış odaklı metinler oluştururum.\n` +
     `• Hiçbir müşterinizi unutmam — ne zaman aramanız gerektiğini takip eder, size hatırlatırım.\n` +
     `• Sahibinden.com'a ilan yüklemenizi 30 dakikadan 3 dakikaya indiririm.\n` +

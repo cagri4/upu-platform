@@ -24,6 +24,7 @@ const STEP_TRIGGERS: Record<string, DiscoveryStep> = {
   mulk_eklendi: 1,
   sunum_hazir: 2,
   tarama_kuruldu: 3,
+  portfoy_tanitildi: 4,
 };
 
 // ── State helpers ────────────────────────────────────────────────────
@@ -61,7 +62,7 @@ export async function advanceDiscovery(
   const currentStep = await getDiscoveryStep(userId);
 
   // Already completed chain or not at a step that matches this event
-  if (currentStep >= 3) return false;
+  if (currentStep >= 4) return false;
 
   const targetStep = STEP_TRIGGERS[eventName];
   if (targetStep === undefined) return false;
@@ -94,10 +95,21 @@ export async function advanceDiscovery(
       return true;
 
     case 3:
-      // Tarama done → chain complete
+      // Tarama done → introduce portfolio growth feature (WOW)
+      await sendButtons(phone,
+        `📡 *Taraman hazır!*\n\n` +
+        `Her sabah bölgendeki yeni ilanları raporlayacağım.\n\n` +
+        `*Ve dahası:* sabah raporunda *sahibinden olan ilanların sahiplerini* de göstereceğim. Bir ilana ilgilendiğini söylersen, sahibini bulup sana hazır bir AI mesaj taslağıyla tek tık iletişim fırsatı sunacağım.\n\n` +
+        `Portföyünü büyütmek artık günde 5 dakikalık bir iş.`,
+        [{ id: "disc:portfoy_ok", title: "🚀 Anladım" }],
+      );
+      return true;
+
+    case 4:
+      // Portfoy büyütme tanıtıldı → chain complete
       await sendText(phone,
         `🚀 *Harikasın!*\n\n` +
-        `İlk mülkünü ekledin, sunum hazırladın ve piyasa taramanı kurdun.\n\n` +
+        `İlk mülkünü ekledin, sunum hazırladın, piyasa taramanı kurdun ve portföy büyütme özelliğini öğrendin.\n\n` +
         `Artık her sabah sana yeni fırsatlar gelecek. İstediğin zaman *"menü"* yazarak tüm komutlara ulaşabilirsin.\n\n` +
         `💡 Yeni ipuçları için *"ipucu"* yaz.`,
       );

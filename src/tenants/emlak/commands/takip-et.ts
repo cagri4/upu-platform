@@ -10,6 +10,7 @@ import { startSession, updateSession, endSession } from "@/platform/whatsapp/ses
 import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
+import { askClaude } from "@/platform/ai/claude";
 
 // ── m² aralık seçenekleri ──────────────────────────────────────────
 
@@ -177,6 +178,27 @@ export async function handleTakipEtCallback(ctx: WaContext, data: string): Promi
     await updateSession(ctx.userId, "search", { listed_by: value === "hepsi" ? null : value });
 
     await runSearchAndShowResults(ctx);
+    return;
+  }
+
+  // Portföy büyütme: "İlgilen" seçim listesi
+  if (data.startsWith("tkp:contact:")) {
+    const criteriaId = data.replace("tkp:contact:", "");
+    await showContactPicker(ctx, criteriaId);
+    return;
+  }
+
+  // Portföy büyütme: bir ilanı seç → iletişim bilgisi + AI mesaj
+  if (data.startsWith("tkp:pick:")) {
+    const propertyId = data.replace("tkp:pick:", "");
+    await sendContactDetails(ctx, propertyId);
+    return;
+  }
+
+  // Portföy büyütme: "Aradım/yazdım" → 3 gün hatırlatma
+  if (data.startsWith("tkp:done:")) {
+    const propertyId = data.replace("tkp:done:", "");
+    await markContacted(ctx, propertyId);
     return;
   }
 }
@@ -385,7 +407,7 @@ export async function sendTrackingNotifications(): Promise<number> {
       // Build query for new listings (last 24h)
       let query = supabase
         .from("emlak_properties")
-        .select("title, price, area, rooms, location_neighborhood, source_url, listed_by")
+        .select("id, title, price, area, rooms, location_neighborhood, source_url, listed_by, owner_phone")
         .eq("status", "aktif")
         .gte("created_at", yesterday)
         .gt("price", 0);
@@ -418,7 +440,8 @@ export async function sendTrackingNotifications(): Promise<number> {
       const ptLabel = cr.property_type && cr.property_type !== "hepsi" ? ` ${cr.property_type}` : "";
       const header = `${ltLabel}${ptLabel} — ${cr.location || "Tüm bölgeler"}`;
 
-      let msg = `🔔 *Yeni İlanlar — Sabah Takibi*\n\n📋 ${header}\n${results.length} yeni ilan:\n\n`;
+      const withPhone = results.filter(r => r.listed_by === "sahibi" && r.owner_phone).length;
+      let msg = `🔔 *Yeni İlanlar — Sabah Takibi*\n\n📋 ${header}\n${results.length} yeni ilan${withPhone > 0 ? ` (${withPhone} tanesinin sahibi telefonu hazır 📞)` : ""}:\n\n`;
 
       for (const [i, r] of results.entries()) {
         msg += `${i + 1}. ${r.title || "İlan"}\n`;
@@ -429,15 +452,23 @@ export async function sendTrackingNotifications(): Promise<number> {
         if (details.length) msg += `   ${details.join(" — ")}\n`;
         const kimden = r.listed_by === "sahibi" ? "sahibinden" : r.listed_by === "emlakci" ? "emlak ofisi" : "";
         if (r.location_neighborhood || kimden) msg += `   📍 ${[r.location_neighborhood, kimden].filter(Boolean).join(" · ")}\n`;
+        if (r.listed_by === "sahibi" && r.owner_phone) msg += `   📞 Sahibi telefonu hazır\n`;
         if (r.source_url) msg += `   ${r.source_url}\n`;
         msg += "\n";
       }
 
       const { sendButtons: sendBtn } = await import("@/platform/whatsapp/send");
-      await sendBtn(phone, msg, [
-        { id: `tkp:continue:${c.id}`, title: "✅ Devam" },
-        { id: `tkp:stop:${c.id}`, title: "🛑 Durdur" },
-      ]);
+      const buttons = withPhone > 0
+        ? [
+            { id: `tkp:contact:${c.id}`, title: "📞 İlgilen" },
+            { id: `tkp:continue:${c.id}`, title: "✅ Devam" },
+            { id: `tkp:stop:${c.id}`, title: "🛑 Durdur" },
+          ]
+        : [
+            { id: `tkp:continue:${c.id}`, title: "✅ Devam" },
+            { id: `tkp:stop:${c.id}`, title: "🛑 Durdur" },
+          ];
+      await sendBtn(phone, msg, buttons);
       sent++;
     } catch (err) {
       console.error(`[takip:notify] Error for criteria ${c.id}:`, err);
@@ -445,4 +476,172 @@ export async function sendTrackingNotifications(): Promise<number> {
   }
 
   return sent;
+}
+
+// ── Portföy Büyütme: iletişim akışı ────────────────────────────────
+
+async function showContactPicker(ctx: WaContext, criteriaId: string): Promise<void> {
+  const supabase = getServiceClient();
+  const { data: crit } = await supabase
+    .from("emlak_monitoring_criteria")
+    .select("criteria")
+    .eq("id", criteriaId)
+    .eq("user_id", ctx.userId)
+    .maybeSingle();
+
+  if (!crit) {
+    await sendText(ctx.phone, "Takip kaydı bulunamadı.");
+    return;
+  }
+
+  const cr = crit.criteria as Record<string, unknown>;
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  let q = supabase
+    .from("emlak_properties")
+    .select("id, title, price, area, rooms, location_neighborhood, owner_phone")
+    .eq("status", "aktif")
+    .eq("listed_by", "sahibi")
+    .not("owner_phone", "is", null)
+    .neq("owner_phone", "")
+    .gte("created_at", yesterday)
+    .gt("price", 0);
+
+  if (cr.listing_type && cr.listing_type !== "hepsi") q = q.eq("listing_type", cr.listing_type as string);
+  if (cr.property_type && cr.property_type !== "hepsi") q = q.eq("type", cr.property_type as string);
+  if (cr.location) {
+    const loc = cr.location as string;
+    q = q.or(`location_neighborhood.ilike.%${loc}%,location_district.ilike.%${loc}%`);
+  }
+  if (cr.m2_min && (cr.m2_min as number) > 0) q = q.gte("area", cr.m2_min as number);
+  if (cr.m2_max && (cr.m2_max as number) < 9999) q = q.lte("area", cr.m2_max as number);
+
+  const { data: items } = await q.order("created_at", { ascending: false }).limit(10);
+
+  if (!items || items.length === 0) {
+    await sendText(ctx.phone, "Telefonu hazır sahibi ilanı bulunamadı. Sabah enrichment henüz çalışmamış olabilir.");
+    return;
+  }
+
+  const rows = items.map((r, i) => {
+    const priceStr = r.price ? `${fmt(r.price)} TL` : "";
+    const areaStr = r.area ? ` · ${r.area}m²` : "";
+    const title = `${i + 1}. ${(r.title || "İlan").slice(0, 22)}`;
+    const desc = `${r.location_neighborhood || ""}${areaStr} · ${priceStr}`.slice(0, 70);
+    return { id: `tkp:pick:${r.id}`, title: title.slice(0, 24), description: desc };
+  });
+
+  await sendList(
+    ctx.phone,
+    "📞 *Portföy Büyütme*\n\nHangi ilanın sahibiyle iletişime geçeceksin? Telefon + hazır mesaj gelir.",
+    "İlan Seç",
+    [{ title: "Hazır İlanlar", rows }],
+  );
+}
+
+async function sendContactDetails(ctx: WaContext, propertyId: string): Promise<void> {
+  const supabase = getServiceClient();
+  const { data: p } = await supabase
+    .from("emlak_properties")
+    .select("title, price, area, rooms, location_neighborhood, location_district, type, listing_type, owner_phone, owner_name, source_url")
+    .eq("id", propertyId)
+    .maybeSingle();
+
+  if (!p || !p.owner_phone) {
+    await sendText(ctx.phone, "Bu ilanın iletişim bilgisi yok.");
+    return;
+  }
+
+  // Agent name for the pitch (from profile)
+  const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", ctx.userId).maybeSingle();
+  const agentName = profile?.display_name || "Emlakçınız";
+
+  // AI pitch message
+  const neighborhood = p.location_neighborhood || p.location_district || "";
+  const propertyDesc = `${p.listing_type === "satilik" ? "satılık" : "kiralık"} ${p.type || "mülk"}${p.rooms ? ` ${p.rooms}` : ""}${p.area ? ` ${p.area}m²` : ""}${neighborhood ? ` (${neighborhood})` : ""}`;
+
+  let pitch = await askClaude(
+    "Sen bir emlak danışmanısın. Kullanıcının (emlakçı) bir sahibinden ilanının sahibine atacağı WhatsApp mesajını yazacaksın. " +
+    "Amaç: mülk sahibini ikna edip ilanı emlakçının portföyüne almak. Çok kısa tut (3 cümleyi aşma), samimi ve profesyonel. " +
+    "Emojileri minimumda tut. Sadece mesaj metnini döndür, başka açıklama yazma.",
+    `Emlakçının adı: ${agentName}\nİlan: ${propertyDesc}\nBaşlık: ${p.title || ""}\n\nTek bir WhatsApp mesajı yaz.`,
+    400,
+  );
+
+  if (!pitch || pitch.trim().length < 10) {
+    pitch = `Merhaba, ben ${agentName}. ${neighborhood ? `${neighborhood}'daki ` : ""}${propertyDesc} ilanınızı gördüm. İlanınızı portföyüme alıp sizin için alıcı bulmak isterim. Müsait olduğunuzda görüşebilir miyiz?`;
+  }
+
+  // Normalize phone to international format for wa.me: drop non-digits, prepend 90 if starts with 0/5
+  const digits = p.owner_phone.replace(/\D/g, "");
+  let waPhone = digits;
+  if (digits.startsWith("0")) waPhone = "9" + digits; // 0XXXXXXXXXX → 90XXXXXXXXXX
+  else if (digits.startsWith("5") && digits.length === 10) waPhone = "90" + digits;
+  else if (digits.startsWith("90")) waPhone = digits;
+
+  const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent(pitch)}`;
+  const telLink = `tel:+${waPhone}`;
+
+  const infoMsg =
+    `📞 *İletişim Hazır*\n\n` +
+    `🏠 ${p.title || "İlan"}\n` +
+    `📍 ${neighborhood}\n\n` +
+    `*Sahibi:* ${p.owner_name || "—"}\n` +
+    `*Telefon:* ${p.owner_phone}\n\n` +
+    `*Hazır mesaj:*\n${pitch}\n\n` +
+    `📱 WhatsApp: ${waLink}\n` +
+    `☎️ Ara: ${telLink}${p.source_url ? `\n🔗 İlan: ${p.source_url}` : ""}`;
+
+  await sendText(ctx.phone, infoMsg);
+
+  await sendButtons(ctx.phone, "Aradın/mesaj attın mı? 3 gün sonra hatırlatayım.", [
+    { id: `tkp:done:${propertyId}`, title: "✅ Aradım/yazdım" },
+    { id: "cmd:menu", title: "Vazgeç" },
+  ]);
+
+  // Log the contact attempt
+  try {
+    await supabase.from("emlak_contact_actions").insert({
+      user_id: ctx.userId,
+      tenant_id: ctx.tenantId,
+      property_id: propertyId,
+      action_type: "contact_viewed",
+    });
+  } catch { /* non-critical */ }
+}
+
+async function markContacted(ctx: WaContext, propertyId: string): Promise<void> {
+  const supabase = getServiceClient();
+  const { data: p } = await supabase
+    .from("emlak_properties")
+    .select("title, location_neighborhood, owner_phone, owner_name")
+    .eq("id", propertyId)
+    .maybeSingle();
+
+  if (!p) {
+    await sendText(ctx.phone, "İlan bulunamadı.");
+    return;
+  }
+
+  const remindAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+  const label = [p.title?.slice(0, 50), p.location_neighborhood].filter(Boolean).join(" — ");
+  const message = `Portföy takibi: "${label}" sahibini (${p.owner_name || p.owner_phone || "mülk sahibi"}) 3 gün önce aramıştın. Ulaştın mı? Gerekirse tekrar ara.`;
+
+  await supabase.from("reminders").insert({
+    tenant_id: ctx.tenantId,
+    user_id: ctx.userId,
+    topic: "portfoy_buyutme",
+    message,
+    due_at: remindAt.toISOString(),
+    sent: false,
+  });
+
+  await supabase.from("emlak_contact_actions").insert({
+    user_id: ctx.userId,
+    tenant_id: ctx.tenantId,
+    property_id: propertyId,
+    action_type: "contacted",
+  });
+
+  await sendText(ctx.phone, `✅ Kaydedildi. ${remindAt.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" })} günü hatırlatma geleceğim.`);
 }

@@ -294,6 +294,16 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       return;
     }
 
+    // Discovery chain callbacks (platform-level)
+    if (ctx.interactiveId.startsWith("disc:")) {
+      const action = ctx.interactiveId.replace("disc:", "");
+      if (action === "portfoy_ok") {
+        const { advanceDiscovery } = await import("./discovery-chain");
+        await advanceDiscovery(ctx.userId, ctx.phone, "portfoy_tanitildi");
+      }
+      return;
+    }
+
     // Tenant-specific callbacks
     for (const [prefix, handler] of Object.entries(registry.callbackPrefixes)) {
       if (ctx.interactiveId.startsWith(prefix)) {
