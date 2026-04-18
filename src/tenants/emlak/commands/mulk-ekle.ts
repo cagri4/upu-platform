@@ -172,44 +172,38 @@ const TRANSPORT_ITEMS: { id: string; label: string }[] = [
   { id: "tren", label: "Tren İstasyonu" },
 ];
 
+const FEATURE_PAGE_SIZE = 8;
+
 /**
- * Build sections from a feature list, splitting into multiple sections if >10 items.
- * Each section gets a "Seçimi Bitir" row appended.
+ * Build a single-page section for a feature list.
+ * WhatsApp list limit = 10 rows total. Page = up to 8 items + "Sonraki" + "Bitir".
  */
 function buildFeatureSections(
   items: { id: string; label: string }[],
   callbackPrefix: string,
   sectionTitle: string,
+  page = 0,
 ): { title: string; rows: { id: string; title: string }[] }[] {
-  const finishRow = { id: `${callbackPrefix}:bitmis`, title: "Seçimi Bitir" };
-  if (items.length <= 9) {
-    return [{
-      title: sectionTitle,
-      rows: [
-        ...items.map((i) => ({ id: `${callbackPrefix}:${i.id}`, title: i.label })),
-        finishRow,
-      ],
-    }];
+  const totalPages = Math.max(1, Math.ceil(items.length / FEATURE_PAGE_SIZE));
+  const p = Math.min(Math.max(0, page), totalPages - 1);
+  const start = p * FEATURE_PAGE_SIZE;
+  const chunk = items.slice(start, start + FEATURE_PAGE_SIZE);
+
+  const rows: { id: string; title: string }[] = chunk.map((i) => ({
+    id: `${callbackPrefix}:${i.id}`,
+    title: i.label,
+  }));
+
+  if (p + 1 < totalPages) {
+    rows.push({ id: `${callbackPrefix}:sayfa:${p + 1}`, title: "➡️ Sonraki Sayfa" });
   }
-  // Split alphabetically into sections of max 9 (+ finish row = 10)
-  const sections: { title: string; rows: { id: string; title: string }[] }[] = [];
-  const chunkSize = 9;
-  for (let i = 0; i < items.length; i += chunkSize) {
-    const chunk = items.slice(i, i + chunkSize);
-    const first = chunk[0].label[0].toUpperCase();
-    const last = chunk[chunk.length - 1].label[0].toUpperCase();
-    const sTitle = items.length <= chunkSize
-      ? sectionTitle
-      : `${sectionTitle} ${first}-${last}`;
-    sections.push({
-      title: sTitle,
-      rows: [
-        ...chunk.map((it) => ({ id: `${callbackPrefix}:${it.id}`, title: it.label })),
-        finishRow,
-      ],
-    });
+  if (p > 0) {
+    rows.push({ id: `${callbackPrefix}:sayfa:${p - 1}`, title: "⬅️ Önceki Sayfa" });
   }
-  return sections;
+  rows.push({ id: `${callbackPrefix}:bitmis`, title: "✅ Seçimi Bitir" });
+
+  const title = totalPages > 1 ? `${sectionTitle} (${p + 1}/${totalPages})` : sectionTitle;
+  return [{ title, rows }];
 }
 
 /** Build label lookup from feature items */
@@ -354,6 +348,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   const parts = data.split(":");
   if (parts.length < 3) return;
   const [, field, value] = parts;
+  const pageArg = value === "sayfa" ? parseInt(parts[3] ?? "0", 10) || 0 : 0;
 
   // ═══ AŞAMA 1 ═══
 
@@ -670,6 +665,11 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "intfeat") {
     const labels = buildLabels(INTFEAT_ITEMS);
+    if (value === "sayfa") {
+      const sections = buildFeatureSections(INTFEAT_ITEMS, "mulkekle:intfeat", "İç Özellikler", pageArg);
+      await sendList(ctx.phone, "🏷 İç özellik seçin:", "Özellik Seç", sections);
+      return;
+    }
     if (value === "menu") {
       const sections = buildFeatureSections(INTFEAT_ITEMS, "mulkekle:intfeat", "İç Özellikler");
       await sendList(ctx.phone, "🏷 İç özellik seçin:", "Özellik Seç", sections);
@@ -698,6 +698,11 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "extfeat") {
     const labels = buildLabels(EXTFEAT_ITEMS);
+    if (value === "sayfa") {
+      const sections = buildFeatureSections(EXTFEAT_ITEMS, "mulkekle:extfeat", "Dış Özellikler", pageArg);
+      await sendList(ctx.phone, "🌿 Dış özellik seçin:", "Özellik Seç", sections);
+      return;
+    }
     if (value === "menu") {
       const sections = buildFeatureSections(EXTFEAT_ITEMS, "mulkekle:extfeat", "Dış Özellikler");
       await sendList(ctx.phone, "🌿 Dış özellik seçin:", "Özellik Seç", sections);
@@ -725,6 +730,11 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "viewfeat") {
     const labels = buildLabels(VIEWFEAT_ITEMS);
+    if (value === "sayfa") {
+      const sections = buildFeatureSections(VIEWFEAT_ITEMS, "mulkekle:viewfeat", "Manzara", pageArg);
+      await sendList(ctx.phone, "🏔 Manzara seçin:", "Manzara Seç", sections);
+      return;
+    }
     if (value === "menu") {
       const sections = buildFeatureSections(VIEWFEAT_ITEMS, "mulkekle:viewfeat", "Manzara");
       await sendList(ctx.phone, "🏔 Manzara seçin:", "Manzara Seç", sections);
@@ -752,6 +762,11 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "muhit") {
     const labels = buildLabels(MUHIT_ITEMS);
+    if (value === "sayfa") {
+      const sections = buildFeatureSections(MUHIT_ITEMS, "mulkekle:muhit", "Muhit", pageArg);
+      await sendList(ctx.phone, "📍 Muhit / Çevre seçin:", "Muhit Seç", sections);
+      return;
+    }
     if (value === "menu") {
       const sections = buildFeatureSections(MUHIT_ITEMS, "mulkekle:muhit", "Muhit");
       await sendList(ctx.phone, "📍 Muhit / Çevre seçin:", "Muhit Seç", sections);
@@ -779,6 +794,11 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "engelli") {
     const labels = buildLabels(ENGELLI_ITEMS);
+    if (value === "sayfa") {
+      const sections = buildFeatureSections(ENGELLI_ITEMS, "mulkekle:engelli", "Engelliye Uygun", pageArg);
+      await sendList(ctx.phone, "♿ Engelliye uygun özellik seçin:", "Engelli Seç", sections);
+      return;
+    }
     if (value === "menu") {
       const sections = buildFeatureSections(ENGELLI_ITEMS, "mulkekle:engelli", "Engelliye Uygun");
       await sendList(ctx.phone, "♿ Engelliye uygun özellik seçin:", "Engelli Seç", sections);
@@ -806,6 +826,11 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "transport") {
     const labels = buildLabels(TRANSPORT_ITEMS);
+    if (value === "sayfa") {
+      const sections = buildFeatureSections(TRANSPORT_ITEMS, "mulkekle:transport", "Ulaşım", pageArg);
+      await sendList(ctx.phone, "🚌 Ulaşım seçin:", "Ulaşım Seç", sections);
+      return;
+    }
     if (value === "menu") {
       const sections = buildFeatureSections(TRANSPORT_ITEMS, "mulkekle:transport", "Ulaşım");
       await sendList(ctx.phone, "🚌 Ulaşım seçin:", "Ulaşım Seç", sections);
