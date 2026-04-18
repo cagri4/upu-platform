@@ -153,13 +153,14 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
 
     const { data: props, count } = await query.limit(1000);
 
-    // Count yesterday's new listings
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // Count recently listed (by sahibinden listing_date, not our created_at)
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     let newQuery = sb.from("emlak_properties")
       .select("*", { count: "exact", head: true })
       .ilike("location_district", `%${region}%`)
-      .gte("created_at", yesterday);
+      .gte("listing_date", yesterday);
     if (propertyType !== "hepsi") newQuery = newQuery.eq("type", propertyType);
+    if (listingType !== "hepsi") newQuery = newQuery.eq("listing_type", listingType);
     if (listedBy !== "hepsi") newQuery = newQuery.eq("listed_by", listedBy === "sahibi" ? "sahibi" : "emlakci");
     const { count: newCount } = await newQuery;
 
