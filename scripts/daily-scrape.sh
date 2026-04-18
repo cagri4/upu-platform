@@ -105,7 +105,14 @@ if [ "$PART" = "part3" ] || [ "$PART" = "full" ]; then
   " 2>&1)
   echo "$(date '+%Y-%m-%d %H:%M') — 🧹 Cleanup: $CLEANUP_OUT" >> "$LOG_FILE"
 
-  # 5. Tracking notifications
+  # 5. Phone enrichment (portföy büyütme): son 3 gündeki sahibi ilanların
+  # detay sayfasından owner_phone çeker. Tracking-notify ÖNCE çalışır ki
+  # sabah bildirimde telefonlar hazır olsun.
+  ENRICH_OUT=$($NODE scripts/enrich-phones.mjs --days=3 --limit=40 2>&1 | tail -10)
+  echo "$(date '+%Y-%m-%d %H:%M') — 📞 Enrich:" >> "$LOG_FILE"
+  echo "$ENRICH_OUT" | sed 's/^/    /' >> "$LOG_FILE"
+
+  # 6. Tracking notifications
   DEPLOY_URL="${DEPLOY_URL:-https://upu-platform.vercel.app}"
   NOTIFY_OUT=$(curl -s "${DEPLOY_URL}/api/cron/tracking-notify" 2>&1)
   echo "$(date '+%Y-%m-%d %H:%M') — 🔔 Takip bildirimi: $NOTIFY_OUT" >> "$LOG_FILE"
