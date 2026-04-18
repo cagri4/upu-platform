@@ -126,19 +126,7 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
     // description/features now handled via callback-based list selection
     // old text steps removed — see intfeat/extfeat/viewfeat callbacks + desc_choice
 
-    case "transport_input": {
-      const transport = skip ? null : text;
-      await updateSession(ctx.userId, "desc_choice", { transportation: transport });
-      await sendButtons(ctx.phone,
-        "📝 *İlan Açıklaması*\n\nAçıklamayı nasıl eklemek istersiniz?\n\nAI seçerseniz, girdiğiniz tüm bilgileri kullanarak etkileyici bir açıklama yazarım.",
-        [
-          { id: "mulkekle:desc_choice:ai", title: "🤖 AI Yazsın" },
-          { id: "mulkekle:desc_choice:manual", title: "✍️ Kendim Yazayım" },
-          { id: "mulkekle:desc_choice:skip", title: "⏭ Geç" },
-        ],
-      );
-      return;
-    }
+    // transport_input now handled via callback-based list selection (see transport handler)
 
     case "description_text": {
       await updateSession(ctx.userId, "finalize_ready", { description: text });
@@ -604,9 +592,20 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       return;
     }
     if (value === "bitmis") {
-      // Move to ulaşım (text — simple)
-      await updateSession(ctx.userId, "transport_input", {});
-      await sendText(ctx.phone, "🚌 Ulaşım bilgisi yazın:\n\nÖrnek: Metro 500m, Otobüs 200m\n\n(\"geç\" ile atlayın)");
+      // Move to ulaşım (list-based)
+      await updateSession(ctx.userId, "transport_select", {});
+      await sendList(ctx.phone, "🚌 Ulaşım seçin:", "Ulaşım Seç", [
+        { title: "Ulaşım", rows: [
+          { id: "mulkekle:transport:metro", title: "Metro" },
+          { id: "mulkekle:transport:otobus", title: "Otobüs" },
+          { id: "mulkekle:transport:minibus", title: "Minibüs / Dolmuş" },
+          { id: "mulkekle:transport:tramvay", title: "Tramvay" },
+          { id: "mulkekle:transport:deniz", title: "Deniz Ulaşımı" },
+          { id: "mulkekle:transport:anayol", title: "Anayola Yakın" },
+          { id: "mulkekle:transport:havaalani", title: "Havaalanı Yakın" },
+          { id: "mulkekle:transport:bitmis", title: "✅ Seçimi Bitir" },
+        ]},
+      ]);
     } else {
       const sess = await getSession(ctx.userId);
       const existing = ((sess?.data as Record<string, unknown>)?.view_features as string) || "";
@@ -615,6 +614,53 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi. Başka?`, [
         { id: "mulkekle:viewfeat:bitmis", title: "Bitir" },
         { id: "mulkekle:viewfeat:menu", title: "➕ Başka Ekle" },
+      ]);
+    }
+    return;
+  }
+
+  // ═══ ULAŞIM (tekrarlı seçim) ═══
+
+  if (field === "transport") {
+    const labels: Record<string, string> = {
+      metro: "Metro", otobus: "Otobüs", minibus: "Minibüs / Dolmuş",
+      tramvay: "Tramvay", deniz: "Deniz Ulaşımı",
+      anayol: "Anayola Yakın", havaalani: "Havaalanı Yakın",
+    };
+    if (value === "menu") {
+      await sendList(ctx.phone, "🚌 Ulaşım seçin:", "Ulaşım Seç", [
+        { title: "Ulaşım", rows: [
+          { id: "mulkekle:transport:metro", title: "Metro" },
+          { id: "mulkekle:transport:otobus", title: "Otobüs" },
+          { id: "mulkekle:transport:minibus", title: "Minibüs / Dolmuş" },
+          { id: "mulkekle:transport:tramvay", title: "Tramvay" },
+          { id: "mulkekle:transport:deniz", title: "Deniz Ulaşımı" },
+          { id: "mulkekle:transport:anayol", title: "Anayola Yakın" },
+          { id: "mulkekle:transport:havaalani", title: "Havaalanı Yakın" },
+          { id: "mulkekle:transport:bitmis", title: "✅ Seçimi Bitir" },
+        ]},
+      ]);
+      return;
+    }
+    if (value === "bitmis") {
+      // Move to açıklama
+      await updateSession(ctx.userId, "desc_choice", {});
+      await sendButtons(ctx.phone,
+        "📝 *İlan Açıklaması*\n\nAçıklamayı nasıl eklemek istersiniz?\n\nAI seçerseniz, girdiğiniz tüm bilgileri kullanarak etkileyici bir açıklama yazarım.",
+        [
+          { id: "mulkekle:desc_choice:ai", title: "🤖 AI Yazsın" },
+          { id: "mulkekle:desc_choice:manual", title: "✍️ Kendim Yazayım" },
+          { id: "mulkekle:desc_choice:skip", title: "⏭ Geç" },
+        ],
+      );
+    } else {
+      const sess = await getSession(ctx.userId);
+      const existing = ((sess?.data as Record<string, unknown>)?.transportation as string) || "";
+      const added = existing ? `${existing}, ${labels[value] || value}` : (labels[value] || value);
+      await updateSession(ctx.userId, "transport_select", { transportation: added });
+      await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi. Başka?`, [
+        { id: "mulkekle:transport:bitmis", title: "Bitir" },
+        { id: "mulkekle:transport:menu", title: "➕ Başka Ekle" },
       ]);
     }
     return;
