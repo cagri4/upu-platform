@@ -217,7 +217,9 @@ function buildLabels(items: { id: string; label: string }[]): Record<string, str
 
 export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
   await sendButtons(ctx.phone,
-    "🏠 *Mülk Ekle*\n\nNasıl eklemek istersiniz?",
+    "🏠 *Mülk Ekle*\n\nNasıl eklemek istersiniz?\n\n" +
+    "💡 _Manuel eklemeyi seçerseniz, sabırla mümkün olduğunca fazla özellik bilgisi vermenizi tavsiye ederim. " +
+    "Böylelikle hem daha ayrıntılı bir sunum oluşturabilirim, hem de mülkü daha sonra sahibinden.com'a tek tıkla bütün özellikleriyle ilan edebilirsiniz._",
     [
       { id: "mulkekle_method:link", title: "🔗 Sahibinden linki" },
       { id: "mulkekle_method:detayli", title: "📝 Manuel ekle" },
