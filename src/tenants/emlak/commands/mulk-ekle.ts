@@ -172,11 +172,11 @@ const TRANSPORT_ITEMS: { id: string; label: string }[] = [
   { id: "tren", label: "Tren İstasyonu" },
 ];
 
-const FEATURE_PAGE_SIZE = 8;
+const FEATURE_PAGE_SIZE = 7;
 
 /**
  * Build a single-page section for a feature list.
- * WhatsApp list limit = 10 rows total. Page = up to 8 items + "Sonraki" + "Bitir".
+ * WhatsApp list limit = 10 rows total. Middle page: 7 + Sonraki + Önceki + Bitir = 10.
  */
 function buildFeatureSections(
   items: { id: string; label: string }[],
