@@ -27,7 +27,7 @@ export async function askClaude(
 
 // ── Property description generator ──────────────────────────────────────
 
-export async function generatePropertyDescription(data: Record<string, unknown>): Promise<string> {
+export async function generatePropertyDescription(data: Record<string, unknown>, extraInstruction = ""): Promise<string> {
   const details = Object.entries(data)
     .filter(([, v]) => v !== null && v !== undefined && v !== "")
     .map(([k, v]) => `${k}: ${v}`)
@@ -35,10 +35,10 @@ export async function generatePropertyDescription(data: Record<string, unknown>)
 
   return askClaude(
     "Sen bir emlak danışmanısın. Verilen mülk bilgilerini kullanarak Türkçe, satış odaklı, etkileyici bir ilan açıklaması yaz. " +
-    "3-4 paragraf, profesyonel ama sıcak ton. Mülkün öne çıkan özelliklerini vurgula. " +
-    "Sadece açıklama metnini yaz, başlık veya fiyat yazma.",
+    "Profesyonel ama sıcak ton. Mülkün öne çıkan özelliklerini vurgula. " +
+    "Sadece açıklama metnini yaz, başlık veya fiyat yazma." + extraInstruction,
     `Mülk bilgileri:\n${details}`,
-    800,
+    1200,
   );
 }
 

@@ -669,22 +669,26 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   // ═══ AÇIKLAMA (AI / Manuel / Geç) ═══
 
   if (field === "desc_choice") {
-    if (value === "ai") {
-      // Generate AI description from all collected data
+    if (value === "ai" || value === "shorter" || value === "highlight" || value === "less_detail") {
+      // Generate or revise AI description
       const sess = await getSession(ctx.userId);
       const d = (sess?.data as Record<string, unknown>) || {};
       try {
         const { generatePropertyDescription } = await import("@/platform/ai/claude");
-        const aiDesc = await generatePropertyDescription(d);
-        await updateSession(ctx.userId, "finalize_ready", { description: aiDesc, ai_description: aiDesc });
-        await sendButtons(ctx.phone,
-          `🤖 *AI Açıklama:*\n\n${aiDesc.substring(0, 800)}\n\n${aiDesc.length > 800 ? "..." : ""}`,
-          [
-            { id: "mulkekle:finalize:ok", title: "✅ Kullan ve Kaydet" },
-            { id: "mulkekle:desc_choice:manual", title: "✍️ Kendim Yazayım" },
-          ],
-        );
-      } catch {
+        let extraPrompt = "";
+        if (value === "shorter") extraPrompt = " Daha kısa yaz, 2 paragraf yeterli.";
+        else if (value === "highlight") extraPrompt = " Sadece en önemli 3-4 özelliği öne çıkar.";
+        else if (value === "less_detail") extraPrompt = " Daha az detay, genel tanıtım tarzında yaz.";
+        const aiDesc = await generatePropertyDescription(d, extraPrompt);
+        await updateSession(ctx.userId, "ai_desc_review", { description: aiDesc, ai_description: aiDesc });
+        // Send full text first, then buttons separately
+        await sendText(ctx.phone, `🤖 *AI Açıklama:*\n\n${aiDesc}`);
+        await sendButtons(ctx.phone, "Bu açıklamayı kullanmak ister misiniz?", [
+          { id: "mulkekle:finalize:ok", title: "✅ Kullan ve Kaydet" },
+          { id: "mulkekle:desc_revise:menu", title: "🔄 Değiştir" },
+        ]);
+      } catch (err) {
+        console.error("[mulkekle:ai_desc]", err);
         await sendText(ctx.phone, "AI açıklama oluşturulamadı. Kendiniz yazın veya geçin.");
         await updateSession(ctx.userId, "description_text", {});
       }
@@ -695,6 +699,23 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       // skip
       await updateSession(ctx.userId, "finalize_ready", {});
       await finalizeProperty(ctx);
+    }
+    return;
+  }
+
+  // ═══ AÇIKLAMA REVİZYON ═══
+
+  if (field === "desc_revise") {
+    if (value === "menu") {
+      await sendList(ctx.phone, "🔄 Açıklamayı nasıl değiştireyim?", "Revizyon Seç", [
+        { title: "Revizyon Seçenekleri", rows: [
+          { id: "mulkekle:desc_choice:shorter", title: "📏 Daha kısa yaz" },
+          { id: "mulkekle:desc_choice:highlight", title: "⭐ Önemli özellikleri öne çıkar" },
+          { id: "mulkekle:desc_choice:less_detail", title: "📝 Daha az detay" },
+          { id: "mulkekle:desc_choice:ai", title: "🔄 Sıfırdan yeniden yaz" },
+          { id: "mulkekle:desc_choice:manual", title: "✍️ Kendim yazayım" },
+        ]},
+      ]);
     }
     return;
   }
@@ -778,7 +799,8 @@ async function finalizeProperty(ctx: WaContext): Promise<void> {
     usage_status: d.usage_status || null, swap: d.swap ?? null,
     bathroom_count: d.bathroom_count || null, kitchen_type: d.kitchen_type || null,
     elevator: d.elevator ?? null, balcony: d.balcony ?? null,
-    description: d.description || null, interior_features: d.interior_features || null,
+    description: d.description || null, ai_description: d.ai_description || null,
+    interior_features: d.interior_features || null,
     exterior_features: d.exterior_features || null, view_features: d.view_features || null,
     transportation: d.transportation || null, status: "aktif",
   });
@@ -786,7 +808,8 @@ async function finalizeProperty(ctx: WaContext): Promise<void> {
   await endSession(ctx.userId);
 
   if (error) {
-    await sendButtons(ctx.phone, "❌ Mülk eklenirken hata oluştu.", [
+    console.error("[mulkekle:finalize] DB error:", error.message, error.details, error.hint);
+    await sendButtons(ctx.phone, `❌ Mülk eklenirken hata oluştu.\n\n${error.message?.substring(0, 100) || ""}`, [
       { id: "cmd:mulkekle", title: "Tekrar Dene" }, { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
