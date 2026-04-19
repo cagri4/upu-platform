@@ -24,7 +24,7 @@ export async function getSession(userId: string): Promise<CommandSession | null>
   if (data && (data as Record<string, unknown>).updated_at) {
     const updatedAt = new Date((data as Record<string, unknown>).updated_at as string).getTime();
     const now = Date.now();
-    if (now - updatedAt > 30 * 60 * 1000) {
+    if (now - updatedAt > 12 * 60 * 60 * 1000) {
       await supabase.from("command_sessions").delete().eq("user_id", userId);
       return null;
     }
