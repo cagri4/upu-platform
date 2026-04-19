@@ -479,7 +479,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
     // Store as sahibinden's text label, e.g. "0 (Yeni)" or "5-10"
     const age = value === "yok" ? null : value === "0" ? "0 (Yeni)" : value;
     await updateSession(ctx.userId, "heating_select", { building_age: age });
-    await sendList(ctx.phone, "🔥 Isınma tipi:", "Isınma", [
+    await sendList(ctx.phone, "🔥 Isınma tipi seçin (birden fazla seçebilirsiniz):", "Isınma", [
       { title: "Isınma", rows: [
         { id: "mulkekle:heating:kombi", title: "Kombi (Doğalgaz)" },
         { id: "mulkekle:heating:merkezi", title: "Merkezi" },
@@ -487,7 +487,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
         { id: "mulkekle:heating:klima", title: "Klima" },
         { id: "mulkekle:heating:soba", title: "Soba" },
         { id: "mulkekle:heating:yok_isinma", title: "Yok" },
-        { id: "mulkekle:heating:belirtme", title: "Belirtme" },
+        { id: "mulkekle:heating:bitmis", title: "✅ Seçimi Bitir" },
       ]},
     ]);
     return;
@@ -498,16 +498,43 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       kombi: "Kombi (Doğalgaz)", merkezi: "Merkezi", yerden: "Yerden Isıtma",
       klima: "Klima", soba: "Soba", yok_isinma: "Yok",
     };
-    const heating = value === "belirtme" ? null : (heatingLabels[value] || value);
-    await updateSession(ctx.userId, "parking_select", { heating });
-    await sendList(ctx.phone, "🅿️ Otopark:", "Otopark", [
-      { title: "Otopark", rows: [
-        { id: "mulkekle:parking:acik", title: "Açık Otopark" },
-        { id: "mulkekle:parking:kapali", title: "Kapalı Otopark" },
-        { id: "mulkekle:parking:acik_kapali", title: "Açık & Kapalı" },
-        { id: "mulkekle:parking:yok", title: "Yok" },
-        { id: "mulkekle:parking:belirtme", title: "Belirtme" },
-      ]},
+    if (value === "menu") {
+      await sendList(ctx.phone, "🔥 Isınma tipi seçin (birden fazla seçebilirsiniz):", "Isınma", [
+        { title: "Isınma", rows: [
+          { id: "mulkekle:heating:kombi", title: "Kombi (Doğalgaz)" },
+          { id: "mulkekle:heating:merkezi", title: "Merkezi" },
+          { id: "mulkekle:heating:yerden", title: "Yerden Isıtma" },
+          { id: "mulkekle:heating:klima", title: "Klima" },
+          { id: "mulkekle:heating:soba", title: "Soba" },
+          { id: "mulkekle:heating:yok_isinma", title: "Yok" },
+          { id: "mulkekle:heating:bitmis", title: "✅ Seçimi Bitir" },
+        ]},
+      ]);
+      return;
+    }
+    if (value === "bitmis") {
+      // Move to otopark (heating already accumulated in session.data.heating)
+      await updateSession(ctx.userId, "parking_select", {});
+      await sendList(ctx.phone, "🅿️ Otopark:", "Otopark", [
+        { title: "Otopark", rows: [
+          { id: "mulkekle:parking:acik", title: "Açık Otopark" },
+          { id: "mulkekle:parking:kapali", title: "Kapalı Otopark" },
+          { id: "mulkekle:parking:acik_kapali", title: "Açık & Kapalı" },
+          { id: "mulkekle:parking:yok", title: "Yok" },
+          { id: "mulkekle:parking:belirtme", title: "Belirtme" },
+        ]},
+      ]);
+      return;
+    }
+    // Add a heating option to the comma-separated list
+    const label = heatingLabels[value] || value;
+    const sess = await getSession(ctx.userId);
+    const existing = ((sess?.data as Record<string, unknown>)?.heating as string) || "";
+    const added = existing ? `${existing}, ${label}` : label;
+    await updateSession(ctx.userId, "heating_select", { heating: added });
+    await sendButtons(ctx.phone, `✅ ${label} eklendi. Başka ısınma tipi var mı?`, [
+      { id: "mulkekle:heating:bitmis", title: "Bitir" },
+      { id: "mulkekle:heating:menu", title: "Başka Ekle" },
     ]);
     return;
   }
@@ -1030,6 +1057,266 @@ async function finalizeProperty(ctx: WaContext): Promise<void> {
 }
 
 // ── Price parser ────────────────────────────────────────────────────────
+
+// ── /devam — resume mulkekle flow from last step ───────────────────────
+
+export async function handleDevam(ctx: WaContext): Promise<void> {
+  const sess = await getSession(ctx.userId);
+  if (!sess || sess.command !== "mulkekle") {
+    await sendButtons(ctx.phone, "📭 Yarım kalmış mülk ekleme işlemi yok.", [
+      { id: "cmd:mulkekle", title: "🏠 Yeni Mülk Ekle" },
+      { id: "cmd:menu", title: "Ana Menü" },
+    ]);
+    return;
+  }
+
+  const step = sess.current_step;
+  const d = (sess.data as Record<string, unknown>) || {};
+  await sendText(ctx.phone, `🔄 *Kaldığın yerden devam ediyoruz.*\n\n_Önceki bilgilerin kayıtlı; sadece şu sorudan devam et:_`);
+
+  switch (step) {
+    case "title":
+      await sendText(ctx.phone, "İlan başlığını yazın:\n\nÖrnek: \"Yalıkavak Kiralık 2+1 Daire\"");
+      return;
+    case "price":
+      await sendText(ctx.phone, "💰 Fiyatı yazın:\n\nÖrnek: 4.5M, 25 bin, 750.000");
+      return;
+    case "m2":
+      await sendText(ctx.phone, "📐 Brüt metrekare yazın:\n\nÖrnek: 120");
+      return;
+    case "rooms":
+      await sendList(ctx.phone, "🛏 Oda sayısını seçin:", "Oda Sayısı", [
+        { title: "Oda Seçenekleri", rows: [
+          { id: "mulkekle:rooms:1+0", title: "1+0 (Stüdyo)" },
+          { id: "mulkekle:rooms:1+1", title: "1+1" },
+          { id: "mulkekle:rooms:2+1", title: "2+1" },
+          { id: "mulkekle:rooms:3+1", title: "3+1" },
+          { id: "mulkekle:rooms:3+2", title: "3+2" },
+          { id: "mulkekle:rooms:4+1", title: "4+1" },
+          { id: "mulkekle:rooms:4+2", title: "4+2" },
+          { id: "mulkekle:rooms:5+1", title: "5+1" },
+          { id: "mulkekle:rooms:6+", title: "6+" },
+        ]},
+      ]);
+      return;
+    case "listing_type":
+      await sendButtons(ctx.phone, "📋 İlan türünü seçin:", [
+        { id: "mulkekle:lt:satilik", title: "🏷 Satılık" },
+        { id: "mulkekle:lt:kiralik", title: "🔑 Kiralık" },
+      ]);
+      return;
+    case "city":
+      await sendText(ctx.phone, "📍 Şehir yazın:\n\nÖrnek: Muğla");
+      return;
+    case "district":
+      await sendText(ctx.phone, "📍 İlçe yazın:\n\nÖrnek: Bodrum\n\n(\"geç\" ile atlayın)");
+      return;
+    case "neighborhood":
+      await sendText(ctx.phone, "📍 Mahalle yazın:\n\nÖrnek: Yalıkavak, Bitez\n\n(\"geç\" ile atlayın)");
+      return;
+    case "net_area":
+      await sendText(ctx.phone, "📐 Net metrekare yazın:\n\nÖrnek: 95\n\n(\"geç\" ile atlayın)");
+      return;
+    case "floor_select":
+      await handleMulkEkleCallback(ctx, "mulkekle:phase:2");
+      return;
+    case "totalfloors_select":
+      await sendList(ctx.phone, "🏢 Toplam kat sayısı:", "Toplam Kat", [
+        { title: "Toplam Kat", rows: [
+          { id: "mulkekle:totalfloors:1", title: "1" },
+          { id: "mulkekle:totalfloors:2", title: "2" },
+          { id: "mulkekle:totalfloors:3", title: "3" },
+          { id: "mulkekle:totalfloors:4", title: "4" },
+          { id: "mulkekle:totalfloors:5", title: "5" },
+          { id: "mulkekle:totalfloors:6-10", title: "6-10" },
+          { id: "mulkekle:totalfloors:11-15", title: "11-15" },
+          { id: "mulkekle:totalfloors:16-20", title: "16-20" },
+          { id: "mulkekle:totalfloors:21+", title: "21+" },
+          { id: "mulkekle:totalfloors:yok", title: "Belirtme" },
+        ]},
+      ]);
+      return;
+    case "buildingage_select":
+      await sendList(ctx.phone, "🏗 Bina yaşı:", "Bina Yaşı", [
+        { title: "Bina Yaşı", rows: [
+          { id: "mulkekle:buildingage:0", title: "0 (Yeni)" },
+          { id: "mulkekle:buildingage:1", title: "1" },
+          { id: "mulkekle:buildingage:2", title: "2" },
+          { id: "mulkekle:buildingage:3", title: "3" },
+          { id: "mulkekle:buildingage:4", title: "4" },
+          { id: "mulkekle:buildingage:5-10", title: "5-10" },
+          { id: "mulkekle:buildingage:11-15", title: "11-15" },
+          { id: "mulkekle:buildingage:16-20", title: "16-20" },
+          { id: "mulkekle:buildingage:21+", title: "21+" },
+          { id: "mulkekle:buildingage:yok", title: "Belirtme" },
+        ]},
+      ]);
+      return;
+    case "heating_select": {
+      const prev = d.heating ? `\n\n_Seçtiklerin: ${d.heating}_` : "";
+      await sendList(ctx.phone, `🔥 Isınma tipi seçin (birden fazla seçebilirsiniz):${prev}`, "Isınma", [
+        { title: "Isınma", rows: [
+          { id: "mulkekle:heating:kombi", title: "Kombi (Doğalgaz)" },
+          { id: "mulkekle:heating:merkezi", title: "Merkezi" },
+          { id: "mulkekle:heating:yerden", title: "Yerden Isıtma" },
+          { id: "mulkekle:heating:klima", title: "Klima" },
+          { id: "mulkekle:heating:soba", title: "Soba" },
+          { id: "mulkekle:heating:yok_isinma", title: "Yok" },
+          { id: "mulkekle:heating:bitmis", title: "✅ Seçimi Bitir" },
+        ]},
+      ]);
+      return;
+    }
+    case "parking_select":
+      await sendList(ctx.phone, "🅿️ Otopark:", "Otopark", [
+        { title: "Otopark", rows: [
+          { id: "mulkekle:parking:acik", title: "Açık Otopark" },
+          { id: "mulkekle:parking:kapali", title: "Kapalı Otopark" },
+          { id: "mulkekle:parking:acik_kapali", title: "Açık & Kapalı" },
+          { id: "mulkekle:parking:yok", title: "Yok" },
+          { id: "mulkekle:parking:belirtme", title: "Belirtme" },
+        ]},
+      ]);
+      return;
+    case "facade_select":
+      await sendList(ctx.phone, "🧭 Cephe yönü:", "Cephe", [
+        { title: "Cephe Yönü", rows: [
+          { id: "mulkekle:facade:kuzey", title: "Kuzey" },
+          { id: "mulkekle:facade:guney", title: "Güney" },
+          { id: "mulkekle:facade:dogu", title: "Doğu" },
+          { id: "mulkekle:facade:bati", title: "Batı" },
+          { id: "mulkekle:facade:yok", title: "Belirtme" },
+        ]},
+      ]);
+      return;
+    case "deed_select":
+      await sendList(ctx.phone, "📜 Tapu durumu:", "Tapu", [
+        { title: "Tapu Durumu", rows: [
+          { id: "mulkekle:deed:kat_mulkiyeti", title: "Kat Mülkiyeti" },
+          { id: "mulkekle:deed:kat_irtifaki", title: "Kat İrtifakı" },
+          { id: "mulkekle:deed:arsa_tapusu", title: "Arsa Tapusu" },
+          { id: "mulkekle:deed:hisseli", title: "Hisseli Tapu" },
+          { id: "mulkekle:deed:kooperatif", title: "Kooperatif" },
+          { id: "mulkekle:deed:yok", title: "Belirtme" },
+        ]},
+      ]);
+      return;
+    case "housing_select":
+      await sendList(ctx.phone, "🏗 Konut Tipi:", "Konut Tipi", [
+        { title: "Konut Tipi", rows: [
+          { id: "mulkekle:housing:ara_kat", title: "Ara Kat" },
+          { id: "mulkekle:housing:en_ust_kat", title: "En Üst Kat" },
+          { id: "mulkekle:housing:dubleks", title: "Dubleks" },
+          { id: "mulkekle:housing:bahce_dubleksi", title: "Bahçe Dubleksi" },
+          { id: "mulkekle:housing:cati_dubleksi", title: "Çatı Dubleksi" },
+          { id: "mulkekle:housing:tripleks", title: "Tripleks" },
+          { id: "mulkekle:housing:belirtme", title: "Belirtme" },
+        ]},
+      ]);
+      return;
+    case "usage_select":
+      await sendButtons(ctx.phone, "🔑 Kullanım durumu:", [
+        { id: "mulkekle:usage:bos", title: "Boş" },
+        { id: "mulkekle:usage:kiracili", title: "Kiracılı" },
+        { id: "mulkekle:usage:mulk_sahibi", title: "Mülk Sahibi" },
+      ]);
+      return;
+    case "swap_select":
+      await sendButtons(ctx.phone, "🔄 Takas kabul edilir mi?", [
+        { id: "mulkekle:swap:evet", title: "Evet" },
+        { id: "mulkekle:swap:hayir", title: "Hayır" },
+        { id: "mulkekle:swap:belirtme", title: "Belirtme" },
+      ]);
+      return;
+    case "bathroom_select":
+      await sendList(ctx.phone, "🚿 Banyo sayısı:", "Banyo", [
+        { title: "Banyo Sayısı", rows: [
+          { id: "mulkekle:bathroom:1", title: "1" },
+          { id: "mulkekle:bathroom:2", title: "2" },
+          { id: "mulkekle:bathroom:3", title: "3" },
+          { id: "mulkekle:bathroom:4+", title: "4+" },
+          { id: "mulkekle:bathroom:yok", title: "Belirtme" },
+        ]},
+      ]);
+      return;
+    case "kitchen_select":
+      await sendButtons(ctx.phone, "🍳 Mutfak tipi:", [
+        { id: "mulkekle:kitchen:acik_amerikan", title: "Açık (Amerikan)" },
+        { id: "mulkekle:kitchen:kapali", title: "Kapalı" },
+      ]);
+      return;
+    case "elevator_select":
+      await sendButtons(ctx.phone, "🛗 Asansör var mı?", [
+        { id: "mulkekle:elevator:evet", title: "Evet" },
+        { id: "mulkekle:elevator:hayir", title: "Hayır" },
+      ]);
+      return;
+    case "balcony_select":
+      await sendButtons(ctx.phone, "🏠 Balkon var mı?", [
+        { id: "mulkekle:balcony:evet", title: "Evet" },
+        { id: "mulkekle:balcony:hayir", title: "Hayır" },
+      ]);
+      return;
+    case "int_features_select": {
+      const prev = d.interior_features ? `\n\n_Seçtiklerin: ${d.interior_features}_` : "";
+      const sections = buildFeatureSections(INTFEAT_ITEMS, "mulkekle:intfeat", "İç Özellikler");
+      await sendList(ctx.phone, `🏷 İç özellik seçin:${prev}`, "Özellik Seç", sections);
+      return;
+    }
+    case "ext_features_select": {
+      const prev = d.exterior_features ? `\n\n_Seçtiklerin: ${d.exterior_features}_` : "";
+      const sections = buildFeatureSections(EXTFEAT_ITEMS, "mulkekle:extfeat", "Dış Özellikler");
+      await sendList(ctx.phone, `🌿 Dış özellik seçin:${prev}`, "Özellik Seç", sections);
+      return;
+    }
+    case "view_select": {
+      const prev = d.view_features ? `\n\n_Seçtiklerin: ${d.view_features}_` : "";
+      const sections = buildFeatureSections(VIEWFEAT_ITEMS, "mulkekle:viewfeat", "Manzara");
+      await sendList(ctx.phone, `🏔 Manzara seçin:${prev}`, "Manzara Seç", sections);
+      return;
+    }
+    case "muhit_select": {
+      const prev = d.neighborhood_features ? `\n\n_Seçtiklerin: ${d.neighborhood_features}_` : "";
+      const sections = buildFeatureSections(MUHIT_ITEMS, "mulkekle:muhit", "Muhit");
+      await sendList(ctx.phone, `📍 Muhit / Çevre seçin:${prev}`, "Muhit Seç", sections);
+      return;
+    }
+    case "engelli_select": {
+      const prev = d.disability_features ? `\n\n_Seçtiklerin: ${d.disability_features}_` : "";
+      const sections = buildFeatureSections(ENGELLI_ITEMS, "mulkekle:engelli", "Engelliye Uygun");
+      await sendList(ctx.phone, `♿ Engelliye uygun özellik seçin:${prev}`, "Engelli Seç", sections);
+      return;
+    }
+    case "transport_select": {
+      const prev = d.transportation ? `\n\n_Seçtiklerin: ${d.transportation}_` : "";
+      const sections = buildFeatureSections(TRANSPORT_ITEMS, "mulkekle:transport", "Ulaşım");
+      await sendList(ctx.phone, `🚌 Ulaşım seçin:${prev}`, "Ulaşım Seç", sections);
+      return;
+    }
+    case "desc_choice":
+      await sendButtons(ctx.phone,
+        "📝 *İlan Açıklaması*\n\nAçıklamayı nasıl eklemek istersiniz?",
+        [
+          { id: "mulkekle:desc_choice:ai", title: "🤖 AI Yazsın" },
+          { id: "mulkekle:desc_choice:manual", title: "✍️ Kendim Yazayım" },
+          { id: "mulkekle:desc_choice:skip", title: "⏭ Geç" },
+        ],
+      );
+      return;
+    case "description_text":
+      await sendText(ctx.phone, "✍️ Açıklamayı yazın:");
+      return;
+    case "ai_desc_review":
+    case "finalize_ready":
+      await sendButtons(ctx.phone, "Devam etmek için /mulkekle yazabilir veya bitir.", [
+        { id: "mulkekle:finalize:ok", title: "✅ Bitir & Kaydet" },
+      ]);
+      return;
+    default:
+      await sendText(ctx.phone, `⚠️ Bu adımdan devam edilemiyor (${step}). /mulkekle yazıp baştan başla.`);
+      return;
+  }
+}
 
 function parsePrice(text: string): number | null {
   const cleaned = text.replace(/TL/gi, "").replace(/-/g, "").trim();

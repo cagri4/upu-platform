@@ -6,7 +6,7 @@
 
 import type { TenantCommandRegistry } from "@/platform/whatsapp/types";
 
-import { handleMulkEkle, handleMulkEkleMenu, handleMulkEkleStep, handleMulkEkleCallback } from "./mulk-ekle";
+import { handleMulkEkle, handleMulkEkleMenu, handleMulkEkleStep, handleMulkEkleCallback, handleDevam } from "./mulk-ekle";
 import { handleFiyatBelirle, handleFiyatBelirleCallback } from "./fiyat-belirle";
 import { handleMusteriler } from "./musteriler";
 import { handleSozlesmelerim, handleWebpanel, handleSozlesme, handleSozlesmeStep, handleSozlesmeCallback } from "./sozlesme";
@@ -26,6 +26,7 @@ export const emlakCommands: TenantCommandRegistry = {
   commands: {
     // Core killer commands
     mulkekle: handleMulkEkleMenu,
+    devam: handleDevam,
     fiyatbelirle: handleFiyatBelirle,
     musteriEkle: handleMusteriEkle,
     musteriTakip: handleMusteriTakip,
