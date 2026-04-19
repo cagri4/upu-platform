@@ -190,7 +190,7 @@ function buildFeatureSections(
   const chunk = items.slice(start, start + FEATURE_PAGE_SIZE);
 
   const rows: { id: string; title: string }[] = chunk.map((i) => ({
-    id: `${callbackPrefix}:${i.id}`,
+    id: `${callbackPrefix}:${i.id}:${p}`,
     title: i.label,
   }));
 
@@ -351,7 +351,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
   const parts = data.split(":");
   if (parts.length < 3) return;
   const [, field, value] = parts;
-  const pageArg = value === "sayfa" ? parseInt(parts[3] ?? "0", 10) || 0 : 0;
+  const pageArg = parseInt(parts[3] ?? "0", 10) || 0;
 
   // ═══ AŞAMA 1 ═══
 
@@ -668,13 +668,8 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "intfeat") {
     const labels = buildLabels(INTFEAT_ITEMS);
-    if (value === "sayfa") {
+    if (value === "sayfa" || value === "menu") {
       const sections = buildFeatureSections(INTFEAT_ITEMS, "mulkekle:intfeat", "İç Özellikler", pageArg);
-      await sendList(ctx.phone, "🏷 İç özellik seçin:", "Özellik Seç", sections);
-      return;
-    }
-    if (value === "menu") {
-      const sections = buildFeatureSections(INTFEAT_ITEMS, "mulkekle:intfeat", "İç Özellikler");
       await sendList(ctx.phone, "🏷 İç özellik seçin:", "Özellik Seç", sections);
       return;
     }
@@ -691,7 +686,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       await updateSession(ctx.userId, "int_features_select", { interior_features: added });
       await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi.\n\nBaşka özellik eklemek ister misiniz?`, [
         { id: "mulkekle:intfeat:bitmis", title: "Bitir" },
-        { id: "mulkekle:intfeat:menu", title: "Başka Ekle" },
+        { id: `mulkekle:intfeat:menu:${pageArg}`, title: "Başka Ekle" },
       ]);
     }
     return;
@@ -701,13 +696,8 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "extfeat") {
     const labels = buildLabels(EXTFEAT_ITEMS);
-    if (value === "sayfa") {
+    if (value === "sayfa" || value === "menu") {
       const sections = buildFeatureSections(EXTFEAT_ITEMS, "mulkekle:extfeat", "Dış Özellikler", pageArg);
-      await sendList(ctx.phone, "🌿 Dış özellik seçin:", "Özellik Seç", sections);
-      return;
-    }
-    if (value === "menu") {
-      const sections = buildFeatureSections(EXTFEAT_ITEMS, "mulkekle:extfeat", "Dış Özellikler");
       await sendList(ctx.phone, "🌿 Dış özellik seçin:", "Özellik Seç", sections);
       return;
     }
@@ -723,7 +713,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       await updateSession(ctx.userId, "ext_features_select", { exterior_features: added });
       await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi. Başka?`, [
         { id: "mulkekle:extfeat:bitmis", title: "Bitir" },
-        { id: "mulkekle:extfeat:menu", title: "Başka Ekle" },
+        { id: `mulkekle:extfeat:menu:${pageArg}`, title: "Başka Ekle" },
       ]);
     }
     return;
@@ -733,13 +723,8 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "viewfeat") {
     const labels = buildLabels(VIEWFEAT_ITEMS);
-    if (value === "sayfa") {
+    if (value === "sayfa" || value === "menu") {
       const sections = buildFeatureSections(VIEWFEAT_ITEMS, "mulkekle:viewfeat", "Manzara", pageArg);
-      await sendList(ctx.phone, "🏔 Manzara seçin:", "Manzara Seç", sections);
-      return;
-    }
-    if (value === "menu") {
-      const sections = buildFeatureSections(VIEWFEAT_ITEMS, "mulkekle:viewfeat", "Manzara");
       await sendList(ctx.phone, "🏔 Manzara seçin:", "Manzara Seç", sections);
       return;
     }
@@ -755,7 +740,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       await updateSession(ctx.userId, "view_select", { view_features: added });
       await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi. Başka?`, [
         { id: "mulkekle:viewfeat:bitmis", title: "Bitir" },
-        { id: "mulkekle:viewfeat:menu", title: "Başka Ekle" },
+        { id: `mulkekle:viewfeat:menu:${pageArg}`, title: "Başka Ekle" },
       ]);
     }
     return;
@@ -765,13 +750,8 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "muhit") {
     const labels = buildLabels(MUHIT_ITEMS);
-    if (value === "sayfa") {
+    if (value === "sayfa" || value === "menu") {
       const sections = buildFeatureSections(MUHIT_ITEMS, "mulkekle:muhit", "Muhit", pageArg);
-      await sendList(ctx.phone, "📍 Muhit / Çevre seçin:", "Muhit Seç", sections);
-      return;
-    }
-    if (value === "menu") {
-      const sections = buildFeatureSections(MUHIT_ITEMS, "mulkekle:muhit", "Muhit");
       await sendList(ctx.phone, "📍 Muhit / Çevre seçin:", "Muhit Seç", sections);
       return;
     }
@@ -787,7 +767,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       await updateSession(ctx.userId, "muhit_select", { neighborhood_features: added });
       await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi. Başka?`, [
         { id: "mulkekle:muhit:bitmis", title: "Bitir" },
-        { id: "mulkekle:muhit:menu", title: "Başka Ekle" },
+        { id: `mulkekle:muhit:menu:${pageArg}`, title: "Başka Ekle" },
       ]);
     }
     return;
@@ -797,13 +777,8 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "engelli") {
     const labels = buildLabels(ENGELLI_ITEMS);
-    if (value === "sayfa") {
+    if (value === "sayfa" || value === "menu") {
       const sections = buildFeatureSections(ENGELLI_ITEMS, "mulkekle:engelli", "Engelliye Uygun", pageArg);
-      await sendList(ctx.phone, "♿ Engelliye uygun özellik seçin:", "Engelli Seç", sections);
-      return;
-    }
-    if (value === "menu") {
-      const sections = buildFeatureSections(ENGELLI_ITEMS, "mulkekle:engelli", "Engelliye Uygun");
       await sendList(ctx.phone, "♿ Engelliye uygun özellik seçin:", "Engelli Seç", sections);
       return;
     }
@@ -819,7 +794,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       await updateSession(ctx.userId, "engelli_select", { disability_features: added });
       await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi. Başka?`, [
         { id: "mulkekle:engelli:bitmis", title: "Bitir" },
-        { id: "mulkekle:engelli:menu", title: "Başka Ekle" },
+        { id: `mulkekle:engelli:menu:${pageArg}`, title: "Başka Ekle" },
       ]);
     }
     return;
@@ -829,13 +804,8 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "transport") {
     const labels = buildLabels(TRANSPORT_ITEMS);
-    if (value === "sayfa") {
+    if (value === "sayfa" || value === "menu") {
       const sections = buildFeatureSections(TRANSPORT_ITEMS, "mulkekle:transport", "Ulaşım", pageArg);
-      await sendList(ctx.phone, "🚌 Ulaşım seçin:", "Ulaşım Seç", sections);
-      return;
-    }
-    if (value === "menu") {
-      const sections = buildFeatureSections(TRANSPORT_ITEMS, "mulkekle:transport", "Ulaşım");
       await sendList(ctx.phone, "🚌 Ulaşım seçin:", "Ulaşım Seç", sections);
       return;
     }
@@ -857,7 +827,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       await updateSession(ctx.userId, "transport_select", { transportation: added });
       await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi. Başka?`, [
         { id: "mulkekle:transport:bitmis", title: "Bitir" },
-        { id: "mulkekle:transport:menu", title: "Başka Ekle" },
+        { id: `mulkekle:transport:menu:${pageArg}`, title: "Başka Ekle" },
       ]);
     }
     return;
