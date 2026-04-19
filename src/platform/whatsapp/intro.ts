@@ -176,8 +176,7 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
     }
     const avgPrice = priceCount > 0 ? Math.round(totalPrice / priceCount) : 0;
     const topHoods = Object.entries(byHood)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
+      .sort((a, b) => b[1] - a[1]);
 
     const regionLabel = region.charAt(0).toUpperCase() + region.slice(1);
     const typeLabel = propertyType === "hepsi" ? "Tüm Tipler" : propertyType.charAt(0).toUpperCase() + propertyType.slice(1);
