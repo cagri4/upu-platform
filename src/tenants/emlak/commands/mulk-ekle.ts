@@ -514,12 +514,13 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
     if (value === "bitmis") {
       // Move to otopark (heating already accumulated in session.data.heating)
       await updateSession(ctx.userId, "parking_select", {});
-      await sendList(ctx.phone, "🅿️ Otopark seçin (birden fazla seçebilirsiniz):", "Otopark", [
+      await sendList(ctx.phone, "🅿️ Otopark:", "Otopark", [
         { title: "Otopark", rows: [
           { id: "mulkekle:parking:acik", title: "Açık Otopark" },
           { id: "mulkekle:parking:kapali", title: "Kapalı Otopark" },
+          { id: "mulkekle:parking:acik_kapali", title: "Açık & Kapalı" },
           { id: "mulkekle:parking:yok", title: "Yok" },
-          { id: "mulkekle:parking:bitmis", title: "✅ Seçimi Bitir" },
+          { id: "mulkekle:parking:belirtme", title: "Belirtme" },
         ]},
       ]);
       return;
@@ -539,40 +540,19 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
 
   if (field === "parking") {
     const parkingLabels: Record<string, string> = {
-      acik: "Açık Otopark", kapali: "Kapalı Otopark", yok: "Yok",
+      acik: "Açık Otopark", kapali: "Kapalı Otopark",
+      acik_kapali: "Açık & Kapalı", yok: "Yok",
     };
-    if (value === "menu") {
-      await sendList(ctx.phone, "🅿️ Otopark seçin (birden fazla seçebilirsiniz):", "Otopark", [
-        { title: "Otopark", rows: [
-          { id: "mulkekle:parking:acik", title: "Açık Otopark" },
-          { id: "mulkekle:parking:kapali", title: "Kapalı Otopark" },
-          { id: "mulkekle:parking:yok", title: "Yok" },
-          { id: "mulkekle:parking:bitmis", title: "✅ Seçimi Bitir" },
-        ]},
-      ]);
-      return;
-    }
-    if (value === "bitmis") {
-      await updateSession(ctx.userId, "facade_select", {});
-      await sendList(ctx.phone, "🧭 Cephe yönü seçin (birden fazla seçebilirsiniz):", "Cephe", [
-        { title: "Cephe Yönü", rows: [
-          { id: "mulkekle:facade:kuzey", title: "Kuzey" },
-          { id: "mulkekle:facade:guney", title: "Güney" },
-          { id: "mulkekle:facade:dogu", title: "Doğu" },
-          { id: "mulkekle:facade:bati", title: "Batı" },
-          { id: "mulkekle:facade:bitmis", title: "✅ Seçimi Bitir" },
-        ]},
-      ]);
-      return;
-    }
-    const label = parkingLabels[value] || value;
-    const sess = await getSession(ctx.userId);
-    const existing = ((sess?.data as Record<string, unknown>)?.parking as string) || "";
-    const added = existing ? `${existing}, ${label}` : label;
-    await updateSession(ctx.userId, "parking_select", { parking: added });
-    await sendButtons(ctx.phone, `✅ ${label} eklendi. Başka otopark tipi var mı?`, [
-      { id: "mulkekle:parking:bitmis", title: "Bitir" },
-      { id: "mulkekle:parking:menu", title: "Başka Ekle" },
+    const parking = value === "belirtme" ? null : (parkingLabels[value] || value);
+    await updateSession(ctx.userId, "facade_select", { parking });
+    await sendList(ctx.phone, "🧭 Cephe yönü seçin (birden fazla seçebilirsiniz):", "Cephe", [
+      { title: "Cephe Yönü", rows: [
+        { id: "mulkekle:facade:kuzey", title: "Kuzey" },
+        { id: "mulkekle:facade:guney", title: "Güney" },
+        { id: "mulkekle:facade:dogu", title: "Doğu" },
+        { id: "mulkekle:facade:bati", title: "Batı" },
+        { id: "mulkekle:facade:bitmis", title: "✅ Seçimi Bitir" },
+      ]},
     ]);
     return;
   }

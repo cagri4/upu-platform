@@ -80,18 +80,30 @@ export async function handleTaraStep(ctx: WaContext, session: CommandSession): P
 }
 
 async function resolveShortUrl(url: string): Promise<string> {
-  // shbd.io redirects to sahibinden.com/s/CODE but Cloudflare blocks fetch
-  // Follow only the first redirect to get the sahibinden.com URL
-  if (url.includes("shbd.io")) {
+  // Follow redirects until we reach a /ilan/ URL or run out of hops.
+  // shbd.io → sahibinden.com/s/CODE → sahibinden.com/ilan/...
+  let current = url;
+  const maxHops = 5;
+  for (let i = 0; i < maxHops; i++) {
+    if (current.includes("/ilan/")) return current;
+    const isShort = current.includes("shbd.io") || /sahibinden\.com\/s\//.test(current);
+    if (!isShort) return current;
     try {
-      const res = await fetch(url, { method: "HEAD", redirect: "manual" });
-      const location = res.headers.get("location");
-      if (location && location.includes("sahibinden.com")) {
-        return location;
-      }
-    } catch { /* fall through */ }
+      const res = await fetch(current, {
+        method: "HEAD",
+        redirect: "manual",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+      });
+      const loc = res.headers.get("location");
+      if (!loc) return current;
+      current = loc.startsWith("http") ? loc : new URL(loc, current).toString();
+    } catch {
+      return current;
+    }
   }
-  return url;
+  return current;
 }
 
 // ── Parse Sahibinden URL for property info ──────────────────────────
