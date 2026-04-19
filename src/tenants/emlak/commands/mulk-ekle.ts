@@ -234,6 +234,7 @@ export async function handleMulkEkle(ctx: WaContext): Promise<void> {
   await sendText(ctx.phone,
     "🏠 *Detaylı Mülk Ekleme*\n\n" +
     "📋 Aşama 1/3 — Temel Bilgiler\n\n" +
+    "_Hata yaparsanız sorun değil, devam edin — daha sonra düzeltebilirsiniz._\n\n" +
     "İlan başlığını yazın:\n\nÖrnek: \"Yalıkavak Kiralık 2+1 Daire\""
   );
 }
