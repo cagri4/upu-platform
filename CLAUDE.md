@@ -66,3 +66,10 @@ All DB access via Supabase JS client — no ORM. Two clients:
 - Locales: tr (default), en, nl — managed by next-intl
 - Path alias: `@/*` → `src/*`
 - Deployed on Vercel with auto-deploy from GitHub
+
+## Rules
+
+- **Never guess commands**: Don't make up CLI flags or options. Check docs or say "bilmiyorum".
+- **Verify before proposing**: Check technical feasibility BEFORE presenting a solution as viable. Don't propose something and then discover it's not possible.
+- **Think before responding**: Don't rush with reflexive answers. 2 saniye düşün. Consider the implications.
+- **Never modify user data without permission**: NEVER run UPDATE/DELETE on user data (profiles, roles, permissions, invite_codes, etc.) without explicit user approval. Only SELECT queries are allowed without asking.

@@ -907,7 +907,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       await sendList(ctx.phone, "🔄 Açıklamayı nasıl değiştireyim?", "Revizyon Seç", [
         { title: "Revizyon Seçenekleri", rows: [
           { id: "mulkekle:desc_choice:shorter", title: "📏 Daha kısa yaz" },
-          { id: "mulkekle:desc_choice:highlight", title: "⭐ Önemli özellikleri öne çıkar" },
+          { id: "mulkekle:desc_choice:highlight", title: "⭐ Önemli özellikler" },
           { id: "mulkekle:desc_choice:less_detail", title: "📝 Daha az detay" },
           { id: "mulkekle:desc_choice:ai", title: "🔄 Sıfırdan yeniden yaz" },
           { id: "mulkekle:desc_choice:manual", title: "✍️ Kendim yazayım" },
