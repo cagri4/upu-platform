@@ -48,6 +48,17 @@ export async function sendText(phone: string, text: string) {
   }
 }
 
+// Decide whether to auto-append "🏠 Menü" as a nav button/row.
+// Skip if any existing id is cmd:menu, cmd:devam, or a known "escape" action.
+function hasNavAlready(ids: string[]): boolean {
+  return ids.some(id =>
+    id === "cmd:menu" ||
+    id === "cmd:devam" ||
+    id.startsWith("cmd:menu") ||
+    id.startsWith("cmd:devam"),
+  );
+}
+
 export async function sendButtons(
   phone: string,
   text: string,
@@ -56,7 +67,12 @@ export async function sendButtons(
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
 
-  const validButtons = buttons.slice(0, 3).filter(b => b.id && b.title);
+  // Auto-append "🏠 Menü" if there's room (≤2 buttons) and no nav already
+  const existing = buttons.filter(b => b.id && b.title);
+  const withNav = existing.length <= 2 && !hasNavAlready(existing.map(b => b.id))
+    ? [...existing, { id: "cmd:menu", title: "🏠 Menü" }]
+    : existing;
+  const validButtons = withNav.slice(0, 3);
   if (validButtons.length === 0) {
     // No valid buttons — fallback to text
     await sendText(phone, text);
@@ -99,6 +115,17 @@ export async function sendList(
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
 
+  // Auto-append "🏠 Ana Menü" row if there's room and no nav already
+  const allIds = sections.flatMap(s => s.rows.map(r => r.id));
+  const totalRows = allIds.length;
+  let finalSections = sections;
+  if (totalRows < 10 && !hasNavAlready(allIds) && sections.length > 0) {
+    finalSections = sections.map((s, i) => i === sections.length - 1
+      ? { ...s, rows: [...s.rows, { id: "cmd:menu", title: "🏠 Ana Menü" }] }
+      : s,
+    );
+  }
+
   try {
     const resp = await fetch(`${WA_API}/${phoneId}/messages`, {
       method: "POST",
@@ -108,7 +135,7 @@ export async function sendList(
         interactive: {
           type: "list",
           body: { text: truncateText(text, 1024) },
-          action: { button: buttonText, sections },
+          action: { button: buttonText, sections: finalSections },
         },
       }),
     });
@@ -116,7 +143,7 @@ export async function sendList(
       const err = await resp.text();
       console.error("[wa:send] list API error:", resp.status, err);
       // Fallback to text message
-      const fallback = sections.map(s => `*${s.title}*\n` + s.rows.map(r => `  ${r.title}`).join("\n")).join("\n\n");
+      const fallback = finalSections.map(s => `*${s.title}*\n` + s.rows.map(r => `  ${r.title}`).join("\n")).join("\n\n");
       await sendText(phone, text + "\n\n" + fallback);
     }
   } catch (err) {

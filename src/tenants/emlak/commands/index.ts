@@ -91,6 +91,10 @@ export const emlakCommands: TenantCommandRegistry = {
     "tip:": handleTipCallback,
   },
   aliases: {
+    "görevlere devam": "devam",
+    "göreve devam": "devam",
+    "gorevlere devam": "devam",
+    "devam et": "devam",
     "müşteriler": "musterilerim",
     "müşterilerim": "musterilerim",
     "fiyat": "fiyatbelirle",
