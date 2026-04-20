@@ -586,6 +586,7 @@ async function showMenu(
       `${tenant.icon} *${tenant.name}*\n\n_("menu" yazarak buraya dönebilirsiniz.)_`,
       "Komutlar",
       [{ title: "Komutlar", rows: favRows.slice(0, 10) }],
+      { skipNav: true },
     );
   }
 

@@ -85,6 +85,7 @@ export async function sendButtons(
   phone: string,
   text: string,
   buttons: Array<{ id: string; title: string }>,
+  opts?: { skipNav?: boolean },
 ) {
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
@@ -97,7 +98,7 @@ export async function sendButtons(
   // Detect if this call IS itself a nav footer (to avoid infinite chain)
   const isNavFooter = validButtons.length === 2 &&
     validButtons.every(b => b.id === "cmd:menu" || b.id === "cmd:devam");
-  const shouldAddNav = !isNavFooter && !hasNavAlready(validButtons.map(b => b.id));
+  const shouldAddNav = !isNavFooter && !opts?.skipNav && !hasNavAlready(validButtons.map(b => b.id));
 
   try {
     const resp = await fetch(`${WA_API}/${phoneId}/messages`, {
@@ -133,12 +134,13 @@ export async function sendList(
   text: string,
   buttonText: string,
   sections: Array<{ title: string; rows: Array<{ id: string; title: string; description?: string }> }>,
+  opts?: { skipNav?: boolean },
 ) {
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
 
   const allIds = sections.flatMap(s => s.rows.map(r => r.id));
-  const shouldAddNav = !hasNavAlready(allIds);
+  const shouldAddNav = !opts?.skipNav && !hasNavAlready(allIds);
 
   try {
     const resp = await fetch(`${WA_API}/${phoneId}/messages`, {
