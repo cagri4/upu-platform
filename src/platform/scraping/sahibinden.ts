@@ -79,7 +79,7 @@ export async function scrapeSahibindenListing(url: string): Promise<SahibindenDe
 
   try {
     const res = await fetch(`${SCRAPINGBEE_BASE}?${params}`, {
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) {
       console.error("[scrape:sahibinden] API error:", res.status, await res.text());

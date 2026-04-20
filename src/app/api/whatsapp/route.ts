@@ -23,6 +23,9 @@ import {
 import { emlakOnboardingFlow } from "@/tenants/emlak/onboarding-flow";
 
 export const dynamic = "force-dynamic";
+// Extend default serverless timeout (10s Hobby, 60s Pro) so scraping fits.
+// On Hobby this silently caps at 10s but is harmless.
+export const maxDuration = 60;
 
 // ─── Register onboarding flows ────────────────────────────────────────────
 registerOnboardingFlow(emlakOnboardingFlow);
