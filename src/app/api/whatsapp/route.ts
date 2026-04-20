@@ -625,7 +625,10 @@ export async function POST(req: NextRequest) {
       const isNavEscape =
         ctx.interactiveId === "cmd:menu" ||
         ctx.interactiveId === "cmd:devam" ||
-        ["menu", "menü", "ana menü", "ana menu", "devam", "devam et", "göreve devam", "gorevlere devam", "görevlere devam", "iptal"]
+        ["menu", "menü", "ana menü", "ana menu",
+         "devam", "devam et", "göreve devam", "gorevlere devam", "görevlere devam",
+         "iptal", "vazgeç", "vazgec",
+         "sifirla", "sıfırla", "kaydet", "yukle", "yükle"]
           .includes((ctx.text || "").toLowerCase().trim());
       if (isNavEscape) {
         await routeCommand(ctx);
