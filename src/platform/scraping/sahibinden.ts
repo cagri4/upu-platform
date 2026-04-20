@@ -20,7 +20,7 @@ export interface SahibindenDetails {
   location_district: string | null;
   location_neighborhood: string | null;
   description: string | null;
-  raw_html_head?: string;  // for debugging
+  photos: string[];
 }
 
 function parseNum(raw: string | null | undefined): number | null {
@@ -72,6 +72,16 @@ export async function scrapeSahibindenListing(url: string): Promise<SahibindenDe
       type: "list",
       output: "@text",
     },
+    photos_data_src: {
+      selector: "img[data-src*='sahibinden']",
+      type: "list",
+      output: "@data-src",
+    },
+    photos_src: {
+      selector: "img.classifiedDetailImage, .classifiedDetailPhoto img, .classifiedDetailPhotos img",
+      type: "list",
+      output: "@src",
+    },
   };
 
   const params = new URLSearchParams({
@@ -97,6 +107,8 @@ export async function scrapeSahibindenListing(url: string): Promise<SahibindenDe
       description?: string;
       details?: Array<{ label?: string; value?: string }>;
       location?: string[];
+      photos_data_src?: string[];
+      photos_src?: string[];
     };
 
     // Build a label → value map from the detail rows
@@ -109,6 +121,15 @@ export async function scrapeSahibindenListing(url: string): Promise<SahibindenDe
     const getDetail = (label: string) => byLabel[labelKey(label)] ?? null;
 
     const loc = Array.isArray(data.location) ? data.location.map(x => clean(x)).filter(Boolean) as string[] : [];
+
+    // Merge + dedupe photo URLs from both selectors, keep only sahibinden-hosted images,
+    // prefer larger versions (strip resize hints if present)
+    const rawPhotos = [...(data.photos_data_src || []), ...(data.photos_src || [])];
+    const photos = Array.from(new Set(
+      rawPhotos
+        .filter(u => typeof u === "string" && /sahibinden\.com/.test(u))
+        .map(u => u.replace(/_x\d+\./, "_x800."))  // upscale small thumb variants
+    )).slice(0, 10);
 
     const result: SahibindenDetails = {
       title: clean(data.title),
@@ -124,6 +145,7 @@ export async function scrapeSahibindenListing(url: string): Promise<SahibindenDe
       location_district: loc[1] || null,
       location_neighborhood: loc[2] || null,
       description: clean(data.description)?.substring(0, 2000) || null,
+      photos,
     };
 
     console.log("[scrape:sahibinden] extracted:", {
@@ -132,6 +154,7 @@ export async function scrapeSahibindenListing(url: string): Promise<SahibindenDe
       area: result.area,
       detailKeys: Object.keys(byLabel),
       locCount: loc.length,
+      photoCount: photos.length,
     });
 
     return result;

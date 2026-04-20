@@ -257,6 +257,23 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
     return;
   }
 
+  // Save scraped photos (up to 10) into emlak_property_photos
+  let scrapedPhotoCount = 0;
+  if (scraped?.photos && scraped.photos.length > 0) {
+    const photoRows = scraped.photos.slice(0, 10).map((url, idx) => ({
+      property_id: newProp.id,
+      user_id: ctx.userId,
+      url,
+      sort_order: idx + 1,
+    }));
+    const { error: photoErr } = await supabase.from("emlak_property_photos").insert(photoRows);
+    if (photoErr) {
+      console.error("[portfolio:photos]", photoErr);
+    } else {
+      scrapedPhotoCount = photoRows.length;
+    }
+  }
+
   // Build info summary
   let info = `✅ ${displayPortal} ilanı eklendi!\n\n`;
   info += `📌 ${title}\n`;
@@ -269,22 +286,19 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
   if (scraped?.location_neighborhood || parsed.location) info += `📍 ${scraped?.location_neighborhood || parsed.location}\n`;
   info += `\n🔗 ${url.substring(0, 60)}...`;
 
+  if (scrapedPhotoCount > 0) info += `📷 ${scrapedPhotoCount} fotoğraf çekildi\n`;
+
   const hasCore = scraped?.price && scraped?.area;
   if (!hasCore) {
-    info += `\n\n⚠️ Bazı bilgiler eksik — tamamlamak ister misiniz?`;
+    info += `\n⚠️ Bazı bilgiler eksik — tamamlamak ister misiniz?`;
   } else {
-    info += `\n\n✨ Tüm bilgileri çektim. Şimdi bu mülk için sunumu hazırlayayım mı?`;
+    info += `\n✨ Tüm bilgileri çektim. Şimdi bu mülk için sunumu hazırlayayım mı?`;
   }
 
+  // Single primary CTA only — nav footer goes in a separate message (auto-appended by sendButtons)
   await sendButtons(ctx.phone, info, hasCore
-    ? [
-        { id: `cmd:sunum`, title: "📊 Sunum Hazırla" },
-        { id: `mulkdetay:${newProp.id}`, title: "📋 Detay" },
-      ]
-    : [
-        { id: `mulkdetay:${newProp.id}`, title: "✏️ Tamamla" },
-        { id: "cmd:menu", title: "🏠 Menü" },
-      ],
+    ? [{ id: `cmd:sunum`, title: "📊 Sunumu Hazırla" }]
+    : [{ id: `mulkdetay:${newProp.id}`, title: "✏️ Tamamla" }],
   );
 
   // Gamification: mission trigger (non-silent — major milestone popup)

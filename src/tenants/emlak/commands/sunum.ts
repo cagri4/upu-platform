@@ -488,13 +488,35 @@ async function generatePresentation(ctx: WaContext): Promise<void> {
   const appUrl = "https://estateai.upudev.nl";
   const link = `${appUrl}/d/p/${magicToken}`;
 
+  // 1) Link + primary CTA
   await sendButtons(ctx.phone,
-    `✅ Sunum hazırlandı!\n\n📊 ${customer.name} için ${props.length} mülk\n🔗 ${link}\n\nMüşteriye göndermek ister misiniz?`,
+    `✅ Sunum hazırlandı!\n\n📊 ${customer.name} için ${props.length} mülk\n🔗 ${link}`,
     [
       { id: `snm:send:${presentation.id}`, title: "📤 Müşteriye Gönder" },
-      { id: "cmd:menu", title: "Ana Menü" },
     ],
+    { skipNav: true },
   );
+
+  // 2) Ready-to-copy customer message template (fetched from profile)
+  try {
+    const supabase = (await import("@/platform/auth/supabase")).getServiceClient();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("display_name, metadata")
+      .eq("id", ctx.userId)
+      .single();
+    const officeName = (profile?.metadata as Record<string, unknown>)?.office_name as string | undefined;
+    const signature = [profile?.display_name, officeName].filter(Boolean).join(" - ");
+    const template =
+      `Merhaba ${customer.name},\n\n` +
+      `İlgilendiğiniz mülk için hazırladığım sunumu aşağıdaki linke tıklayarak inceleyebilirsiniz:\n\n` +
+      `${link}\n\n` +
+      `En kısa zamanda görüşmek üzere,\n` +
+      `${signature || ""}`.trimEnd();
+    await sendText(ctx.phone, `📋 *Müşteriye göndereceğin hazır mesaj* (kopyala-yapıştır):\n\n---\n${template}`);
+  } catch (err) {
+    console.error("[sunum:template]", err);
+  }
 
   await logEvent(ctx.tenantId, ctx.userId, "sunum_hazirlandi", `${customer.name} — ${props.length} mülk`);
 
