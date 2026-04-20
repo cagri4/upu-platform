@@ -621,6 +621,16 @@ export async function POST(req: NextRequest) {
     // ── Check onboarding state — intercept if not completed ──
     const onbState = await getOnboardingState(user.id);
     if (onbState && !onbState.completed_at) {
+      // Escape hatches: cmd:menu, cmd:devam, or text commands should bypass onboarding
+      const isNavEscape =
+        ctx.interactiveId === "cmd:menu" ||
+        ctx.interactiveId === "cmd:devam" ||
+        ["menu", "menü", "ana menü", "ana menu", "devam", "devam et", "göreve devam", "gorevlere devam", "görevlere devam", "iptal"]
+          .includes((ctx.text || "").toLowerCase().trim());
+      if (isNavEscape) {
+        await routeCommand(ctx);
+        return NextResponse.json({ status: "ok" });
+      }
       try {
         logOnboarding(ctx, onbState.current_step || "unknown");
         await handleOnboardingInput(ctx, onbState);
