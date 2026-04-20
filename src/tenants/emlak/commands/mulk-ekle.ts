@@ -1,7 +1,7 @@
 import type { WaContext } from "@/platform/whatsapp/types";
 import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession, getSession } from "@/platform/whatsapp/session";
-import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
+import { sendText, sendButtons, sendList, sendNavFooter } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 
 // ── Constants ──────────────────────────────────────────────────────────
@@ -237,6 +237,7 @@ export async function handleMulkEkle(ctx: WaContext): Promise<void> {
     "_Hata yaparsanız sorun değil, devam edin — daha sonra düzeltebilirsiniz._\n\n" +
     "İlan başlığını yazın:\n\nÖrnek: \"Yalıkavak Kiralık 2+1 Daire\""
   );
+  await sendNavFooter(ctx.phone);
 }
 
 // ── Step handler (text inputs only) ─────────────────────────────────────
@@ -248,6 +249,7 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
 
   if (!text) {
     await sendText(ctx.phone, "Lütfen bir değer yazın. (\"geç\" ile atlayın)");
+    await sendNavFooter(ctx.phone);
     return;
   }
 
@@ -257,10 +259,12 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
     case "title": {
       if (text.length < 3) {
         await sendText(ctx.phone, "Başlık en az 3 karakter olmalı:");
+        await sendNavFooter(ctx.phone);
         return;
       }
       await updateSession(ctx.userId, "price", { title: text });
       await sendText(ctx.phone, "💰 Fiyatı yazın:\n\nÖrnek: 4.5M, 25 bin, 750.000");
+      await sendNavFooter(ctx.phone);
       return;
     }
 
@@ -268,10 +272,12 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
       const price = parsePrice(text);
       if (!price) {
         await sendText(ctx.phone, "Geçerli fiyat yazın. Örnek: 4.5M, 25 bin");
+        await sendNavFooter(ctx.phone);
         return;
       }
       await updateSession(ctx.userId, "m2", { price });
       await sendText(ctx.phone, "📐 Brüt metrekare yazın:\n\nÖrnek: 120");
+      await sendNavFooter(ctx.phone);
       return;
     }
 
@@ -279,10 +285,12 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
       const m2 = parseInt(text.replace(/[^\d]/g, ""), 10);
       if (!m2 || m2 < 1) {
         await sendText(ctx.phone, "Geçerli metrekare yazın:");
+        await sendNavFooter(ctx.phone);
         return;
       }
       await updateSession(ctx.userId, "net_area", { m2 });
       await sendText(ctx.phone, "📐 Net metrekare yazın:\n\nÖrnek: 95\n\n(\"geç\" ile atlayın)");
+      await sendNavFooter(ctx.phone);
       return;
     }
 
@@ -290,6 +298,7 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
       const city = skip ? null : text;
       await updateSession(ctx.userId, "district", { city });
       await sendText(ctx.phone, "📍 İlçe yazın:\n\nÖrnek: Bodrum\n\n(\"geç\" ile atlayın)");
+      await sendNavFooter(ctx.phone);
       return;
     }
 
@@ -297,6 +306,7 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
       const district = skip ? null : text;
       await updateSession(ctx.userId, "neighborhood", { district });
       await sendText(ctx.phone, "📍 Mahalle yazın:\n\nÖrnek: Yalıkavak, Bitez\n\n(\"geç\" ile atlayın)");
+      await sendNavFooter(ctx.phone);
       return;
     }
 
@@ -340,6 +350,7 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
 
     default:
       await sendText(ctx.phone, "Lütfen yukarıdaki seçeneklerden birini kullanın.");
+      await sendNavFooter(ctx.phone);
       return;
   }
 }

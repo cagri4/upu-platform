@@ -7,6 +7,7 @@
 import type { TenantCommandRegistry } from "@/platform/whatsapp/types";
 
 import { handleMulkEkle, handleMulkEkleMenu, handleMulkEkleStep, handleMulkEkleCallback, handleDevam } from "./mulk-ekle";
+import { handleTamamlaCallback, handleTamamlaStep, handleTamamlaRooms } from "./tamamla";
 import { handleFiyatBelirle, handleFiyatBelirleCallback } from "./fiyat-belirle";
 import { handleMusteriler } from "./musteriler";
 import { handleSozlesmelerim, handleWebpanel, handleSozlesme, handleSozlesmeStep, handleSozlesmeCallback } from "./sozlesme";
@@ -51,6 +52,7 @@ export const emlakCommands: TenantCommandRegistry = {
   },
   stepHandlers: {
     mulkekle: handleMulkEkleStep,
+    tamamla: handleTamamlaStep,
     tara: handleTaraStep,
     musteriEkle: handleMusteriEkleStep,
     musteriDuzenle: handleMusteriDuzenleStep,
@@ -74,6 +76,8 @@ export const emlakCommands: TenantCommandRegistry = {
       }
     },
     "mulkekle:": handleMulkEkleCallback,
+    "tamamla:": handleTamamlaCallback,
+    "tmm:rooms:": handleTamamlaRooms,
     "mustekle:": handleMusteriEkleCallback,
     "md_select:": handleMusteriDuzenleCallback,
     "md_edit:": handleMusteriDuzenleCallback,

@@ -50,7 +50,9 @@ export async function handleTara(ctx: WaContext): Promise<void> {
 
   if (!args) {
     await startSession(ctx.userId, ctx.tenantId, "tara", "waiting_url");
-    await sendText(ctx.phone, "🔍 Portal linkini yapıştırın:\n\nOrnek: https://sahibinden.com/ilan/...");
+    await sendText(ctx.phone, "🔍 Portal linkini yapıştırın:\n\nÖrnek: https://sahibinden.com/ilan/...");
+    const { sendNavFooter } = await import("@/platform/whatsapp/send");
+    await sendNavFooter(ctx.phone);
     return;
   }
 
@@ -298,7 +300,7 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
   // Single primary CTA only — nav footer goes in a separate message (auto-appended by sendButtons)
   await sendButtons(ctx.phone, info, hasCore
     ? [{ id: `cmd:sunum`, title: "📊 Sunumu Hazırla" }]
-    : [{ id: `mulkdetay:${newProp.id}`, title: "✏️ Tamamla" }],
+    : [{ id: `tamamla:${newProp.id}`, title: "✏️ Tamamla" }],
   );
 
   // Gamification: mission trigger (non-silent — major milestone popup)

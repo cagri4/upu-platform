@@ -151,6 +151,8 @@ export async function sendOnboardingStep(ctx: WaContext, state: OnboardingState)
       ]);
     } else {
       await sendText(ctx.phone, msg);
+      const { sendNavFooter } = await import("./send");
+      await sendNavFooter(ctx.phone);
     }
   }
 }

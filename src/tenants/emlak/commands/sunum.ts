@@ -6,7 +6,7 @@
 import type { WaContext } from "@/platform/whatsapp/types";
 import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession } from "@/platform/whatsapp/session";
-import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
+import { sendText, sendButtons, sendList, sendNavFooter } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 import { randomBytes } from "crypto";
@@ -271,7 +271,7 @@ export async function handleSunumCallback(ctx: WaContext, data: string): Promise
 
     const { data: customer } = await supabase
       .from("emlak_customers")
-      .select("name, phone")
+      .select("id, name, phone")
       .eq("id", pres.customer_id)
       .single();
 
@@ -291,12 +291,44 @@ export async function handleSunumCallback(ctx: WaContext, data: string): Promise
     await supabase.from("emlak_presentations").update({ status: "sent", updated_at: new Date().toISOString() }).eq("id", presentationId);
 
     await sendButtons(ctx.phone,
-      `✅ Sunum ${customer.name}'e gönderildi!\n\n📱 ${customer.phone}\n🔗 ${link}`,
-      [{ id: "cmd:menu", title: "Ana Menü" }],
+      `✅ Sunum ${customer.name}'e gönderildi!\n\n📱 ${customer.phone}\n🔗 ${link}\n\n3 gün sonra bu müşteri için takip hatırlatması kurayım mı?`,
+      [
+        { id: `snm:followup:${customer.id}`, title: "⏰ Evet, kur" },
+        { id: "cmd:menu", title: "🏠 Menü" },
+      ],
     );
 
     await endSession(ctx.userId);
     await logEvent(ctx.tenantId, ctx.userId, "sunum_gonderildi", `${customer.name}`);
+    return;
+  }
+
+  // Create a 3-day follow-up reminder after sunum send
+  if (data.startsWith("snm:followup:")) {
+    const customerId = data.replace("snm:followup:", "");
+    const supabase = getServiceClient();
+    const { data: customer } = await supabase
+      .from("emlak_customers")
+      .select("id, name")
+      .eq("id", customerId)
+      .single();
+    if (!customer) {
+      await sendButtons(ctx.phone, "Müşteri bulunamadı.", [{ id: "cmd:menu", title: "🏠 Menü" }]);
+      return;
+    }
+    const when = new Date(Date.now() + 3 * 86400000).toISOString();
+    await supabase.from("emlak_reminders").insert({
+      user_id: ctx.userId,
+      tenant_id: ctx.tenantId,
+      customer_id: customer.id,
+      title: `${customer.name} — sunum takip`,
+      remind_at: when,
+      status: "pending",
+    });
+    await sendButtons(ctx.phone,
+      `⏰ Hatırlatma kuruldu!\n\n📅 3 gün sonra (${new Date(when).toLocaleDateString("tr-TR")})\n👤 ${customer.name}\n\nO gün sana hatırlatıcı göndereceğim.`,
+      [{ id: "cmd:menu", title: "🏠 Menü" }],
+    );
     return;
   }
 }
@@ -514,6 +546,7 @@ async function generatePresentation(ctx: WaContext): Promise<void> {
       `En kısa zamanda görüşmek üzere,\n` +
       `${signature || ""}`.trimEnd();
     await sendText(ctx.phone, `📋 *Müşteriye göndereceğin hazır mesaj* (kopyala-yapıştır):\n\n---\n${template}`);
+    await sendNavFooter(ctx.phone);
   } catch (err) {
     console.error("[sunum:template]", err);
   }
