@@ -139,5 +139,5 @@ export async function startDiscoveryChain(userId: string, phone: string, display
 
   await sendButtons(phone, msg, [
     { id: "cmd:mulkekle", title: "🏠 Mülk Ekle" },
-  ]);
+  ], { skipNav: true });
 }

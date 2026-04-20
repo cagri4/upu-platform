@@ -69,6 +69,7 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
         { id: "vf:region:bodrum", title: "Bodrum", description: "Muğla" },
       ],
     }],
+    { skipNav: true },
   );
   return true;
 }
@@ -97,6 +98,7 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
       `Hangi mülk tipini görmek istersiniz?`,
       "Tip Seç",
       [{ title: "Mülk Tipleri", rows: PROPERTY_TYPES.map(t => ({ id: t.id, title: t.title, description: "" })) }],
+      { skipNav: true },
     );
     return;
   }
@@ -112,6 +114,7 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
         { id: "vf:listing:kiralik", title: "Kiralık" },
         { id: "vf:listing:hepsi", title: "Hepsi" },
       ],
+      { skipNav: true },
     );
     return;
   }
@@ -123,6 +126,7 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
     await sendButtons(ctx.phone,
       `Kimin ilanlarını görelim?`,
       LISTED_BY,
+      { skipNav: true },
     );
     return;
   }
@@ -202,9 +206,10 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
 
     // Long report goes via sendText (auto-splits at 4096); then a short button prompt.
     await sendText(ctx.phone, msg);
-    await sendButtons(ctx.phone, "Şimdi sizi tanıyayım! 👇", [
-      { id: "vf:start", title: "🚀 Devam Et" },
-    ]);
+    await sendButtons(ctx.phone, "Şimdi sizi tanıyayım! 👇",
+      [{ id: "vf:start", title: "🚀 Devam Et" }],
+      { skipNav: true },
+    );
     return;
   }
 

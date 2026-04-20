@@ -138,21 +138,19 @@ export async function sendOnboardingStep(ctx: WaContext, state: OnboardingState)
     if (step.skipLabel !== undefined) {
       buttons.push({ id: "onb:skip", title: step.skipLabel || "Atla" });
     }
-    await sendButtons(ctx.phone, msg, buttons.slice(0, 3));
-    // If more than 3 buttons, send second message
+    // Onboarding is a forced corridor — no nav footer to avoid confusion
+    await sendButtons(ctx.phone, msg, buttons.slice(0, 3), { skipNav: true });
     if (buttons.length > 3) {
-      await sendButtons(ctx.phone, "Diğer seçenekler:", buttons.slice(3, 6));
+      await sendButtons(ctx.phone, "Diğer seçenekler:", buttons.slice(3, 6), { skipNav: true });
     }
   } else {
     // Free text input — add skip button if skippable
     if (step.skipLabel !== undefined) {
       await sendButtons(ctx.phone, msg, [
         { id: "onb:skip", title: step.skipLabel || "Atla" },
-      ]);
+      ], { skipNav: true });
     } else {
       await sendText(ctx.phone, msg);
-      const { sendNavFooter } = await import("./send");
-      await sendNavFooter(ctx.phone);
     }
   }
 }
