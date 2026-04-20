@@ -1,7 +1,7 @@
 /**
  * Sahibinden single-listing scraper using ScrapingBee proxy API.
  * Solves: sahibinden.com blocks non-TR IPs + Cloudflare bot protection.
- * ScrapingBee free tier: 1000 requests/month — plenty for ad-hoc user additions.
+ * Uses ScrapingBee's extract_rules (CSS selectors) for robust extraction.
  */
 
 const SCRAPINGBEE_BASE = "https://app.scrapingbee.com/api/v1";
@@ -20,47 +20,25 @@ export interface SahibindenDetails {
   location_district: string | null;
   location_neighborhood: string | null;
   description: string | null;
+  raw_html_head?: string;  // for debugging
 }
 
-function parsePrice(raw: string): number | null {
-  const cleaned = raw.replace(/[^\d]/g, "");
+function parseNum(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const cleaned = String(raw).replace(/[^\d]/g, "");
   const n = parseInt(cleaned, 10);
   return isNaN(n) ? null : n;
 }
 
-function extractField(html: string, label: string): string | null {
-  const re = new RegExp(
-    `<strong>\\s*${label}\\s*</strong>[\\s\\S]*?<span[^>]*>([^<]+)</span>`,
-    "i",
-  );
-  const m = html.match(re);
-  return m ? m[1].trim() : null;
+function clean(s: string | null | undefined): string | null {
+  if (!s) return null;
+  const t = String(s).replace(/\s+/g, " ").trim();
+  return t.length > 0 ? t : null;
 }
 
-function extractTitle(html: string): string | null {
-  const m = html.match(/<h1[^>]*class="[^"]*classifiedDetailTitle[^"]*"[^>]*>([^<]+)<\/h1>/i)
-         || html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-  return m ? m[1].trim() : null;
-}
-
-function extractPrice(html: string): number | null {
-  const m = html.match(/<div[^>]*class="[^"]*classifiedPrice[^"]*"[^>]*>[\s\S]*?<h3>([^<]+)<\/h3>/i)
-         || html.match(/<h3[^>]*>([\d.,\s]+TL)<\/h3>/i);
-  return m ? parsePrice(m[1]) : null;
-}
-
-function extractLocation(html: string): { city: string | null; district: string | null; neighborhood: string | null } {
-  // Sahibinden shows breadcrumbs: İlan konumu: Muğla / Bodrum / Yalıkavak Mh.
-  const m = html.match(/İlan konumu[\s\S]{0,200}?<a[^>]*>([^<]+)<\/a>[\s\S]*?<a[^>]*>([^<]+)<\/a>[\s\S]*?<a[^>]*>([^<]+)<\/a>/i);
-  if (m) return { city: m[1].trim(), district: m[2].trim(), neighborhood: m[3].trim() };
-  return { city: null, district: null, neighborhood: null };
-}
-
-function extractDescription(html: string): string | null {
-  const m = html.match(/<div[^>]*id="classifiedDescription"[^>]*>([\s\S]*?)<\/div>/i);
-  if (!m) return null;
-  const text = m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  return text.substring(0, 2000) || null;
+// Normalize label text (collapse whitespace, remove nbsp) so key matching is reliable
+function labelKey(label: string): string {
+  return label.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
 }
 
 export async function scrapeSahibindenListing(url: string): Promise<SahibindenDetails | null> {
@@ -70,11 +48,38 @@ export async function scrapeSahibindenListing(url: string): Promise<SahibindenDe
     return null;
   }
 
+  // ScrapingBee extract_rules — CSS selectors for reliable extraction.
+  // Sahibinden key selectors (2026 layout):
+  //  h1.classifiedDetailTitle       → title
+  //  div.classifiedInfo h3          → price (e.g. "18.000.000 TL")
+  //  ul.classifiedInfoList > li     → detail rows (strong=label, span=value)
+  //  #classifiedDescription         → description
+  //  h2 a (inside classifiedInfo)   → location breadcrumb links
+  const extractRules = {
+    title: "h1",
+    price: "div.classifiedInfo h3",
+    description: "#classifiedDescription",
+    details: {
+      selector: "ul.classifiedInfoList li",
+      type: "list",
+      output: {
+        label: "strong",
+        value: "span",
+      },
+    },
+    location: {
+      selector: "h2.classifiedInfo > a, .classifiedInfo h2 a",
+      type: "list",
+      output: "@text",
+    },
+  };
+
   const params = new URLSearchParams({
     api_key: apiKey,
     url,
     country_code: "tr",
     render_js: "false",
+    extract_rules: JSON.stringify(extractRules),
   });
 
   try {
@@ -82,30 +87,54 @@ export async function scrapeSahibindenListing(url: string): Promise<SahibindenDe
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) {
-      console.error("[scrape:sahibinden] API error:", res.status, await res.text());
+      const body = await res.text();
+      console.error("[scrape:sahibinden] API error:", res.status, body.substring(0, 300));
       return null;
     }
-    const html = await res.text();
-
-    const areaRaw = extractField(html, "m² \\(Brüt\\)");
-    const netAreaRaw = extractField(html, "m² \\(Net\\)");
-    const loc = extractLocation(html);
-
-    return {
-      title: extractTitle(html),
-      price: extractPrice(html),
-      area: areaRaw ? parseInt(areaRaw.replace(/[^\d]/g, ""), 10) || null : null,
-      net_area: netAreaRaw ? parseInt(netAreaRaw.replace(/[^\d]/g, ""), 10) || null : null,
-      rooms: extractField(html, "Oda Sayısı"),
-      floor: extractField(html, "Bulunduğu Kat"),
-      total_floors: extractField(html, "Binanın Kat Sayısı"),
-      building_age: extractField(html, "Bina Yaşı"),
-      heating: extractField(html, "Isıtma"),
-      location_city: loc.city,
-      location_district: loc.district,
-      location_neighborhood: loc.neighborhood,
-      description: extractDescription(html),
+    const data = await res.json() as {
+      title?: string;
+      price?: string;
+      description?: string;
+      details?: Array<{ label?: string; value?: string }>;
+      location?: string[];
     };
+
+    // Build a label → value map from the detail rows
+    const byLabel: Record<string, string> = {};
+    for (const d of data.details || []) {
+      const k = d.label ? labelKey(d.label) : "";
+      const v = clean(d.value);
+      if (k && v) byLabel[k] = v;
+    }
+    const getDetail = (label: string) => byLabel[labelKey(label)] ?? null;
+
+    const loc = Array.isArray(data.location) ? data.location.map(x => clean(x)).filter(Boolean) as string[] : [];
+
+    const result: SahibindenDetails = {
+      title: clean(data.title),
+      price: parseNum(data.price),
+      area: parseNum(getDetail("m² (Brüt)")),
+      net_area: parseNum(getDetail("m² (Net)")),
+      rooms: getDetail("Oda Sayısı"),
+      floor: getDetail("Bulunduğu Kat"),
+      total_floors: getDetail("Binanın Kat Sayısı"),
+      building_age: getDetail("Bina Yaşı"),
+      heating: getDetail("Isıtma"),
+      location_city: loc[0] || null,
+      location_district: loc[1] || null,
+      location_neighborhood: loc[2] || null,
+      description: clean(data.description)?.substring(0, 2000) || null,
+    };
+
+    console.log("[scrape:sahibinden] extracted:", {
+      title: result.title?.substring(0, 50),
+      price: result.price,
+      area: result.area,
+      detailKeys: Object.keys(byLabel),
+      locCount: loc.length,
+    });
+
+    return result;
   } catch (err) {
     console.error("[scrape:sahibinden] fetch error:", err);
     return null;

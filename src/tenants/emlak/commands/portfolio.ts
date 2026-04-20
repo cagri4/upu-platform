@@ -272,12 +272,20 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
   const hasCore = scraped?.price && scraped?.area;
   if (!hasCore) {
     info += `\n\n⚠️ Bazı bilgiler eksik — tamamlamak ister misiniz?`;
+  } else {
+    info += `\n\n✨ Tüm bilgileri çektim. Şimdi bu mülk için sunumu hazırlayayım mı?`;
   }
 
-  await sendButtons(ctx.phone, info, [
-    { id: `mulkdetay:${newProp.id}`, title: hasCore ? "📋 Detay" : "✏️ Tamamla" },
-    { id: "cmd:menu", title: "🏠 Menü" },
-  ]);
+  await sendButtons(ctx.phone, info, hasCore
+    ? [
+        { id: `cmd:sunum`, title: "📊 Sunum Hazırla" },
+        { id: `mulkdetay:${newProp.id}`, title: "📋 Detay" },
+      ]
+    : [
+        { id: `mulkdetay:${newProp.id}`, title: "✏️ Tamamla" },
+        { id: "cmd:menu", title: "🏠 Menü" },
+      ],
+  );
 
   // Gamification: mission trigger (non-silent — major milestone popup)
   try {
