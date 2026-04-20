@@ -205,12 +205,24 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
     }
   }
 
-  // Parse URL for property info
+  // Parse URL for property info (baseline from slug)
   const parsed = portal === "sahibinden" ? parseSahibindenUrl(url) : { listing_type: null, type: null, rooms: null, location: null, title: null };
 
-  const title = parsed.title || `${displayPortal} İlanı (${sourceId || "?"})`;
+  // For sahibinden, also try full-page scrape via ScrapingBee proxy (bypass CF + TR IP)
+  let scraped: Awaited<ReturnType<typeof import("@/platform/scraping/sahibinden").scrapeSahibindenListing>> = null;
+  if (portal === "sahibinden" && url.includes("/ilan/")) {
+    await sendText(ctx.phone, "🔍 İlan bilgileri çekiliyor... (birkaç saniye)");
+    try {
+      const { scrapeSahibindenListing } = await import("@/platform/scraping/sahibinden");
+      scraped = await scrapeSahibindenListing(url);
+    } catch (err) {
+      console.error("[portfolio:scrape]", err);
+    }
+  }
 
-  // Insert property with parsed info
+  const title = scraped?.title || parsed.title || `${displayPortal} İlanı (${sourceId || "?"})`;
+
+  // Insert property with parsed + scraped info
   const { data: newProp, error } = await supabase
     .from("emlak_properties")
     .insert({
@@ -223,13 +235,24 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
       status: "aktif",
       type: parsed.type || "daire",
       listing_type: parsed.listing_type || "satilik",
-      rooms: parsed.rooms || null,
-      location_neighborhood: parsed.location || null,
+      rooms: scraped?.rooms || parsed.rooms || null,
+      price: scraped?.price ?? null,
+      area: scraped?.area ?? null,
+      net_area: scraped?.net_area ?? null,
+      floor: scraped?.floor ?? null,
+      total_floors: scraped?.total_floors ?? null,
+      building_age: scraped?.building_age ?? null,
+      heating: scraped?.heating ?? null,
+      location_city: scraped?.location_city ?? null,
+      location_district: scraped?.location_district ?? null,
+      location_neighborhood: scraped?.location_neighborhood || parsed.location || null,
+      description: scraped?.description ?? null,
     })
     .select("id")
     .single();
 
   if (error || !newProp) {
+    console.error("[portfolio:insert]", error);
     await sendButtons(ctx.phone, "❌ Mülk eklenirken hata oluştu.", [{ id: "cmd:menu", title: "Ana Menü" }]);
     return;
   }
@@ -239,14 +262,21 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
   info += `📌 ${title}\n`;
   if (parsed.listing_type) info += `🏷 ${parsed.listing_type === "satilik" ? "Satılık" : "Kiralık"}\n`;
   if (parsed.type) info += `🏠 ${parsed.type.charAt(0).toUpperCase() + parsed.type.slice(1)}\n`;
-  if (parsed.rooms) info += `🛏 ${parsed.rooms}\n`;
-  if (parsed.location) info += `📍 ${parsed.location}\n`;
-  info += `\n🔗 ${url.substring(0, 60)}...\n`;
-  info += `\n⚠️ Fiyat, m² gibi bilgiler eksik — tamamlamak ister misiniz?`;
+  if (scraped?.price) info += `💰 ${new Intl.NumberFormat("tr-TR").format(scraped.price)} TL\n`;
+  if (scraped?.area) info += `📐 ${scraped.area} m² brüt\n`;
+  if (scraped?.net_area) info += `📐 ${scraped.net_area} m² net\n`;
+  if (scraped?.rooms || parsed.rooms) info += `🛏 ${scraped?.rooms || parsed.rooms}\n`;
+  if (scraped?.location_neighborhood || parsed.location) info += `📍 ${scraped?.location_neighborhood || parsed.location}\n`;
+  info += `\n🔗 ${url.substring(0, 60)}...`;
+
+  const hasCore = scraped?.price && scraped?.area;
+  if (!hasCore) {
+    info += `\n\n⚠️ Bazı bilgiler eksik — tamamlamak ister misiniz?`;
+  }
 
   await sendButtons(ctx.phone, info, [
-    { id: `mulkdetay:${newProp.id}`, title: "✏️ Tamamla" },
-    { id: "cmd:menu", title: "❌ Sonra" },
+    { id: `mulkdetay:${newProp.id}`, title: hasCore ? "📋 Detay" : "✏️ Tamamla" },
+    { id: "cmd:menu", title: "🏠 Menü" },
   ]);
 
   // Gamification: mission trigger (non-silent — major milestone popup)
