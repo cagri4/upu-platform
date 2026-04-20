@@ -48,18 +48,13 @@ export async function sendText(phone: string, text: string) {
   }
 }
 
-// Check if any existing id is a nav action — used to skip auto-nav append
-function hasNavAlready(ids: string[]): boolean {
-  return ids.some(id =>
-    id === "cmd:menu" ||
-    id === "cmd:devam" ||
-    id.startsWith("cmd:menu") ||
-    id.startsWith("cmd:devam"),
-  );
-}
+// (reserved) — previously used to skip nav when existing button was cmd:menu.
+// Now we always append the nav footer so both Göreve Devam + Ana Menü are visible,
+// even if the primary message already has an Ana Menü button. This yields a bit of
+// redundancy but matches the UX requirement: "every screen needs both nav actions".
 
 // Send a separate follow-up message with nav buttons (Görevlere Devam + Ana Menü)
-async function sendNavFooter(phone: string) {
+export async function sendNavFooter(phone: string) {
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
   await fetch(`${WA_API}/${phoneId}/messages`, {
@@ -98,7 +93,7 @@ export async function sendButtons(
   // Detect if this call IS itself a nav footer (to avoid infinite chain)
   const isNavFooter = validButtons.length === 2 &&
     validButtons.every(b => b.id === "cmd:menu" || b.id === "cmd:devam");
-  const shouldAddNav = !isNavFooter && !opts?.skipNav && !hasNavAlready(validButtons.map(b => b.id));
+  const shouldAddNav = !isNavFooter && !opts?.skipNav;
 
   try {
     const resp = await fetch(`${WA_API}/${phoneId}/messages`, {
@@ -139,8 +134,7 @@ export async function sendList(
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
 
-  const allIds = sections.flatMap(s => s.rows.map(r => r.id));
-  const shouldAddNav = !opts?.skipNav && !hasNavAlready(allIds);
+  const shouldAddNav = !opts?.skipNav;
 
   try {
     const resp = await fetch(`${WA_API}/${phoneId}/messages`, {

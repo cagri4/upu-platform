@@ -4,7 +4,7 @@
 
 import type { WaContext, TenantCommandRegistry } from "./types";
 import { getSession, endSession, startSession, updateSession } from "./session";
-import { sendText, sendButtons, sendList } from "./send";
+import { sendText, sendButtons, sendList, sendNavFooter } from "./send";
 import { emlakCommands } from "@/tenants/emlak/commands";
 import { bayiCommands } from "@/tenants/bayi/commands";
 import { muhasebeCommands } from "@/tenants/muhasebe/commands";
@@ -523,6 +523,7 @@ async function handleWebpanelShared(ctx: WaContext, tenant: ReturnType<typeof ge
       `🖥 Web Panel\n\n${appUrl}/tr/login`,
     );
   }
+  await sendNavFooter(ctx.phone);
 }
 
 // ── Guide command (generic — same structure for all SaaS) ────────────────
