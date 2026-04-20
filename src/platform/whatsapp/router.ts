@@ -327,6 +327,19 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     if (lower === "menu" || lower === "menü" || lower === "ana menü" || lower === "ana menu") {
       await endSession(ctx.userId);
       // Fall through to menu handling below
+    } else if (
+      lower === "devam" ||
+      lower === "devam et" ||
+      lower === "göreve devam" ||
+      lower === "gorevlere devam" ||
+      lower === "görevlere devam"
+    ) {
+      // Resume command — do NOT end session, let the command handler re-send the prompt.
+      const handler = registry.commands["devam"];
+      if (handler) {
+        await handler(ctx);
+        return;
+      }
     } else if (lower === "sifirla" || lower === "sıfırla" || lower === "yukle" || lower === "yükle" || lower === "kaydet") {
       // Test state commands must bypass active sessions — otherwise the
       // admin can't escape a mid-flow step to rollback. End the session
