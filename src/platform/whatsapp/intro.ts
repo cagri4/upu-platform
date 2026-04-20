@@ -198,10 +198,11 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
         msg += `• ${hood}: ${cnt} ilan\n`;
       }
     }
-    msg += `\nBu taramayı ileride otomatik hale getirebilirsiniz — her sabah size gelir.\n\n`;
-    msg += `Şimdi sizi tanıyayım! 👇`;
+    msg += `\nBu taramayı ileride otomatik hale getirebilirsiniz — her sabah size gelir.`;
 
-    await sendButtons(ctx.phone, msg, [
+    // Long report goes via sendText (auto-splits at 4096); then a short button prompt.
+    await sendText(ctx.phone, msg);
+    await sendButtons(ctx.phone, "Şimdi sizi tanıyayım! 👇", [
       { id: "vf:start", title: "🚀 Devam Et" },
     ]);
     return;
