@@ -244,8 +244,10 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
   info += `\n🔗 ${url.substring(0, 60)}...\n`;
   info += `\n⚠️ Fiyat, m² gibi bilgiler eksik — tamamlamak ister misiniz?`;
 
-  // Send success as plain text — XP popup provides the corridor CTA.
-  await sendText(ctx.phone, info);
+  await sendButtons(ctx.phone, info, [
+    { id: `mulkdetay:${newProp.id}`, title: "✏️ Tamamla" },
+    { id: "cmd:menu", title: "❌ Sonra" },
+  ]);
 
   // Gamification: mission trigger (non-silent — major milestone popup)
   try {

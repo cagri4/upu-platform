@@ -16,18 +16,36 @@ function truncateText(text: string, limit = 4000): string {
   return text.substring(0, limit - 100) + "\n\n... (devamı için komutu tekrar yazın)";
 }
 
+// Split text into chunks near line breaks to stay under WhatsApp's 4096-char limit
+function splitForWhatsApp(text: string, chunkLimit = 3900): string[] {
+  if (text.length <= chunkLimit) return [text];
+  const chunks: string[] = [];
+  let remaining = text;
+  while (remaining.length > chunkLimit) {
+    let cut = remaining.lastIndexOf("\n", chunkLimit);
+    if (cut < chunkLimit * 0.5) cut = chunkLimit; // no good line break — hard cut
+    chunks.push(remaining.substring(0, cut).trimEnd());
+    remaining = remaining.substring(cut).trimStart();
+  }
+  if (remaining.length > 0) chunks.push(remaining);
+  return chunks;
+}
+
 export async function sendText(phone: string, text: string) {
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
 
-  await fetch(`${WA_API}/${phoneId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messaging_product: "whatsapp", to: phone, type: "text",
-      text: { body: truncateText(text) },
-    }),
-  }).catch(err => console.error("[wa:send] text error:", err));
+  const parts = splitForWhatsApp(text);
+  for (const part of parts) {
+    await fetch(`${WA_API}/${phoneId}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messaging_product: "whatsapp", to: phone, type: "text",
+        text: { body: part },
+      }),
+    }).catch(err => console.error("[wa:send] text error:", err));
+  }
 }
 
 export async function sendButtons(
