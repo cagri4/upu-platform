@@ -1088,11 +1088,25 @@ async function finalizeProperty(ctx: WaContext): Promise<void> {
 
 export async function handleDevam(ctx: WaContext): Promise<void> {
   const sess = await getSession(ctx.userId);
-  if (!sess || sess.command !== "mulkekle") {
-    await sendButtons(ctx.phone, "📭 Yarım kalmış mülk ekleme işlemi yok.", [
-      { id: "cmd:mulkekle", title: "🏠 Yeni Mülk Ekle" },
-      { id: "cmd:menu", title: "Ana Menü" },
+  if (!sess) {
+    await sendButtons(ctx.phone, "📭 Devam edebilecek aktif bir görev yok.\n\nAna menüden bir komut seçebilirsin.", [
+      { id: "cmd:menu", title: "🏠 Ana Menü" },
     ]);
+    return;
+  }
+
+  // Handle onboarding/intro flow separately
+  if (sess.command === "_intro") {
+    await resumeIntro(ctx, sess.current_step);
+    return;
+  }
+
+  if (sess.command !== "mulkekle") {
+    // Other command with active session — prompt user to type the command
+    await sendButtons(ctx.phone,
+      `📋 Şu an *${sess.command}* akışındasın. Devam etmek için yukarıdaki son soruya cevap ver, ya da ana menüye dön.`,
+      [{ id: "cmd:menu", title: "🏠 Ana Menü" }],
+    );
     return;
   }
 
@@ -1342,6 +1356,44 @@ export async function handleDevam(ctx: WaContext): Promise<void> {
       await sendText(ctx.phone, `⚠️ Bu adımdan devam edilemiyor (${step}). /mulkekle yazıp baştan başla.`);
       return;
   }
+}
+
+async function resumeIntro(ctx: WaContext, step: string): Promise<void> {
+  if (step === "type") {
+    await sendList(ctx.phone, "Hangi mülk tipini görmek istersiniz?", "Tip Seç", [{
+      title: "Mülk Tipleri",
+      rows: [
+        { id: "vf:type:villa", title: "Villa" },
+        { id: "vf:type:daire", title: "Daire" },
+        { id: "vf:type:arsa", title: "Arsa" },
+        { id: "vf:type:mustakil", title: "Müstakil Ev" },
+        { id: "vf:type:rezidans", title: "Rezidans" },
+        { id: "vf:type:dukkan", title: "Dükkan" },
+        { id: "vf:type:buro_ofis", title: "Büro / Ofis" },
+        { id: "vf:type:hepsi", title: "Hepsi" },
+      ],
+    }]);
+    return;
+  }
+  if (step === "listing") {
+    await sendButtons(ctx.phone, "Satılık mı, kiralık mı?", [
+      { id: "vf:listing:satilik", title: "Satılık" },
+      { id: "vf:listing:kiralik", title: "Kiralık" },
+      { id: "vf:listing:hepsi", title: "Hepsi" },
+    ]);
+    return;
+  }
+  if (step === "listed") {
+    await sendButtons(ctx.phone, "Kimin ilanlarını görelim?", [
+      { id: "vf:listed:sahibi", title: "Sahibinden" },
+      { id: "vf:listed:emlakci", title: "Emlak Ofisinden" },
+      { id: "vf:listed:hepsi", title: "Hepsi" },
+    ]);
+    return;
+  }
+  await sendButtons(ctx.phone, "Tanışma akışındasın ama bu adım tanınmadı. Ana menüden devam edebilirsin.", [
+    { id: "cmd:menu", title: "🏠 Ana Menü" },
+  ]);
 }
 
 function toArr(v: unknown): string[] | null {

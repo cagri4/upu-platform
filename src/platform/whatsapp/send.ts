@@ -69,7 +69,7 @@ async function sendNavFooter(phone: string) {
       messaging_product: "whatsapp", to: phone, type: "interactive",
       interactive: {
         type: "button",
-        body: { text: "—" },
+        body: { text: "🔀 Navigasyon:" },
         action: {
           buttons: [
             { type: "reply", reply: { id: "cmd:devam", title: "▶️ Göreve Devam" } },
