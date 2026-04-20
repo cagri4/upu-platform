@@ -621,10 +621,12 @@ export async function POST(req: NextRequest) {
     // ── Check onboarding state — intercept if not completed ──
     const onbState = await getOnboardingState(user.id);
     if (onbState && !onbState.completed_at) {
-      // Escape hatches: cmd:menu, cmd:devam, or text commands should bypass onboarding
+      // Escape hatches: platform/admin interactive IDs or escape text commands bypass onboarding
+      const iid = ctx.interactiveId || "";
       const isNavEscape =
-        ctx.interactiveId === "cmd:menu" ||
-        ctx.interactiveId === "cmd:devam" ||
+        iid.startsWith("cmd:") ||        // menu/devam/profilim/etc
+        iid.startsWith("sifirla:") ||    // reset confirmation
+        iid.startsWith("admin:") ||      // admin panel
         ["menu", "menü", "ana menü", "ana menu",
          "devam", "devam et", "göreve devam", "gorevlere devam", "görevlere devam",
          "iptal", "vazgeç", "vazgec",
