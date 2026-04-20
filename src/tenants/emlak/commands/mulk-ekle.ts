@@ -1359,6 +1359,11 @@ export async function handleDevam(ctx: WaContext): Promise<void> {
 }
 
 async function resumeIntro(ctx: WaContext, step: string): Promise<void> {
+  if (step === "region") {
+    const { startIntro } = await import("@/platform/whatsapp/intro");
+    await startIntro(ctx);
+    return;
+  }
   if (step === "type") {
     await sendList(ctx.phone, "Hangi mülk tipini görmek istersiniz?", "Tip Seç", [{
       title: "Mülk Tipleri",

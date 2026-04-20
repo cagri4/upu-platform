@@ -47,6 +47,9 @@ const LISTED_BY = [
 export async function startIntro(ctx: WaContext): Promise<boolean> {
   if (!INTRO_TENANTS.has(ctx.tenantKey)) return false;
 
+  // Create session at step="region" so /devam can resume the intro from the first step
+  await startSession(ctx.userId, ctx.tenantId, "_intro", "region");
+
   await sendList(ctx.phone,
     `👋 Merhaba! Ben UPU, sizin kişisel AI asistanınızım. 7/24 satışlarınızı artırmak için çalışacağım.\n\n` +
     `*Yapabileceklerimden bazıları:*\n\n` +
