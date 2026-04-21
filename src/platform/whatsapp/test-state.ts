@@ -263,6 +263,7 @@ export async function handleSifirla(ctx: WaContext): Promise<void> {
       { id: "sifirla:confirm", title: "🗑 Evet, sil" },
       { id: "cmd:menu", title: "İptal" },
     ],
+    { skipNav: true },
   );
 }
 

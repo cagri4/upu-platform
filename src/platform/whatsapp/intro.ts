@@ -53,15 +53,14 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   await sendList(ctx.phone,
     `👋 Merhaba! Ben UPU, sizin kişisel AI asistanınızım. 7/24 satışlarınızı artırmak için çalışacağım.\n\n` +
     `*Yapabileceklerimden bazıları:*\n\n` +
-    `• Müşterinize 2 dakikada profesyonel sunum hazırlar, tek link ile gönderirim.\n` +
-    `• Müşterinize gösterebileceğiniz, tüm portföyünüzün yer aldığı profesyonel bir web sayfası yaparım.\n` +
-    `• Rakiplerinizden önce yeni fırsatları yakalarım — her sabah bölgenizdeki yeni ilanları otomatik raporlarım.\n` +
-    `• *Portföyünüzü büyütürüm* — sahibinden ilanlarının sahiplerini bulup, hazır AI mesajıyla tek tık iletişim kurmanızı sağlarım.\n` +
-    `• İlan açıklamalarınızı AI ile yazar, dikkat çeken satış odaklı metinler oluştururum.\n` +
-    `• Hiçbir müşterinizi unutmam — ne zaman aramanız gerektiğini takip eder, size hatırlatırım.\n` +
-    `• Sahibinden.com'a ilan yüklemenizi 30 dakikadan 3 dakikaya indiririm.\n` +
-    `• Dilediğiniz portföyünüzü, mülk arayan emlak danışmanlarıyla işbirliği yaparak, kısa sürede satılmasını sağlarım.\n\n` +
-    `Şimdi birlikte bir başlangıç yapalım ve bölgenizdeki ilanları tarayalım.\n\nBölgenizi seçin:`,
+    `• Portföyünüz için dakikalar içinde profesyonel sunumlar hazırlar, tek linkle müşterinize gönderirim.\n` +
+    `• Her sabah arama kriterlerinize uygun bölgenizdeki yeni ilanları size raporlarım.\n` +
+    `• Sahibinden'de sahibi tarafından verilen ilanları size bildirerek portföyünüzü büyütmenize destek olurum.\n` +
+    `• Bölgenizdeki diğer emlakçılarla işbirliği içinde, onların portföylerinden de kriterlerinize uyanları sabah raporunda bulursunuz.\n` +
+    `• WhatsApp emlakçı gruplarındaki ilanları da otomatik toplayıp arama kriterlerinize uyan fırsatları anında bildiririm.\n` +
+    `• Sunum ve ilan açıklamalarında yapay zeka ile satış hedefli metinler yazarım.\n` +
+    `• Sahibinden.com'a ilan yüklemenizi 30 dakikadan 3 dakikaya indiririm.\n\n` +
+    `Şimdi birlikte başlangıç yapalım.\n\nBölgenizi seçin:`,
     "Bölge Seç",
     [{
       title: "Bölgeler",

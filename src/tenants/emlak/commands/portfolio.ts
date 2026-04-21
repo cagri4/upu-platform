@@ -292,12 +292,11 @@ async function processPortalUrl(ctx: WaContext, rawUrl: string): Promise<void> {
 
   const hasCore = scraped?.price && scraped?.area;
   if (!hasCore) {
-    info += `\n⚠️ Bazı bilgiler eksik — tamamlamak ister misiniz?`;
+    info += `\n⚠️ Bazı bilgiler eksik — tamamladıktan sonra sunum hazırlayabilirim.`;
   } else {
-    info += `\n✨ Tüm bilgileri çektim. Şimdi bu mülk için sunumu hazırlayayım mı?`;
+    info += `\n✨ Kısa süre içinde bu mülk için bir sunum hazır olacak. İstediğiniz zaman inceleyip tek linkle müşterinize gönderebilirsiniz.`;
   }
 
-  // Single primary CTA only — nav footer goes in a separate message (auto-appended by sendButtons)
   await sendButtons(ctx.phone, info, hasCore
     ? [{ id: `cmd:sunum`, title: "📊 Sunumu Hazırla" }]
     : [{ id: `tamamla:${newProp.id}`, title: "✏️ Tamamla" }],

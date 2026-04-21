@@ -1059,7 +1059,8 @@ async function finalizeProperty(ctx: WaContext): Promise<void> {
   // and the popup's CTA becomes the ONLY next step (corridor pattern).
   await sendText(ctx.phone,
     `✅ Mülk başarıyla eklendi!\n\n📋 ${d.title}\n💰 ${priceStr} TL\n📐 ${d.m2} m²\n🛏 ${d.rooms}\n🏷 ${ltLabel}` +
-    (location ? `\n📍 ${location}` : ""),
+    (location ? `\n📍 ${location}` : "") +
+    `\n\n✨ Kısa süre içinde bu mülk için bir sunum hazır olacak. İstediğiniz zaman inceleyip tek linkle müşterinize gönderebilirsiniz.`,
   );
 
   // Discovery chain: advance if user is in guided first-use flow
