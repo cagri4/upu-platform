@@ -3,7 +3,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { sendButtons } from "@/platform/whatsapp/send";
+import { sendUrlButton } from "@/platform/whatsapp/send";
+import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -68,9 +69,21 @@ export async function POST(req: NextRequest) {
 
     try {
       const firstName = body.display_name.trim().split(/\s+/)[0];
-      await sendButtons(userPhone,
-        `🎉 Hoşgeldin ${firstName}!\n\nProfilin hazır. Şimdi ilk mülkünü ekleyip satışları artıralım.`,
-        [{ id: "cmd:mulkekle", title: "🏠 Mülk Ekle" }],
+
+      // Generate form magic link (2h) so welcome message directly opens property form
+      const formToken = randomBytes(32).toString("hex");
+      const formExpires = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+      await supabase.from("magic_link_tokens").insert({
+        user_id: magicToken.user_id,
+        token: formToken,
+        expires_at: formExpires,
+      });
+      const formUrl = `https://estateai.upudev.nl/tr/mulkekle-form?t=${formToken}`;
+
+      await sendUrlButton(userPhone,
+        `🎉 Hoşgeldin ${firstName}!\n\nProfilin hazır. Şimdi ilk mülkünü ekleyip satışları artıralım.\n\nMülk bilgilerini doldurman için sana özel bir form hazırladım. Formu aç, kolayca doldur, kaydet butonuyla WhatsApp'a dön.\n\n_Link 2 saat geçerlidir._`,
+        "📝 Formu Aç",
+        formUrl,
         { skipNav: true },
       );
     } catch (err) {
