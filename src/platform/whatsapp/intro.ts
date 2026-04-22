@@ -57,7 +57,7 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
     token,
     expires_at: expiresAt,
   });
-  const setupUrl = `https://estateai.upudev.nl/tr/setup?t=${token}`;
+  const setupUrl = `https://estateai.upudev.nl/tr/ara?t=${token}`;
 
   // Long intro text goes as a separate message (auto-split if >4000 chars)
   const introMsg =
@@ -74,8 +74,8 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
 
   const { sendUrlButton } = await import("./send");
   await sendUrlButton(ctx.phone,
-    "Kurulum için aşağıdaki butona tıkla, 1-2 dakikada profilini hazırla ve WhatsApp'a dön.\n\n_Link 2 saat geçerlidir._",
-    "🚀 Kurulumu Başlat",
+    "Önce arama kriterlerini belirleyelim. Aşağıdaki butona tıkla, bölgende hangi ilanları izlemek istediğini seç ve WhatsApp'a dön.\n\n_Link 2 saat geçerlidir._",
+    "🔍 Arama Kriterleri",
     setupUrl,
     { skipNav: true },
   );
