@@ -50,8 +50,8 @@ export default function MulkEkleFormPage() {
   const [city, setCity] = useState("");
   const [district, setDistrict] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
-  const [heating, setHeating] = useState("");
-  const [parking, setParking] = useState("");
+  const [heating, setHeating] = useState<string[]>([]);
+  const [parking, setParking] = useState<string[]>([]);
   const [facade, setFacade] = useState<string[]>([]);
   const [housingType, setHousingType] = useState<string[]>([]);
   const [bathroom, setBathroom] = useState("");
@@ -107,8 +107,8 @@ export default function MulkEkleFormPage() {
           location_city: city,
           location_district: district,
           location_neighborhood: neighborhood,
-          heating,
-          parking,
+          heating: heating.join(", ") || null,
+          parking: parking.join(", ") || null,
           facade,
           housing_type: housingType,
           bathroom_count: bathroom,
@@ -183,8 +183,8 @@ export default function MulkEkleFormPage() {
           </Section>
 
           <Section title="🔧 Detaylar">
-            <Pills label="Isıtma" value={heating} options={HEATING_OPTIONS.map(h => ({id:h,label:h}))} onPick={setHeating} cols={2} />
-            <Pills label="Otopark" value={parking} options={PARKING_OPTIONS.map(p => ({id:p,label:p}))} onPick={setParking} cols={2} />
+            <MultiPills label="Isıtma (birden fazla)" values={heating} options={HEATING_OPTIONS} onToggle={v => toggleArr(heating, v, setHeating)} cols={2} />
+            <MultiPills label="Otopark (birden fazla)" values={parking} options={PARKING_OPTIONS} onToggle={v => toggleArr(parking, v, setParking)} cols={2} />
             <MultiPills label="Cephe (birden fazla)" values={facade} options={FACADE_OPTIONS} onToggle={v => toggleArr(facade, v, setFacade)} cols={4} />
             <MultiPills label="Konut Tipi (birden fazla)" values={housingType} options={HOUSING_TYPE_OPTIONS} onToggle={v => toggleArr(housingType, v, setHousingType)} cols={2} />
             <Pills label="Banyo" value={bathroom} options={BATHROOM_OPTIONS.map(b => ({id:b,label:b}))} onPick={setBathroom} cols={4} />
@@ -214,7 +214,7 @@ export default function MulkEkleFormPage() {
   );
 }
 
-const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-3 text-base";
+const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 placeholder:text-slate-400";
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
@@ -246,8 +246,8 @@ function Pills({ label, value, options, onPick, cols = 2 }: { label: string; val
     <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
     <div className={`grid ${colClass} gap-2`}>
       {options.map(o => (
-        <button type="button" key={o.id} onClick={() => onPick(o.id)}
-          className={`py-2 rounded-lg text-sm font-medium border-2 ${value === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300"}`}>
+        <button type="button" key={o.id} onClick={() => onPick(value === o.id ? "" : o.id)}
+          className={`py-2 rounded-lg text-sm font-medium border-2 ${value === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-900 border-slate-300"}`}>
           {o.label}
         </button>
       ))}
@@ -262,7 +262,7 @@ function MultiPills({ label, values, options, onToggle, cols = 2 }: { label: str
     <div className={`grid ${colClass} gap-2`}>
       {options.map(o => (
         <button type="button" key={o} onClick={() => onToggle(o)}
-          className={`py-2 rounded-lg text-xs font-medium border-2 ${values.includes(o) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300"}`}>
+          className={`py-2 rounded-lg text-xs font-medium border-2 ${values.includes(o) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-900 border-slate-300"}`}>
           {o}
         </button>
       ))}
@@ -275,11 +275,11 @@ function YesNo({ label, value, onPick }: { label: string; value: boolean | null;
     <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
     <div className="grid grid-cols-3 gap-2">
       <button type="button" onClick={() => onPick(true)}
-        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === true ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300"}`}>Evet</button>
+        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === true ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-900 border-slate-300"}`}>Evet</button>
       <button type="button" onClick={() => onPick(false)}
-        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === false ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300"}`}>Hayır</button>
+        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === false ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-900 border-slate-300"}`}>Hayır</button>
       <button type="button" onClick={() => onPick(null)}
-        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === null ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300"}`}>Belirtme</button>
+        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === null ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-900 border-slate-300"}`}>Belirtme</button>
     </div>
   </div>;
 }
