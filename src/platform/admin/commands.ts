@@ -725,11 +725,15 @@ export async function sendAdminAlert(message: string): Promise<void> {
     .select("whatsapp_phone, metadata")
     .not("whatsapp_phone", "is", null);
 
+  const { sendNavFooter } = await import("@/platform/whatsapp/send");
+
   for (const admin of admins || []) {
     const meta = (admin.metadata || {}) as Record<string, unknown>;
     const isAdm = meta.is_platform_admin === true || ADMIN_PHONES.includes(admin.whatsapp_phone);
     if (!isAdm) continue;
 
     await sendText(admin.whatsapp_phone, message);
+    // Push notifications interrupt the user's flow — always give them a way back
+    await sendNavFooter(admin.whatsapp_phone);
   }
 }
