@@ -163,6 +163,50 @@ export async function sendList(
   }
 }
 
+// Send a CTA URL button message — hides long URL behind a clickable button label.
+// Uses WhatsApp Cloud API interactive "cta_url" type (1 URL button per message).
+export async function sendUrlButton(
+  phone: string,
+  text: string,
+  buttonLabel: string,
+  url: string,
+  opts?: { skipNav?: boolean },
+) {
+  const { token, phoneId } = getConfig();
+  if (!token || !phoneId) return;
+
+  try {
+    const resp = await fetch(`${WA_API}/${phoneId}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messaging_product: "whatsapp", to: phone, type: "interactive",
+        interactive: {
+          type: "cta_url",
+          body: { text: truncateText(text, 1024) },
+          action: {
+            name: "cta_url",
+            parameters: {
+              display_text: buttonLabel.substring(0, 20),
+              url,
+            },
+          },
+        },
+      }),
+    });
+    if (!resp.ok) {
+      const err = await resp.text();
+      console.error("[wa:send] cta_url API error:", resp.status, err);
+      // Fallback: send text with URL inline
+      await sendText(phone, `${text}\n\n🔗 ${url}`);
+    } else if (!opts?.skipNav) {
+      await sendNavFooter(phone);
+    }
+  } catch (err) {
+    console.error("[wa:send] cta_url error:", err);
+  }
+}
+
 export async function sendDocument(
   phone: string,
   url: string,

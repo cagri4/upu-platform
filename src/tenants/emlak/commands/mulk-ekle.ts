@@ -229,11 +229,11 @@ export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
   });
   const formUrl = `https://estateai.upudev.nl/tr/mulkekle-form?t=${token}`;
 
-  await sendText(ctx.phone,
-    `🏠 *Mülk Ekle*\n\n` +
-    `Mülk bilgilerini doldurman için sana özel bir form hazırladım. Aşağıdaki linkten aç, kolayca doldur, kaydet butonuyla WhatsApp'a dön:\n\n` +
-    `🔗 ${formUrl}\n\n` +
-    `_Link 2 saat geçerlidir._`,
+  const { sendUrlButton } = await import("@/platform/whatsapp/send");
+  await sendUrlButton(ctx.phone,
+    `🏠 *Mülk Ekle*\n\nMülk bilgilerini doldurman için sana özel bir form hazırladım. Formu aç, kolayca doldur, kaydet butonuyla WhatsApp'a dön.\n\n_Link 2 saat geçerlidir._`,
+    "📝 Formu Aç",
+    formUrl,
   );
 }
 

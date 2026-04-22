@@ -59,7 +59,8 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   });
   const setupUrl = `https://estateai.upudev.nl/tr/setup?t=${token}`;
 
-  const msg =
+  // Long intro text goes as a separate message (auto-split if >4000 chars)
+  const introMsg =
     `👋 Merhaba! Ben UPU, sizin kişisel AI asistanınızım. 7/24 satışlarınızı artırmak için çalışacağım.\n\n` +
     `*Yapabileceklerimden bazıları:*\n\n` +
     `• Portföyünüz için dakikalar içinde profesyonel sunumlar hazırlar, tek linkle müşterinize gönderirim.\n` +
@@ -67,11 +68,17 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
     `• Sahibinden'de sahibi tarafından verilen ilanları size bildirerek portföyünüzü büyütmenize destek olurum.\n` +
     `• WhatsApp emlakçı gruplarındaki ilanları otomatik toplayıp arama kriterlerinize uyan fırsatları anında bildiririm.\n` +
     `• Sunum ve ilan açıklamalarında yapay zeka ile satış hedefli metinler yazarım.\n` +
-    `• Sahibinden.com'a ilan yüklemenizi 30 dakikadan 3 dakikaya indiririm.\n\n` +
-    `Kurulum için aşağıdaki linke tıkla, 1-2 dakikada profilini hazırla ve WhatsApp'a dön. Her şey hazır olduğunda seni burada karşılayacağım.\n\n` +
-    `🔗 ${setupUrl}\n\n_Link 2 saat geçerlidir._`;
+    `• Sahibinden.com'a ilan yüklemenizi 30 dakikadan 3 dakikaya indiririm.`;
 
-  await sendText(ctx.phone, msg);
+  await sendText(ctx.phone, introMsg);
+
+  const { sendUrlButton } = await import("./send");
+  await sendUrlButton(ctx.phone,
+    "Kurulum için aşağıdaki butona tıkla, 1-2 dakikada profilini hazırla ve WhatsApp'a dön.\n\n_Link 2 saat geçerlidir._",
+    "🚀 Kurulumu Başlat",
+    setupUrl,
+    { skipNav: true },
+  );
   return true;
 }
 
