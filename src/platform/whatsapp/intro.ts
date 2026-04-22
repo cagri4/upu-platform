@@ -47,29 +47,31 @@ const LISTED_BY = [
 export async function startIntro(ctx: WaContext): Promise<boolean> {
   if (!INTRO_TENANTS.has(ctx.tenantKey)) return false;
 
-  // Create session at step="region" so /devam can resume the intro from the first step
-  await startSession(ctx.userId, ctx.tenantId, "_intro", "region");
+  // Generate a setup magic link (2h TTL — longer than regular webpanel)
+  const supabase = getServiceClient();
+  const { randomBytes } = await import("crypto");
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  await supabase.from("magic_link_tokens").insert({
+    user_id: ctx.userId,
+    token,
+    expires_at: expiresAt,
+  });
+  const setupUrl = `https://estateai.upudev.nl/tr/setup?t=${token}`;
 
-  await sendList(ctx.phone,
+  const msg =
     `👋 Merhaba! Ben UPU, sizin kişisel AI asistanınızım. 7/24 satışlarınızı artırmak için çalışacağım.\n\n` +
     `*Yapabileceklerimden bazıları:*\n\n` +
     `• Portföyünüz için dakikalar içinde profesyonel sunumlar hazırlar, tek linkle müşterinize gönderirim.\n` +
     `• Her sabah arama kriterlerinize uygun bölgenizdeki yeni ilanları size raporlarım.\n` +
     `• Sahibinden'de sahibi tarafından verilen ilanları size bildirerek portföyünüzü büyütmenize destek olurum.\n` +
-    `• Bölgenizdeki diğer emlakçılarla işbirliği içinde, onların portföylerinden de kriterlerinize uyanları sabah raporunda bulursunuz.\n` +
-    `• WhatsApp emlakçı gruplarındaki ilanları da otomatik toplayıp arama kriterlerinize uyan fırsatları anında bildiririm.\n` +
+    `• WhatsApp emlakçı gruplarındaki ilanları otomatik toplayıp arama kriterlerinize uyan fırsatları anında bildiririm.\n` +
     `• Sunum ve ilan açıklamalarında yapay zeka ile satış hedefli metinler yazarım.\n` +
     `• Sahibinden.com'a ilan yüklemenizi 30 dakikadan 3 dakikaya indiririm.\n\n` +
-    `Şimdi birlikte başlangıç yapalım.\n\nBölgenizi seçin:`,
-    "Bölge Seç",
-    [{
-      title: "Bölgeler",
-      rows: [
-        { id: "vf:region:bodrum", title: "Bodrum", description: "Muğla" },
-      ],
-    }],
-    { skipNav: true },
-  );
+    `Kurulum için aşağıdaki linke tıkla, 1-2 dakikada profilini hazırla ve WhatsApp'a dön. Her şey hazır olduğunda seni burada karşılayacağım.\n\n` +
+    `🔗 ${setupUrl}\n\n_Link 2 saat geçerlidir._`;
+
+  await sendText(ctx.phone, msg);
   return true;
 }
 
