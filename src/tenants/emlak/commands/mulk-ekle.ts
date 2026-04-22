@@ -216,13 +216,30 @@ function buildLabels(items: { id: string; label: string }[]): Record<string, str
 // ── Menu: choose add method ─────────────────────────────────────────────
 
 export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
+  // Generate a 2h magic link for the web form
+  const { getServiceClient } = await import("@/platform/auth/supabase");
+  const supabase = getServiceClient();
+  const { randomBytes } = await import("crypto");
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  await supabase.from("magic_link_tokens").insert({
+    user_id: ctx.userId,
+    token,
+    expires_at: expiresAt,
+  });
+  const formUrl = `https://estateai.upudev.nl/tr/mulkekle-form?t=${token}`;
+
+  await sendText(ctx.phone,
+    `🏠 *Mülk Ekle*\n\n` +
+    `Mülk bilgilerini doldurman için sana özel bir form hazırladım. Aşağıdaki linkten aç, kolayca doldur, kaydet butonuyla WhatsApp'a dön:\n\n` +
+    `🔗 ${formUrl}\n\n` +
+    `_Link 2 saat geçerlidir._\n\n` +
+    `Eğer mülk sahibinden.com'da zaten varsa, ilan linkini buraya yapıştırarak bilgileri otomatik çekebilirim:`,
+  );
   await sendButtons(ctx.phone,
-    "🏠 *Mülk Ekle*\n\nNasıl eklemek istersiniz?\n\n" +
-    "💡 _Manuel eklemeyi seçerseniz, sabırla mümkün olduğunca fazla özellik bilgisi vermenizi tavsiye ederim. " +
-    "Böylelikle hem daha ayrıntılı bir sunum oluşturabilirim, hem de mülkü daha sonra sahibinden.com'a tek tıkla bütün özellikleriyle ilan edebilirsiniz._",
+    "Sahibinden linkin varsa:",
     [
       { id: "mulkekle_method:link", title: "🔗 Sahibinden linki" },
-      { id: "mulkekle_method:detayli", title: "📝 Manuel ekle" },
     ],
   );
 }
