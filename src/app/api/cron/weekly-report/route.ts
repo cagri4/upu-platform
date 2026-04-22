@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { sendText } from "@/platform/whatsapp/send";
+import { sendText, sendNavFooter } from "@/platform/whatsapp/send";
 import { getWeeklyReportFn, getTenantKey } from "@/platform/cron/briefing-registry";
 import "@/platform/cron/tenant-briefings";
 
@@ -35,6 +35,7 @@ export async function GET(req: Request) {
         const message = await reportFn(user.id, user.tenant_id);
         if (message) {
           await sendText(user.whatsapp_phone, message);
+          await sendNavFooter(user.whatsapp_phone);
           sent++;
         }
       } catch (err) {

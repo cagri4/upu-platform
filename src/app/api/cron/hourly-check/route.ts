@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { sendText } from "@/platform/whatsapp/send";
+import { sendText, sendNavFooter } from "@/platform/whatsapp/send";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +46,7 @@ export async function GET(req: Request) {
           (reminder.note ? `\n\n${reminder.note}` : "");
 
         await sendText(phone, message);
+        await sendNavFooter(phone);
 
         // Mark as triggered
         await supabase
