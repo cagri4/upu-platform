@@ -233,14 +233,7 @@ export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
     `🏠 *Mülk Ekle*\n\n` +
     `Mülk bilgilerini doldurman için sana özel bir form hazırladım. Aşağıdaki linkten aç, kolayca doldur, kaydet butonuyla WhatsApp'a dön:\n\n` +
     `🔗 ${formUrl}\n\n` +
-    `_Link 2 saat geçerlidir._\n\n` +
-    `Eğer mülk sahibinden.com'da zaten varsa, ilan linkini buraya yapıştırarak bilgileri otomatik çekebilirim:`,
-  );
-  await sendButtons(ctx.phone,
-    "Sahibinden linkin varsa:",
-    [
-      { id: "mulkekle_method:link", title: "🔗 Sahibinden linki" },
-    ],
+    `_Link 2 saat geçerlidir._`,
   );
 }
 
