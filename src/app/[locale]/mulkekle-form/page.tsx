@@ -177,9 +177,8 @@ export default function MulkEkleFormPage() {
           </Section>
 
           <Section title="📍 Konum">
-            <Field label="Şehir"><input value={city} onChange={e => setCity(e.target.value)} placeholder="Muğla" className={inputCls} /></Field>
-            <Field label="İlçe"><input value={district} onChange={e => setDistrict(e.target.value)} placeholder="Bodrum" className={inputCls} /></Field>
-            <Field label="Mahalle"><input value={neighborhood} onChange={e => setNeighborhood(e.target.value)} placeholder="Yalıkavak" className={inputCls} /></Field>
+            <GeoPicker city={city} district={district} neighborhood={neighborhood}
+              onCity={setCity} onDistrict={setDistrict} onNeighborhood={setNeighborhood} />
           </Section>
 
           <Section title="🔧 Detaylar">
@@ -268,6 +267,56 @@ function MultiPills({ label, values, options, onToggle, cols = 2 }: { label: str
       ))}
     </div>
   </div>;
+}
+
+function GeoPicker({ city, district, neighborhood, onCity, onDistrict, onNeighborhood }:
+  { city: string; district: string; neighborhood: string;
+    onCity: (v: string) => void; onDistrict: (v: string) => void; onNeighborhood: (v: string) => void }) {
+  const [iller, setIller] = useState<string[]>([]);
+  const [ilceler, setIlceler] = useState<string[]>([]);
+  const [mahalleler, setMahalleler] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/geography`).then(r => r.json()).then(d => setIller(d.iller || []));
+  }, []);
+
+  useEffect(() => {
+    if (!city) { setIlceler([]); return; }
+    fetch(`/api/geography?il=${encodeURIComponent(city)}`).then(r => r.json()).then(d => setIlceler(d.ilceler || []));
+  }, [city]);
+
+  useEffect(() => {
+    if (!city || !district) { setMahalleler([]); return; }
+    fetch(`/api/geography?il=${encodeURIComponent(city)}&ilce=${encodeURIComponent(district)}`)
+      .then(r => r.json()).then(d => setMahalleler(d.mahalleler || []));
+  }, [city, district]);
+
+  const sel = "w-full border border-slate-300 rounded-lg px-3 py-3 mb-4 text-base text-slate-900 bg-white";
+  return (
+    <>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Şehir</label>
+        <select value={city} onChange={e => { onCity(e.target.value); onDistrict(""); onNeighborhood(""); }} className={sel}>
+          <option value="">— Seç —</option>
+          {iller.map(i => <option key={i} value={i}>{i}</option>)}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">İlçe</label>
+        <select value={district} onChange={e => { onDistrict(e.target.value); onNeighborhood(""); }} disabled={!city} className={sel}>
+          <option value="">— Seç —</option>
+          {ilceler.map(i => <option key={i} value={i}>{i}</option>)}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Mahalle</label>
+        <select value={neighborhood} onChange={e => onNeighborhood(e.target.value)} disabled={!district} className={sel}>
+          <option value="">— Seç —</option>
+          {mahalleler.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+      </div>
+    </>
+  );
 }
 
 function YesNo({ label, value, onPick }: { label: string; value: boolean | null; onPick: (v: boolean | null) => void }) {
