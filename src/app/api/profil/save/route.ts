@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
       await sendButtons(userPhone,
         `🎉 Hoşgeldin ${firstName}!\n\nProfilin hazır. Şimdi ilk mülkünü ekleyip satışları artıralım.`,
         [{ id: "cmd:mulkekle", title: "🏠 Mülk Ekle" }],
+        { skipNav: true },
       );
     } catch (err) {
       console.error("[profil:save] WA notify failed:", err);

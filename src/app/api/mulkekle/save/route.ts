@@ -95,9 +95,9 @@ export async function POST(req: NextRequest) {
 
     // Trigger WhatsApp bot message
     try {
-      await sendButtons(userPhone,
-        `✅ Mülk eklendi!\n\n📋 ${String(body.title).trim()}\n💰 ${new Intl.NumberFormat("tr-TR").format(Number(body.price))} TL\n\n✨ Kısa süre içinde bu mülk için bir sunum hazır olacak. İstersen şimdi hazırlamaya başlayayım.`,
-        [{ id: "cmd:sunum", title: "📊 Sunumu Hazırla" }],
+      const { sendText } = await import("@/platform/whatsapp/send");
+      await sendText(userPhone,
+        `✅ Mülk eklendi!\n\n📋 ${String(body.title).trim()}\n💰 ${new Intl.NumberFormat("tr-TR").format(Number(body.price))} TL\n\n✨ Kısa süre içinde bu mülk için bir sunum hazır olacak. Sunumlarım menüsünden görebileceksin.`,
       );
     } catch (waErr) {
       console.error("[mulkekle:save] WA notify failed:", waErr);

@@ -87,13 +87,13 @@ export default function AraPage() {
           <section className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Bölge</label>
-              <select value={region} onChange={e => setRegion(e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base">
+              <select value={region} onChange={e => setRegion(e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900">
                 {REGIONS.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Mülk Tipi</label>
-              <select value={propertyType} onChange={e => setPropertyType(e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base">
+              <select value={propertyType} onChange={e => setPropertyType(e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900">
                 {PROPERTY_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
               </select>
             </div>

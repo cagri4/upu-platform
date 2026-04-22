@@ -234,6 +234,7 @@ export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
     `🏠 *Mülk Ekle*\n\nMülk bilgilerini doldurman için sana özel bir form hazırladım. Formu aç, kolayca doldur, kaydet butonuyla WhatsApp'a dön.\n\n_Link 2 saat geçerlidir._`,
     "📝 Formu Aç",
     formUrl,
+    { skipNav: true },
   );
 }
 

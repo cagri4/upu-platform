@@ -75,7 +75,7 @@ export default function ProfilKurulumPage() {
       className="block bg-green-600 text-white px-6 py-4 rounded-xl font-semibold text-lg">💬 WhatsApp'a Dön</a>
   </Center>;
 
-  const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-3 mb-4 text-base";
+  const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-3 mb-4 text-base text-slate-900 placeholder:text-slate-500";
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
       <div className="max-w-md mx-auto p-4">
