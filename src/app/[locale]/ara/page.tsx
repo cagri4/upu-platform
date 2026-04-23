@@ -132,9 +132,9 @@ export default function AraPage() {
             <section className="bg-white rounded-2xl p-4 shadow-sm">
               <h2 className="font-bold text-slate-900 mb-3">📊 Sonuçlar</h2>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-slate-600">Aktif ilan</span><span className="font-bold">{results.count}</span></div>
+                <div className="flex justify-between"><span className="text-slate-600">Aktif ilan</span><span className="font-bold text-slate-900">{results.count}</span></div>
                 {results.avgPrice > 0 && (
-                  <div className="flex justify-between"><span className="text-slate-600">Ortalama fiyat</span><span className="font-bold">{new Intl.NumberFormat("tr-TR").format(results.avgPrice)} ₺</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600">Ortalama fiyat</span><span className="font-bold text-slate-900">{new Intl.NumberFormat("tr-TR").format(results.avgPrice)} ₺</span></div>
                 )}
               </div>
               {results.neighborhoods.length > 0 && (
@@ -143,8 +143,8 @@ export default function AraPage() {
                   <div className="space-y-1 max-h-60 overflow-y-auto">
                     {results.neighborhoods.map(h => (
                       <div key={h.name} className="flex justify-between text-sm">
-                        <span className="text-slate-700">{h.name}</span>
-                        <span className="text-slate-500">{h.count} ilan</span>
+                        <span className="text-slate-800">{h.name}</span>
+                        <span className="font-semibold text-slate-900">{h.count} ilan</span>
                       </div>
                     ))}
                   </div>
