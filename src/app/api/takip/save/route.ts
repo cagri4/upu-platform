@@ -4,7 +4,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { sendText } from "@/platform/whatsapp/send";
+import { sendText, sendUrlButton } from "@/platform/whatsapp/send";
+import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (profile?.whatsapp_phone) {
+        const phone = profile.whatsapp_phone as string;
         const summary = [
           neighborhoods.length > 0 ? neighborhoods.join(", ") : "Tüm Bodrum",
           propertyTypes.length > 0 ? propertyTypes.join(", ") : "Tüm tipler",
@@ -66,8 +68,26 @@ export async function POST(req: NextRequest) {
         ].join(" · ");
 
         await sendText(
-          profile.whatsapp_phone as string,
-          `✅ *Takibin kaydedildi!*\n\nKriter: ${summary}\n\nYarın sabah 06:45'te bu kriterlere uyan yeni sahibi ilanlar WhatsApp'ınıza düşecek.\n\n💡 İleride başka aramalar veya takipler oluşturmak ya da mevcut kriterini güncellemek için menüden *📬 Günlük İlan Takibi*'ne dönebilirsiniz.`,
+          phone,
+          `✅ *Takibin kaydedildi!*\n\nKriter: ${summary}\n\nYarın sabah 06:45'te bu kriterlere uyan yeni sahibi ilanlar WhatsApp'ınıza düşecek.\n\n💡 İleride menüden *📬 Günlük İlan Takibi*'ne dönerek kriterini güncelleyebilir ya da yeni aramalar yapabilirsiniz.`,
+        );
+
+        // Auto-chain into mülk ekle → sunum (demo flow, in under 2 min total)
+        const mulkToken = randomBytes(32).toString("hex");
+        const mulkExpires = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+        await supabase.from("magic_link_tokens").insert({
+          user_id: magicToken.user_id,
+          token: mulkToken,
+          expires_at: mulkExpires,
+        });
+        const mulkUrl = `https://estateai.upudev.nl/tr/mulkekle-form?t=${mulkToken}`;
+
+        await sendUrlButton(
+          phone,
+          `🏠 *Şimdi bir mülkünüzü birlikte ekleyelim ve size 3 dakikada profesyonel bir sunum hazırlayayım.*\n\nBu, yapay zekamın satış hedefli metin yazma gücünü göreceğiniz yer. Aşağıdaki formdan portföyünüzden bir mülkü tanıtın — gerisini ben halledeceğim.`,
+          "🏠 Mülk Ekle",
+          mulkUrl,
+          { skipNav: true },
         );
       }
     } catch (waErr) {
