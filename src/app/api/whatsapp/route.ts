@@ -246,14 +246,24 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ status: "ok" });
         }
 
-        // Create profile with dealer role
+        // Create profile with dealer role. Bayi dealers joining via
+        // bayi_invite_links get DEALER_PRESET capabilities so their menu
+        // shows siparişver/bakiyem/faturalarim out of the box.
+        const role = (inviteLink.role as string) || "dealer";
+        let dealerCaps: string[] = [];
+        if (role === "dealer") {
+          const { DEALER_PRESET } = await import("@/tenants/bayi/capabilities");
+          dealerCaps = [...DEALER_PRESET];
+        }
+
         await supabase.from("profiles").insert({
           id: authUser.user.id,
           tenant_id: inviteLink.tenant_id,
           display_name: name || phone,
           whatsapp_phone: phone,
-          role: inviteLink.role || "dealer",
+          role,
           permissions: inviteLink.permissions || {},
+          capabilities: dealerCaps,
           invited_by: inviteLink.created_by,
         });
 
@@ -295,6 +305,7 @@ export async function POST(req: NextRequest) {
           role: (dealerRole as WaContext["role"]),
           permissions: (inviteLink.permissions as Record<string, unknown>) || {},
           dealerId: null,
+          capabilities: [],
         };
 
         const { startIntro } = await import("@/platform/whatsapp/intro");
@@ -419,6 +430,7 @@ export async function POST(req: NextRequest) {
           role: (uLink.role as WaContext["role"]) || "admin",
           permissions: (uLink.permissions as Record<string, unknown>) || {},
           dealerId: null,
+          capabilities: [],
         };
 
         // Try intro flow first (emlak etc.); fall back to direct onboarding
@@ -520,7 +532,7 @@ export async function POST(req: NextRequest) {
               phone, userId: invite.user_id, tenantId: invite.tenant_id,
               tenantKey, userName, locale: "tr",
               messageId: "", text: "", interactiveId: "",
-              role: "admin", permissions: {}, dealerId: null,
+              role: "admin", permissions: {}, dealerId: null, capabilities: [],
             };
             await sendOnboardingStep(ctx, state);
           }
@@ -544,7 +556,7 @@ export async function POST(req: NextRequest) {
     // ── Resolve user by phone (may have multiple profiles across SaaS) ──
     const { data: allProfiles } = await supabase
       .from("profiles")
-      .select("id, tenant_id, display_name, preferred_locale, role, permissions, dealer_id")
+      .select("id, tenant_id, display_name, preferred_locale, role, permissions, dealer_id, capabilities")
       .eq("whatsapp_phone", phone)
       .order("created_at", { ascending: false });
 
@@ -607,6 +619,7 @@ export async function POST(req: NextRequest) {
       role: effectiveRole,
       permissions: (user.permissions as Record<string, unknown>) || {},
       dealerId: user.dealer_id || null,
+      capabilities: ((user as { capabilities?: string[] }).capabilities) || [],
     };
 
     // ── Check if dealer needs onboarding (dealer_id is null) ──

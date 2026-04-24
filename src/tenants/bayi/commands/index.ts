@@ -7,6 +7,7 @@
 
 import type { TenantCommandRegistry } from "@/platform/whatsapp/types";
 import { createPlaceholderHandler } from "@/platform/whatsapp/placeholder";
+import { BAYI_CAPABILITIES as C } from "../capabilities";
 
 // Yonetim
 import { handleOzet } from "./ozet";
@@ -189,5 +190,84 @@ export const bayiCommands: TenantCommandRegistry = {
     "kritik": "kritikstok",
     "fiyat": "fiyatliste",
     "tedarikci": "tedarikciler",
+  },
+  // ── Capability requirements (see capabilities.ts) ──────────────────
+  // Owner wildcard "*" grants everything automatically, so owners
+  // always pass. Null / omitted = no capability needed.
+  requiredCapabilities: {
+    // Yönetim / Asistan — genel raporlar, takvim, brifing
+    ozet: C.REPORTS_VIEW,
+    takvim: null,
+    hatirlatma: null,
+    rapor: C.REPORTS_VIEW,
+
+    // Satış — Müdür
+    kampanyaolustur: C.CAMPAIGNS_CREATE,
+    kampanyalar: C.CAMPAIGNS_VIEW,
+    teklifver: C.CAMPAIGNS_CREATE,
+    performans: C.REPORTS_VIEW,
+    segment: C.REPORTS_VIEW,
+
+    // Satış — Temsilci
+    siparisolustur: C.ORDERS_CREATE,
+    siparisler: C.ORDERS_VIEW,
+    bayidurum: C.DEALERS_VIEW,
+    ziyaretnotu: C.DEALERS_VIEW,
+    ziyaretler: C.DEALERS_VIEW,
+
+    // Finans — Muhasebeci
+    bakiye: C.FINANCE_BALANCE,
+    faturalar: C.FINANCE_INVOICES,
+    borcdurum: C.FINANCE_BALANCE,
+    ekstre: C.FINANCE_BALANCE,
+    odeme: C.FINANCE_PAYMENTS,
+
+    // Finans — Tahsildar
+    vadeler: C.FINANCE_INVOICES,
+    tahsilat: C.FINANCE_PAYMENTS,
+    hatirlatgonder: C.FINANCE_PAYMENTS,
+
+    // Depo / Depocu
+    stok: C.STOCK_VIEW,
+    kritikstok: C.STOCK_VIEW,
+    stokhareketleri: C.STOCK_VIEW,
+    tedarikciler: C.STOCK_PURCHASE,
+    satinalma: C.STOCK_PURCHASE,
+    ihtiyac: C.STOCK_VIEW,
+
+    // Lojistik
+    teslimatlar: C.DELIVERIES_VIEW,
+    rota: C.DELIVERIES_ASSIGN,
+    kargotakip: C.DELIVERIES_VIEW,
+
+    // Ürün
+    urunler: C.PRODUCTS_VIEW,
+    fiyatliste: C.PRODUCTS_VIEW,
+    yeniurun: C.PRODUCTS_EDIT,
+    fiyatguncelle: C.PRODUCTS_EDIT,
+
+    // Ekip yönetimi — owner only (wildcard gives it)
+    calisanekle: C.EMPLOYEES_MANAGE,
+    calisanyonet: C.EMPLOYEES_MANAGE,
+    talimat: C.EMPLOYEES_MANAGE,
+
+    // Bayi davet
+    bayidavet: C.DEALERS_INVITE,
+
+    // Bildirim
+    kampanyabildir: C.CAMPAIGNS_CREATE,
+    tahsilatbildir: C.FINANCE_PAYMENTS,
+    duyuru: C.EMPLOYEES_MANAGE,
+
+    // Dealer-facing commands — dealer preset grants the *_OWN variants
+    siparisver: C.ORDERS_CREATE,
+    siparislerim: [C.ORDERS_VIEW, C.ORDERS_VIEW_OWN],
+    tekrarsiparis: C.ORDERS_CREATE,
+    bakiyem: [C.FINANCE_BALANCE, C.FINANCE_BALANCE_OWN],
+    faturalarim: [C.FINANCE_INVOICES, C.FINANCE_INVOICES_OWN],
+    odemelerim: [C.FINANCE_PAYMENTS, C.FINANCE_BALANCE_OWN],
+    fiyatlar: C.PRODUCTS_VIEW,
+    aktifkampanyalar: C.CAMPAIGNS_VIEW,
+    mesajgonder: null,
   },
 };

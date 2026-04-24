@@ -28,6 +28,22 @@ const REGISTRIES: Record<string, TenantCommandRegistry> = {
   market: marketCommands,
 };
 
+// ── Capability gate ──────────────────────────────────────────────────────
+// Checks registry.requiredCapabilities[cmd]. Returns true if the user may
+// run the command. Unknown commands default to allowed (no gate). The
+// wildcard "*" in the user's capability list grants every capability.
+function hasCommandCapability(
+  registry: TenantCommandRegistry,
+  userCaps: string[],
+  cmd: string,
+): boolean {
+  const req = registry.requiredCapabilities?.[cmd];
+  if (req === undefined || req === null) return true;
+  if (userCaps.includes("*")) return true;
+  const list = Array.isArray(req) ? req : [req];
+  return list.some((r) => userCaps.includes(r));
+}
+
 // ── Main router ──────────────────────────────────────────────────────────
 
 export async function routeCommand(ctx: WaContext): Promise<void> {
@@ -177,6 +193,10 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         const reg = REGISTRIES[ctx.tenantKey];
         const h = reg?.commands[cmd];
         if (h) {
+          if (reg && !hasCommandCapability(reg, ctx.capabilities, cmd)) {
+            await sendText(ctx.phone, "Bu işlem için yetkin yok, yöneticiyle görüş.");
+            return;
+          }
           // Auto-save (admin dev workflow) before running state-changing command
           if (await isAdmin(ctx)) {
             const { autoSaveSnapshotSilent } = await import("./test-state");
@@ -188,6 +208,10 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       }
       const handler = registry.commands[cmd];
       if (handler) {
+        if (!hasCommandCapability(registry, ctx.capabilities, cmd)) {
+          await sendText(ctx.phone, "Bu işlem için yetkin yok, yöneticiyle görüş.");
+          return;
+        }
         // Auto-save before state-changing command (admin only, dev workflow)
         if (await isAdmin(ctx)) {
           const { autoSaveSnapshotSilent } = await import("./test-state");
@@ -436,6 +460,10 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
   // Check commands
   const handler = registry.commands[resolved];
   if (handler) {
+    if (!hasCommandCapability(registry, ctx.capabilities, resolved)) {
+      await sendText(ctx.phone, "Bu işlem için yetkin yok, yöneticiyle görüş.");
+      return;
+    }
     // Auto-save before state-changing command (admin only, dev workflow)
     if (await isAdmin(ctx)) {
       const { autoSaveSnapshotSilent } = await import("./test-state");
@@ -463,6 +491,10 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       }
       const aiHandler = registry.commands[intent.command];
       if (aiHandler) {
+        if (!hasCommandCapability(registry, ctx.capabilities, intent.command)) {
+          await sendText(ctx.phone, "Bu işlem için yetkin yok, yöneticiyle görüş.");
+          return;
+        }
         await aiHandler(ctx);
         return;
       }
@@ -587,7 +619,20 @@ async function showMenu(
 
   // Flat command list — all killer commands directly accessible, no corridor.
   const userFavs = await getUserFavorites(ctx.userId);
-  const favCmds = userFavs.length > 0 ? userFavs : (tenant.defaultFavorites || []);
+  let favCmds = userFavs.length > 0 ? userFavs : (tenant.defaultFavorites || []);
+
+  // Filter by capability (bayi tenant has per-command requirements)
+  const registry = REGISTRIES[ctx.tenantKey];
+  if (registry?.requiredCapabilities) {
+    favCmds = favCmds.filter((cmd) => hasCommandCapability(registry, ctx.capabilities, cmd));
+    // If the user has no favs they're allowed to run, fall back to whatever
+    // commands they *can* run so menu isn't empty.
+    if (favCmds.length === 0) {
+      favCmds = Object.keys(registry.commands).filter((cmd) =>
+        hasCommandCapability(registry, ctx.capabilities, cmd),
+      ).slice(0, 10);
+    }
+  }
 
   const favRows = favCmds.slice(0, 10).map(cmd => ({
     id: `cmd:${cmd}`,
@@ -791,7 +836,18 @@ async function showEmployeeCommands(
     return;
   }
 
-  const rows = emp.commands.map((cmd) => ({
+  // Filter by capability when the tenant registry declares requirements.
+  const registry = REGISTRIES[ctx.tenantKey];
+  const allowedCmds = registry?.requiredCapabilities
+    ? emp.commands.filter((cmd) => hasCommandCapability(registry, ctx.capabilities, cmd))
+    : emp.commands;
+
+  if (allowedCmds.length === 0) {
+    await sendButtons(ctx.phone, "Bu menüdeki komutlar için yetkin yok.", [{ id: "cmd:menu", title: "📋 Ana Menü" }]);
+    return;
+  }
+
+  const rows = allowedCmds.map((cmd) => ({
     id: `cmd:${cmd}`,
     title: (COMMAND_LABELS[cmd] || cmd).substring(0, 24),
     description: COMMAND_LABELS[cmd] ? cmd : "",
