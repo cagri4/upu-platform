@@ -31,6 +31,7 @@ const skipArg = process.argv.find(a => a.startsWith('--skip='));
 const skipCount = skipArg ? parseInt(skipArg.split('=')[1], 10) : 0;
 const takeArg = process.argv.find(a => a.startsWith('--take='));
 const takeCount = takeArg ? parseInt(takeArg.split('=')[1], 10) : 0;
+const sahibiOnly = process.argv.includes('--sahibi-only');
 
 // ─── 38 BASE URLs → 76 URLs (sahibinden + emlak ofisi) ─────────────────────
 
@@ -93,10 +94,13 @@ const BASE_URLS = [
 ];
 
 // Her base URL'den 2 URL uret: /sahibinden ve /emlak-ofisinden
-const ALL_URLS = BASE_URLS.flatMap(entry => [
-  { ...entry, url: entry.url + '/sahibinden', listed_by: 'sahibi' },
-  { ...entry, url: entry.url + '/emlak-ofisinden', listed_by: 'emlakci' },
-]);
+// --sahibi-only flag'i varsa sadece sahibi variant'ları kullan (daily lead pipeline için)
+const ALL_URLS = sahibiOnly
+  ? BASE_URLS.map(entry => ({ ...entry, url: entry.url + '/sahibinden', listed_by: 'sahibi' }))
+  : BASE_URLS.flatMap(entry => [
+      { ...entry, url: entry.url + '/sahibinden', listed_by: 'sahibi' },
+      { ...entry, url: entry.url + '/emlak-ofisinden', listed_by: 'emlakci' },
+    ]);
 
 // ─── CONFIG ─────────────────────────────────────────────────────────────────
 

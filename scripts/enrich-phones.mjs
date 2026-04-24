@@ -1,18 +1,17 @@
 #!/usr/bin/env node
 /**
- * Portföy Büyütme — Phone Enrichment
+ * Daily Leads — Phone Enrichment
  *
- * Her gün scraper + import sonrası çalışır. emlak_properties tablosunda
- * listed_by='sahibi' olan ve owner_phone henüz dolmamış ilanların
- * detay sayfasına girer, data-content attribute'undan telefonu çeker,
- * DB'ye yazar.
+ * Her gün scraper + import sonrası çalışır. emlak_daily_leads tablosunda
+ * bugünün snapshot'ındaki ve owner_phone henüz dolmamış ilanların detay
+ * sayfasına girer, telefon + sahibin adını çeker, DB'ye yazar.
  *
- * Rate-limited: her detay arası 3-5sn bekler. Günlük toplam ~50 ilan.
+ * Rate-limited: her detay arası 3-5sn bekler.
  *
  * Kullanım:
- *   node scripts/enrich-phones.mjs           → Default: son 3 günde eklenen sahibi ilanlar
- *   node scripts/enrich-phones.mjs --days=7  → Son 7 gün
- *   node scripts/enrich-phones.mjs --limit=20
+ *   node scripts/enrich-phones.mjs                      → Bugünün snapshot'ı, limitsiz
+ *   node scripts/enrich-phones.mjs --snapshot=2026-04-24
+ *   node scripts/enrich-phones.mjs --limit=50
  */
 
 import puppeteerExtra from 'puppeteer-extra';
@@ -30,10 +29,10 @@ const url = env.match(/NEXT_PUBLIC_SUPABASE_URL=(.+)/)[1].trim();
 const key = env.match(/SUPABASE_SERVICE_ROLE_KEY=(.+)/)[1].trim();
 const sb = createClient(url, key);
 
-const daysArg = process.argv.find(a => a.startsWith('--days='));
-const days = daysArg ? parseInt(daysArg.split('=')[1], 10) : 3;
+const snapshotArg = process.argv.find(a => a.startsWith('--snapshot='));
+const snapshotDate = snapshotArg ? snapshotArg.split('=')[1] : new Date().toISOString().slice(0, 10);
 const limitArg = process.argv.find(a => a.startsWith('--limit='));
-const limit = limitArg ? parseInt(limitArg.split('=')[1], 10) : 50;
+const limit = limitArg ? parseInt(limitArg.split('=')[1], 10) : 500;
 
 const sleep = (min, max) => new Promise(r => setTimeout(r, min + Math.random() * (max - min)));
 
@@ -56,21 +55,19 @@ async function extractFromPage(page, url) {
 }
 
 async function main() {
-  const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+  console.log(`📸 Snapshot: ${snapshotDate}`);
 
   const { data: rows, error } = await sb
-    .from('emlak_properties')
-    .select('id, source_url, created_at')
-    .eq('listed_by', 'sahibi')
-    .eq('source_portal', 'sahibinden')
+    .from('emlak_daily_leads')
+    .select('id, source_url, source_id')
+    .eq('snapshot_date', snapshotDate)
     .is('owner_phone', null)
-    .gte('created_at', cutoff)
     .not('source_url', 'is', null)
     .order('created_at', { ascending: false })
     .limit(limit);
 
   if (error) { console.error('❌ Query error:', error.message); process.exit(1); }
-  if (!rows?.length) { console.log(`✅ Zenginleştirilecek ilan yok (son ${days} gün, limit ${limit}).`); return; }
+  if (!rows?.length) { console.log(`✅ Zenginleştirilecek ilan yok (snapshot ${snapshotDate}, limit ${limit}).`); return; }
 
   console.log(`📞 ${rows.length} sahibi ilanın telefonu çekilecek...\n`);
 
@@ -93,8 +90,9 @@ async function main() {
     if (r.error) { err++; console.log(`❌ [${i + 1}/${rows.length}] ${tail} — ${r.error}`); continue; }
     if (!r.phone) { empty++; console.log(`⚪ [${i + 1}/${rows.length}] ${tail} — telefon yok`); }
 
+    // Aynı source_id aynı snapshot'ta unique, id ile update et
     const { error: upErr } = await sb
-      .from('emlak_properties')
+      .from('emlak_daily_leads')
       .update({
         owner_phone: r.phone || '',
         owner_name: r.ownerName || null,

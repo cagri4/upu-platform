@@ -43,14 +43,16 @@ fi
 COOKIE_COUNT=$(echo "$COOKIE_OUT" | grep -oP '\d+ cookie' | head -1)
 echo "$DATE — ✅ Cookie: $COOKIE_COUNT" >> "$LOG_FILE"
 
-# 2. Scrape V3 — partiye göre URL seçimi (76 URL toplam)
-SCRAPE_ARGS="--days=1"
+# 2. Scrape V3 — partiye göre URL seçimi (38 URL toplam, sadece sahibi)
+# Daily leads pipeline: sahibi ilanları 3 partide çekilir
+# part1: ilk 13, part2: 13-26, part3: 26-38
+SCRAPE_ARGS="--days=1 --sahibi-only"
 if [ "$PART" = "part1" ]; then
-  SCRAPE_ARGS="$SCRAPE_ARGS --take=25"
+  SCRAPE_ARGS="$SCRAPE_ARGS --take=13"
 elif [ "$PART" = "part2" ]; then
-  SCRAPE_ARGS="$SCRAPE_ARGS --skip=25 --take=25"
+  SCRAPE_ARGS="$SCRAPE_ARGS --skip=13 --take=13"
 elif [ "$PART" = "part3" ]; then
-  SCRAPE_ARGS="$SCRAPE_ARGS --skip=50"
+  SCRAPE_ARGS="$SCRAPE_ARGS --skip=26"
 fi
 
 $NODE scripts/scrape-v3.mjs $SCRAPE_ARGS > "$SCRAPE_DETAIL" 2>&1
@@ -89,26 +91,14 @@ else
 fi
 
 # 4. Cleanup + notifications (sadece son partide, günde 1 kez)
+# Not: 7-gün rolling cleanup zaten import-v3.mjs içinde yapılıyor.
 if [ "$PART" = "part3" ] || [ "$PART" = "full" ]; then
-  CLEANUP_OUT=$($NODE -e "
-    const {createClient} = require('@supabase/supabase-js');
-    const c = createClient('$SUPABASE_URL', '$SUPABASE_SERVICE_ROLE_KEY');
-    async function run() {
-      const d30 = new Date(Date.now() - 30*24*60*60*1000).toISOString();
-      const {count: before} = await c.from('emlak_properties').select('*',{count:'exact',head:true}).eq('source_portal','sahibinden');
-      await c.from('emlak_properties').delete().eq('source_portal','sahibinden').lt('listing_date', d30);
-      await c.from('emlak_properties').delete().eq('source_portal','sahibinden').is('listing_date', null).lt('created_at', d30);
-      const {count: after} = await c.from('emlak_properties').select('*',{count:'exact',head:true}).eq('source_portal','sahibinden');
-      console.log('Silinen: ' + (before - after) + ' ilan (30+ gun eski)');
-    }
-    run();
-  " 2>&1)
-  echo "$(date '+%Y-%m-%d %H:%M') — 🧹 Cleanup: $CLEANUP_OUT" >> "$LOG_FILE"
+  echo "$(date '+%Y-%m-%d %H:%M') — 🧹 Cleanup: import-v3 içinde halledildi (7 gün+ eski snapshot'lar)" >> "$LOG_FILE"
 
-  # 5. Phone enrichment (portföy büyütme): son 3 gündeki sahibi ilanların
-  # detay sayfasından owner_phone çeker. Tracking-notify ÖNCE çalışır ki
-  # sabah bildirimde telefonlar hazır olsun.
-  ENRICH_OUT=$($NODE scripts/enrich-phones.mjs --days=3 --limit=40 2>&1 | tail -10)
+  # 5. Phone enrichment: bugünün snapshot'ındaki tüm sahibi ilanların
+  # detay sayfasından owner_phone + owner_name çekilir. 06:45'teki morning
+  # brief'ten önce tamamlanmış olması gerekir ki ilk mesaj eksiksiz gitsin.
+  ENRICH_OUT=$($NODE scripts/enrich-phones.mjs --limit=500 2>&1 | tail -10)
   echo "$(date '+%Y-%m-%d %H:%M') — 📞 Enrich:" >> "$LOG_FILE"
   echo "$ENRICH_OUT" | sed 's/^/    /' >> "$LOG_FILE"
 

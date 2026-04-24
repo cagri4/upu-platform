@@ -3,23 +3,128 @@
  */
 
 import { getServiceClient } from "@/platform/auth/supabase";
-import { sendText } from "@/platform/whatsapp/send";
+import { sendText, sendUrlButton } from "@/platform/whatsapp/send";
 import { registerBriefing, registerDailyCheck, registerWeeklyReport } from "./briefing-registry";
+import { randomBytes } from "crypto";
 
-// ── Emlak ──────────────────────────────────────────────────────────────
+// ── Emlak — Daily Sahibi Lead Brief ────────────────────────────────────
+//
+// Her sabah agent'a bugünün yeni sahibi ilanlarını (telefon + isim ile)
+// gönderir. Daha önce "aradım" işaretlediklerini filtreler. Sonunda web
+// panele magic-link buton: orada lead'leri tek tek işleyebilir.
+
+interface DailyLead {
+  source_id: string;
+  source_url: string;
+  title: string;
+  type: string;
+  listing_type: string;
+  price: number | null;
+  area: number | null;
+  rooms: string | null;
+  location_neighborhood: string | null;
+  owner_name: string | null;
+  owner_phone: string | null;
+}
+
+function formatLead(lead: DailyLead, index: number): string {
+  const priceStr = lead.price
+    ? `${new Intl.NumberFormat("tr-TR").format(lead.price)} ₺`
+    : "Fiyat belirtilmedi";
+  const specParts = [
+    lead.rooms,
+    lead.area ? `${lead.area} m²` : null,
+  ].filter(Boolean).join(" · ");
+  const spec = specParts ? `${specParts} · ` : "";
+  const loc = lead.location_neighborhood || "Bodrum";
+  const ownerLine = lead.owner_name ? `👤 ${lead.owner_name}\n` : "";
+  const phoneLine = lead.owner_phone ? `📞 ${lead.owner_phone}\n` : "📞 _telefon çekilemedi_\n";
+
+  return `*${index}. ${lead.title}*\n📍 ${loc}\n${spec}💰 ${priceStr}\n${ownerLine}${phoneLine}🔗 ${lead.source_url}`;
+}
 
 registerBriefing("emlak", async (userId) => {
   const supabase = getServiceClient();
-  const { count: total } = await supabase.from("emlak_properties").select("*", { count: "exact", head: true }).eq("user_id", userId);
-  const { count: satilik } = await supabase.from("emlak_properties").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("listing_type", "satilik");
-  const { count: kiralik } = await supabase.from("emlak_properties").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("listing_type", "kiralik");
-  const { count: customers } = await supabase.from("emlak_customers").select("*", { count: "exact", head: true }).eq("user_id", userId);
-  const tomorrow = new Date(); tomorrow.setHours(tomorrow.getHours() + 24);
-  const { count: reminders } = await supabase.from("reminders").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("triggered", false).lte("remind_at", tomorrow.toISOString());
-  const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7);
-  const { count: contracts } = await supabase.from("contracts").select("*", { count: "exact", head: true }).eq("user_id", userId).neq("status", "cancelled").lte("end_date", nextWeek.toISOString().slice(0, 10));
+  const today = new Date().toISOString().slice(0, 10);
 
-  return `📊 Günaydın! Günlük brifing:\n\n🏠 Portföy: ${total || 0} mülk (${satilik || 0} satılık, ${kiralik || 0} kiralık)\n👥 Müşteriler: ${customers || 0}\n⏰ Hatırlatmalar: ${reminders || 0}\n📋 Yaklaşan sözleşme: ${contracts || 0}\n\nİyi çalışmalar!`;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("whatsapp_phone, display_name")
+    .eq("id", userId).single();
+
+  if (!profile?.whatsapp_phone) return "";
+  const phone = profile.whatsapp_phone as string;
+  const firstName = ((profile.display_name as string | null) || "").split(/\s+/)[0] || "Merhaba";
+
+  // Today's snapshot leads
+  const { data: leadsRaw } = await supabase
+    .from("emlak_daily_leads")
+    .select("source_id, source_url, title, type, listing_type, price, area, rooms, location_neighborhood, owner_name, owner_phone")
+    .eq("snapshot_date", today)
+    .order("created_at", { ascending: true });
+
+  const leads = (leadsRaw || []) as DailyLead[];
+
+  if (leads.length === 0) {
+    await sendText(phone, `🌅 Günaydın ${firstName}!\n\nBugün yeni sahibi ilan çıkmamış. Yarın sabah tekrar 👋`);
+    return "";
+  }
+
+  // Exclude leads this user already logged a call for
+  const { data: calls } = await supabase
+    .from("emlak_lead_calls")
+    .select("source_id")
+    .eq("user_id", userId);
+  const calledIds = new Set((calls || []).map(c => c.source_id as string));
+
+  const uncalled = leads.filter(l => !calledIds.has(l.source_id));
+
+  if (uncalled.length === 0) {
+    await sendText(phone, `🌅 Günaydın ${firstName}!\n\nBugün ${leads.length} sahibi ilan var ama hepsini daha önce işaretlemişsin 💪`);
+    return "";
+  }
+
+  // Build message. Chunk if over 3500 chars (WA limit safe margin).
+  const header = `🌅 Günaydın ${firstName}!\n\nBugün Bodrum'da *${uncalled.length} yeni sahibi ilan* çıktı. Aramaya başla 🔥\n`;
+  const footer = `\n\n─────────\n_Aradıklarını işaretlemek için aşağıdaki butona bas._`;
+
+  const chunks: string[] = [];
+  let current = header;
+  uncalled.forEach((lead, i) => {
+    const block = `\n${formatLead(lead, i + 1)}\n`;
+    if (current.length + block.length > 3500) {
+      chunks.push(current);
+      current = block;
+    } else {
+      current += block;
+    }
+  });
+  chunks.push(current + footer);
+
+  for (const chunk of chunks) {
+    await sendText(phone, chunk);
+  }
+
+  // Web-panel button to manage calls
+  const token = randomBytes(16).toString("hex");
+  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  await supabase.from("magic_link_tokens").insert({
+    user_id: userId,
+    token,
+    expires_at: expires,
+  });
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
+  const panelUrl = `${appUrl}/tr/lead-liste?t=${token}`;
+
+  await sendUrlButton(
+    phone,
+    `📋 Lead'leri işlemek için panel:`,
+    "📋 Lead Paneli",
+    panelUrl,
+    { skipNav: true },
+  );
+
+  return "";
 });
 
 registerDailyCheck("emlak", async (userId, _tenantId, phone) => {
