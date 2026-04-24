@@ -66,7 +66,7 @@ const TENANTS: Record<string, TenantConfig> = {
     whatsappPhone: "31644967207",
     icon: "📦",
     color: "#059669",
-    description: "Bayi ağı yönetimi için AI destekli sanal ekip",
+    description: "Bayi ağınızın her bireyi cebinde tek UPU asistanıyla",
     welcomeFeatures: "Sipariş yönetimi, stok takibi, bayi ağı yönetimi ve daha fazlasını",
     employees: [
       { key: "asistan", name: "Asistan", icon: "📊", description: "Günlük özet, takvim ve hatırlatmalar", commands: ["ozet", "takvim", "hatirlatma", "rapor"] },

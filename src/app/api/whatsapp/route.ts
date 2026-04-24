@@ -55,7 +55,11 @@ registerAgentSetup(teknisyenSetup);
 registerAgentSetup(hukukSetup);
 
 // ─── Register bayi agent setup flows ────────────────────────────────────
+// Single consolidated UPU assistant (post-pivot). Legacy aliases keep
+// "emp:<oldKey>" setup buttons working until Phase 2 replaces the
+// employee menu with a capability-based menu.
 import {
+  upuSetup as bayiUpuSetup,
   asistanSetup as bayiAsistanSetup,
   satisMuduruSetup as bayiSatisMuduruSetup,
   satisTemsilcisiSetup as bayiSatisTemsilcisiSetup,
@@ -65,6 +69,7 @@ import {
   lojistikciSetup as bayiLojistikciSetup,
   urunYoneticisiSetup as bayiUrunYoneticisiSetup,
 } from "@/tenants/bayi/agents/setup-flows";
+registerAgentSetup(bayiUpuSetup);
 registerAgentSetup(bayiAsistanSetup);
 registerAgentSetup(bayiSatisMuduruSetup);
 registerAgentSetup(bayiSatisTemsilcisiSetup);

@@ -1,24 +1,15 @@
 /**
- * Bayi Agent Registry — all 8 autonomous agents
+ * Bayi Agent Registry — single UPU assistant (post-pivot).
+ *
+ * The former 8 virtual employees (asistan, satisMuduru, satisTemsilcisi,
+ * muhasebeci, tahsildar, depocu, lojistikci, urunYoneticisi) were
+ * collapsed into bayi_upu. Their tools are merged; menus are now
+ * capability-filtered at the WA command layer rather than by agent key.
  */
 
 import type { AgentDefinition } from "@/platform/agents/types";
-import { asistanAgent } from "./asistan";
-import { satisMuduruAgent } from "./satis-muduru";
-import { satisTemsilcisiAgent } from "./satis-temsilcisi";
-import { muhasebeciAgent } from "./muhasebeci";
-import { tahsildarAgent } from "./tahsildar";
-import { depocuAgent } from "./depocu";
-import { lojistikciAgent } from "./lojistikci";
-import { urunYoneticisiAgent } from "./urun-yoneticisi";
+import { bayiUpuAgent } from "./bayi-upu";
 
 export const bayiAgents: Record<string, AgentDefinition> = {
-  bayi_asistan: asistanAgent,
-  bayi_satisMuduru: satisMuduruAgent,
-  bayi_satisTemsilcisi: satisTemsilcisiAgent,
-  bayi_muhasebeci: muhasebeciAgent,
-  bayi_tahsildar: tahsildarAgent,
-  bayi_depocu: depocuAgent,
-  bayi_lojistikci: lojistikciAgent,
-  bayi_urunYoneticisi: urunYoneticisiAgent,
+  bayi_upu: bayiUpuAgent,
 };
