@@ -64,6 +64,8 @@ export default function MulkEkleFormPage() {
   const [description, setDescription] = useState("");
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoProgress, setPhotoProgress] = useState<{ done: number; total: number } | null>(null);
+  const [photoError, setPhotoError] = useState("");
 
   useEffect(() => {
     if (!token) {
@@ -88,24 +90,38 @@ export default function MulkEkleFormPage() {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
     const remaining = 15 - photoUrls.length;
-    if (remaining <= 0) { setError("Maksimum 15 fotoğraf."); return; }
+    if (remaining <= 0) { setPhotoError("Maksimum 15 fotoğraf."); return; }
     const toUpload = files.slice(0, remaining);
     setPhotoUploading(true);
-    setError("");
+    setPhotoError("");
+    setPhotoProgress({ done: 0, total: toUpload.length });
+    const uploaded: string[] = [];
     try {
-      const uploaded: string[] = [];
-      for (const file of toUpload) {
-        const fd = new FormData();
-        fd.append("token", token || "");
-        fd.append("file", file);
-        const res = await fetch("/api/mulkekle/upload-photo", { method: "POST", body: fd });
-        const data = await res.json();
-        if (!res.ok) { setError(data.error || "Fotoğraf yüklenemedi."); break; }
-        if (data.url) uploaded.push(data.url);
+      for (let i = 0; i < toUpload.length; i++) {
+        const file = toUpload[i];
+        try {
+          const fd = new FormData();
+          fd.append("token", token || "");
+          fd.append("file", file);
+          const res = await fetch("/api/mulkekle/upload-photo", { method: "POST", body: fd });
+          const data = await res.json().catch(() => ({ error: "Sunucu cevabı okunamadı." }));
+          if (!res.ok) {
+            setPhotoError(`Fotoğraf ${i + 1}: ${data.error || `Hata ${res.status}`}`);
+            break;
+          }
+          if (data.url) {
+            uploaded.push(data.url);
+            setPhotoUrls(prev => [...prev, data.url]);
+          }
+        } catch (err) {
+          setPhotoError(`Fotoğraf ${i + 1}: Bağlantı hatası. ${err instanceof Error ? err.message : ""}`);
+          break;
+        }
+        setPhotoProgress({ done: i + 1, total: toUpload.length });
       }
-      if (uploaded.length > 0) setPhotoUrls(prev => [...prev, ...uploaded]);
     } finally {
       setPhotoUploading(false);
+      setPhotoProgress(null);
       e.target.value = "";
     }
   }
@@ -239,21 +255,29 @@ export default function MulkEkleFormPage() {
               <label className="block">
                 <input
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="image/*"
                   multiple
                   onChange={handlePhotoInput}
                   disabled={photoUploading || photoUrls.length >= 15}
                   className="hidden"
                 />
-                <span className={`block w-full text-center py-3 rounded-lg font-medium border-2 border-dashed cursor-pointer ${photoUploading ? "border-slate-300 bg-slate-100 text-slate-400" : "border-indigo-400 bg-indigo-50 text-indigo-700 active:bg-indigo-100"}`}>
+                <span className={`block w-full text-center py-3 rounded-lg font-medium border-2 border-dashed cursor-pointer ${photoUploading ? "border-amber-400 bg-amber-50 text-amber-800 animate-pulse" : photoUrls.length >= 15 ? "border-slate-300 bg-slate-100 text-slate-400" : "border-indigo-400 bg-indigo-50 text-indigo-700 active:bg-indigo-100"}`}>
                   {photoUploading
-                    ? "Yükleniyor..."
+                    ? photoProgress
+                      ? `⏳ Yükleniyor... ${photoProgress.done}/${photoProgress.total}`
+                      : "⏳ Yükleniyor..."
                     : photoUrls.length >= 15
                       ? "Maksimum 15 fotoğraf doldu"
                       : `📷 Fotoğraf Ekle (${photoUrls.length}/15)`}
                 </span>
               </label>
               <p className="text-xs text-slate-500">Sunumda otomatik kullanılacak. İlk fotoğraf kapak olur.</p>
+
+              {photoError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
+                  ⚠️ {photoError}
+                </div>
+              )}
 
               {photoUrls.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">
