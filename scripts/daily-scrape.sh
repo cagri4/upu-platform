@@ -90,17 +90,13 @@ else
   echo "$(date '+%Y-%m-%d %H:%M') — ⏭️ DB Import atlandı (ilan yok)" >> "$LOG_FILE"
 fi
 
-# 4. Cleanup + notifications (sadece son partide, günde 1 kez)
-# Not: 7-gün rolling cleanup zaten import-v3.mjs içinde yapılıyor.
+# 4. Cleanup (sadece son partide, günde 1 kez)
+# Not: today-only retention import-v3.mjs içinde yapılıyor
+# (DELETE WHERE snapshot_date < CURRENT_DATE).
+# Enrich adımı KALDIRILDI — kullanıcı sahibinden linkine tıklayıp telefonu
+# kendi hesabından görecek. IP block/anti-bot sorununu bu şekilde aşıyoruz.
 if [ "$PART" = "part3" ] || [ "$PART" = "full" ]; then
-  echo "$(date '+%Y-%m-%d %H:%M') — 🧹 Cleanup: import-v3 içinde halledildi (7 gün+ eski snapshot'lar)" >> "$LOG_FILE"
-
-  # 5. Phone enrichment: bugünün snapshot'ındaki tüm sahibi ilanların
-  # detay sayfasından owner_phone + owner_name çekilir. 06:45'teki morning
-  # brief'ten önce tamamlanmış olması gerekir ki ilk mesaj eksiksiz gitsin.
-  ENRICH_OUT=$($NODE scripts/enrich-phones.mjs --limit=500 2>&1 | tail -10)
-  echo "$(date '+%Y-%m-%d %H:%M') — 📞 Enrich:" >> "$LOG_FILE"
-  echo "$ENRICH_OUT" | sed 's/^/    /' >> "$LOG_FILE"
+  echo "$(date '+%Y-%m-%d %H:%M') — 🧹 Cleanup: import-v3 içinde today-only retention uygulandı" >> "$LOG_FILE"
 
   # 6. Tracking notifications
   DEPLOY_URL="${DEPLOY_URL:-https://upu-platform.vercel.app}"

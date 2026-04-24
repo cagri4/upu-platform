@@ -22,6 +22,7 @@ import { handleMusteriTakip, handleMusteriTakipCallback } from "./musteri-takip"
 import { handleFotograf, handleFotografCallback, handlePaylas, handlePaylasCallback } from "./medya";
 import { handleSunum, handleSunumStep, handleSunumCallback, handleSunumlarim } from "./sunum";
 import { handleIpucu, handleTipCallback } from "./ipucu";
+import { handleIlanTakip } from "./ilan-takip";
 
 export const emlakCommands: TenantCommandRegistry = {
   commands: {
@@ -33,6 +34,7 @@ export const emlakCommands: TenantCommandRegistry = {
     musteriTakip: handleMusteriTakip,
     sunum: handleSunum,
     eslestir: handleEslestir,
+    ilantakip: handleIlanTakip,
 
     // Supporting (hidden but working)
     musterilerim: handleMusteriler,

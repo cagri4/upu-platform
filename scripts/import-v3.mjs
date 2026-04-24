@@ -66,15 +66,15 @@ function mapRow(l, snapshotDate) {
 }
 
 async function deleteOldSnapshots() {
-  // DELETE WHERE snapshot_date < today - 7 days
-  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const url = `${SUPABASE_URL}/rest/v1/emlak_daily_leads?snapshot_date=lt.${cutoff}`;
+  // TODAY-ONLY retention: her sabah önceki günlerin snapshot'ları silinir.
+  const today = new Date().toISOString().slice(0, 10);
+  const url = `${SUPABASE_URL}/rest/v1/emlak_daily_leads?snapshot_date=lt.${today}`;
   const res = await fetch(url, {
     method: 'DELETE',
     headers: { ...AUTH, Prefer: 'return=minimal' },
   });
   if (res.ok) {
-    console.log(`  🗑️  7 gün+ eski snapshot'lar silindi (< ${cutoff})`);
+    console.log(`  🗑️  Önceki günlerin snapshot'ları silindi (< ${today})`);
   } else {
     console.log(`  ⚠️  Cleanup hata: ${res.status}`);
   }

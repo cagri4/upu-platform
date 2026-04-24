@@ -10,6 +10,7 @@ export const COMMAND_LABELS: Record<string, string> = {
   musteriEkle: "🤝 Müşteri ekle",
   sunum: "🎯 Sunum hazırla",
   eslestir: "🔗 Eşleştir",
+  ilantakip: "📬 Günlük İlan Takibi",
   hatirlatma: "⏰ Hatırlatma kur",
   ipucu: "💡 İpuçları",
   webpanel: "🖥 Web panel",

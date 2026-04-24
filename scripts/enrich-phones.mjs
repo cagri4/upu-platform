@@ -103,7 +103,7 @@ async function main() {
     if (upErr) { err++; console.log(`❌ DB yazım: ${upErr.message}`); }
     else if (r.phone) { ok++; console.log(`✅ [${i + 1}/${rows.length}] ${tail} → ${r.phone}`); }
 
-    await sleep(3000, 5000);
+    await sleep(8000, 12000);
   }
 
   await browser.close();

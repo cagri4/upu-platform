@@ -7,11 +7,12 @@ import { sendText, sendUrlButton } from "@/platform/whatsapp/send";
 import { registerBriefing, registerDailyCheck, registerWeeklyReport } from "./briefing-registry";
 import { randomBytes } from "crypto";
 
-// ── Emlak — Daily Sahibi Lead Brief ────────────────────────────────────
+// ── Emlak — Daily Sahibi Lead Brief (link-only, kriter-filtreli) ──────
 //
-// Her sabah agent'a bugünün yeni sahibi ilanlarını (telefon + isim ile)
-// gönderir. Daha önce "aradım" işaretlediklerini filtreler. Sonunda web
-// panele magic-link buton: orada lead'leri tek tek işleyebilir.
+// Her sabah kullanıcının takip kriterlerine uyan bugünün yeni sahibi
+// ilanlarını sahibinden.com linkleri ile birlikte WA'ya gönderir.
+// Kullanıcı linke tıklar, kendi sahibinden oturumundan telefonu reveal
+// edip arar. Biz telefon çekmiyoruz — IP block/anti-bot sorunu yok.
 
 interface DailyLead {
   source_id: string;
@@ -23,8 +24,45 @@ interface DailyLead {
   area: number | null;
   rooms: string | null;
   location_neighborhood: string | null;
-  owner_name: string | null;
-  owner_phone: string | null;
+}
+
+interface TrackingCriteria {
+  neighborhoods: string[];
+  property_types: string[];
+  listing_type: string | null;
+  price_min: number | null;
+  price_max: number | null;
+}
+
+// Kullanıcı kriter kaydetmemişse default preset: tüm Bodrum, daire+villa satılık
+const DEFAULT_CRITERIA: TrackingCriteria = {
+  neighborhoods: [],
+  property_types: ["daire", "villa"],
+  listing_type: "satilik",
+  price_min: null,
+  price_max: null,
+};
+
+function matchesCriteria(lead: DailyLead, c: TrackingCriteria): boolean {
+  // Property type filter
+  if (c.property_types.length > 0 && !c.property_types.includes(lead.type)) return false;
+
+  // Listing type filter
+  if (c.listing_type && lead.listing_type !== c.listing_type) return false;
+
+  // Price range
+  if (c.price_min && (lead.price || 0) < c.price_min) return false;
+  if (c.price_max && (lead.price || 0) > c.price_max) return false;
+
+  // Neighborhood — lead.location_neighborhood format: "SubArea / Mahalle Mh."
+  // Kullanıcı "Yalıkavak" seçerse, "Yalıkavak / Geriş Mh." eşleşmeli.
+  if (c.neighborhoods.length > 0) {
+    const loc = (lead.location_neighborhood || "").toLocaleLowerCase("tr-TR");
+    const match = c.neighborhoods.some(n => loc.includes(n.toLocaleLowerCase("tr-TR")));
+    if (!match) return false;
+  }
+
+  return true;
 }
 
 function formatLead(lead: DailyLead, index: number): string {
@@ -37,10 +75,8 @@ function formatLead(lead: DailyLead, index: number): string {
   ].filter(Boolean).join(" · ");
   const spec = specParts ? `${specParts} · ` : "";
   const loc = lead.location_neighborhood || "Bodrum";
-  const ownerLine = lead.owner_name ? `👤 ${lead.owner_name}\n` : "";
-  const phoneLine = lead.owner_phone ? `📞 ${lead.owner_phone}\n` : "📞 _telefon çekilemedi_\n";
 
-  return `*${index}. ${lead.title}*\n📍 ${loc}\n${spec}💰 ${priceStr}\n${ownerLine}${phoneLine}🔗 ${lead.source_url}`;
+  return `*${index}.* ${lead.title}\n📍 ${loc}\n${spec}💰 ${priceStr}\n🔗 ${lead.source_url}`;
 }
 
 registerBriefing("emlak", async (userId) => {
@@ -56,41 +92,81 @@ registerBriefing("emlak", async (userId) => {
   const phone = profile.whatsapp_phone as string;
   const firstName = ((profile.display_name as string | null) || "").split(/\s+/)[0] || "Merhaba";
 
-  // Today's snapshot leads
+  // User criteria (or default)
+  const { data: crit } = await supabase
+    .from("emlak_tracking_criteria")
+    .select("neighborhoods, property_types, listing_type, price_min, price_max, active")
+    .eq("user_id", userId)
+    .eq("active", true)
+    .maybeSingle();
+
+  const criteria: TrackingCriteria = crit ? {
+    neighborhoods: (crit.neighborhoods as string[]) || [],
+    property_types: (crit.property_types as string[]) || [],
+    listing_type: (crit.listing_type as string | null) || null,
+    price_min: (crit.price_min as number | null) || null,
+    price_max: (crit.price_max as number | null) || null,
+  } : DEFAULT_CRITERIA;
+
+  // Today's leads
   const { data: leadsRaw } = await supabase
     .from("emlak_daily_leads")
-    .select("source_id, source_url, title, type, listing_type, price, area, rooms, location_neighborhood, owner_name, owner_phone")
+    .select("source_id, source_url, title, type, listing_type, price, area, rooms, location_neighborhood")
     .eq("snapshot_date", today)
     .order("created_at", { ascending: true });
 
   const leads = (leadsRaw || []) as DailyLead[];
 
   if (leads.length === 0) {
-    await sendText(phone, `🌅 Günaydın ${firstName}!\n\nBugün yeni sahibi ilan çıkmamış. Yarın sabah tekrar 👋`);
+    await sendText(phone, `🌅 Günaydın ${firstName}!\n\nBugün sahibinden'de yeni sahibi ilan çıkmamış. Yarın sabah tekrar 👋`);
     return "";
   }
 
-  // Exclude leads this user already logged a call for
+  // Filter by criteria
+  const matching = leads.filter(l => matchesCriteria(l, criteria));
+
+  // Exclude already-seen (lead_calls has any action logged)
   const { data: calls } = await supabase
     .from("emlak_lead_calls")
     .select("source_id")
     .eq("user_id", userId);
-  const calledIds = new Set((calls || []).map(c => c.source_id as string));
+  const seenIds = new Set((calls || []).map(c => c.source_id as string));
+  const fresh = matching.filter(l => !seenIds.has(l.source_id));
 
-  const uncalled = leads.filter(l => !calledIds.has(l.source_id));
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
 
-  if (uncalled.length === 0) {
-    await sendText(phone, `🌅 Günaydın ${firstName}!\n\nBugün ${leads.length} sahibi ilan var ama hepsini daha önce işaretlemişsin 💪`);
+  // Magic token for the takip page (user can always edit criteria)
+  const takipToken = randomBytes(16).toString("hex");
+  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  await supabase.from("magic_link_tokens").insert({
+    user_id: userId,
+    token: takipToken,
+    expires_at: expires,
+  });
+  const takipUrl = `${appUrl}/tr/takip?t=${takipToken}`;
+
+  if (fresh.length === 0) {
+    const msg = matching.length === 0
+      ? `🌅 Günaydın ${firstName}!\n\nBugün ${leads.length} yeni sahibi ilan var ama senin kriterine uyanı yok. Kriterini genişletmek ister misin?`
+      : `🌅 Günaydın ${firstName}!\n\nKriterine uyan ${matching.length} ilan var ama hepsini daha önce işaretlemişsin 💪`;
+    await sendText(phone, msg);
+    await sendUrlButton(phone, `🎯 Takip kriterini düzenle:`, "🎯 Kriterler", takipUrl, { skipNav: true });
     return "";
   }
 
-  // Build message. Chunk if over 3500 chars (WA limit safe margin).
-  const header = `🌅 Günaydın ${firstName}!\n\nBugün Bodrum'da *${uncalled.length} yeni sahibi ilan* çıktı. Aramaya başla 🔥\n`;
-  const footer = `\n\n─────────\n_Aradıklarını işaretlemek için aşağıdaki butona bas._`;
+  const criteriaSummary = [
+    criteria.neighborhoods.length > 0 ? criteria.neighborhoods.join("+") : "Tüm Bodrum",
+    criteria.property_types.length > 0 ? criteria.property_types.join("+") : "Tüm tipler",
+    criteria.listing_type || "Sat+Kir",
+  ].join(" · ");
 
+  const header = `🌅 Günaydın ${firstName}!\n\nBugün kriterine (${criteriaSummary}) uyan *${fresh.length} yeni sahibi ilan* var. Linke tıkla, sahibinden'de telefonu gör, ara 👇\n`;
+  const footer = `\n\n─────────\n_Linke tıklayınca sahibinden'deki ilanı görürsün, kendi hesabınla telefonu reveal edebilirsin._`;
+
+  // Chunk if over 3500 chars
   const chunks: string[] = [];
   let current = header;
-  uncalled.forEach((lead, i) => {
+  fresh.forEach((lead, i) => {
     const block = `\n${formatLead(lead, i + 1)}\n`;
     if (current.length + block.length > 3500) {
       chunks.push(current);
@@ -105,22 +181,12 @@ registerBriefing("emlak", async (userId) => {
     await sendText(phone, chunk);
   }
 
-  // Web-panel button to manage calls
-  const token = randomBytes(16).toString("hex");
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-  await supabase.from("magic_link_tokens").insert({
-    user_id: userId,
-    token,
-    expires_at: expires,
-  });
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
-  const panelUrl = `${appUrl}/tr/lead-liste?t=${token}`;
-
+  // Criteria edit button
   await sendUrlButton(
     phone,
-    `📋 Lead'leri işlemek için panel:`,
-    "📋 Lead Paneli",
-    panelUrl,
+    `🎯 Kriter değiştir veya genişlet:`,
+    "🎯 Kriterler",
+    takipUrl,
     { skipNav: true },
   );
 
