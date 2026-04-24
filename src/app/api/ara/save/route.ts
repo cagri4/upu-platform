@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const userPhone = profile?.whatsapp_phone as string | undefined;
     if (!userPhone) return NextResponse.json({ error: "Profil eksik." }, { status: 500 });
 
-    // Save search criteria to profile metadata
+    // Save search criteria to profile metadata (legacy reference)
     const newMetadata = {
       ...(profile?.metadata as Record<string, unknown> || {}),
       search_criteria: {
@@ -53,6 +53,22 @@ export async function POST(req: NextRequest) {
       },
     };
     await supabase.from("profiles").update({ metadata: newMetadata }).eq("id", magicToken.user_id);
+
+    // Also write to emlak_tracking_criteria so the morning brief honors
+    // the onboarding selection immediately (shared source-of-truth).
+    await supabase.from("emlak_tracking_criteria").upsert(
+      {
+        user_id: magicToken.user_id,
+        neighborhoods: [], // onboarding only picks region (Bodrum), no sub-areas
+        property_types: body.property_type && body.property_type !== "hepsi" ? [body.property_type] : [],
+        listing_type: body.listing_type && body.listing_type !== "hepsi" ? body.listing_type : null,
+        price_min: null,
+        price_max: null,
+        active: true,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" },
+    );
 
     // Query results matching criteria
     let query = supabase.from("emlak_properties")

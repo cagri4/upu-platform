@@ -63,10 +63,8 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   const introMsg =
     `👋 Merhaba! Ben UPU, sizin kişisel AI asistanınızım. 7/24 satışlarınızı artırmak için çalışacağım.\n\n` +
     `*Yapabileceklerimden bazıları:*\n\n` +
+    `• Her sabah sahibinden'de bölgenize düşen *yeni sahibi ilanları* kriterinize göre süzüp link listesi olarak WhatsApp'a gönderirim. Sahibinden'deki telefonu kendi hesabınızla reveal edip hemen arayabilirsiniz.\n` +
     `• Portföyünüz için dakikalar içinde profesyonel sunumlar hazırlar, tek linkle müşterinize gönderirim.\n` +
-    `• Her sabah arama kriterlerinize uygun bölgenizdeki yeni ilanları size raporlarım.\n` +
-    `• Sahibinden'de sahibi tarafından verilen ilanları size bildirerek portföyünüzü büyütmenize destek olurum.\n` +
-    `• WhatsApp emlakçı gruplarındaki ilanları otomatik toplayıp arama kriterlerinize uyan fırsatları anında bildiririm.\n` +
     `• Sunum ve ilan açıklamalarında yapay zeka ile satış hedefli metinler yazarım.\n` +
     `• Sahibinden.com'a ilan yüklemenizi 30 dakikadan 3 dakikaya indiririm.`;
 
