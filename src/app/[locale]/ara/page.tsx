@@ -1,42 +1,52 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 const BOT_WA_NUMBER = "31644967207";
 
 const PROPERTY_TYPES = [
-  { id: "hepsi", label: "Hepsi" },
-  { id: "daire", label: "Daire" },
-  { id: "villa", label: "Villa" },
-  { id: "mustakil", label: "Müstakil" },
-  { id: "arsa", label: "Arsa" },
-  { id: "rezidans", label: "Rezidans" },
-  { id: "dukkan", label: "Dükkan" },
-  { id: "buro_ofis", label: "Büro/Ofis" },
+  { id: "daire", label: "Daire", konut: true },
+  { id: "villa", label: "Villa", konut: true },
+  { id: "mustakil", label: "Müstakil", konut: true },
+  { id: "rezidans", label: "Rezidans", konut: true },
+  { id: "yazlik", label: "Yazlık", konut: true },
+  { id: "arsa", label: "Arsa", konut: false },
+  { id: "buro_ofis", label: "Büro/Ofis", konut: false },
+  { id: "dukkan", label: "Dükkan", konut: false },
+  { id: "otel", label: "Otel", konut: false },
+  { id: "yali", label: "Yalı", konut: true },
 ];
 
-const REGIONS = [{ id: "bodrum", label: "Bodrum" }];
+const ROOMS = ["1+0", "1+1", "2+1", "3+1", "4+1", "5+1", "6+1"];
 
-type Status = "loading" | "form" | "saving" | "done" | "error";
+type Status = "loading" | "form" | "searching" | "results" | "error";
 
-interface Results {
-  count: number;
-  avgPrice: number;
-  neighborhoods: { name: string; count: number }[];
+interface Lead {
+  source_id: string;
+  source_url: string;
+  title: string;
+  type: string;
+  listing_type: string;
+  price: number | null;
+  area: number | null;
+  rooms: string | null;
+  location_neighborhood: string | null;
 }
 
 export default function AraPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token");
+
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState("");
-  const [results, setResults] = useState<Results | null>(null);
+  const [results, setResults] = useState<Lead[] | null>(null);
 
-  const [region, setRegion] = useState("bodrum");
-  const [propertyType, setPropertyType] = useState("hepsi");
-  const [listingType, setListingType] = useState("hepsi");
-  const [listedBy, setListedBy] = useState("hepsi");
+  const [listingType, setListingType] = useState<string>("satilik");
+  const [propertyTypes, setPropertyTypes] = useState<string[]>([]);
+  const [priceMin, setPriceMin] = useState<string>("");
+  const [priceMax, setPriceMax] = useState<string>("");
+  const [rooms, setRooms] = useState<string[]>([]);
 
   useEffect(() => {
     if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
@@ -49,19 +59,41 @@ export default function AraPage() {
       .catch(() => { setStatus("error"); setError("Bağlantı hatası."); });
   }, [token]);
 
+  const showRooms = useMemo(() => {
+    if (propertyTypes.length === 0) return false;
+    return propertyTypes.some(t => PROPERTY_TYPES.find(p => p.id === t)?.konut);
+  }, [propertyTypes]);
+
+  function toggleType(t: string) {
+    setError("");
+    setPropertyTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+  }
+
+  function toggleRoom(r: string) {
+    setRooms(prev => prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r]);
+  }
+
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    setStatus("saving"); setError("");
+    if (propertyTypes.length === 0) { setError("En az 1 mülk tipi seç."); return; }
+    setStatus("searching"); setError("");
     try {
       const res = await fetch(`/api/ara/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, region, property_type: propertyType, listing_type: listingType, listed_by: listedBy }),
+        body: JSON.stringify({
+          token,
+          listing_type: listingType,
+          property_types: propertyTypes,
+          price_min: priceMin ? Number(priceMin) : null,
+          price_max: priceMax ? Number(priceMax) : null,
+          rooms: showRooms && rooms.length > 0 ? rooms : null,
+        }),
       });
       const d = await res.json();
       if (!res.ok) { setStatus("form"); setError(d.error || "Arama yapılamadı."); return; }
-      setResults({ count: d.count, avgPrice: d.avgPrice, neighborhoods: d.neighborhoods });
-      setStatus("done");
+      setResults(d.results || []);
+      setStatus("results");
     } catch {
       setStatus("form"); setError("Bağlantı hatası.");
     }
@@ -79,66 +111,114 @@ export default function AraPage() {
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">🔍</div>
-          <h1 className="text-xl font-bold">Arama Kriterleri</h1>
-          <p className="text-blue-100 text-sm mt-1">Bölgende hangi ilanları izlemek istiyorsun?</p>
+          <h1 className="text-xl font-bold">Hızlı Arama</h1>
+          <p className="text-blue-100 text-sm mt-1">Kriterlerine uyan son 24 saatin sahibi ilanlarını göster.</p>
         </div>
 
         <form onSubmit={handleSearch} className="space-y-5">
-          <section className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Bölge</label>
-              <select value={region} onChange={e => setRegion(e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900">
-                {REGIONS.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Mülk Tipi</label>
-              <select value={propertyType} onChange={e => setPropertyType(e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900">
-                {PROPERTY_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">İlan Tipi</label>
-              <div className="grid grid-cols-3 gap-2">
-                {[{id:"satilik",label:"Satılık"},{id:"kiralik",label:"Kiralık"},{id:"hepsi",label:"Hepsi"}].map(o => (
-                  <button type="button" key={o.id} onClick={() => setListingType(o.id)}
-                    className={`py-3 rounded-lg text-sm font-medium border-2 ${listingType === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300"}`}>{o.label}</button>
-                ))}
-              </div>
+          {/* İlan tipi */}
+          <section className="bg-white rounded-2xl p-4 shadow-sm">
+            <label className="block text-sm font-medium text-slate-900 mb-2">İlan Tipi *</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[{id:"satilik",label:"Satılık"},{id:"kiralik",label:"Kiralık"}].map(o => (
+                <button type="button" key={o.id} onClick={() => setListingType(o.id)}
+                  className={`py-3 rounded-lg text-sm font-medium border-2 ${listingType === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                  {o.label}
+                </button>
+              ))}
             </div>
           </section>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800">
-            ℹ️ Size sadece *sahibi tarafından verilen* yeni ilanlar gelecek. Sahibinden linklerine tıklayarak kendi hesabınızla telefonu reveal edip arayabilirsiniz.
-          </div>
+          {/* Mülk Tipi */}
+          <section className="bg-white rounded-2xl p-4 shadow-sm">
+            <label className="block text-sm font-medium text-slate-900 mb-2">
+              Mülk Tipi * <span className="text-slate-400 text-xs">({propertyTypes.length} seçili)</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {PROPERTY_TYPES.map(t => (
+                <button type="button" key={t.id} onClick={() => toggleType(t.id)}
+                  className={`py-2 rounded-lg text-xs font-medium border-2 ${propertyTypes.includes(t.id) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Oda (koşullu: sadece konut tipi seçildiyse) */}
+          {showRooms && (
+            <section className="bg-white rounded-2xl p-4 shadow-sm">
+              <label className="block text-sm font-medium text-slate-900 mb-2">
+                Oda Sayısı <span className="text-slate-400 text-xs">({rooms.length} seçili)</span>
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {ROOMS.map(r => (
+                  <button type="button" key={r} onClick={() => toggleRoom(r)}
+                    className={`py-2 rounded-lg text-xs font-medium border-2 ${rooms.includes(r) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                    {r}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-slate-500 mt-2">Hiç seçmezsen tüm oda sayıları.</p>
+            </section>
+          )}
+
+          {/* Fiyat */}
+          <section className="bg-white rounded-2xl p-4 shadow-sm">
+            <label className="block text-sm font-medium text-slate-900 mb-2">Fiyat Aralığı (₺)</label>
+            <div className="grid grid-cols-2 gap-2">
+              <input type="number" value={priceMin} onChange={e => setPriceMin(e.target.value)} placeholder="Min" min="0"
+                className="border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 placeholder:text-slate-400" />
+              <input type="number" value={priceMax} onChange={e => setPriceMax(e.target.value)} placeholder="Max" min="0"
+                className="border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 placeholder:text-slate-400" />
+            </div>
+          </section>
 
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
-          {!results && (
-            <button type="submit" disabled={status === "saving"}
-              className="w-full bg-indigo-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95">
-              {status === "saving" ? "Aranıyor..." : "🔍 Ara"}
-            </button>
-          )}
+          <button type="submit" disabled={status === "searching"}
+            className="w-full bg-indigo-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95">
+            {status === "searching" ? "Aranıyor..." : "🔍 Ara"}
+          </button>
         </form>
 
-        {results && (
-          <div className="mt-6 space-y-4">
-            <section className="bg-white rounded-2xl p-4 shadow-sm text-center">
-              <div className="text-4xl mb-2">🎯</div>
-              <h2 className="font-bold text-slate-900 mb-2">Kriterler kaydedildi!</h2>
-              <p className="text-sm text-slate-600">
-                Her sabah 06:45'te kriterine uyan yeni sahibi ilanları sahibinden linkleriyle birlikte WhatsApp'a gönderiyoruz.
-              </p>
-            </section>
+        {/* Sonuçlar */}
+        {status === "results" && results && (
+          <div className="mt-6 space-y-3">
+            <div className="bg-white rounded-2xl p-4 shadow-sm">
+              <h2 className="font-bold text-slate-900 mb-1">📋 Uyan İlanlar</h2>
+              <p className="text-xs text-slate-500">{results.length} sonuç (son 24 saat)</p>
+            </div>
+
+            {results.length === 0 ? (
+              <div className="bg-white rounded-2xl p-8 text-center text-slate-500 text-sm">
+                Bu kriterle bugün yayınlanan sahibi ilan yok. Yarın sabah yeni liste gelecek.
+              </div>
+            ) : (
+              results.map(r => (
+                <div key={r.source_id} className="bg-white rounded-2xl p-4 shadow-sm">
+                  <h3 className="font-semibold text-slate-900 mb-1 leading-tight">{r.title}</h3>
+                  <div className="text-sm text-slate-600 mb-2">
+                    📍 {r.location_neighborhood || "Bodrum"}
+                  </div>
+                  <div className="flex flex-wrap gap-3 text-sm mb-2">
+                    {r.rooms && <span className="text-slate-700">🏠 {r.rooms}</span>}
+                    {r.area && <span className="text-slate-700">📐 {r.area} m²</span>}
+                    {r.price && <span className="font-bold text-slate-900">💰 {new Intl.NumberFormat("tr-TR").format(r.price)} ₺</span>}
+                  </div>
+                  <a href={r.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline break-all">
+                    🔗 Sahibinden'de gör
+                  </a>
+                </div>
+              ))
+            )}
 
             <a
               href={`https://wa.me/${BOT_WA_NUMBER}?text=${encodeURIComponent("devam")}`}
-              className="block bg-green-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg text-center active:scale-95"
+              className="block bg-green-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg text-center active:scale-95 mt-4"
             >
               💬 WhatsApp'a Dön
             </a>
-            <p className="text-slate-400 text-xs text-center">Profil formu için bot size mesaj gönderdi — sohbete dönünce göreceksin.</p>
+            <p className="text-slate-400 text-xs text-center">WhatsApp'ta kalıcı takip için yeni mesaj bekliyor.</p>
           </div>
         )}
       </div>

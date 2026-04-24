@@ -71,37 +71,7 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
 
   await sendText(ctx.phone, introMsg);
 
-  // Demo: bugünün sahibi ilanlarından birkaç örnek
-  const today = new Date().toISOString().slice(0, 10);
-  const { data: sampleLeads } = await supabase
-    .from("emlak_daily_leads")
-    .select("title, price, area, rooms, location_neighborhood, source_url")
-    .eq("snapshot_date", today)
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  if (sampleLeads && sampleLeads.length > 0) {
-    const formatted = sampleLeads.map((l, i) => {
-      const price = l.price ? new Intl.NumberFormat("tr-TR").format(l.price) + " ₺" : "Fiyat belirtilmemiş";
-      const specs = [l.rooms, l.area ? `${l.area} m²` : null].filter(Boolean).join(" · ");
-      const specLine = specs ? `${specs} · ` : "";
-      const loc = l.location_neighborhood || "Bodrum";
-      return `*${i + 1}.* ${l.title}\n📍 ${loc}\n${specLine}💰 ${price}\n🔗 ${l.source_url}`;
-    }).join("\n\n");
-
-    const demoMsg =
-      `🔥 *Bak, bugün Bodrum'da yayınlanan yeni sahibi ilanlardan birkaç örnek:*\n\n` +
-      `${formatted}\n\n` +
-      `─────────\n` +
-      `Her sabah 06:45'te bunun gibi bir liste WhatsApp'ınıza düşecek.`;
-    await sendText(ctx.phone, demoMsg);
-  } else {
-    await sendText(ctx.phone,
-      `ℹ️ Bugün Bodrum'da henüz yeni sahibi ilan yok — ama her sabah 06:45'te yenileri otomatik WhatsApp'a düşecek.`,
-    );
-  }
-
-  // Mark onboarding completed — user can now explore menu freely
+  // Mark onboarding completed
   const { data: profile } = await supabase
     .from("profiles")
     .select("metadata")
@@ -114,22 +84,24 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   };
   await supabase.from("profiles").update({ metadata: newMeta }).eq("id", ctx.userId);
 
-  // Next flow: takip kurma. Magic link + sendUrlButton.
+  // Flow 1: DEMO ARAMA — "Bak sana uyan yeni ilanları birlikte görelim"
+  // /tr/ara form açılır, kullanıcı kriter seçer → sonuçlar alta döker.
+  // Demo araması tamamlanınca /api/ara/save takip kurma mesajını tetikler.
   const { randomBytes } = await import("crypto");
-  const token = randomBytes(16).toString("hex");
-  const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  const araToken = randomBytes(16).toString("hex");
+  const araExpires = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
   await supabase.from("magic_link_tokens").insert({
     user_id: ctx.userId,
-    token,
-    expires_at: expiresAt,
+    token: araToken,
+    expires_at: araExpires,
   });
-  const takipUrl = `https://estateai.upudev.nl/tr/takip?t=${token}`;
+  const araUrl = `https://estateai.upudev.nl/tr/ara?t=${araToken}`;
 
   const { sendUrlButton } = await import("./send");
   await sendUrlButton(ctx.phone,
-    `🎯 *Şimdi sizin için kişisel takip kuralım.*\n\nHangi bölge, mülk tipi ve fiyat aralığına uyan ilanların her sabah WhatsApp'ınıza düşmesini istediğinizi aşağıdaki formdan seçin:`,
-    "🎯 Takip Kur",
-    takipUrl,
+    `🔍 *Şimdi arama kriterlerinize uygun olarak en yeni ilanları birlikte görelim.*\n\nAşağıdaki formdan ilan tipi, mülk tipi ve fiyat aralığını seçin — son 24 saatte yayınlanan uyan sahibi ilanlar altta dökülecek.`,
+    "🔍 Hızlı Arama",
+    araUrl,
     { skipNav: true },
   );
 
