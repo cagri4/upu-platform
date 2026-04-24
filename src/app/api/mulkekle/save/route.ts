@@ -95,6 +95,21 @@ export async function POST(req: NextRequest) {
 
     await supabase.from("magic_link_tokens").update({ used_at: new Date().toISOString() }).eq("id", magicToken.id);
 
+    // Persist uploaded photos (from pre-uploaded URLs via /api/mulkekle/upload-photo)
+    const photoUrls: string[] = Array.isArray(body.photo_urls)
+      ? body.photo_urls.filter((u: unknown): u is string => typeof u === "string" && u.startsWith("http")).slice(0, 15)
+      : [];
+    if (photoUrls.length > 0) {
+      const photoRows = photoUrls.map((url, idx) => ({
+        property_id: inserted.id,
+        user_id: magicToken.user_id,
+        url,
+        sort_order: idx + 1,
+      }));
+      const { error: photoErr } = await supabase.from("emlak_property_photos").insert(photoRows);
+      if (photoErr) console.error("[mulkekle:save] photo insert failed:", photoErr);
+    }
+
     // Auto-generate presentation (property-only, no customer)
     const propTitle = String(body.title).trim();
     const propPrice = Number(body.price);
@@ -137,7 +152,8 @@ export async function POST(req: NextRequest) {
           listing_type: body.listing_type || null,
           location: body.location_neighborhood || body.location_district || null,
           description: body.description || null,
-          image_url: null,
+          image_url: photoUrls[0] || null,
+          photos: photoUrls.length > 0 ? photoUrls : null,
           features: null,
           interior_features: toArr(body.interior_features)?.join(", ") || null,
           exterior_features: toArr(body.exterior_features)?.join(", ") || null,

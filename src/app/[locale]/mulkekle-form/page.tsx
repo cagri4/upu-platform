@@ -62,6 +62,8 @@ export default function MulkEkleFormPage() {
   const [usageStatus, setUsageStatus] = useState("");
   const [swap, setSwap] = useState<boolean | null>(null);
   const [description, setDescription] = useState("");
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -80,6 +82,36 @@ export default function MulkEkleFormPage() {
 
   function toggleArr(arr: string[], val: string, set: (x: string[]) => void) {
     set(arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]);
+  }
+
+  async function handlePhotoInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const remaining = 15 - photoUrls.length;
+    if (remaining <= 0) { setError("Maksimum 15 fotoğraf."); return; }
+    const toUpload = files.slice(0, remaining);
+    setPhotoUploading(true);
+    setError("");
+    try {
+      const uploaded: string[] = [];
+      for (const file of toUpload) {
+        const fd = new FormData();
+        fd.append("token", token || "");
+        fd.append("file", file);
+        const res = await fetch("/api/mulkekle/upload-photo", { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok) { setError(data.error || "Fotoğraf yüklenemedi."); break; }
+        if (data.url) uploaded.push(data.url);
+      }
+      if (uploaded.length > 0) setPhotoUrls(prev => [...prev, ...uploaded]);
+    } finally {
+      setPhotoUploading(false);
+      e.target.value = "";
+    }
+  }
+
+  function removePhoto(idx: number) {
+    setPhotoUrls(prev => prev.filter((_, i) => i !== idx));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -119,6 +151,7 @@ export default function MulkEkleFormPage() {
           usage_status: usageStatus,
           swap,
           description: description.trim() || null,
+          photo_urls: photoUrls,
         }),
       });
       const data = await res.json();
@@ -199,6 +232,52 @@ export default function MulkEkleFormPage() {
             <Field label="İlan Açıklaması">
               <textarea rows={5} value={description} onChange={e => setDescription(e.target.value)} placeholder="Serbest metin veya boş bırak, AI sonra yazar" className={inputCls} />
             </Field>
+          </Section>
+
+          <Section title="📷 Fotoğraflar">
+            <div className="space-y-3">
+              <label className="block">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={handlePhotoInput}
+                  disabled={photoUploading || photoUrls.length >= 15}
+                  className="hidden"
+                />
+                <span className={`block w-full text-center py-3 rounded-lg font-medium border-2 border-dashed cursor-pointer ${photoUploading ? "border-slate-300 bg-slate-100 text-slate-400" : "border-indigo-400 bg-indigo-50 text-indigo-700 active:bg-indigo-100"}`}>
+                  {photoUploading
+                    ? "Yükleniyor..."
+                    : photoUrls.length >= 15
+                      ? "Maksimum 15 fotoğraf doldu"
+                      : `📷 Fotoğraf Ekle (${photoUrls.length}/15)`}
+                </span>
+              </label>
+              <p className="text-xs text-slate-500">Sunumda otomatik kullanılacak. İlk fotoğraf kapak olur.</p>
+
+              {photoUrls.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {photoUrls.map((url, idx) => (
+                    <div key={url} className="relative aspect-square rounded-lg overflow-hidden bg-slate-200">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt={`Fotoğraf ${idx + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(idx)}
+                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 text-xs font-bold shadow"
+                        aria-label="Sil">
+                        ×
+                      </button>
+                      {idx === 0 && (
+                        <div className="absolute bottom-0 inset-x-0 bg-indigo-600 text-white text-xs text-center py-0.5 font-medium">
+                          Kapak
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </Section>
 
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
