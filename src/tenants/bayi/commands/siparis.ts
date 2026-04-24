@@ -434,6 +434,20 @@ async function saveOrder(ctx: WaContext): Promise<void> {
 
     await logEvent(ctx.tenantId, ctx.userId, "siparis_olusturuldu", `${orderNumber} — ${data.dealer_name} — ${formatCurrency(total)}`);
 
+    // Event fan-out: alert users with stock:edit capability so depocu
+    // sees the new order even if they weren't in the WA corridor.
+    try {
+      const { notifyUsersByCapability } = await import("@/platform/cron/notifications");
+      await notifyUsersByCapability(
+        ctx.tenantId,
+        "stock:edit",
+        `📦 Yeni sipariş: ${data.dealer_name} — ${formatCurrency(total)}\nHazırlık başlayabilir.`,
+        { excludeUserId: ctx.userId },
+      );
+    } catch (err) {
+      console.warn("[bayi:siparis] capability notify skipped:", err);
+    }
+
     await sendButtons(
       ctx.phone,
       `✅ *Sipariş Oluşturuldu*\n\nSipariş No: *${orderNumber}*\nBayi: ${data.dealer_name}\nTutar: ${formatCurrency(total)}\nDurum: ⏳ Beklemede\n\nDepo bilgilendirildi.`,

@@ -221,18 +221,161 @@ registerWeeklyReport("siteyonetim", async (userId, tenantId) => {
 });
 
 // ── Bayi ───────────────────────────────────────────────────────────────
+//
+// Capability-scoped briefing. Every bayi user (owner, çalışan, dealer)
+// gets UPU's morning message, but the content is filtered to the
+// capabilities they actually have. Owner sees everything (wildcard),
+// muhasebeci/depocu/lojistikçi/bayi each see the slice relevant to
+// them. If a user has no capabilities, they still get a short hello
+// so onboarding doesn't feel silent.
 
-registerBriefing("bayi", async (_userId, tenantId) => {
+registerBriefing("bayi", async (userId, tenantId) => {
   const supabase = getServiceClient();
   const today = new Date().toISOString().slice(0, 10);
-  const { count: todayOrders } = await supabase.from("bayi_orders").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).gte("created_at", `${today}T00:00:00`);
-  const { data: todayOrdersData } = await supabase.from("bayi_orders").select("total_amount").eq("tenant_id", tenantId).gte("created_at", `${today}T00:00:00`);
-  const revenue = (todayOrdersData || []).reduce((s, o) => s + (o.total_amount || 0), 0);
-  const { count: criticalStock } = await supabase.from("bayi_products").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("is_active", true).lt("stock_quantity", 10);
-  const { count: dealers } = await supabase.from("bayi_dealers").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("is_active", true);
-  const fmt = new Intl.NumberFormat("tr-TR").format(revenue);
+  const now = new Date().toISOString();
+  const fmt = (n: number) => new Intl.NumberFormat("tr-TR").format(Math.round(n));
 
-  return `📊 Günaydın! Bayi brifing:\n\n📦 Bugünkü siparişler: ${todayOrders || 0}\n💰 Günlük ciro: ₺${fmt}\n🔴 Kritik stok: ${criticalStock || 0} ürün\n👥 Aktif bayi: ${dealers || 0}\n\nİyi çalışmalar!`;
+  // Load this user's capabilities
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("capabilities, dealer_id, role")
+    .eq("id", userId)
+    .single();
+  const caps = (profile?.capabilities as string[] | null) || [];
+  const has = (c: string) => caps.includes("*") || caps.includes(c);
+
+  const sections: string[] = [];
+
+  // — Owner / reports view: day's orders + revenue + critical stock + dealers —
+  if (has("reports:view") || caps.includes("*")) {
+    const { data: todayOrders } = await supabase
+      .from("bayi_orders")
+      .select("total_amount")
+      .eq("tenant_id", tenantId)
+      .gte("created_at", `${today}T00:00:00`);
+    const revenue = (todayOrders || []).reduce((s, o) => s + (o.total_amount || 0), 0);
+    const { count: criticalStock } = await supabase
+      .from("bayi_products")
+      .select("*", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("is_active", true)
+      .lt("stock_quantity", 10);
+    const { count: dealers } = await supabase
+      .from("bayi_dealers")
+      .select("*", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("is_active", true);
+    sections.push(
+      `📊 *Günlük özet*\n` +
+      `• Sipariş: ${todayOrders?.length || 0} | Ciro: ₺${fmt(revenue)}\n` +
+      `• Kritik stok: ${criticalStock || 0} ürün\n` +
+      `• Aktif bayi: ${dealers || 0}`
+    );
+  }
+
+  // — Depocu (stock:view, not owner): today's deliveries to prep + critical stock —
+  if (has("stock:view") && !caps.includes("*")) {
+    const { data: critical } = await supabase
+      .from("bayi_products")
+      .select("name, stock_quantity")
+      .eq("tenant_id", tenantId)
+      .eq("is_active", true)
+      .lt("stock_quantity", 10)
+      .order("stock_quantity", { ascending: true })
+      .limit(5);
+    const { count: prepCount } = await supabase
+      .from("bayi_orders")
+      .select("*", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .in("status", ["pending", "preparing"]);
+    const lines: string[] = [`📦 *Depo özeti*`, `• Hazırlanacak sipariş: ${prepCount || 0}`];
+    if (critical?.length) {
+      lines.push(`• Kritik stoklar:`);
+      for (const c of critical) lines.push(`  - ${c.name}: ${c.stock_quantity} adet`);
+    }
+    sections.push(lines.join("\n"));
+  }
+
+  // — Finance (invoices or payments, not owner): overdue + yesterday's payments —
+  if ((has("finance:invoices") || has("finance:payments")) && !caps.includes("*")) {
+    const { data: overdue } = await supabase
+      .from("bayi_dealer_invoices")
+      .select("id, amount")
+      .eq("tenant_id", tenantId)
+      .eq("is_paid", false)
+      .lt("due_date", now);
+    const overdueTotal = (overdue || []).reduce((s, i) => s + (i.amount || 0), 0);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const { data: paidYesterday } = await supabase
+      .from("bayi_dealer_transactions")
+      .select("amount")
+      .eq("tenant_id", tenantId)
+      .eq("type", "payment")
+      .gte("created_at", `${yesterday}T00:00:00`)
+      .lt("created_at", `${today}T00:00:00`);
+    const paidTotal = (paidYesterday || []).reduce((s, t) => s + (t.amount || 0), 0);
+    sections.push(
+      `💳 *Finans özeti*\n` +
+      `• Vadesi geçen: ${overdue?.length || 0} fatura (₺${fmt(overdueTotal)})\n` +
+      `• Dün gelen ödemeler: ₺${fmt(paidTotal)}`
+    );
+  }
+
+  // — Lojistikçi (deliveries:view, not owner): today's delivery list —
+  if (has("deliveries:view") && !caps.includes("*")) {
+    const { count: shipped } = await supabase
+      .from("bayi_orders")
+      .select("*", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("status", "shipped");
+    const { data: delayed } = await supabase
+      .from("bayi_orders")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .eq("status", "preparing")
+      .lt("created_at", new Date(Date.now() - 3 * 86400000).toISOString());
+    sections.push(
+      `🚛 *Lojistik özeti*\n` +
+      `• Yolda: ${shipped || 0}\n` +
+      `• 3+ gün hazırlanıyor: ${delayed?.length || 0}`
+    );
+  }
+
+  // — Dealer (FINANCE_BALANCE_OWN or role): own balance + active campaigns —
+  const isDealer = profile?.role === "dealer" || has("finance:balance-own");
+  if (isDealer && !caps.includes("*")) {
+    let balance = 0;
+    let dealerName = "";
+    if (profile?.dealer_id) {
+      const { data: d } = await supabase
+        .from("bayi_dealers")
+        .select("company_name, balance")
+        .eq("id", profile.dealer_id)
+        .maybeSingle();
+      balance = Number(d?.balance || 0);
+      dealerName = (d?.company_name as string) || "";
+    }
+    const { count: campaigns } = await supabase
+      .from("bayi_campaigns")
+      .select("*", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .lte("start_date", now)
+      .gte("end_date", now);
+    const balLine = balance < 0
+      ? `• Borç: ₺${fmt(Math.abs(balance))}`
+      : balance > 0 ? `• Alacak: ₺${fmt(balance)}` : `• Bakiye: denk`;
+    sections.push(
+      `🏪 *${dealerName || "Bayi"} brifingi*\n` +
+      `${balLine}\n` +
+      `• Aktif kampanya: ${campaigns || 0}`
+    );
+  }
+
+  if (sections.length === 0) {
+    return `👋 Günaydın! Yapılacak bir uyarı yok. İyi çalışmalar!`;
+  }
+
+  return `🌅 *Günaydın!*\n\n${sections.join("\n\n")}\n\nİyi çalışmalar!`;
 });
 
 registerDailyCheck("bayi", async (_userId, tenantId, phone) => {
