@@ -90,15 +90,14 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
     }).join("\n\n");
 
     const demoMsg =
-      `🔥 *Bak, bugün Bodrum'da size özel hazırladığım örnek listeden:*\n\n` +
+      `🔥 *Bak, bugün Bodrum'da yayınlanan yeni sahibi ilanlardan birkaç örnek:*\n\n` +
       `${formatted}\n\n` +
       `─────────\n` +
-      `Her sabah 06:45'te bunun gibi bir liste WhatsApp'ınıza düşecek. Kendi bölge/fiyat/mülk tipi kriterinizi kurmak için menüden *📬 Günlük İlan Takibi*'ne tıklayabilirsiniz.\n\n` +
-      `Menüyü görmek için "menu" yazın.`;
+      `Her sabah 06:45'te bunun gibi bir liste WhatsApp'ınıza düşecek.`;
     await sendText(ctx.phone, demoMsg);
   } else {
     await sendText(ctx.phone,
-      `ℹ️ Bugün Bodrum'da henüz yeni sahibi ilan yok — ama her sabah 06:45'te yenileri otomatik WhatsApp'a düşecek.\n\nBaşlamak için "menu" yazın. Kendi kriterinizi kurmak için *📬 Günlük İlan Takibi*'ne tıklayın.`,
+      `ℹ️ Bugün Bodrum'da henüz yeni sahibi ilan yok — ama her sabah 06:45'te yenileri otomatik WhatsApp'a düşecek.`,
     );
   }
 
@@ -114,6 +113,25 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
     discovery_step: 0,
   };
   await supabase.from("profiles").update({ metadata: newMeta }).eq("id", ctx.userId);
+
+  // Next flow: takip kurma. Magic link + sendUrlButton.
+  const { randomBytes } = await import("crypto");
+  const token = randomBytes(16).toString("hex");
+  const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  await supabase.from("magic_link_tokens").insert({
+    user_id: ctx.userId,
+    token,
+    expires_at: expiresAt,
+  });
+  const takipUrl = `https://estateai.upudev.nl/tr/takip?t=${token}`;
+
+  const { sendUrlButton } = await import("./send");
+  await sendUrlButton(ctx.phone,
+    `🎯 *Şimdi sizin için kişisel takip kuralım.*\n\nHangi bölge, mülk tipi ve fiyat aralığına uyan ilanların her sabah WhatsApp'ınıza düşmesini istediğinizi aşağıdaki formdan seçin:`,
+    "🎯 Takip Kur",
+    takipUrl,
+    { skipNav: true },
+  );
 
   return true;
 }

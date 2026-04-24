@@ -4,6 +4,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { sendText } from "@/platform/whatsapp/send";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,30 @@ export async function POST(req: NextRequest) {
     if (error) {
       console.error("[takip:save]", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Send WA confirmation + close the flow
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("whatsapp_phone, display_name")
+        .eq("id", magicToken.user_id)
+        .single();
+
+      if (profile?.whatsapp_phone) {
+        const summary = [
+          neighborhoods.length > 0 ? neighborhoods.join(", ") : "Tüm Bodrum",
+          propertyTypes.length > 0 ? propertyTypes.join(", ") : "Tüm tipler",
+          listingType ? (listingType === "satilik" ? "Satılık" : "Kiralık") : "Satılık+Kiralık",
+        ].join(" · ");
+
+        await sendText(
+          profile.whatsapp_phone as string,
+          `✅ *Takibin kaydedildi!*\n\nKriter: ${summary}\n\nYarın sabah 06:45'te bu kriterlere uyan yeni sahibi ilanlar WhatsApp'ınıza düşecek.\n\n💡 İleride başka aramalar veya takipler oluşturmak ya da mevcut kriterini güncellemek için menüden *📬 Günlük İlan Takibi*'ne dönebilirsiniz.`,
+        );
+      }
+    } catch (waErr) {
+      console.error("[takip:save] WA notify failed:", waErr);
     }
 
     return NextResponse.json({ success: true });
