@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
     const today = new Date().toISOString().slice(0, 10);
     let query = supabase.from("emlak_daily_leads")
       .select("source_id, source_url, title, type, listing_type, price, area, rooms, location_neighborhood")
-      .eq("snapshot_date", today);
+      .eq("snapshot_date", today)
+      .ilike("location_district", "%Bodrum%");
 
     if (body.listing_type) query = query.eq("listing_type", body.listing_type);
     if (body.property_types && body.property_types.length > 0) {

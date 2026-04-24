@@ -108,11 +108,14 @@ registerBriefing("emlak", async (userId) => {
     price_max: (crit.price_max as number | null) || null,
   } : DEFAULT_CRITERIA;
 
-  // Today's leads
+  // Today's leads (Bodrum only — daily_leads may contain cross-Turkey rows
+  // from sahibinden's "similar listings" fallback when a category has few
+  // results; filter at query level to prevent leakage).
   const { data: leadsRaw } = await supabase
     .from("emlak_daily_leads")
     .select("source_id, source_url, title, type, listing_type, price, area, rooms, location_neighborhood")
     .eq("snapshot_date", today)
+    .ilike("location_district", "%Bodrum%")
     .order("created_at", { ascending: true });
 
   const leads = (leadsRaw || []) as DailyLead[];

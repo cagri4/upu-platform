@@ -131,7 +131,16 @@ export async function POST(req: NextRequest) {
       try {
         const { askClaude } = await import("@/platform/ai/claude");
         aiSummary = await askClaude(
-          "Sen profesyonel bir emlak sunum uzmanısın. Bu mülkün öne çıkan özelliklerini vurgulayarak ikna edici, kısa bir sunum metni yaz. Türkçe.",
+          "Sen profesyonel bir emlak sunum uzmanısın. Bu mülk için müşteriye gösterilecek düz metin bir sunum yazı yaz.\n\n" +
+          "Kurallar:\n" +
+          "- Türkçe, ikna edici, sıcak ton\n" +
+          "- Tam 3 paragraf (aralarda boş satır, toplam ~150 kelime)\n" +
+          "- Paragraf 1: konum ve mülkün ilk izlenimi\n" +
+          "- Paragraf 2: öne çıkan özellikler ve yaşam tarzı\n" +
+          "- Paragraf 3: kısa bir kapanış ve iletişime davet\n" +
+          "- ASLA markdown kullanma: ##, **, *, listeler (•, ✅, -), emoji yok\n" +
+          "- Sadece düz cümleler. Noktalama ile vurgulayabilirsin.\n" +
+          "- Başlık yazma, doğrudan metne başla.",
           `MÜLK:\n${propertyDetails}`,
           512,
         );
