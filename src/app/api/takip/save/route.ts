@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
     }
 
-    const neighborhoods = Array.isArray(body.neighborhoods) ? body.neighborhoods.slice(0, 3) : [];
-    const propertyTypes = Array.isArray(body.property_types) ? body.property_types.slice(0, 3) : [];
+    const neighborhoods = Array.isArray(body.neighborhoods) ? body.neighborhoods : [];
+    const propertyTypes = Array.isArray(body.property_types) ? body.property_types : [];
     const listingType = typeof body.listing_type === "string" && body.listing_type ? body.listing_type : null;
     const priceMin = Number.isFinite(Number(body.price_min)) && Number(body.price_min) > 0 ? Number(body.price_min) : null;
     const priceMax = Number.isFinite(Number(body.price_max)) && Number(body.price_max) > 0 ? Number(body.price_max) : null;

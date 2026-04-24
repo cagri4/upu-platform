@@ -176,48 +176,8 @@
     "httpOnly": true
   },
   {
-    "name": "nwsh",
-    "value": "std",
-    "domain": ".sahibinden.com",
-    "path": "/",
-    "secure": false,
-    "httpOnly": false
-  },
-  {
     "name": "MDR",
     "value": "20190126",
-    "domain": ".sahibinden.com",
-    "path": "/",
-    "secure": false,
-    "httpOnly": false
-  },
-  {
-    "name": "__cflb",
-    "value": "0H28v2suC8qL3geWTDh9JRPobXJby8zvG6KC7cp4bY7",
-    "domain": "banaozel.sahibinden.com",
-    "path": "/",
-    "secure": true,
-    "httpOnly": true
-  },
-  {
-    "name": "__cflb",
-    "value": "0H28vudCb12J6LVB9qNuBCU3iDnBjmLgcGBwp6jJoRD",
-    "domain": "www.sahibinden.com",
-    "path": "/",
-    "secure": false,
-    "httpOnly": true
-  },
-  {
-    "name": "_ga",
-    "value": "GA1.2.855046695.1762864602",
-    "domain": ".sahibinden.com",
-    "path": "/",
-    "secure": false,
-    "httpOnly": false
-  },
-  {
-    "name": "_gid",
-    "value": "GA1.2.1422049175.1776688716",
     "domain": ".sahibinden.com",
     "path": "/",
     "secure": false,
@@ -233,23 +193,7 @@
   },
   {
     "name": "gcd",
-    "value": "20260420153827",
-    "domain": ".sahibinden.com",
-    "path": "/",
-    "secure": false,
-    "httpOnly": false
-  },
-  {
-    "name": "geoipCity",
-    "value": "utrecht",
-    "domain": ".sahibinden.com",
-    "path": "/",
-    "secure": false,
-    "httpOnly": false
-  },
-  {
-    "name": "geoipIsp",
-    "value": "ziggo",
+    "value": "20260423192531",
     "domain": ".sahibinden.com",
     "path": "/",
     "secure": false,
@@ -288,8 +232,64 @@
     "httpOnly": false
   },
   {
+    "name": "cf_clearance",
+    "value": "GZNaaapTMHLheppJt0Xn6O3s_TbbWmSGIO4n1JyeK34-1776963146-1.2.1.1-bN7brnT7rVKcH4lhPy11e95d_7F7zpxIX7Ag3mPvo6K9UnqFVsxJw2FxP7ugAZxop1znH.UDQmVFtl1ZLXPd4DV9oflQuDsYPJAjNha_pfbkxd1FqgtmwMrOtuMawNocd4DnSOTCex72C0VOqVGFkTMyFiWZ3R4jzBSxA6p2aEd94ooKkSO94k0_GQ7msmMQOqhMy790wvdfxwJeOAxb_aJUlwJa36CLKOS3Kxqu8CS66pPCOVEsXZC1KTfppvBamXfJN92KU9I45eKTmCUnQykU89pjs6iGTc.isDnQ9UpiUu8TE0k6eaebl8yILczF6DV19QQYXgw7D64VA1iU5A",
+    "domain": ".sahibinden.com",
+    "path": "/",
+    "secure": true,
+    "httpOnly": true
+  },
+  {
+    "name": "OptanonConsent",
+    "value": "isGpcEnabled=0&datestamp=Thu+Apr+23+2026+18%3A57%3A37+GMT%2B0200+(Orta+Avrupa+Yaz+Saati)&version=202601.2.0&browserGpcFlag=0&isIABGlobal=false&consentId=b70eeca8-3cbf-4dfd-a157-91d85ca1cced&interactionCount=1&isAnonUser=1&landingPath=NotLandingPage&groups=C0004%3A1%2CC0001%3A1%2CC0003%3A1%2CC0002%3A1&hosts=H183%3A1%2CH186%3A1%2CH131%3A1%2CH106%3A1%2CH8%3A1%2CH80%3A1%2CH67%3A1%2CH27%3A1%2CH14%3A1%2CH31%3A1%2CH114%3A1%2CH184%3A1%2CH115%3A1%2CH117%3A1%2CH87%3A1%2CH88%3A1%2CH4%3A1%2CH91%3A1%2CH5%3A1%2CH185%3A1%2CH93%3A1%2CH180%3A1%2CH17%3A1%2CH122%3A1%2CH96%3A1%2CH124%3A1%2CH64%3A1%2CH76%3A0%2CH3%3A0%2CH194%3A0%2CH201%3A0%2CH195%3A0%2CH12%3A0%2CH198%3A0&genVendors=&intType=1&geolocation=%3B&AwaitingReconsent=false&prevHadToken=0",
+    "domain": ".sahibinden.com",
+    "path": "/",
+    "secure": false,
+    "httpOnly": false
+  },
+  {
+    "name": "_px3",
+    "value": "b5fab42f0bd595cf43f1674db811cf532cee2baecb3e27d3c84a8f488bf1fa57:DxpY9SE5wAHw5LAqsGlckQiq04tH68seiOrYhOCwMsXCsF2VAN26avxmJ8+Dj59XLQ4eEjU/uyTnwBpZnydXXA==:1000:LEiloRzLKCYofPYL0EzaVpQL3fWR52e/edzb3vhSeuBapZBUSS5w7EHplyxE0cIsVlOi7KcTObZu00X7QjKdKQF+aLBQE0iUEZVcdw0ityIztKwEP8mx5JdqoFdA8nqVfmR/NdhcQGe5WekoTGVms4vGK9Nh5HtyP8JBqTq3EE8vFPyfN7jxKomarMHH2OwLm+gJRhreLWLq3VCJFFnLWZDKVrIdojo77wrvjbDdVVOEIfuPO7j9rU4NgUagh1LtosSrjgzd0hkYwYZ0OYvj1XsCNvcQ++3b7pMvEYSoEQRvBt3eNgXBfDTJasOdDWFeUec7xShcfZ9zYzVbou75ku+fUVsnNcB84yQZ/9TgYMFPQuPQlu/a7Rs7avNtXFz9T9pHvRtr2ISGDO3BHVvQTgO2olj2iA7YN8BQNoaFB9bGDGmh+KYAyg7q0xf8cdIQ7dLQWhOOi2fKa/YYNb6OjcYCtp2NsAToSUSXjNre42TcflGBYu4z2Lh8nCFBrbmB",
+    "domain": ".sahibinden.com",
+    "path": "/",
+    "secure": true,
+    "httpOnly": false
+  },
+  {
+    "name": "_ga",
+    "value": "GA1.2.855046695.1762864602",
+    "domain": ".sahibinden.com",
+    "path": "/",
+    "secure": false,
+    "httpOnly": false
+  },
+  {
+    "name": "_gid",
+    "value": "GA1.2.1343748418.1776961538",
+    "domain": ".sahibinden.com",
+    "path": "/",
+    "secure": false,
+    "httpOnly": false
+  },
+  {
+    "name": "nwsh",
+    "value": "std",
+    "domain": ".sahibinden.com",
+    "path": "/",
+    "secure": false,
+    "httpOnly": false
+  },
+  {
+    "name": "pxcts",
+    "value": "ryroITaSqEyBbM/JPcWF5ufAodKaQNhi-Cd6YHkGXRk=:5K-aVd6xlOW6GkcMMzWguYBqyEPFTNhZToekG4mZnGxxDKPryZHzT6lsxRhke4Wy1J6TVl58oqyh2Btix8DzLDR7oboamBTzI3CvUURILi-FbslsQDopWRZwmwXSi0STVLL1G-mkuvJR3NU0MoGfIsredxh52XUm8H0/B2JMzwzVbTu0rBL6DG-2Je8CLovU",
+    "domain": ".sahibinden.com",
+    "path": "/",
+    "secure": true,
+    "httpOnly": false
+  },
+  {
     "name": "_ga_C1X44T5TZ9",
-    "value": "GS2.1.s1776688716$o56$g0$t1776688735$j41$l0$h0",
+    "value": "GS2.1.s1776970601$o58$g1$t1776970645$j16$l0$h0",
     "domain": ".sahibinden.com",
     "path": "/",
     "secure": false,
@@ -297,74 +297,10 @@
   },
   {
     "name": "_ga_CVPS3GXE1Z",
-    "value": "GS2.1.s1776688716$o58$g1$t1776688735$j41$l0$h0",
+    "value": "GS2.1.s1776970600$o60$g1$t1776970645$j15$l0$h0",
     "domain": ".sahibinden.com",
     "path": "/",
     "secure": false,
-    "httpOnly": false
-  },
-  {
-    "name": "OptanonConsent",
-    "value": "isGpcEnabled=0&datestamp=Mon+Apr+20+2026+15%3A29%3A34+GMT%2B0200+(Orta+Avrupa+Yaz+Saati)&version=202601.2.0&browserGpcFlag=0&isIABGlobal=false&consentId=b70eeca8-3cbf-4dfd-a157-91d85ca1cced&interactionCount=1&isAnonUser=1&landingPath=NotLandingPage&groups=C0004%3A1%2CC0001%3A1%2CC0003%3A1%2CC0002%3A1&hosts=H183%3A1%2CH186%3A1%2CH131%3A1%2CH106%3A1%2CH8%3A1%2CH80%3A1%2CH67%3A1%2CH27%3A1%2CH14%3A1%2CH31%3A1%2CH114%3A1%2CH184%3A1%2CH115%3A1%2CH117%3A1%2CH87%3A1%2CH88%3A1%2CH4%3A1%2CH91%3A1%2CH5%3A1%2CH185%3A1%2CH93%3A1%2CH180%3A1%2CH17%3A1%2CH122%3A1%2CH96%3A1%2CH124%3A1%2CH64%3A1%2CH76%3A0%2CH3%3A0%2CH194%3A0%2CH201%3A0%2CH195%3A0%2CH12%3A0%2CH198%3A0&genVendors=&intType=1&geolocation=%3B&AwaitingReconsent=false&prevHadToken=0",
-    "domain": ".sahibinden.com",
-    "path": "/",
-    "secure": false,
-    "httpOnly": false
-  },
-  {
-    "name": "__cf_bm",
-    "value": "DDLQB1ToA_bp3gii0XepRZeqPuozwhO8h953pl8tohM-1776691774.2754822-1.0.1.1-OLI.aiYvHYKQpZRtGCNivYZQWHpGmkW2IToA4CB0Y9Oh7XsQIj9_ciT98EneVzp7FhMHWf21Mb5SR.u3cBh40YvFBoRwxB03izymGaXRqbWdSWwnUJF01KNot2MYgXOY",
-    "domain": ".sahibinden.com",
-    "path": "/",
-    "secure": true,
-    "httpOnly": true
-  },
-  {
-    "name": "_px3",
-    "value": "bf14323bce2e3210c42abe8946d89e5eb3765a032be373b0874c7649f624db19:VxBZ2+ykgnvO4bEkk3YmzZaJAiq2ES4ZJgni42w6RAVjOQVm3hxfA8PS3+X3QbDKH67CJm+lPjCQGK2eN64sWw==:1000:5sD294cngP2Eja2NOpwoLuATGDQja7wI2OJoKUWXMQMgVw0C5JTT5K7STCxneengBnTLDfEcvCQJrcPq1zoKDQ5OPW8aTkDQAFDj77EJPxbxOh2r/G8RyM3enHCvBsVdqLdrY+vsZww99m0NsNTXAVtk0K6dMii0FObXqw0GghkfO5jBroIV7UEfPGTrrNjdV2WadmxaHrLc+yWe3GUFR2W4Sx7WvP/I9jhyp2AMvkXcqjSSGw3Y1sipjl7tnUXQiNzSNintc6dgwrLzPAkKzsFkN75pp7HJ/+avsMpHEVRCB1f+c7IkYpRVBVlCl/rvK0/pVzAR6/YcT7XLX5Y3lvz1XzpBjLEGMLbHe8rpCwDOYzb7Et1vFzHgQk8huMATVncljdhdjNfWhTJPnafdmK3zghvXq/+2AlHY8nWUgZ8STw2gssX5HA0TgrS2O9VUqtV1b3o52vhl23EtQ/t4cJHHAhtC1teX3uVuMz1tvgA=",
-    "domain": ".sahibinden.com",
-    "path": "/",
-    "secure": true,
-    "httpOnly": false
-  },
-  {
-    "name": "csid",
-    "value": "UmT6gHAl-spHqCsLWO3kI3RHvnUozc4ke5MXCGs4w6mbFrS6uQAw2JZjmLH0Cie_boBnE1viYhZ74ZC1E3n8MnevXZgreoARxrOShMWjnikQ3ROioeGIfFu_bmEd12mn-2xcf0vkwnOTuURlUJd71tQIOqRUGvilZ6ZS8JQipnUuwNrzh4Uo8g4c-eKz7oMVFiZf1q8irtiXts9789uU_wbrm2Ouw8XJ5yn3vnhs7QmSesF1cPmOI5tprYcikkVuDhFiYObxhNkd2zchS3fko4XwNQjYh0uX9O7UFUvfRpXgZxP-c8Yzit8pIHA3Uq2l294BrX2irr5tvj0dxYRVUdKPXSC5UhIykONv829QesRqhgbqeIl2Le8zCyYBKn-R",
-    "domain": ".sahibinden.com",
-    "path": "/",
-    "secure": true,
-    "httpOnly": true
-  },
-  {
-    "name": "csss",
-    "value": "ZPbyOCSRfJeWPpuXoqzBco-fFlquoEYcPrQ36fPZWDZDYYf_vgvKt64ZvqT2v-NvXDGmCyzRygIU0ydKZ3-o2g",
-    "domain": ".sahibinden.com",
-    "path": "/",
-    "secure": true,
-    "httpOnly": true
-  },
-  {
-    "name": "dp",
-    "value": "1366*768-landscape",
-    "domain": ".sahibinden.com",
-    "path": "/",
-    "secure": false,
-    "httpOnly": false
-  },
-  {
-    "name": "cf_clearance",
-    "value": "l9DIFxrAeL8gPV6ji3Y1hYA47tmtbfGL5ppGwC_Hf0Q-1776691774-1.2.1.1-In.i.1r051Xwxd0RGfv6Bi_XWiFeCbH972UQ0IaGDwglOnYPc8gULPk.lSywZbWyZxT.0eGYNna4CRA1XcVODmSHgjkMf7xqHdnaJxp8PJVYcSUQRgcY4SfyIirWwyEx9C.UxHaS0gEdNcCfvnVgLsz3vmLOcx39MDyD2bnn.u_Y6PDeMIxutxD6NcsfiJAW3SEnNOGEuh3CfyE0OYw8.ZXaZL8bSBrjswLapGgyvCSLzbQzdviYloqcY1fPPwS9Kwa44Us2OD0Xh4bKwIudk6usroh3YS8ra6q_g3cjiJpQeFbGddYFEIcKGPeqS4med3OON0sslAWo7_41JFq3AA",
-    "domain": ".sahibinden.com",
-    "path": "/",
-    "secure": true,
-    "httpOnly": true
-  },
-  {
-    "name": "pxcts",
-    "value": "qc9yqCu6uutxEFrPkJjbpAMKAxxhDpw8CDfwTNc87IE=:aoNX-gS14ErDFtv4MvgRfHcxg2Y0CBl8ZN0/Erh7YHr/okZtyt6O4ZUmQ1053Eip35IdSEe786Y9XdhXpqNu4dLJrp9mhwsdnb7arnS-gcoPunHyXg2b0S6762KtQa4i6wT21aCpB2se4Qu4/7bss7-4dvCCYbb9mlZXBkKOTcOTrz0ZL1tKAqH/BlZP6b6T",
-    "domain": ".sahibinden.com",
-    "path": "/",
-    "secure": true,
     "httpOnly": false
   }
 ]

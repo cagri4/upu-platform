@@ -58,27 +58,16 @@ export default function TakipPage() {
 
   function toggleNeighborhood(n: string) {
     setError("");
-    setNeighborhoods(prev => {
-      if (prev.includes(n)) return prev.filter(x => x !== n);
-      if (prev.length >= 3) { setError("En fazla 3 bölge seçebilirsin."); return prev; }
-      return [...prev, n];
-    });
+    setNeighborhoods(prev => prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n]);
   }
 
   function toggleType(t: string) {
     setError("");
-    setPropertyTypes(prev => {
-      if (prev.includes(t)) return prev.filter(x => x !== t);
-      if (prev.length >= 3) { setError("En fazla 3 mülk tipi seçebilirsin."); return prev; }
-      return [...prev, t];
-    });
+    setPropertyTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (neighborhoods.length === 0) { setError("En az 1 bölge seç."); return; }
-    if (propertyTypes.length === 0) { setError("En az 1 mülk tipi seç."); return; }
-
     setStatus("saving"); setError("");
     try {
       const res = await fetch(`/api/takip/save`, {
@@ -130,7 +119,7 @@ export default function TakipPage() {
           {/* Bölge */}
           <section className="bg-white rounded-2xl p-4 shadow-sm">
             <label className="block text-sm font-medium text-slate-900 mb-2">
-              Bölge (max 3) <span className="text-slate-400 text-xs">{neighborhoods.length}/3</span>
+              Bölge <span className="text-slate-400 text-xs">({neighborhoods.length} seçili)</span>
             </label>
             <div className="grid grid-cols-2 gap-2">
               {BODRUM_SUBAREAS.map(n => (
@@ -140,12 +129,13 @@ export default function TakipPage() {
                 </button>
               ))}
             </div>
+            <p className="text-xs text-slate-500 mt-2">Hiç seçmezsen tüm Bodrum.</p>
           </section>
 
           {/* Mülk Tipi */}
           <section className="bg-white rounded-2xl p-4 shadow-sm">
             <label className="block text-sm font-medium text-slate-900 mb-2">
-              Mülk Tipi (max 3) <span className="text-slate-400 text-xs">{propertyTypes.length}/3</span>
+              Mülk Tipi <span className="text-slate-400 text-xs">({propertyTypes.length} seçili)</span>
             </label>
             <div className="grid grid-cols-3 gap-2">
               {PROPERTY_TYPES.map(t => (
@@ -155,6 +145,7 @@ export default function TakipPage() {
                 </button>
               ))}
             </div>
+            <p className="text-xs text-slate-500 mt-2">Hiç seçmezsen tüm tipler.</p>
           </section>
 
           {/* İlan Tipi */}
