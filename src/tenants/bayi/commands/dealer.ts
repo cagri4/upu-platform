@@ -36,28 +36,23 @@ export async function handleDealerSiparisVer(ctx: WaContext): Promise<void> {
     }
 
     const supabase = getServiceClient();
-    const { data: products } = await supabase
-      .from("bayi_products")
-      .select("id, name, unit_price, stock_quantity, category")
-      .eq("user_id", ownerId)
-      .gt("stock_quantity", 0)
-      .order("name")
-      .limit(10);
+    const { randomBytes } = await import("crypto");
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+    await supabase.from("magic_link_tokens").insert({
+      user_id: ctx.userId,
+      token,
+      expires_at: expiresAt,
+    });
 
-    if (!products?.length) {
-      await sendButtons(ctx.phone, "Şu an sipariş verilebilecek ürün bulunmuyor.", [{ id: "cmd:menu", title: "Ana Menü" }]);
-      return;
-    }
-
-    const rows = products.map(p => ({
-      id: `dealer_siparis:${p.id}`,
-      title: p.name.substring(0, 24),
-      description: `${formatPrice(p.unit_price)} TL | Stok: ${p.stock_quantity}`,
-    }));
-
-    await sendList(ctx.phone, "📦 Sipariş vermek istediğiniz ürünü seçin:", "Ürün Seç", [
-      { title: "Ürünler", rows },
-    ]);
+    const formUrl = `https://retailai.upudev.nl/tr/bayi-siparis?t=${token}`;
+    const { sendUrlButton } = await import("@/platform/whatsapp/send");
+    await sendUrlButton(ctx.phone,
+      `📦 *Sipariş Ver*\n\nÜrünleri listeden seç, miktar gir, kaydet. Siparişin otomatik firma sahibine iletilir.\n\n_Link 2 saat geçerli._`,
+      "📝 Formu Aç",
+      formUrl,
+      { skipNav: true },
+    );
   } catch (err) {
     await handleError(ctx, "dealer:siparisver", err, "db");
   }
@@ -219,31 +214,23 @@ export async function handleDealerBakiyem(ctx: WaContext): Promise<void> {
 export async function handleDealerFaturalarim(ctx: WaContext): Promise<void> {
   try {
     const supabase = getServiceClient();
-    const { data: profile } = await supabase.from("profiles").select("dealer_id").eq("id", ctx.userId).single();
+    const { randomBytes } = await import("crypto");
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+    await supabase.from("magic_link_tokens").insert({
+      user_id: ctx.userId,
+      token,
+      expires_at: expiresAt,
+    });
 
-    const { data: invoices } = await supabase
-      .from("bayi_dealer_invoices")
-      .select("id, invoice_no, amount, status, due_date, created_at")
-      .eq("dealer_id", profile?.dealer_id || ctx.userId)
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    if (!invoices?.length) {
-      await sendButtons(ctx.phone, "Henüz faturanız bulunmuyor.", [{ id: "cmd:menu", title: "Ana Menü" }]);
-      return;
-    }
-
-    let text = "📄 *Faturalarım*\n\n";
-    for (const inv of invoices) {
-      const date = new Date(inv.created_at).toLocaleDateString("tr-TR");
-      const status = inv.status === "paid" ? "✅" : inv.status === "overdue" ? "🔴" : "⏳";
-      text += `${status} ${inv.invoice_no || "-"} | ${formatPrice(inv.amount || 0)} TL | ${date}\n`;
-    }
-
-    await sendButtons(ctx.phone, text, [
-      { id: "cmd:bakiyem", title: "💰 Bakiyem" },
-      { id: "cmd:menu", title: "Ana Menü" },
-    ]);
+    const formUrl = `https://retailai.upudev.nl/tr/bayi-fatura?t=${token}`;
+    const { sendUrlButton } = await import("@/platform/whatsapp/send");
+    await sendUrlButton(ctx.phone,
+      `📄 *Faturalarım*\n\nTüm faturalarını vade bilgisiyle tek ekranda gör.\n\n_Link 2 saat geçerli._`,
+      "📝 Fatura Listesi",
+      formUrl,
+      { skipNav: true },
+    );
   } catch (err) {
     await handleError(ctx, "dealer:faturalarim", err, "db");
   }
@@ -264,7 +251,10 @@ export async function handleDealerOdemelerim(ctx: WaContext): Promise<void> {
       .limit(10);
 
     if (!payments?.length) {
-      await sendButtons(ctx.phone, "Henüz ödeme kaydınız bulunmuyor.", [{ id: "cmd:menu", title: "Ana Menü" }]);
+      await sendButtons(ctx.phone, "Henüz ödeme kaydınız bulunmuyor.", [
+        { id: "cmd:odeme", title: "💳 Ödeme Bildir" },
+        { id: "cmd:menu", title: "Ana Menü" },
+      ]);
       return;
     }
 
@@ -276,6 +266,7 @@ export async function handleDealerOdemelerim(ctx: WaContext): Promise<void> {
     }
 
     await sendButtons(ctx.phone, text, [
+      { id: "cmd:odeme", title: "💳 Yeni Ödeme" },
       { id: "cmd:bakiyem", title: "💰 Bakiyem" },
       { id: "cmd:menu", title: "Ana Menü" },
     ]);

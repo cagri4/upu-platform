@@ -69,30 +69,23 @@ export async function handleBakiye(ctx: WaContext): Promise<void> {
 export async function handleFaturalar(ctx: WaContext): Promise<void> {
   try {
     const supabase = getServiceClient();
-
-    const { data: invoices } = await supabase
-      .from("bayi_dealer_invoices")
-      .select("invoice_number, invoice_date, total_amount, bayi_dealers!inner(company_name)")
-      .eq("tenant_id", ctx.tenantId)
-      .order("invoice_date", { ascending: false })
-      .limit(10);
-
-    if (!invoices?.length) {
-      await sendButtons(ctx.phone, "🧾 *Faturalar*\n\nFatura kaydi bulunmuyor.", [
-        { id: "cmd:menu", title: "Ana Menu" },
-      ]);
-      return;
-    }
-
-    const lines = invoices.map((inv: any, i: number) => {
-      const dealer = inv.bayi_dealers?.company_name || "Bilinmeyen";
-      return `${i + 1}. #${inv.invoice_number} — ${dealer} — ${formatCurrency(inv.total_amount || 0)} — ${shortDate(inv.invoice_date)}`;
+    const { randomBytes } = await import("crypto");
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+    await supabase.from("magic_link_tokens").insert({
+      user_id: ctx.userId,
+      token,
+      expires_at: expiresAt,
     });
 
-    await sendButtons(ctx.phone, `🧾 *Son Faturalar*\n\n${lines.join("\n")}`, [
-      { id: "cmd:ekstre", title: "Ekstre" },
-      { id: "cmd:menu", title: "Ana Menu" },
-    ]);
+    const formUrl = `https://retailai.upudev.nl/tr/bayi-fatura?t=${token}`;
+    const { sendUrlButton } = await import("@/platform/whatsapp/send");
+    await sendUrlButton(ctx.phone,
+      `📄 *Faturalar*\n\nTüm faturaları bayiye göre gruplu, vade bilgisiyle gör. Ödenen faturayı tek dokunuşla işaretle.\n\n_Link 2 saat geçerli._`,
+      "📝 Fatura Listesi",
+      formUrl,
+      { skipNav: true },
+    );
   } catch (err) {
     console.error("[bayi:faturalar] error:", err);
     await sendText(ctx.phone, "Faturalar yuklenirken bir hata olustu.");
@@ -212,5 +205,21 @@ export async function handleEkstre(ctx: WaContext): Promise<void> {
 }
 
 export async function handleOdeme(ctx: WaContext): Promise<void> {
-  await webPanelRedirect(ctx.phone, "💰 *Odeme Kaydi*\nOdeme kaydi olusturmak icin web panelini kullanin.");
+  const supabase = getServiceClient();
+  const { randomBytes } = await import("crypto");
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  await supabase.from("magic_link_tokens").insert({
+    user_id: ctx.userId,
+    token,
+    expires_at: expiresAt,
+  });
+  const formUrl = `https://retailai.upudev.nl/tr/bayi-odeme?t=${token}`;
+  const { sendUrlButton } = await import("@/platform/whatsapp/send");
+  await sendUrlButton(ctx.phone,
+    `💳 *Ödeme Kaydet*\n\nBayi seç, tutarı yaz, yöntem seç. Ödeme işlemini tek ekrandan kaydet.\n\n_Link 2 saat geçerli._`,
+    "📝 Formu Aç",
+    formUrl,
+    { skipNav: true },
+  );
 }

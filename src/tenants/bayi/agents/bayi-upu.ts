@@ -128,9 +128,9 @@ async function readDealerPerformance(_i: Record<string, unknown>, ctx: AgentCont
     }
   }
   const ids = Object.keys(totals);
-  const { data: dealers } = await supabase.from("bayi_dealers").select("id, name").in("id", ids);
+  const { data: dealers } = await supabase.from("bayi_dealers").select("id, company_name").in("id", ids);
   const nm: Record<string, string> = {};
-  for (const d of dealers || []) nm[d.id] = d.name;
+  for (const d of dealers || []) nm[d.id as string] = d.company_name as string;
   const sorted = Object.entries(totals).sort((a, b) => b[1].total - a[1].total).slice(0, 10);
   return { result: sorted.map(([id, s], i) => `${i + 1}. ${nm[id] || id} | ${formatCurrency(s.total)} | ${s.count} sipariş`).join("\n"), needsApproval: false };
 }
@@ -146,45 +146,45 @@ async function readPlannedVisits(_i: Record<string, unknown>, ctx: AgentContext)
   const supabase = getServiceClient();
   const today = new Date().toISOString().slice(0, 10);
   const plus7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-  const { data } = await supabase.from("bayi_dealer_visits").select("id, visit_date, notes, bayi_dealers(name)").eq("tenant_id", ctx.tenantId).gte("visit_date", today).lte("visit_date", plus7).order("visit_date", { ascending: true });
+  const { data } = await supabase.from("bayi_dealer_visits").select("id, visit_date, notes, bayi_dealers(company_name)").eq("tenant_id", ctx.tenantId).gte("visit_date", today).lte("visit_date", plus7).order("visit_date", { ascending: true });
   if (!data?.length) return { result: "Planlı ziyaret yok.", needsApproval: false };
-  return { result: data.map((v) => `- ${formatDate(v.visit_date)} | ${(v.bayi_dealers as unknown as { name: string })?.name || "?"}${v.notes ? ` | ${v.notes}` : ""}`).join("\n"), needsApproval: false };
+  return { result: data.map((v) => `- ${formatDate(v.visit_date)} | ${(v.bayi_dealers as unknown as { company_name: string })?.company_name || "?"}${v.notes ? ` | ${v.notes}` : ""}`).join("\n"), needsApproval: false };
 }
 
 async function readPendingOrders(_i: Record<string, unknown>, ctx: AgentContext): Promise<ToolResult> {
   const supabase = getServiceClient();
-  const { data } = await supabase.from("bayi_orders").select("id, total_amount, status, bayi_dealers(name)").eq("tenant_id", ctx.tenantId).in("status", ["pending", "preparing"]).order("created_at", { ascending: false }).limit(15);
+  const { data } = await supabase.from("bayi_orders").select("id, total_amount, status, bayi_dealers(company_name)").eq("tenant_id", ctx.tenantId).in("status", ["pending", "preparing"]).order("created_at", { ascending: false }).limit(15);
   if (!data?.length) return { result: "Bekleyen sipariş yok.", needsApproval: false };
-  return { result: data.map((o) => `- [${o.id}] ${(o.bayi_dealers as unknown as { name: string })?.name || "?"} | ${formatCurrency(o.total_amount || 0)} | ${o.status}`).join("\n"), needsApproval: false };
+  return { result: data.map((o) => `- [${o.id}] ${(o.bayi_dealers as unknown as { company_name: string })?.company_name || "?"} | ${formatCurrency(o.total_amount || 0)} | ${o.status}`).join("\n"), needsApproval: false };
 }
 
 async function readProblemDealers(_i: Record<string, unknown>, ctx: AgentContext): Promise<ToolResult> {
   const supabase = getServiceClient();
-  const { data: negative } = await supabase.from("bayi_dealers").select("id, name, balance").eq("tenant_id", ctx.tenantId).lt("balance", 0).limit(10);
-  const { data: inactive } = await supabase.from("bayi_dealers").select("id, name").eq("tenant_id", ctx.tenantId).eq("is_active", false).limit(10);
+  const { data: negative } = await supabase.from("bayi_dealers").select("id, company_name, balance").eq("tenant_id", ctx.tenantId).lt("balance", 0).limit(10);
+  const { data: inactive } = await supabase.from("bayi_dealers").select("id, company_name").eq("tenant_id", ctx.tenantId).eq("is_active", false).limit(10);
   const lines: string[] = [];
-  for (const d of negative || []) lines.push(`- [${d.id}] ${d.name} | ${formatCurrency(Math.abs(d.balance))} alacak`);
-  for (const d of inactive || []) lines.push(`- [${d.id}] ${d.name} | pasif`);
+  for (const d of negative || []) lines.push(`- [${d.id}] ${d.company_name} | ${formatCurrency(Math.abs(d.balance))} alacak`);
+  for (const d of inactive || []) lines.push(`- [${d.id}] ${d.company_name} | pasif`);
   return { result: lines.length ? lines.join("\n") : "Sorunlu bayi yok.", needsApproval: false };
 }
 
 async function readReceivables(_i: Record<string, unknown>, ctx: AgentContext): Promise<ToolResult> {
   const supabase = getServiceClient();
-  const { data: debt } = await supabase.from("bayi_dealers").select("id, name, balance").eq("tenant_id", ctx.tenantId).lt("balance", 0).order("balance", { ascending: true });
+  const { data: debt } = await supabase.from("bayi_dealers").select("id, company_name, balance").eq("tenant_id", ctx.tenantId).lt("balance", 0).order("balance", { ascending: true });
   if (!debt?.length) return { result: "Borçlu bayi yok.", needsApproval: false };
   const total = debt.reduce((s, d) => s + Math.abs(d.balance || 0), 0);
-  return { result: `Toplam alacak: ${formatCurrency(total)} (${debt.length} bayi)\n\n${debt.map((d) => `- [${d.id}] ${d.name} | ${formatCurrency(Math.abs(d.balance))}`).join("\n")}`, needsApproval: false };
+  return { result: `Toplam alacak: ${formatCurrency(total)} (${debt.length} bayi)\n\n${debt.map((d) => `- [${d.id}] ${d.company_name} | ${formatCurrency(Math.abs(d.balance))}`).join("\n")}`, needsApproval: false };
 }
 
 async function readOverdueInvoices(_i: Record<string, unknown>, ctx: AgentContext): Promise<ToolResult> {
   const supabase = getServiceClient();
   const now = new Date().toISOString();
-  const { data } = await supabase.from("bayi_dealer_invoices").select("id, amount, due_date, bayi_dealers(name)").eq("tenant_id", ctx.tenantId).eq("is_paid", false).lt("due_date", now).order("due_date", { ascending: true });
+  const { data } = await supabase.from("bayi_dealer_invoices").select("id, amount, due_date, bayi_dealers(company_name)").eq("tenant_id", ctx.tenantId).eq("is_paid", false).lt("due_date", now).order("due_date", { ascending: true });
   if (!data?.length) return { result: "Vadesi geçmiş fatura yok.", needsApproval: false };
   return {
     result: data.map((inv) => {
       const days = Math.floor((Date.now() - new Date(inv.due_date).getTime()) / 86400000);
-      const nm = (inv.bayi_dealers as unknown as { name: string })?.name || "?";
+      const nm = (inv.bayi_dealers as unknown as { company_name: string })?.company_name || "?";
       return `- [${inv.id}] ${nm} | ${formatCurrency(inv.amount)} | ${days} gün gecikti`;
     }).join("\n"),
     needsApproval: false,
@@ -194,11 +194,11 @@ async function readOverdueInvoices(_i: Record<string, unknown>, ctx: AgentContex
 async function readRecentInvoices(_i: Record<string, unknown>, ctx: AgentContext): Promise<ToolResult> {
   const supabase = getServiceClient();
   const week = new Date(Date.now() - 7 * 86400000).toISOString();
-  const { data } = await supabase.from("bayi_dealer_invoices").select("id, amount, due_date, is_paid, bayi_dealers(name)").eq("tenant_id", ctx.tenantId).gte("created_at", week).order("created_at", { ascending: false }).limit(15);
+  const { data } = await supabase.from("bayi_dealer_invoices").select("id, amount, due_date, is_paid, bayi_dealers(company_name)").eq("tenant_id", ctx.tenantId).gte("created_at", week).order("created_at", { ascending: false }).limit(15);
   if (!data?.length) return { result: "Son 7 günde fatura yok.", needsApproval: false };
   return {
     result: data.map((inv) => {
-      const nm = (inv.bayi_dealers as unknown as { name: string })?.name || "?";
+      const nm = (inv.bayi_dealers as unknown as { company_name: string })?.company_name || "?";
       return `- [${inv.id}] ${nm} | ${formatCurrency(inv.amount)} | ${inv.is_paid ? "Ödendi" : "Ödenmedi"}`;
     }).join("\n"),
     needsApproval: false,
@@ -215,11 +215,11 @@ async function readDealerStatement(input: Record<string, unknown>, ctx: AgentCon
 async function readDueToday(_i: Record<string, unknown>, ctx: AgentContext): Promise<ToolResult> {
   const supabase = getServiceClient();
   const today = new Date().toISOString().slice(0, 10);
-  const { data } = await supabase.from("bayi_dealer_invoices").select("id, amount, bayi_dealers(name)").eq("tenant_id", ctx.tenantId).eq("is_paid", false).gte("due_date", `${today}T00:00:00`).lt("due_date", `${today}T23:59:59`);
+  const { data } = await supabase.from("bayi_dealer_invoices").select("id, amount, bayi_dealers(company_name)").eq("tenant_id", ctx.tenantId).eq("is_paid", false).gte("due_date", `${today}T00:00:00`).lt("due_date", `${today}T23:59:59`);
   if (!data?.length) return { result: "Bugün vadesi gelen fatura yok.", needsApproval: false };
   return {
     result: data.map((inv) => {
-      const nm = (inv.bayi_dealers as unknown as { name: string })?.name || "?";
+      const nm = (inv.bayi_dealers as unknown as { company_name: string })?.company_name || "?";
       return `- [${inv.id}] ${nm} | ${formatCurrency(inv.amount)}`;
     }).join("\n"),
     needsApproval: false,
@@ -228,11 +228,11 @@ async function readDueToday(_i: Record<string, unknown>, ctx: AgentContext): Pro
 
 async function readCollectionActivities(_i: Record<string, unknown>, ctx: AgentContext): Promise<ToolResult> {
   const supabase = getServiceClient();
-  const { data } = await supabase.from("bayi_collection_activities").select("activity_type, amount, created_at, bayi_dealers(name)").eq("tenant_id", ctx.tenantId).order("created_at", { ascending: false }).limit(10);
+  const { data } = await supabase.from("bayi_collection_activities").select("activity_type, amount, created_at, bayi_dealers(company_name)").eq("tenant_id", ctx.tenantId).order("created_at", { ascending: false }).limit(10);
   if (!data?.length) return { result: "Tahsilat aktivitesi yok.", needsApproval: false };
   return {
     result: data.map((a) => {
-      const nm = (a.bayi_dealers as unknown as { name: string })?.name || "?";
+      const nm = (a.bayi_dealers as unknown as { company_name: string })?.company_name || "?";
       return `- ${formatDate(a.created_at)} | ${nm} | ${a.activity_type} | ${formatCurrency(a.amount || 0)}`;
     }).join("\n"),
     needsApproval: false,
@@ -251,7 +251,7 @@ async function readStockStatus(input: Record<string, unknown>, ctx: AgentContext
 
 async function readStockMovements(_i: Record<string, unknown>, ctx: AgentContext): Promise<ToolResult> {
   const supabase = getServiceClient();
-  const { data } = await supabase.from("bayi_order_items").select("quantity, unit_price, created_at, bayi_products(name)").eq("tenant_id", ctx.tenantId).order("created_at", { ascending: false }).limit(15);
+  const { data } = await supabase.from("bayi_order_items").select("quantity, unit_price, created_at, bayi_products(name)").order("created_at", { ascending: false }).limit(15);
   if (!data?.length) return { result: "Stok hareketi yok.", needsApproval: false };
   return {
     result: data.map((m) => {
@@ -271,11 +271,11 @@ async function readPendingPurchases(_i: Record<string, unknown>, ctx: AgentConte
 
 async function readPendingDeliveries(_i: Record<string, unknown>, ctx: AgentContext): Promise<ToolResult> {
   const supabase = getServiceClient();
-  const { data } = await supabase.from("bayi_orders").select("id, total_amount, created_at, bayi_dealers(name)").eq("tenant_id", ctx.tenantId).eq("status", "shipped").order("created_at", { ascending: true }).limit(15);
+  const { data } = await supabase.from("bayi_orders").select("id, total_amount, created_at, bayi_dealers(company_name)").eq("tenant_id", ctx.tenantId).eq("status", "shipped").order("created_at", { ascending: true }).limit(15);
   if (!data?.length) return { result: "Yoldaki teslimat yok.", needsApproval: false };
   return {
     result: data.map((o) => {
-      const nm = (o.bayi_dealers as unknown as { name: string })?.name || "?";
+      const nm = (o.bayi_dealers as unknown as { company_name: string })?.company_name || "?";
       return `- [${o.id}] ${nm} | ${formatCurrency(o.total_amount || 0)}`;
     }).join("\n"),
     needsApproval: false,
@@ -285,11 +285,11 @@ async function readPendingDeliveries(_i: Record<string, unknown>, ctx: AgentCont
 async function readTodayDeliveries(_i: Record<string, unknown>, ctx: AgentContext): Promise<ToolResult> {
   const supabase = getServiceClient();
   const today = new Date().toISOString().slice(0, 10);
-  const { data } = await supabase.from("bayi_orders").select("id, total_amount, bayi_dealers(name)").eq("tenant_id", ctx.tenantId).in("status", ["shipped", "preparing"]).gte("delivery_date", `${today}T00:00:00`).lt("delivery_date", `${today}T23:59:59`);
+  const { data } = await supabase.from("bayi_orders").select("id, total_amount, bayi_dealers(company_name)").eq("tenant_id", ctx.tenantId).in("status", ["shipped", "preparing"]).gte("delivery_date", `${today}T00:00:00`).lt("delivery_date", `${today}T23:59:59`);
   if (!data?.length) return { result: "Bugün planlanmış teslimat yok.", needsApproval: false };
   return {
     result: data.map((o) => {
-      const nm = (o.bayi_dealers as unknown as { name: string })?.name || "?";
+      const nm = (o.bayi_dealers as unknown as { company_name: string })?.company_name || "?";
       return `- [${o.id}] ${nm} | ${formatCurrency(o.total_amount || 0)}`;
     }).join("\n"),
     needsApproval: false,
@@ -299,12 +299,12 @@ async function readTodayDeliveries(_i: Record<string, unknown>, ctx: AgentContex
 async function readDelayedShipments(_i: Record<string, unknown>, ctx: AgentContext): Promise<ToolResult> {
   const supabase = getServiceClient();
   const threeDays = new Date(Date.now() - 3 * 86400000).toISOString();
-  const { data } = await supabase.from("bayi_orders").select("id, total_amount, created_at, bayi_dealers(name)").eq("tenant_id", ctx.tenantId).eq("status", "preparing").lt("created_at", threeDays);
+  const { data } = await supabase.from("bayi_orders").select("id, total_amount, created_at, bayi_dealers(company_name)").eq("tenant_id", ctx.tenantId).eq("status", "preparing").lt("created_at", threeDays);
   if (!data?.length) return { result: "Geciken sevkiyat yok.", needsApproval: false };
   return {
     result: data.map((o) => {
       const days = Math.floor((Date.now() - new Date(o.created_at).getTime()) / 86400000);
-      const nm = (o.bayi_dealers as unknown as { name: string })?.name || "?";
+      const nm = (o.bayi_dealers as unknown as { company_name: string })?.company_name || "?";
       return `- [${o.id}] ${nm} | ${formatCurrency(o.total_amount || 0)} | ${days} gün hazırlanıyor`;
     }).join("\n"),
     needsApproval: false,
@@ -314,12 +314,12 @@ async function readDelayedShipments(_i: Record<string, unknown>, ctx: AgentConte
 async function readProducts(input: Record<string, unknown>, ctx: AgentContext): Promise<ToolResult> {
   const supabase = getServiceClient();
   const filter = (input.filter as string) || "all";
-  let q = supabase.from("bayi_products").select("id, name, price, stock_quantity, is_active").eq("tenant_id", ctx.tenantId);
+  let q = supabase.from("bayi_products").select("id, name, unit_price, base_price, stock_quantity, is_active").eq("tenant_id", ctx.tenantId);
   if (filter === "inactive") q = q.eq("is_active", false);
-  else if (filter === "no_price") q = q.or("price.is.null,price.eq.0");
+  else if (filter === "no_price") q = q.or("unit_price.is.null,unit_price.eq.0");
   const { data } = await q.limit(20);
   if (!data?.length) return { result: "Ürün yok.", needsApproval: false };
-  return { result: data.map((p) => `- [${p.id}] ${p.name} | ${formatCurrency(p.price || 0)} | stok: ${p.stock_quantity}${p.is_active ? "" : " | PASİF"}`).join("\n"), needsApproval: false };
+  return { result: data.map((p) => `- [${p.id}] ${p.name} | ${formatCurrency(p.unit_price || p.base_price || 0)} | stok: ${p.stock_quantity}${p.is_active ? "" : " | PASİF"}`).join("\n"), needsApproval: false };
 }
 
 async function readProductStats(_i: Record<string, unknown>, ctx: AgentContext): Promise<ToolResult> {
@@ -734,7 +734,7 @@ export const bayiUpuAgent: AgentDefinition = {
       }
 
       case "update_product_price": {
-        const { error } = await supabase.from("bayi_products").update({ price: actionData.new_price }).eq("id", actionData.product_id).eq("tenant_id", ctx.tenantId);
+        const { error } = await supabase.from("bayi_products").update({ unit_price: actionData.new_price }).eq("id", actionData.product_id).eq("tenant_id", ctx.tenantId);
         if (error) return `Hata: ${error.message}`;
         return `${actionData.product_name} fiyatı güncellendi: ${formatCurrency(actionData.new_price as number)}`;
       }

@@ -45,7 +45,24 @@ export async function handleKampanyalar(ctx: WaContext): Promise<void> {
 }
 
 export async function handleKampanyaOlustur(ctx: WaContext): Promise<void> {
-  await webPanelRedirect(ctx.phone, "💰 *Kampanya Olusturma*\nKampanya olusturmak icin web panelini kullanin.");
+  const supabase = getServiceClient();
+  const { randomBytes } = await import("crypto");
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  await supabase.from("magic_link_tokens").insert({
+    user_id: ctx.userId,
+    token,
+    expires_at: expiresAt,
+  });
+
+  const formUrl = `https://retailai.upudev.nl/tr/bayi-kampanya?t=${token}`;
+  const { sendUrlButton } = await import("@/platform/whatsapp/send");
+  await sendUrlButton(ctx.phone,
+    `📢 *Kampanya Oluştur*\n\nÜrünleri seç, indirim belirle, bayilere duyur. Form kaydedildikten sonra WhatsApp'tan teyit düşecek.\n\n_Link 2 saat geçerli._`,
+    "📝 Formu Aç",
+    formUrl,
+    { skipNav: true },
+  );
 }
 
 export async function handleTeklifVer(ctx: WaContext): Promise<void> {

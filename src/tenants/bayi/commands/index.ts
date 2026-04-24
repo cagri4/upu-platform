@@ -220,7 +220,7 @@ export const bayiCommands: TenantCommandRegistry = {
     faturalar: C.FINANCE_INVOICES,
     borcdurum: C.FINANCE_BALANCE,
     ekstre: C.FINANCE_BALANCE,
-    odeme: C.FINANCE_PAYMENTS,
+    odeme: [C.FINANCE_PAYMENTS, C.FINANCE_BALANCE_OWN],
 
     // Finans — Tahsildar
     vadeler: C.FINANCE_INVOICES,

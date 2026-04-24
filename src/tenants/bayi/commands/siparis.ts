@@ -75,39 +75,27 @@ export async function handleSiparisler(ctx: WaContext): Promise<void> {
   }
 }
 
-// ── /siparisolustur — Entry point: show dealer selection ───────────────
+// ── /siparisolustur — open the web form via magic-link ──────────────────
 
 export async function handleSiparisOlustur(ctx: WaContext): Promise<void> {
   try {
     const supabase = getServiceClient();
+    const { randomBytes } = await import("crypto");
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+    await supabase.from("magic_link_tokens").insert({
+      user_id: ctx.userId,
+      token,
+      expires_at: expiresAt,
+    });
 
-    const { data: dealers } = await supabase
-      .from("bayi_dealers")
-      .select("id, company_name")
-      .eq("tenant_id", ctx.tenantId)
-      .eq("is_active", true)
-      .order("company_name")
-      .limit(10);
-
-    if (!dealers?.length) {
-      await sendButtons(ctx.phone, "Aktif bayi bulunmuyor. Önce bayi eklemeniz gerekiyor.", [
-        { id: "cmd:menu", title: "Ana Menü" },
-      ]);
-      return;
-    }
-
-    await startSession(ctx.userId, ctx.tenantId, "siparisolustur", "dealer");
-
-    const rows = dealers.map(d => ({
-      id: `siparis_bayi:${d.id}`,
-      title: d.company_name.substring(0, 24),
-    }));
-
-    await sendList(
-      ctx.phone,
-      "🛒 *Yeni Sipariş*\n\nSipariş oluşturmak istediğiniz bayiyi seçin:",
-      "Bayi Seç",
-      [{ title: "Bayiler", rows }],
+    const formUrl = `https://retailai.upudev.nl/tr/bayi-siparis?t=${token}`;
+    const { sendUrlButton } = await import("@/platform/whatsapp/send");
+    await sendUrlButton(ctx.phone,
+      `📦 *Yeni Sipariş*\n\nBayi ve ürünleri rahatça seçebilesin diye formu açtım. Doldur, kaydet — WhatsApp'a onay düşer.\n\n_Link 2 saat geçerli._`,
+      "📝 Formu Aç",
+      formUrl,
+      { skipNav: true },
     );
   } catch (err) {
     await handleError(ctx, "bayi:siparisolustur", err, "db");
