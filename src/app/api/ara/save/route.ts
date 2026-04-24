@@ -70,26 +70,6 @@ export async function POST(req: NextRequest) {
       { onConflict: "user_id" },
     );
 
-    // Query results matching criteria
-    let query = supabase.from("emlak_properties")
-      .select("location_neighborhood, price", { count: "exact" })
-      .ilike("location_district", `%${body.region}%`);
-    if (body.property_type !== "hepsi") query = query.eq("type", body.property_type);
-    if (body.listing_type !== "hepsi") query = query.eq("listing_type", body.listing_type);
-    if (body.listed_by !== "hepsi") query = query.eq("listed_by", body.listed_by === "sahibi" ? "sahibi" : "emlakci");
-
-    const { data: props, count } = await query.limit(1000);
-
-    const byHood: Record<string, number> = {};
-    let totalPrice = 0, priceCount = 0;
-    for (const p of props || []) {
-      const hood = p.location_neighborhood || "Diğer";
-      byHood[hood] = (byHood[hood] || 0) + 1;
-      if (p.price) { totalPrice += p.price; priceCount++; }
-    }
-    const avgPrice = priceCount > 0 ? Math.round(totalPrice / priceCount) : 0;
-    const neighborhoods = Object.entries(byHood).sort((a, b) => b[1] - a[1]);
-
     // Invalidate search token
     await supabase.from("magic_link_tokens").update({ used_at: new Date().toISOString() }).eq("id", magicToken.id);
 
@@ -106,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     try {
       await sendUrlButton(userPhone,
-        `✅ Arama kriterlerini kaydettim. Bölgende ${count || 0} ilan var.\n\nŞimdi seni tanıyalım — profil bilgilerini doldurmak için butonun tıkla:`,
+        `✅ Arama kriterlerini kaydettim. Yarın sabah 06:45'te kriterine uyan yeni sahibi ilanları sahibinden linkleriyle birlikte göndereceğim.\n\nŞimdi seni tanıyalım — profil bilgilerini doldurmak için butonun tıkla:`,
         "👤 Profil Formu",
         profileUrl,
         { skipNav: true },
@@ -115,12 +95,7 @@ export async function POST(req: NextRequest) {
       console.error("[ara:save] WA notify failed:", err);
     }
 
-    return NextResponse.json({
-      success: true,
-      count: count || 0,
-      avgPrice,
-      neighborhoods: neighborhoods.map(([name, cnt]) => ({ name, count: cnt })),
-    });
+    return NextResponse.json({ success: true });
   } catch (err) {
     console.error("[ara:save]", err);
     return NextResponse.json({ error: "Bir hata oluştu." }, { status: 500 });

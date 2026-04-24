@@ -106,16 +106,11 @@ export default function AraPage() {
                 ))}
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Kimin ilanları</label>
-              <div className="grid grid-cols-3 gap-2">
-                {[{id:"sahibi",label:"Sahibinden"},{id:"emlakci",label:"Emlak Ofisi"},{id:"hepsi",label:"Hepsi"}].map(o => (
-                  <button type="button" key={o.id} onClick={() => setListedBy(o.id)}
-                    className={`py-3 rounded-lg text-xs font-medium border-2 ${listedBy === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300"}`}>{o.label}</button>
-                ))}
-              </div>
-            </div>
           </section>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800">
+            ℹ️ Size sadece *sahibi tarafından verilen* yeni ilanlar gelecek. Sahibinden linklerine tıklayarak kendi hesabınızla telefonu reveal edip arayabilirsiniz.
+          </div>
 
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
@@ -129,27 +124,12 @@ export default function AraPage() {
 
         {results && (
           <div className="mt-6 space-y-4">
-            <section className="bg-white rounded-2xl p-4 shadow-sm">
-              <h2 className="font-bold text-slate-900 mb-3">📊 Sonuçlar</h2>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-slate-600">Aktif ilan</span><span className="font-bold text-slate-900">{results.count}</span></div>
-                {results.avgPrice > 0 && (
-                  <div className="flex justify-between"><span className="text-slate-600">Ortalama fiyat</span><span className="font-bold text-slate-900">{new Intl.NumberFormat("tr-TR").format(results.avgPrice)} ₺</span></div>
-                )}
-              </div>
-              {results.neighborhoods.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <div className="text-xs font-medium text-slate-500 mb-2">Mahalle dağılımı</div>
-                  <div className="space-y-1 max-h-60 overflow-y-auto">
-                    {results.neighborhoods.map(h => (
-                      <div key={h.name} className="flex justify-between text-sm">
-                        <span className="text-slate-800">{h.name}</span>
-                        <span className="font-semibold text-slate-900">{h.count} ilan</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+            <section className="bg-white rounded-2xl p-4 shadow-sm text-center">
+              <div className="text-4xl mb-2">🎯</div>
+              <h2 className="font-bold text-slate-900 mb-2">Kriterler kaydedildi!</h2>
+              <p className="text-sm text-slate-600">
+                Her sabah 06:45'te kriterine uyan yeni sahibi ilanları sahibinden linkleriyle birlikte WhatsApp'a gönderiyoruz.
+              </p>
             </section>
 
             <a
