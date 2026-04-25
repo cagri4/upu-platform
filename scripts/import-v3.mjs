@@ -46,6 +46,25 @@ const AUTH = {
   Authorization: `Bearer ${SUPABASE_KEY}`,
 };
 
+// Bodrum sub-areas (case-insensitive). Sahibinden bazi kategorilerde
+// (depo, dükkan, rezidans gibi Bodrum'da az ilan olan tipler) "Benzer
+// ilanlar" başlığıyla Türkiye'nin başka şehirlerinden öneri ilanları da
+// listeliyor. Importer bu satırları neighborhood string'inden tespit
+// edip skip eder — daily_leads sadece gerçek Bodrum verisi tutar.
+const BODRUM_KEYWORDS = [
+  'bodrum','yalıkavak','bitez','turgutreis','gündoğan','göltürkbükü',
+  'gümüşlük','konacık','yalı','mumcular','ortakent','kızılağaç',
+  'akyarlar','karaincir','geriş','küçükbük','dirmil','halikarnas',
+  'dağbelen','yahşi','torba','salih','çiftlik','yenice','adabükü',
+  'güvercinlik','peksimet','gölköy','kumbahçe','farilya','ada',
+];
+
+function isBodrumNeighborhood(text) {
+  if (!text) return false;
+  const lower = text.toLocaleLowerCase('tr-TR');
+  return BODRUM_KEYWORDS.some(k => lower.includes(k));
+}
+
 function mapRow(l, snapshotDate) {
   return {
     source_id: l.source_id,
@@ -85,18 +104,31 @@ async function importData() {
 
   // daily_leads sadece sahibi kayıtlarını tutar — emlakçı varsa filtrele
   const sahibi = data.filter(l => l.listed_by === 'sahibi');
-  console.log(`Toplam scrape: ${data.length} ilan (sahibi: ${sahibi.length}, emlakçı: ${data.length - sahibi.length})`);
 
-  if (sahibi.length === 0) {
-    console.log('⚠️  Sahibi kayıt yok, import atlandı.');
+  // Sahibinden bazı kategorilerde "Benzer ilanlar" başlığıyla Türkiye
+  // genelinden öneri ilanlar listeliyor; bunları neighborhood string'inden
+  // tespit edip ele. daily_leads sadece gerçek Bodrum kayıtlarını tutar.
+  const bodrum = sahibi.filter(l => isBodrumNeighborhood(l.neighborhood));
+  const skipped = sahibi.length - bodrum.length;
+  console.log(
+    `Toplam scrape: ${data.length} (sahibi: ${sahibi.length}, ` +
+    `emlakçı: ${data.length - sahibi.length}, Bodrum: ${bodrum.length}, ` +
+    `Bodrum dışı atlandı: ${skipped})`,
+  );
+
+  if (bodrum.length === 0) {
+    console.log('⚠️  Bodrum kaydı yok, import atlandı.');
     return;
   }
+
+  // sahibi yerine bodrum kullanılacak
+  const filtered = bodrum;
 
   const snapshotDate = new Date().toISOString().slice(0, 10);
   console.log(`Snapshot date: ${snapshotDate}`);
 
   // Bu snapshot_date için mevcut source_id'leri getir (idempotent re-run için)
-  const incomingIds = [...new Set(sahibi.map(l => l.source_id))];
+  const incomingIds = [...new Set(filtered.map(l => l.source_id))];
   const existing = new Set();
   const CHUNK = 300;
   for (let i = 0; i < incomingIds.length; i += CHUNK) {
@@ -110,7 +142,7 @@ async function importData() {
     }
   }
 
-  const fresh = sahibi.filter(l => !existing.has(l.source_id));
+  const fresh = filtered.filter(l => !existing.has(l.source_id));
   console.log(`  Bu snapshot'ta zaten var: ${existing.size}, yeni: ${fresh.length}`);
 
   const BATCH_SIZE = 500;
