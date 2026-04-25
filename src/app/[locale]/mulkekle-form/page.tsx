@@ -188,7 +188,7 @@ export default function MulkEkleFormPage() {
   if (status === "done") return <Center>
     <div className="text-5xl mb-3">🎉</div>
     <h1 className="text-xl font-bold mb-2">Mülk eklendi!</h1>
-    <p className="text-slate-600 text-sm mb-6">WhatsApp'a dönüp sunum hazırlayabilirsin.</p>
+    <p className="text-slate-600 text-sm mb-6">Sunum birkaç saniye içinde WhatsApp'ınıza düşecek. WhatsApp'a dönüp bekleyebilirsiniz.</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}?text=${encodeURIComponent("devam")}`}
       className="block bg-green-600 text-white px-6 py-4 rounded-xl font-semibold text-lg">💬 WhatsApp'a Dön</a>
   </Center>;

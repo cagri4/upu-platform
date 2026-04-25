@@ -2,7 +2,7 @@
  * Mülk ekle save: accept token + property form data, insert property,
  * invalidate token, trigger WhatsApp bot message.
  */
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { sendUrlButton } from "@/platform/whatsapp/send";
 import { randomBytes } from "crypto";
@@ -110,105 +110,111 @@ export async function POST(req: NextRequest) {
       if (photoErr) console.error("[mulkekle:save] photo insert failed:", photoErr);
     }
 
-    // Auto-generate presentation (property-only, no customer)
+    // Sunum + AI + WA — response'tan SONRA arka planda oluşturulur.
+    // AI çağrısı 5-15 saniye sürebiliyor; client'ı bekletmek yerine
+    // hemen başarı dönüp WA bildirimini after() içinden gönderiyoruz.
     const propTitle = String(body.title).trim();
     const propPrice = Number(body.price);
-    let sunumUrl: string | null = null;
 
-    try {
-      const propertyDetails = [
-        `Başlık: ${propTitle}`,
-        `Fiyat: ${new Intl.NumberFormat("tr-TR").format(propPrice)} TL`,
-        body.area ? `Alan: ${body.area} m²` : null,
-        body.rooms ? `Oda: ${body.rooms}` : null,
-        body.type ? `Tip: ${body.type}` : null,
-        body.listing_type ? `İlan: ${body.listing_type}` : null,
-        body.location_neighborhood || body.location_district ? `Konum: ${body.location_neighborhood || body.location_district}` : null,
-        body.description ? `Açıklama: ${String(body.description).substring(0, 300)}` : null,
-      ].filter(Boolean).join("\n");
+    after(async () => {
+      const sb = getServiceClient();
+      let sunumUrl: string | null = null;
 
-      let aiSummary = "";
       try {
-        const { askClaude } = await import("@/platform/ai/claude");
-        aiSummary = await askClaude(
-          "Sen profesyonel bir emlak sunum uzmanısın. Bu mülk için müşteriye gösterilecek düz metin bir sunum yazı yaz.\n\n" +
-          "Kurallar:\n" +
-          "- Türkçe, ikna edici, sıcak ton\n" +
-          "- Tam 3 paragraf (aralarda boş satır, toplam ~150 kelime)\n" +
-          "- Paragraf 1: konum ve mülkün ilk izlenimi\n" +
-          "- Paragraf 2: öne çıkan özellikler ve yaşam tarzı\n" +
-          "- Paragraf 3: kısa bir kapanış ve iletişime davet\n" +
-          "- ASLA markdown kullanma: ##, **, *, listeler (•, ✅, -), emoji yok\n" +
-          "- Sadece düz cümleler. Noktalama ile vurgulayabilirsin.\n" +
-          "- Başlık yazma, doğrudan metne başla.",
-          `MÜLK:\n${propertyDetails}`,
-          512,
-        );
-      } catch {
-        aiSummary = "";
-      }
+        const propertyDetails = [
+          `Başlık: ${propTitle}`,
+          `Fiyat: ${new Intl.NumberFormat("tr-TR").format(propPrice)} TL`,
+          body.area ? `Alan: ${body.area} m²` : null,
+          body.rooms ? `Oda: ${body.rooms}` : null,
+          body.type ? `Tip: ${body.type}` : null,
+          body.listing_type ? `İlan: ${body.listing_type}` : null,
+          body.location_neighborhood || body.location_district ? `Konum: ${body.location_neighborhood || body.location_district}` : null,
+          body.description ? `Açıklama: ${String(body.description).substring(0, 300)}` : null,
+        ].filter(Boolean).join("\n");
 
-      const sunumToken = randomBytes(16).toString("hex");
-      const content = {
-        customer: { name: propTitle, listing_type: body.listing_type || null, budget_max: null, rooms: body.rooms || null, location: body.location_neighborhood || body.location_district || null },
-        properties: [{
-          id: inserted.id,
+        let aiSummary = "";
+        try {
+          const { askClaude } = await import("@/platform/ai/claude");
+          aiSummary = await askClaude(
+            "Sen profesyonel bir emlak sunum uzmanısın. Bu mülk için müşteriye gösterilecek düz metin bir sunum yazı yaz.\n\n" +
+            "Kurallar:\n" +
+            "- Türkçe, ikna edici, sıcak ton\n" +
+            "- Tam 3 paragraf (aralarda boş satır, toplam ~150 kelime)\n" +
+            "- Paragraf 1: konum ve mülkün ilk izlenimi\n" +
+            "- Paragraf 2: öne çıkan özellikler ve yaşam tarzı\n" +
+            "- Paragraf 3: kısa bir kapanış ve iletişime davet\n" +
+            "- ASLA markdown kullanma: ##, **, *, listeler (•, ✅, -), emoji yok\n" +
+            "- Sadece düz cümleler. Noktalama ile vurgulayabilirsin.\n" +
+            "- Başlık yazma, doğrudan metne başla.",
+            `MÜLK:\n${propertyDetails}`,
+            512,
+          );
+        } catch (err) {
+          console.error("[mulkekle:save] AI failed:", err);
+        }
+
+        const sunumToken = randomBytes(16).toString("hex");
+        const content = {
+          customer: { name: propTitle, listing_type: body.listing_type || null, budget_max: null, rooms: body.rooms || null, location: body.location_neighborhood || body.location_district || null },
+          properties: [{
+            id: inserted.id,
+            title: propTitle,
+            price: propPrice,
+            area: body.area ? Number(body.area) : null,
+            rooms: body.rooms || null,
+            type: body.type || null,
+            listing_type: body.listing_type || null,
+            location: body.location_neighborhood || body.location_district || null,
+            description: body.description || null,
+            image_url: photoUrls[0] || null,
+            photos: photoUrls.length > 0 ? photoUrls : null,
+            features: null,
+            interior_features: toArr(body.interior_features)?.join(", ") || null,
+            exterior_features: toArr(body.exterior_features)?.join(", ") || null,
+            view_features: toArr(body.view_features)?.join(", ") || null,
+          }],
+          ai_summary: aiSummary,
+          created_at: new Date().toISOString(),
+        };
+
+        const { data: pres } = await sb.from("emlak_presentations").insert({
+          tenant_id: tenantId,
+          user_id: magicToken.user_id,
+          customer_id: null,
+          property_ids: [inserted.id],
           title: propTitle,
-          price: propPrice,
-          area: body.area ? Number(body.area) : null,
-          rooms: body.rooms || null,
-          type: body.type || null,
-          listing_type: body.listing_type || null,
-          location: body.location_neighborhood || body.location_district || null,
-          description: body.description || null,
-          image_url: photoUrls[0] || null,
-          photos: photoUrls.length > 0 ? photoUrls : null,
-          features: null,
-          interior_features: toArr(body.interior_features)?.join(", ") || null,
-          exterior_features: toArr(body.exterior_features)?.join(", ") || null,
-          view_features: toArr(body.view_features)?.join(", ") || null,
-        }],
-        ai_summary: aiSummary,
-        created_at: new Date().toISOString(),
-      };
+          magic_token: sunumToken,
+          content,
+          ai_summary: aiSummary,
+          status: "draft",
+        }).select("id").single();
 
-      const { data: pres } = await supabase.from("emlak_presentations").insert({
-        tenant_id: tenantId,
-        user_id: magicToken.user_id,
-        customer_id: null,
-        property_ids: [inserted.id],
-        title: propTitle,
-        magic_token: sunumToken,
-        content,
-        ai_summary: aiSummary,
-        status: "draft",
-      }).select("id").single();
-
-      if (pres) sunumUrl = `https://estateai.upudev.nl/d/p/${sunumToken}`;
-    } catch (sunumErr) {
-      console.error("[mulkekle:save] sunum generate failed:", sunumErr);
-    }
-
-    // WhatsApp bot message
-    try {
-      if (sunumUrl) {
-        await sendUrlButton(userPhone,
-          `✅ Mülk eklendi!\n\n📋 ${propTitle}\n💰 ${new Intl.NumberFormat("tr-TR").format(propPrice)} TL\n\n📊 Sunumun hazır. Şimdi inceleyelim.`,
-          "📊 Sunumu Gör",
-          sunumUrl,
-          { skipNav: true },
-        );
-      } else {
-        const { sendText } = await import("@/platform/whatsapp/send");
-        await sendText(userPhone,
-          `✅ Mülk eklendi!\n\n📋 ${propTitle}\n💰 ${new Intl.NumberFormat("tr-TR").format(propPrice)} TL\n\n✨ Sunum hazırlanıyor. Sunumlarım menüsünden görebilirsin.`,
-        );
+        if (pres) sunumUrl = `https://estateai.upudev.nl/d/p/${sunumToken}`;
+      } catch (sunumErr) {
+        console.error("[mulkekle:save] sunum generate failed:", sunumErr);
       }
-    } catch (waErr) {
-      console.error("[mulkekle:save] WA notify failed:", waErr);
-    }
 
-    return NextResponse.json({ success: true, propertyId: inserted.id, sunumUrl });
+      try {
+        if (sunumUrl) {
+          await sendUrlButton(userPhone,
+            `✅ Mülk eklendi!\n\n📋 ${propTitle}\n💰 ${new Intl.NumberFormat("tr-TR").format(propPrice)} TL\n\n📊 Sunumun hazır. Şimdi inceleyelim.`,
+            "📊 Sunumu Gör",
+            sunumUrl,
+            { skipNav: true },
+          );
+        } else {
+          const { sendText } = await import("@/platform/whatsapp/send");
+          await sendText(userPhone,
+            `✅ Mülk eklendi!\n\n📋 ${propTitle}\n💰 ${new Intl.NumberFormat("tr-TR").format(propPrice)} TL\n\n✨ Sunum hazırlanıyor. Sunumlarım menüsünden görebilirsin.`,
+          );
+        }
+      } catch (waErr) {
+        console.error("[mulkekle:save] WA notify failed:", waErr);
+      }
+    });
+
+    // Client'a anında dön — AI/sunum/WA arka planda
+    return NextResponse.json({ success: true, propertyId: inserted.id });
   } catch (err) {
     console.error("[mulkekle:save]", err);
     return NextResponse.json({ error: "Bir hata oluştu." }, { status: 500 });

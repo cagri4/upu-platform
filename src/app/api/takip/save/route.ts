@@ -2,7 +2,7 @@
  * /api/takip/save — upsert user's daily lead tracking criteria.
  * POST { token, neighborhoods, property_types, listing_type, price_min, price_max }
  */
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { sendText, sendUrlButton } from "@/platform/whatsapp/send";
 import { randomBytes } from "crypto";
@@ -51,15 +51,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Send WA confirmation + close the flow
-    try {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("whatsapp_phone, display_name")
-        .eq("id", magicToken.user_id)
-        .single();
+    // WA bildirimleri response döndükten SONRA çalışır — client-side
+    // setStatus("done") gecikmesin diye after() callback'inde gönderilir.
+    after(async () => {
+      try {
+        const sb = getServiceClient();
+        const { data: profile } = await sb
+          .from("profiles")
+          .select("whatsapp_phone, display_name")
+          .eq("id", magicToken.user_id)
+          .single();
 
-      if (profile?.whatsapp_phone) {
+        if (!profile?.whatsapp_phone) return;
         const phone = profile.whatsapp_phone as string;
         const summary = [
           neighborhoods.length > 0 ? neighborhoods.join(", ") : "Tüm Bodrum",
@@ -72,10 +75,10 @@ export async function POST(req: NextRequest) {
           `✅ *Takibin kaydedildi!*\n\nKriter: ${summary}\n\nYarın sabah 06:45'te bu kriterlere uyan yeni sahibi ilanlar WhatsApp'ınıza düşecek.\n\n💡 İleride menüden *📬 Günlük İlan Takibi*'ne dönerek kriterini güncelleyebilir ya da yeni aramalar yapabilirsiniz.`,
         );
 
-        // Auto-chain into mülk ekle → sunum (demo flow, in under 2 min total)
+        // Auto-chain: mülk ekle butonu (intro flow)
         const mulkToken = randomBytes(32).toString("hex");
         const mulkExpires = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
-        await supabase.from("magic_link_tokens").insert({
+        await sb.from("magic_link_tokens").insert({
           user_id: magicToken.user_id,
           token: mulkToken,
           expires_at: mulkExpires,
@@ -89,10 +92,10 @@ export async function POST(req: NextRequest) {
           mulkUrl,
           { skipNav: true },
         );
+      } catch (waErr) {
+        console.error("[takip:save] WA notify failed:", waErr);
       }
-    } catch (waErr) {
-      console.error("[takip:save] WA notify failed:", waErr);
-    }
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {
