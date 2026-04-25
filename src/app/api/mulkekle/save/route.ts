@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
       try {
         if (sunumUrl) {
           await sendUrlButton(userPhone,
-            `✅ Mülk eklendi!\n\n📋 ${propTitle}\n💰 ${new Intl.NumberFormat("tr-TR").format(propPrice)} TL\n\n📊 Sunumun hazır. Şimdi inceleyelim.`,
+            `✅ Mülk eklendi!\n\n📋 ${propTitle}\n💰 ${new Intl.NumberFormat("tr-TR").format(propPrice)} TL\n\n📊 Sunumun hazır. Şimdi inceleyelim.\n\n💡 _Eklediğiniz tüm mülklerinizi görmek/düzenlemek için ana menü > 📁 Mülklerim'i kullanabilirsiniz._`,
             "📊 Sunumu Gör",
             sunumUrl,
             { skipNav: true },
@@ -205,7 +205,7 @@ export async function POST(req: NextRequest) {
         } else {
           const { sendText } = await import("@/platform/whatsapp/send");
           await sendText(userPhone,
-            `✅ Mülk eklendi!\n\n📋 ${propTitle}\n💰 ${new Intl.NumberFormat("tr-TR").format(propPrice)} TL\n\n✨ Sunum hazırlanıyor. Sunumlarım menüsünden görebilirsin.`,
+            `✅ Mülk eklendi!\n\n📋 ${propTitle}\n💰 ${new Intl.NumberFormat("tr-TR").format(propPrice)} TL\n\n✨ Sunum hazırlanıyor. Sunumlarım menüsünden görebilirsin.\n\n💡 _Eklediğiniz tüm mülklerinizi görmek/düzenlemek için ana menü > 📁 Mülklerim'i kullanabilirsiniz._`,
           );
         }
       } catch (waErr) {

@@ -32,6 +32,8 @@ const TOTAL_FLOORS = ["1", "2", "3", "4", "5", "6-10", "11-15", "16-20", "21+"];
 export default function MulkEkleFormPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token");
+  const editId = searchParams.get("id");
+  const isEdit = !!editId;
 
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState("");
@@ -73,6 +75,46 @@ export default function MulkEkleFormPage() {
       setError("Link geçersiz.");
       return;
     }
+
+    // Düzenleme modu: mevcut mülkün verilerini yükle
+    if (isEdit) {
+      fetch(`/api/mulklerim/get?id=${encodeURIComponent(editId!)}&t=${encodeURIComponent(token)}`)
+        .then(async (r) => {
+          const data = await r.json();
+          if (!r.ok) { setStatus("error"); setError(data.error || "Mülk yüklenemedi."); return; }
+          const p = data.property as Record<string, unknown>;
+          setTitle(String(p.title || ""));
+          setListingType(String(p.listing_type || "satilik"));
+          setType(String(p.type || "daire"));
+          setPrice(p.price != null ? String(p.price) : "");
+          setArea(p.area != null ? String(p.area) : "");
+          setNetArea(p.net_area != null ? String(p.net_area) : "");
+          setRooms(String(p.rooms || ""));
+          setFloor(String(p.floor || ""));
+          setTotalFloors(String(p.total_floors || ""));
+          setBuildingAge(String(p.building_age || ""));
+          setCity(String(p.location_city || ""));
+          setDistrict(String(p.location_district || ""));
+          setNeighborhood(String(p.location_neighborhood || ""));
+          if (typeof p.heating === "string" && p.heating) setHeating(p.heating.split(",").map(s => s.trim()).filter(Boolean));
+          if (typeof p.parking === "string" && p.parking) setParking(p.parking.split(",").map(s => s.trim()).filter(Boolean));
+          if (Array.isArray(p.facade)) setFacade(p.facade as string[]);
+          if (Array.isArray(p.housing_type)) setHousingType(p.housing_type as string[]);
+          setBathroom(String(p.bathroom_count || ""));
+          setKitchen(String(p.kitchen_type || ""));
+          setElevator(typeof p.elevator === "boolean" ? p.elevator : null);
+          setBalcony(typeof p.balcony === "boolean" ? p.balcony : null);
+          setDeedType(String(p.deed_type || ""));
+          setUsageStatus(String(p.usage_status || ""));
+          setSwap(typeof p.swap === "boolean" ? p.swap : null);
+          setDescription(String(p.description || ""));
+          setPhotoUrls(Array.isArray(data.photo_urls) ? data.photo_urls : []);
+          setStatus("form");
+        })
+        .catch(() => { setStatus("error"); setError("Bağlantı hatası."); });
+      return;
+    }
+
     fetch(`/api/setup/init?token=${encodeURIComponent(token)}`)
       .then(async (r) => {
         const data = await r.json();
@@ -80,7 +122,7 @@ export default function MulkEkleFormPage() {
         setStatus("form");
       })
       .catch(() => { setStatus("error"); setError("Bağlantı hatası."); });
-  }, [token]);
+  }, [token, isEdit, editId]);
 
   function toggleArr(arr: string[], val: string, set: (x: string[]) => void) {
     set(arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]);
@@ -136,12 +178,14 @@ export default function MulkEkleFormPage() {
     if (!price || Number(price) <= 0) { setError("Geçerli fiyat gerekli."); return; }
     setStatus("saving"); setError("");
 
+    const endpoint = isEdit ? "/api/mulklerim/update" : "/api/mulkekle/save";
     try {
-      const res = await fetch(`/api/mulkekle/save`, {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token,
+          ...(isEdit ? { id: editId } : {}),
           title: title.trim(),
           listing_type: listingType,
           type,
@@ -186,9 +230,13 @@ export default function MulkEkleFormPage() {
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp'a dön</a>
   </Center>;
   if (status === "done") return <Center>
-    <div className="text-5xl mb-3">🎉</div>
-    <h1 className="text-xl font-bold mb-2">Mülk eklendi!</h1>
-    <p className="text-slate-600 text-sm mb-6">Sunum birkaç saniye içinde WhatsApp'ınıza düşecek. WhatsApp'a dönüp bekleyebilirsiniz.</p>
+    <div className="text-5xl mb-3">{isEdit ? "✅" : "🎉"}</div>
+    <h1 className="text-xl font-bold mb-2">{isEdit ? "Mülk güncellendi!" : "Mülk eklendi!"}</h1>
+    <p className="text-slate-600 text-sm mb-6">
+      {isEdit
+        ? "Değişiklikler kaydedildi. Mülklerim sayfasına geri dönebilirsiniz."
+        : "Sunum birkaç saniye içinde WhatsApp'ınıza düşecek. WhatsApp'a dönüp bekleyebilirsiniz."}
+    </p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}?text=${encodeURIComponent("devam")}`}
       className="block bg-green-600 text-white px-6 py-4 rounded-xl font-semibold text-lg">💬 WhatsApp'a Dön</a>
   </Center>;
@@ -197,9 +245,11 @@ export default function MulkEkleFormPage() {
     <div className="min-h-screen bg-slate-50 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-2xl p-5 mb-5">
-          <div className="text-3xl mb-1">🏠</div>
-          <h1 className="text-xl font-bold">Mülk Ekle</h1>
-          <p className="text-blue-100 text-sm mt-1">Ne kadar bilgi girerseniz AI o kadar iyi sunum yazar.</p>
+          <div className="text-3xl mb-1">{isEdit ? "✏️" : "🏠"}</div>
+          <h1 className="text-xl font-bold">{isEdit ? "Mülkü Düzenle" : "Mülk Ekle"}</h1>
+          <p className="text-blue-100 text-sm mt-1">
+            {isEdit ? "Bilgileri güncelleyin ve kaydedin." : "Ne kadar bilgi girerseniz AI o kadar iyi sunum yazar."}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -308,7 +358,7 @@ export default function MulkEkleFormPage() {
 
           <button type="submit" disabled={status === "saving"}
             className="w-full bg-green-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95 transition">
-            {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet ve WhatsApp'a Dön"}
+            {status === "saving" ? "Kaydediliyor..." : (isEdit ? "✅ Değişiklikleri Kaydet" : "✅ Kaydet ve WhatsApp'a Dön")}
           </button>
         </form>
       </div>

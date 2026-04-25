@@ -25,6 +25,7 @@ import { handleIpucu, handleTipCallback } from "./ipucu";
 import { handleIlanTakip } from "./ilan-takip";
 import { handlePortfoyAra } from "./portfoy-ara";
 import { handleSunumOlustur } from "./sunum-olustur";
+import { handleMulklerim } from "./mulklerim";
 
 export const emlakCommands: TenantCommandRegistry = {
   commands: {
@@ -37,6 +38,7 @@ export const emlakCommands: TenantCommandRegistry = {
     sunum: handleSunum,
     sunumolustur: handleSunumOlustur,
     portfoyara: handlePortfoyAra,
+    mulklerim: handleMulklerim,
     eslestir: handleEslestir,
     ilantakip: handleIlanTakip,
 
@@ -127,6 +129,11 @@ export const emlakCommands: TenantCommandRegistry = {
     "ilan ara": "portfoyara",
     "hızlı arama": "portfoyara",
     "hizli arama": "portfoyara",
+    "mülklerim": "mulklerim",
+    "mülkleri yönet": "mulklerim",
+    "mulkleri yonet": "mulklerim",
+    "portföyüm": "mulklerim",
+    "portfoyum": "mulklerim",
     "ipuclari": "ipucu",
     "ipuçları": "ipucu",
     "tip": "ipucu",

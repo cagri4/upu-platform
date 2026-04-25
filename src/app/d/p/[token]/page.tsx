@@ -204,6 +204,24 @@ export default async function PresentationPage({ params }: PageProps) {
           sunumlarUrl,
           { skipNav: true },
         );
+
+        // Sonraki flow: Mülkleri Yönet
+        const mulkleriToken = randomBytes(16).toString("hex");
+        const mulkleriExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        await sb.from("magic_link_tokens").insert({
+          user_id: userId,
+          token: mulkleriToken,
+          expires_at: mulkleriExpires,
+        });
+        const mulkleriUrl = `${appUrl}/tr/mulklerim?t=${mulkleriToken}`;
+
+        await sendUrlButton(
+          sellerPhone,
+          `📁 *Şimdi daha önce eklediğiniz mülkleri yönetelim.*\n\nPortföyünüzdeki tüm mülkleri kart olarak görüntüleyebilir, düzenleyebilir ya da silebilirsiniz.`,
+          "📁 Mülkleri Yönet",
+          mulkleriUrl,
+          { skipNav: true },
+        );
       } catch (err) {
         console.error("[sunum:first-view]", err);
       }
@@ -250,13 +268,24 @@ export default async function PresentationPage({ params }: PageProps) {
   return (
     <html lang="tr">
       <body className="bg-stone-50 text-stone-900 antialiased">
+        {/* Mobil portrait modda yatay çevir uyarısı */}
+        <div className="portrait-rotate-hint fixed top-3 inset-x-3 z-30 bg-stone-900/95 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 print:hidden">
+          <span className="text-base">📱↔️</span>
+          <span className="leading-tight">En iyi görünüm için telefonunuzu <strong>yan çevirin</strong>.</span>
+        </div>
+        <style>{`
+          @media (orientation: landscape), (min-width: 768px) {
+            .portrait-rotate-hint { display: none !important; }
+          }
+        `}</style>
+
         <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
 
           {/* ── Slide 1: Cover (büyük foto sol, tipografi sağ + dekoratif kareler) ─── */}
           {!isDeleted("cover") && (
           <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
             <SlideControls presToken={token} slideKey="cover" initialText={displayTitle} editable />
-            <div className="h-full grid grid-cols-1 md:grid-cols-2">
+            <div className="h-full grid grid-cols-2">
               {/* Left: framed photo with beige bg */}
               <div className="bg-[#B89B89] flex items-center justify-center p-6 md:p-10">
                 <div className="w-full h-full max-h-[85%] bg-white shadow-lg overflow-hidden">
@@ -293,7 +322,7 @@ export default async function PresentationPage({ params }: PageProps) {
           {firstProp && !isDeleted("property") && (
             <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
               <SlideControls presToken={token} slideKey="property" initialText={firstProp.description || ""} editable />
-              <div className="h-full grid grid-cols-1 lg:grid-cols-2">
+              <div className="h-full grid grid-cols-2">
                 {/* Left: text on beige half-bg */}
                 <div className="bg-[#D4C0B0] flex flex-col justify-center p-8 md:p-12">
                   <p className="text-xs uppercase tracking-[0.2em] text-stone-700 mb-3 font-semibold">
@@ -343,7 +372,7 @@ export default async function PresentationPage({ params }: PageProps) {
             return (
               <div key={`ai-${i}`} className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
                 <SlideControls presToken={token} slideKey={slideKey} initialText={chunk} editable />
-                <div className={`h-full grid grid-cols-1 lg:grid-cols-2 ${i % 2 === 1 ? "lg:[&>div:first-child]:order-2" : ""}`}>
+                <div className={`h-full grid grid-cols-2 ${i % 2 === 1 ? "lg:[&>div:first-child]:order-2" : ""}`}>
                   {/* Photo */}
                   <div className="bg-stone-100 flex items-center justify-center overflow-hidden">
                     {photo ? (
@@ -400,7 +429,7 @@ export default async function PresentationPage({ params }: PageProps) {
           {!isDeleted("closing") && (
           <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
             <SlideControls presToken={token} slideKey="closing" />
-            <div className="h-full grid grid-cols-1 md:grid-cols-2">
+            <div className="h-full grid grid-cols-2">
               {/* Sol: büyük TEŞEKKÜR + iletişim */}
               <div className="relative flex flex-col justify-center p-8 md:p-12">
                 <div className="absolute top-8 left-8 w-20 h-1.5 bg-[#B89B89]"></div>
