@@ -40,7 +40,8 @@ interface PresentationContent {
   ai_summary: string;
   created_at: string;
   first_seen_at?: string | null;
-  deleted_slides?: number[];
+  deleted_slides?: string[];
+  ai_chunks_override?: string[];
 }
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
