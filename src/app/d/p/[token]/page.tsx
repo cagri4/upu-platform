@@ -245,118 +245,85 @@ export default async function PresentationPage({ params }: PageProps) {
 
   return (
     <html lang="tr">
-      <body className="bg-gray-100 text-gray-900 antialiased">
+      <body className="bg-stone-50 text-stone-900 antialiased">
         <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
 
-          {/* ── Slide 1: Cover ───────────────────────────────────────── */}
+          {/* ── Slide 1: Cover (büyük foto sol, tipografi sağ + dekoratif kareler) ─── */}
           {!isDeleted("cover") && (
           <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
             <SlideControls presToken={token} slideKey="cover" initialText={displayTitle} editable />
             <div className="h-full grid grid-cols-1 md:grid-cols-2">
-              {/* Left: circular photo */}
-              <div className="flex items-center justify-center p-8 bg-gray-50">
-                <div className="w-48 h-48 md:w-64 md:h-64 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shadow-inner">
+              {/* Left: framed photo with beige bg */}
+              <div className="bg-[#B89B89] flex items-center justify-center p-6 md:p-10">
+                <div className="w-full h-full max-h-[85%] bg-white shadow-lg overflow-hidden">
                   {photos[0] ? (
                     <img src={photos[0]} alt={displayTitle} className="w-full h-full object-cover" />
                   ) : (
-                    <HomeIcon className="w-24 h-24 text-gray-400" />
+                    <div className="w-full h-full flex items-center justify-center">
+                      <HomeIcon className="w-24 h-24 text-stone-300" />
+                    </div>
                   )}
                 </div>
               </div>
-              {/* Right: right-aligned text */}
-              <div className="flex flex-col justify-center p-8 md:p-12 text-right">
-                <p className="text-xs uppercase tracking-widest text-gray-400 mb-3">Özel Mülk Sunumu</p>
-                <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-3">{displayTitle}</h1>
+              {/* Right: typography heavy + decorative squares */}
+              <div className="relative flex flex-col justify-center p-8 md:p-12 bg-white">
+                {/* dekoratif kareler */}
+                <div className="absolute top-6 right-10 w-10 h-10 bg-[#B89B89]/30"></div>
+                <div className="absolute top-16 right-6 w-6 h-6 bg-[#B89B89]"></div>
+                <div className="absolute bottom-10 right-16 w-7 h-7 bg-[#B89B89]/40"></div>
+                <div className="absolute bottom-4 right-8 w-10 h-10 bg-[#B89B89]"></div>
+
+                <p className="text-xs uppercase tracking-[0.2em] text-stone-500 mb-4 font-semibold">Mülk Sunumu</p>
+                <h1 className="text-4xl md:text-6xl font-black text-stone-900 leading-[0.95] mb-4 tracking-tight uppercase">{displayTitle}</h1>
                 {subtitle && (
-                  <p className="text-base text-gray-500 mb-6">{subtitle}</p>
+                  <p className="text-base md:text-lg text-stone-600 mb-6 font-medium">{subtitle}</p>
                 )}
-                <p className="text-sm text-gray-500">{formattedDate}</p>
+                <p className="text-sm text-stone-500 italic">{formattedDate}</p>
+                <p className="text-xs text-stone-400 mt-2">— {agentName}</p>
               </div>
             </div>
           </div>
           )}
 
-          {/* ── Slide 2: Property Details (was slide 3) ─────────────── */}
+          {/* ── Slide 2: Property Details — bej yarım blok + büyük foto sağ ─── */}
           {firstProp && !isDeleted("property") && (
             <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
               <SlideControls presToken={token} slideKey="property" initialText={firstProp.description || ""} editable />
               <div className="h-full grid grid-cols-1 lg:grid-cols-2">
-                {/* Left: photo */}
-                <div className="bg-gray-100 flex items-center justify-center overflow-hidden">
+                {/* Left: text on beige half-bg */}
+                <div className="bg-[#D4C0B0] flex flex-col justify-center p-8 md:p-12">
+                  <p className="text-xs uppercase tracking-[0.2em] text-stone-700 mb-3 font-semibold">
+                    {firstProp.listing_type ? getListingLabel(firstProp.listing_type).toUpperCase() : "MÜLK"}
+                  </p>
+                  <h2 className="text-3xl md:text-5xl font-black text-stone-900 leading-[0.95] mb-4 uppercase tracking-tight">
+                    {firstProp.title}
+                  </h2>
+                  {firstProp.price && (
+                    <p className="text-3xl md:text-4xl font-black text-stone-900 mb-5">
+                      {formatPrice(firstProp.price)}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-stone-700 font-medium mb-4">
+                    {firstProp.area && <span>{firstProp.area} m²</span>}
+                    {firstProp.rooms && <span>{firstProp.rooms}</span>}
+                    {firstProp.type && <span>{getTypeLabel(firstProp.type)}</span>}
+                    {firstProp.location && <span>{firstProp.location}</span>}
+                  </div>
+                  {firstProp.description && (
+                    <p className="text-xs md:text-sm text-stone-700 leading-relaxed">
+                      {(firstProp.description as string).substring(0, 240)}
+                      {(firstProp.description as string).length > 240 ? "..." : ""}
+                    </p>
+                  )}
+                </div>
+                {/* Right: full-bleed photo */}
+                <div className="bg-stone-100 flex items-center justify-center overflow-hidden">
                   {photos[1] ? (
                     <img src={photos[1]} alt={firstProp.title} className="w-full h-full object-cover" />
                   ) : photos[0] ? (
                     <img src={photos[0]} alt={firstProp.title} className="w-full h-full object-cover" />
                   ) : (
-                    <HomeIcon className="w-24 h-24 text-gray-300" />
-                  )}
-                </div>
-                {/* Right: details */}
-                <div className="flex flex-col justify-center p-8 md:p-10">
-                  <div className="flex items-start justify-between mb-4">
-                    <p className="text-xs text-blue-600 font-medium">Mülk</p>
-                    {firstProp.listing_type && (
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${firstProp.listing_type === "satilik" ? "bg-blue-50 text-blue-700" : "bg-orange-50 text-orange-700"}`}>
-                        {getListingLabel(firstProp.listing_type)}
-                      </span>
-                    )}
-                  </div>
-
-                  <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">{firstProp.title}</h2>
-
-                  {firstProp.price && (
-                    <p className="text-2xl md:text-3xl font-bold text-blue-600 mb-5">
-                      {formatPrice(firstProp.price)}
-                    </p>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2.5 mb-5">
-                    {firstProp.area && (
-                      <div className="rounded-lg p-2.5 bg-gray-50">
-                        <p className="text-lg font-bold text-gray-900">{firstProp.area} m&sup2;</p>
-                        <p className="text-[10px] text-gray-500">Alan</p>
-                      </div>
-                    )}
-                    {firstProp.rooms && (
-                      <div className="rounded-lg p-2.5 bg-gray-50">
-                        <p className="text-lg font-bold text-gray-900">{firstProp.rooms}</p>
-                        <p className="text-[10px] text-gray-500">Oda</p>
-                      </div>
-                    )}
-                    {firstProp.type && (
-                      <div className="rounded-lg p-2.5 bg-gray-50">
-                        <p className="text-lg font-bold text-gray-900">{getTypeLabel(firstProp.type)}</p>
-                        <p className="text-[10px] text-gray-500">Tip</p>
-                      </div>
-                    )}
-                    {firstProp.location && (
-                      <div className="rounded-lg p-2.5 bg-gray-50">
-                        <p className="text-sm font-bold leading-tight text-gray-900">{firstProp.location}</p>
-                        <p className="text-[10px] text-gray-500">Konum</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {firstProp.description && (
-                    <p className="text-xs text-gray-600 leading-relaxed mb-4">
-                      {(firstProp.description as string).substring(0, 200)}
-                      {(firstProp.description as string).length > 200 ? "..." : ""}
-                    </p>
-                  )}
-
-                  {(firstProp.features || firstProp.interior_features || firstProp.view_features) && (
-                    <div className="flex flex-wrap gap-1">
-                      {[firstProp.features, firstProp.interior_features, firstProp.view_features]
-                        .filter(Boolean)
-                        .join(", ")
-                        .split(",")
-                        .slice(0, 5)
-                        .map((f, j) => (
-                          <span key={j} className="px-2 py-0.5 bg-gray-100 rounded-full text-[10px] text-gray-600">
-                            {f.trim()}
-                          </span>
-                        ))}
-                    </div>
+                    <HomeIcon className="w-24 h-24 text-stone-300" />
                   )}
                 </div>
               </div>
@@ -372,19 +339,28 @@ export default async function PresentationPage({ params }: PageProps) {
             return (
               <div key={`ai-${i}`} className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
                 <SlideControls presToken={token} slideKey={slideKey} initialText={chunk} editable />
-                <div className="h-full grid grid-cols-1 lg:grid-cols-2">
-                  {/* Left: photo */}
-                  <div className="bg-gray-100 flex items-center justify-center overflow-hidden">
+                <div className={`h-full grid grid-cols-1 lg:grid-cols-2 ${i % 2 === 1 ? "lg:[&>div:first-child]:order-2" : ""}`}>
+                  {/* Photo */}
+                  <div className="bg-stone-100 flex items-center justify-center overflow-hidden">
                     {photo ? (
                       <img src={photo} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <HomeIcon className="w-24 h-24 text-gray-300" />
+                      <HomeIcon className="w-24 h-24 text-stone-300" />
                     )}
                   </div>
-                  {/* Right: text */}
-                  <div className="flex flex-col justify-center p-8 md:p-12">
-                    <p className="text-xs uppercase tracking-widest text-blue-600 mb-4">Değerlendirme</p>
-                    <div className="text-base md:text-lg leading-relaxed text-gray-700 whitespace-pre-line">
+                  {/* Text panel — bej yarı blok varyasyonlu */}
+                  <div className={`relative flex flex-col justify-center p-8 md:p-12 ${i === 1 ? "bg-[#D4C0B0]" : "bg-white"}`}>
+                    {/* dekoratif kareler bazı slaytlarda */}
+                    {i === 0 && (
+                      <>
+                        <div className="absolute top-6 right-6 w-7 h-7 bg-[#B89B89]/40"></div>
+                        <div className="absolute bottom-6 right-12 w-10 h-10 bg-[#B89B89]"></div>
+                      </>
+                    )}
+                    <p className={`text-xs uppercase tracking-[0.2em] mb-4 font-semibold ${i === 1 ? "text-stone-700" : "text-[#B89B89]"}`}>
+                      Değerlendirme
+                    </p>
+                    <div className={`text-base md:text-lg leading-relaxed whitespace-pre-line ${i === 1 ? "text-stone-800" : "text-stone-700"}`}>
                       {chunk}
                     </div>
                   </div>
@@ -400,15 +376,15 @@ export default async function PresentationPage({ params }: PageProps) {
             return (
             <div key={`extra-${i}`} className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
               <SlideControls presToken={token} slideKey={slideKey} />
-              <div className="h-full grid grid-cols-2 divide-x divide-gray-200">
+              <div className="h-full grid grid-cols-2 gap-1 bg-stone-200">
                 {pair.map((src, j) => (
-                  <div key={j} className="bg-gray-100 flex items-center justify-center overflow-hidden">
+                  <div key={j} className="bg-stone-100 flex items-center justify-center overflow-hidden">
                     <img src={src} alt="" className="w-full h-full object-cover" />
                   </div>
                 ))}
                 {pair.length === 1 && (
-                  <div className="bg-gray-50 flex items-center justify-center">
-                    <HomeIcon className="w-20 h-20 text-gray-300" />
+                  <div className="bg-stone-50 flex items-center justify-center">
+                    <HomeIcon className="w-20 h-20 text-stone-300" />
                   </div>
                 )}
               </div>
@@ -416,38 +392,68 @@ export default async function PresentationPage({ params }: PageProps) {
             );
           })}
 
-          {/* ── Contact Slide ───────────────────────────────────────── */}
+          {/* ── Contact Slide — büyük TEŞEKKÜR + iletişim ─── */}
           {!isDeleted("closing") && (
           <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
             <SlideControls presToken={token} slideKey="closing" />
-            <div className="h-full flex items-center justify-center p-10">
-              <div className="text-center max-w-lg">
-                <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white mx-auto mb-6">
-                  <HomeIcon className="w-7 h-7" />
+            <div className="h-full grid grid-cols-1 md:grid-cols-2">
+              {/* Sol: büyük TEŞEKKÜR + iletişim */}
+              <div className="relative flex flex-col justify-center p-8 md:p-12">
+                <div className="absolute top-8 left-8 w-20 h-1.5 bg-[#B89B89]"></div>
+                <div className="absolute bottom-8 right-8 w-16 h-1.5 bg-[#B89B89]"></div>
+                <h2 className="text-5xl md:text-7xl font-black text-[#B89B89] leading-[0.9] mb-6 uppercase tracking-tight">
+                  Teşekkür<br/>Ederiz
+                </h2>
+                <p className="text-stone-600 text-sm md:text-base mb-6 max-w-md leading-relaxed">
+                  Detaylı bilgi ve mülk gezme randevusu için lütfen iletişime geçiniz.
+                </p>
+                <div className="space-y-2 text-sm text-stone-700">
+                  <p className="font-semibold text-stone-900">{agentName}</p>
+                  {agentPhone && <p>📞 {agentPhone}</p>}
                 </div>
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">İlginize teşekkür ederiz</h2>
-                <p className="text-gray-500 text-sm mb-8">Lütfen detaylı bilgi ve mülk gezme randevusu için iletişime geçiniz.</p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <div className="flex flex-col sm:flex-row gap-3 mt-6">
                   {agentPhone && (
                     <a
                       href={`https://wa.me/${agentPhone.replace(/\D/g, "")}?text=${encodeURIComponent("Merhaba, sunumu inceledim. Bilgi almak istiyorum.")}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-medium px-5 py-2.5 rounded-full text-sm transition"
+                      className="inline-flex items-center justify-center gap-2 bg-stone-900 hover:bg-stone-800 text-white font-medium px-5 py-2.5 rounded-full text-sm transition"
                     >
-                      WhatsApp ile Iletisim
+                      WhatsApp ile İletişim
                     </a>
                   )}
                   {agentPhone && (
                     <a
                       href={`tel:${agentPhone}`}
-                      className="inline-flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-5 py-2.5 rounded-full text-sm transition"
+                      className="inline-flex items-center justify-center gap-2 border-2 border-stone-900 text-stone-900 hover:bg-stone-100 font-medium px-5 py-2.5 rounded-full text-sm transition"
                     >
                       Ara
                     </a>
                   )}
                 </div>
-                <p className="mt-8 text-xs text-gray-400">{agentName}</p>
+              </div>
+              {/* Sağ: foto kolajı + dekoratif */}
+              <div className="relative bg-stone-100 overflow-hidden">
+                {photos.length > 0 ? (
+                  <div className="grid grid-rows-2 h-full gap-1 bg-stone-200">
+                    {photos[0] && (
+                      <div className="overflow-hidden">
+                        <img src={photos[photos.length - 1]} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    {photos[1] && (
+                      <div className="overflow-hidden">
+                        <img src={photos[Math.min(photos.length - 2, 1)]} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <HomeIcon className="w-24 h-24 text-stone-300" />
+                  </div>
+                )}
+                <div className="absolute top-4 right-4 w-8 h-8 bg-[#B89B89]"></div>
+                <div className="absolute bottom-4 right-12 w-6 h-6 bg-[#B89B89]/50"></div>
               </div>
             </div>
           </div>
@@ -455,8 +461,8 @@ export default async function PresentationPage({ params }: PageProps) {
 
           {/* ── Footer ──────────────────────────────────────────────── */}
           <div className="text-center py-4">
-            <a href="https://upudev.nl" target="_blank" rel="noopener noreferrer" className="text-xs text-gray-300 hover:text-gray-500">
-              UPU Dev ile olusturuldu
+            <a href="https://upudev.nl" target="_blank" rel="noopener noreferrer" className="text-xs text-stone-400 hover:text-stone-600">
+              UPU Dev ile oluşturuldu
             </a>
           </div>
 
