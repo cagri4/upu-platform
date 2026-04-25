@@ -6,6 +6,7 @@ import { sendUrlButton } from "@/platform/whatsapp/send";
 import type { Metadata } from "next";
 import { ShareFAB } from "./share-fab";
 import { SlideControls } from "./slide-controls";
+import { FinishCTA } from "./finish-cta";
 
 
 /* ── Types ────────────────────────────────────────────────────────── */
@@ -40,6 +41,7 @@ interface PresentationContent {
   ai_summary: string;
   created_at: string;
   first_seen_at?: string | null;
+  finished_at?: string | null;
   deleted_slides?: string[];
   ai_chunks_override?: string[];
 }
@@ -202,24 +204,6 @@ export default async function PresentationPage({ params }: PageProps) {
           `📊 *Sunumunuz hazır!*\n\nSunumla ilgili tüm işlemleri (düzenle, sil, paylaş) sol alt menüden yapabilirsiniz.\n\n📚 *Bütün sunumlarınızı* görmek isterseniz aşağıdaki butondan sunumlarım sayfasına geçebilirsiniz.`,
           "📚 Sunumlarım",
           sunumlarUrl,
-          { skipNav: true },
-        );
-
-        // Sonraki flow: Mülkleri Yönet
-        const mulkleriToken = randomBytes(16).toString("hex");
-        const mulkleriExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-        await sb.from("magic_link_tokens").insert({
-          user_id: userId,
-          token: mulkleriToken,
-          expires_at: mulkleriExpires,
-        });
-        const mulkleriUrl = `${appUrl}/tr/mulklerim?t=${mulkleriToken}`;
-
-        await sendUrlButton(
-          sellerPhone,
-          `📁 *Şimdi daha önce eklediğiniz mülkleri yönetelim.*\n\nPortföyünüzdeki tüm mülkleri kart olarak görüntüleyebilir, düzenleyebilir ya da silebilirsiniz.`,
-          "📁 Mülkleri Yönet",
-          mulkleriUrl,
           { skipNav: true },
         );
       } catch (err) {
@@ -491,6 +475,9 @@ export default async function PresentationPage({ params }: PageProps) {
             </div>
           </div>
           )}
+
+          {/* ── Devam Et CTA — sunumun sonu ─── */}
+          <FinishCTA presToken={token} />
 
           {/* ── Footer ──────────────────────────────────────────────── */}
           <div className="text-center py-4">
