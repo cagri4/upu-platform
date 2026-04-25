@@ -11,6 +11,8 @@ export const COMMAND_LABELS: Record<string, string> = {
   sunum: "🎯 Sunum hazırla",
   eslestir: "🔗 Eşleştir",
   ilantakip: "📬 Günlük İlan Takibi",
+  portfoyara: "🔍 Portföy Ara",
+  sunumolustur: "🎨 Sunum Oluştur",
   hatirlatma: "⏰ Hatırlatma kur",
   ipucu: "💡 İpuçları",
   webpanel: "🖥 Web panel",
