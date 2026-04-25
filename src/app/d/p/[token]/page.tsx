@@ -163,7 +163,10 @@ export default async function PresentationPage({ params }: PageProps) {
   const agentPhone = pres.agent?.whatsapp_phone;
 
   // İlk görüntüleme: WA'ya devam mesajı + Sunumlar butonu (idempotent)
-  if (!content.first_seen_at && pres.agent?.whatsapp_phone) {
+  const sellerPhone = pres.agent?.whatsapp_phone as string | undefined;
+  if (!content.first_seen_at && sellerPhone) {
+    const presId = pres.id;
+    const userId = pres.user_id;
     after(async () => {
       try {
         const sb = getServiceClient();
@@ -171,7 +174,7 @@ export default async function PresentationPage({ params }: PageProps) {
         const { data: cur } = await sb
           .from("emlak_presentations")
           .select("content")
-          .eq("id", pres.id)
+          .eq("id", presId)
           .single();
         const curContent = (cur?.content as PresentationContent) || {} as PresentationContent;
         if (curContent.first_seen_at) return;
@@ -179,13 +182,13 @@ export default async function PresentationPage({ params }: PageProps) {
         const newContent = { ...curContent, first_seen_at: new Date().toISOString() };
         await sb.from("emlak_presentations")
           .update({ content: newContent })
-          .eq("id", pres.id);
+          .eq("id", presId);
 
         // Sunumlar listesi için magic link üret
         const sunumlarToken = randomBytes(16).toString("hex");
         const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         await sb.from("magic_link_tokens").insert({
-          user_id: pres.user_id,
+          user_id: userId,
           token: sunumlarToken,
           expires_at: expires,
         });
@@ -194,7 +197,7 @@ export default async function PresentationPage({ params }: PageProps) {
         const sunumlarUrl = `${appUrl}/tr/sunumlarim?t=${sunumlarToken}`;
 
         await sendUrlButton(
-          pres.agent.whatsapp_phone as string,
+          sellerPhone,
           `📊 *Sunumunuz hazır!*\n\nSunumla ilgili tüm işlemleri (düzenle, sil, paylaş) sol alt menüden yapabilirsiniz.\n\n📚 *Bütün sunumlarınızı* görmek isterseniz aşağıdaki butondan sunumlarım sayfasına geçebilirsiniz.`,
           "📚 Sunumlarım",
           sunumlarUrl,
