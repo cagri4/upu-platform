@@ -575,37 +575,40 @@ async function generatePresentation(ctx: WaContext): Promise<void> {
 // ── /sunumlarim — List presentations ─────────────────────────────────
 
 export async function handleSunumlarim(ctx: WaContext): Promise<void> {
+  const { sendUrlButton } = await import("@/platform/whatsapp/send");
+  const { randomBytes } = await import("crypto");
   const supabase = getServiceClient();
 
-  const { data: presentations } = await supabase
+  const { count } = await supabase
     .from("emlak_presentations")
-    .select("id, title, status, view_count, created_at, customer_id")
+    .select("id", { count: "exact", head: true })
     .eq("user_id", ctx.userId)
-    .order("created_at", { ascending: false })
-    .limit(10);
+    .neq("status", "deleted");
 
-  if (!presentations?.length) {
+  if (!count) {
     await sendButtons(ctx.phone, "📊 Henüz sunum hazırlamadınız.", [
-      { id: "cmd:sunum", title: "Sunum Hazırla" },
+      { id: "cmd:sunumolustur", title: "🎨 Sunum Oluştur" },
       { id: "cmd:menu", title: "Ana Menü" },
     ]);
     return;
   }
 
-  const statusIcons: Record<string, string> = {
-    draft: "📝",
-    sent: "📤",
-    viewed: "👁",
-    expired: "⏰",
-  };
+  const token = randomBytes(16).toString("hex");
+  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  await supabase.from("magic_link_tokens").insert({
+    user_id: ctx.userId,
+    token,
+    expires_at: expires,
+  });
 
-  const rows = presentations.map(p => ({
-    id: `snm:view:${p.id}`,
-    title: `${statusIcons[p.status] || "📊"} ${(p.title || "Sunum").substring(0, 22)}`,
-    description: `${p.view_count || 0} görüntüleme | ${new Date(p.created_at).toLocaleDateString("tr-TR")}`,
-  }));
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
+  const url = `${appUrl}/tr/sunumlarim?t=${token}`;
 
-  await sendList(ctx.phone, "📊 Sunumlarınız", "Göster", [
-    { title: "Sunumlar", rows },
-  ]);
+  await sendUrlButton(
+    ctx.phone,
+    `📚 *Sunumlarım*\n\nToplam ${count} sunumunuz var. Aşağıdaki butondan tüm sunumlarınızı görüntüleyebilir, düzenleyebilir, paylaşabilirsiniz.`,
+    "📚 Sunumları Aç",
+    url,
+    { skipNav: true },
+  );
 }

@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
+import { after } from "next/server";
+import { randomBytes } from "crypto";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { sendUrlButton } from "@/platform/whatsapp/send";
 import type { Metadata } from "next";
+import { ShareFAB } from "./share-fab";
 
 
 /* ── Types ────────────────────────────────────────────────────────── */
@@ -34,6 +38,8 @@ interface PresentationContent {
   properties: PresentationProperty[];
   ai_summary: string;
   created_at: string;
+  first_seen_at?: string | null;
+  deleted_slides?: number[];
 }
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
@@ -107,9 +113,38 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const pres = await getPresentation(token);
   if (!pres) return { title: "Sunum bulunamadi" };
 
+  const c = (pres.content as PresentationContent) || {};
+  const prop = c.properties?.[0];
+  const cover = prop?.photos?.[0] || prop?.image_url || null;
+  const title = pres.title || prop?.title || "Mülk Sunumu";
+  const priceStr = prop?.price
+    ? new Intl.NumberFormat("tr-TR").format(prop.price) + " TL"
+    : "";
+  const descParts = [
+    prop?.location,
+    prop?.rooms,
+    prop?.area ? `${prop.area} m²` : null,
+    priceStr,
+  ].filter(Boolean);
+  const description = descParts.length > 0
+    ? descParts.join(" · ")
+    : "Size özel hazırlanan mülk sunumu";
+
   return {
-    title: pres.title || "Mulk Sunumu",
-    description: "Size ozel hazirlanan mulk sunumu",
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      images: cover ? [{ url: cover, width: 1200, height: 630, alt: title }] : undefined,
+    },
+    twitter: {
+      card: cover ? "summary_large_image" : "summary",
+      title,
+      description,
+      images: cover ? [cover] : undefined,
+    },
   };
 }
 
@@ -125,6 +160,50 @@ export default async function PresentationPage({ params }: PageProps) {
   const firstProp = properties[0];
   const agentName = pres.agent?.display_name || "Emlak Danışmanı";
   const agentPhone = pres.agent?.whatsapp_phone;
+
+  // İlk görüntüleme: WA'ya devam mesajı + Sunumlar butonu (idempotent)
+  if (!content.first_seen_at && pres.agent?.whatsapp_phone) {
+    after(async () => {
+      try {
+        const sb = getServiceClient();
+        // Idempotent: tekrar fetch et, hala null ise işaretle
+        const { data: cur } = await sb
+          .from("emlak_presentations")
+          .select("content")
+          .eq("id", pres.id)
+          .single();
+        const curContent = (cur?.content as PresentationContent) || {} as PresentationContent;
+        if (curContent.first_seen_at) return;
+
+        const newContent = { ...curContent, first_seen_at: new Date().toISOString() };
+        await sb.from("emlak_presentations")
+          .update({ content: newContent })
+          .eq("id", pres.id);
+
+        // Sunumlar listesi için magic link üret
+        const sunumlarToken = randomBytes(16).toString("hex");
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        await sb.from("magic_link_tokens").insert({
+          user_id: pres.user_id,
+          token: sunumlarToken,
+          expires_at: expires,
+        });
+
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
+        const sunumlarUrl = `${appUrl}/tr/sunumlarim?t=${sunumlarToken}`;
+
+        await sendUrlButton(
+          pres.agent.whatsapp_phone as string,
+          `📊 *Sunumunuz hazır!*\n\nSunumla ilgili tüm işlemleri (düzenle, sil, paylaş) sol alt menüden yapabilirsiniz.\n\n📚 *Bütün sunumlarınızı* görmek isterseniz aşağıdaki butondan sunumlarım sayfasına geçebilirsiniz.`,
+          "📚 Sunumlarım",
+          sunumlarUrl,
+          { skipNav: true },
+        );
+      } catch (err) {
+        console.error("[sunum:first-view]", err);
+      }
+    });
+  }
 
   // Photo pool: explicit .photos array OR fall back to image_url
   const photos: string[] = firstProp?.photos?.length
@@ -359,6 +438,9 @@ export default async function PresentationPage({ params }: PageProps) {
           </div>
 
         </div>
+
+        {/* Floating share button (sol alt) */}
+        <ShareFAB title={displayTitle} />
       </body>
     </html>
   );
