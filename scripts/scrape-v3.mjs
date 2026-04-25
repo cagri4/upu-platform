@@ -64,6 +64,7 @@ const BASE_URLS = [
   { url: 'https://www.sahibinden.com/kiralik-is-yeri-buro-ofis/mugla-bodrum', listing_type: 'kiralik', property_type: 'buro_ofis' },
   { url: 'https://www.sahibinden.com/kiralik-is-yeri-depo-antrepo/mugla-bodrum', listing_type: 'kiralik', property_type: 'depo' },
   { url: 'https://www.sahibinden.com/kiralik-is-yeri-dukkan-magaza/mugla-bodrum', listing_type: 'kiralik', property_type: 'dukkan' },
+  { url: 'https://www.sahibinden.com/satilik-is-yeri-depo-antrepo/mugla-bodrum', listing_type: 'satilik', property_type: 'depo' },
 
   // Devren Kiralik
   { url: 'https://www.sahibinden.com/devren-kiralik-is-yeri-dukkan-magaza/mugla-bodrum', listing_type: 'devren', property_type: 'dukkan' },
@@ -73,6 +74,7 @@ const BASE_URLS = [
 
   // Arsa
   { url: 'https://www.sahibinden.com/satilik-arsa/mugla-bodrum', listing_type: 'satilik', property_type: 'arsa' },
+  { url: 'https://www.sahibinden.com/kiralik-arsa/mugla-bodrum', listing_type: 'kiralik', property_type: 'arsa' },
 
   // Bina
   { url: 'https://www.sahibinden.com/satilik-bina/mugla-bodrum', listing_type: 'satilik', property_type: 'bina' },
