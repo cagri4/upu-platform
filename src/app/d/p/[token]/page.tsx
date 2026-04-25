@@ -5,6 +5,7 @@ import { getServiceClient } from "@/platform/auth/supabase";
 import { sendUrlButton } from "@/platform/whatsapp/send";
 import type { Metadata } from "next";
 import { ShareFAB } from "./share-fab";
+import { SlideControls } from "./slide-controls";
 
 
 /* ── Types ────────────────────────────────────────────────────────── */
@@ -210,9 +211,16 @@ export default async function PresentationPage({ params }: PageProps) {
     ? firstProp.photos
     : (firstProp?.image_url ? [firstProp.image_url] : []);
 
-  // AI summary → 3 chunks for slides 3-5
-  const aiChunks = splitSummary(content.ai_summary || "", 3);
+  // AI summary → 3 chunks for slides 3-5 (override edits varsa onu kullan)
+  const aiChunksRaw = (content as PresentationContent & { ai_chunks_override?: string[] }).ai_chunks_override;
+  const aiChunks = aiChunksRaw && aiChunksRaw.length > 0
+    ? [...aiChunksRaw]
+    : splitSummary(content.ai_summary || "", 3);
   while (aiChunks.length < 3) aiChunks.push("");
+
+  // Slaytlardan gizlenecekler — düzenleyiciden silindiyse render etme
+  const deleted = new Set(content.deleted_slides || []);
+  const isDeleted = (key: string) => deleted.has(key);
 
   // Display title: property title from first property (or presentation title fallback)
   const displayTitle = firstProp?.title || content.customer?.name || pres.title || "Mülk Sunumu";
@@ -241,7 +249,9 @@ export default async function PresentationPage({ params }: PageProps) {
         <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
 
           {/* ── Slide 1: Cover ───────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
+          {!isDeleted("cover") && (
+          <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
+            <SlideControls presToken={token} slideKey="cover" initialText={displayTitle} editable />
             <div className="h-full grid grid-cols-1 md:grid-cols-2">
               {/* Left: circular photo */}
               <div className="flex items-center justify-center p-8 bg-gray-50">
@@ -264,10 +274,12 @@ export default async function PresentationPage({ params }: PageProps) {
               </div>
             </div>
           </div>
+          )}
 
           {/* ── Slide 2: Property Details (was slide 3) ─────────────── */}
-          {firstProp && (
-            <div className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
+          {firstProp && !isDeleted("property") && (
+            <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
+              <SlideControls presToken={token} slideKey="property" initialText={firstProp.description || ""} editable />
               <div className="h-full grid grid-cols-1 lg:grid-cols-2">
                 {/* Left: photo */}
                 <div className="bg-gray-100 flex items-center justify-center overflow-hidden">
@@ -354,9 +366,12 @@ export default async function PresentationPage({ params }: PageProps) {
           {/* ── Slides 3-5: AI Summary (split into 3) ───────────────── */}
           {aiChunks.map((chunk, i) => {
             if (!chunk) return null;
+            const slideKey = `ai:${i}`;
+            if (isDeleted(slideKey)) return null;
             const photo = photos[2 + i] || photos[1] || photos[0];
             return (
-              <div key={`ai-${i}`} className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
+              <div key={`ai-${i}`} className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
+                <SlideControls presToken={token} slideKey={slideKey} initialText={chunk} editable />
                 <div className="h-full grid grid-cols-1 lg:grid-cols-2">
                   {/* Left: photo */}
                   <div className="bg-gray-100 flex items-center justify-center overflow-hidden">
@@ -379,8 +394,12 @@ export default async function PresentationPage({ params }: PageProps) {
           })}
 
           {/* ── Slides 6+: Extra photo pairs (side by side with divider) ─ */}
-          {extraPairs.map((pair, i) => (
-            <div key={`extra-${i}`} className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
+          {extraPairs.map((pair, i) => {
+            const slideKey = `extra:${i}`;
+            if (isDeleted(slideKey)) return null;
+            return (
+            <div key={`extra-${i}`} className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
+              <SlideControls presToken={token} slideKey={slideKey} />
               <div className="h-full grid grid-cols-2 divide-x divide-gray-200">
                 {pair.map((src, j) => (
                   <div key={j} className="bg-gray-100 flex items-center justify-center overflow-hidden">
@@ -394,10 +413,13 @@ export default async function PresentationPage({ params }: PageProps) {
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
 
           {/* ── Contact Slide ───────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
+          {!isDeleted("closing") && (
+          <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
+            <SlideControls presToken={token} slideKey="closing" />
             <div className="h-full flex items-center justify-center p-10">
               <div className="text-center max-w-lg">
                 <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white mx-auto mb-6">
@@ -429,6 +451,7 @@ export default async function PresentationPage({ params }: PageProps) {
               </div>
             </div>
           </div>
+          )}
 
           {/* ── Footer ──────────────────────────────────────────────── */}
           <div className="text-center py-4">
