@@ -50,6 +50,25 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Her mülk için en son oluşturulan sunum'un magic_token'ını çek
+    const { data: presentations } = propIds.length > 0
+      ? await supabase
+          .from("emlak_presentations")
+          .select("magic_token, property_ids, created_at")
+          .neq("status", "deleted")
+          .order("created_at", { ascending: false })
+      : { data: [] };
+
+    const latestSunumMap: Record<string, string> = {};
+    for (const pres of presentations || []) {
+      const pids = (pres.property_ids as string[] | null) || [];
+      for (const pid of pids) {
+        if (!latestSunumMap[pid] && pres.magic_token) {
+          latestSunumMap[pid] = pres.magic_token as string;
+        }
+      }
+    }
+
     const items = (properties || []).map(p => ({
       id: p.id,
       title: p.title,
@@ -62,6 +81,7 @@ export async function GET(req: NextRequest) {
       cover: firstPhotoMap[p.id] || (p.image_url as string | null) || null,
       status: p.status,
       created_at: p.created_at,
+      sunum_token: latestSunumMap[p.id] || null,
     }));
 
     return NextResponse.json({ properties: items });

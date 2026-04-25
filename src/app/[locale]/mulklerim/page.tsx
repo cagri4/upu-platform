@@ -17,6 +17,7 @@ interface PropItem {
   cover: string | null;
   status: string | null;
   created_at: string;
+  sunum_token: string | null;
 }
 
 type Status = "loading" | "ready" | "error";
@@ -112,17 +113,31 @@ export default function MulklerimPage() {
                     )}
                   </div>
                 </div>
-                <div className="border-t border-slate-100 grid grid-cols-2">
+                <div className="border-t border-slate-100 grid grid-cols-3">
+                  {p.sunum_token ? (
+                    <a
+                      href={`/d/p/${p.sunum_token}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1 py-3 text-sm font-medium text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 transition"
+                    >
+                      📊 Sunum
+                    </a>
+                  ) : (
+                    <span className="flex items-center justify-center gap-1 py-3 text-sm font-medium text-slate-400 cursor-not-allowed">
+                      📊 Yok
+                    </span>
+                  )}
                   <a
                     href={`/tr/mulkekle-form?id=${p.id}&t=${token || ""}`}
-                    className="flex items-center justify-center gap-2 py-3 text-sm font-medium text-indigo-700 hover:bg-indigo-50 active:bg-indigo-100 transition"
+                    className="flex items-center justify-center gap-1 py-3 text-sm font-medium text-indigo-700 hover:bg-indigo-50 active:bg-indigo-100 transition border-l border-slate-100"
                   >
                     ✏️ Düzenle
                   </a>
                   <button
                     onClick={() => void handleDelete(p.id)}
                     disabled={deletingId === p.id}
-                    className="flex items-center justify-center gap-2 py-3 text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100 transition border-l border-slate-100 disabled:opacity-50"
+                    className="flex items-center justify-center gap-1 py-3 text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100 transition border-l border-slate-100 disabled:opacity-50"
                   >
                     🗑️ {deletingId === p.id ? "Siliniyor..." : "Sil"}
                   </button>
