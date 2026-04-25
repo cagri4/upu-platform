@@ -33,7 +33,15 @@ const takeArg = process.argv.find(a => a.startsWith('--take='));
 const takeCount = takeArg ? parseInt(takeArg.split('=')[1], 10) : 0;
 const sahibiOnly = process.argv.includes('--sahibi-only');
 
-// ─── 38 BASE URLs → 76 URLs (sahibinden + emlak ofisi) ─────────────────────
+// ─── BASE URLs (kullanıcı tarafından doğrulanmış 23 URL) ──────────────────
+//
+// 25 Nisan 2026: kullanıcı sahibinden canlı görüntüsünden bu URL listesini
+// verdi. Daha önce ciftlik_evi, kosk, yali, devren, butik_otel, pansiyon
+// gibi Bodrum'da neredeyse hiç ilan olmayan kategorilerde sahibinden
+// "Benzer ilanlar" başlığıyla Türkiye geneli sızıntı yapıyordu — bu
+// kategoriler tamamen kaldırıldı. Sadece kullanıcının doğruladığı
+// kategoriler scrape edilir. BODRUM_KEYWORDS filtresi de import sırasında
+// ikinci güvenlik ağı.
 
 const BASE_URLS = [
   // Satilik Konut
@@ -41,36 +49,23 @@ const BASE_URLS = [
   { url: 'https://www.sahibinden.com/satilik-rezidans/mugla-bodrum', listing_type: 'satilik', property_type: 'rezidans' },
   { url: 'https://www.sahibinden.com/satilik-mustakil-ev/mugla-bodrum', listing_type: 'satilik', property_type: 'mustakil' },
   { url: 'https://www.sahibinden.com/satilik-villa/mugla-bodrum', listing_type: 'satilik', property_type: 'villa' },
-  { url: 'https://www.sahibinden.com/satilik-ciftlik-evi/mugla-bodrum', listing_type: 'satilik', property_type: 'ciftlik_evi' },
-  { url: 'https://www.sahibinden.com/satilik-kosk-konak/mugla-bodrum', listing_type: 'satilik', property_type: 'kosk' },
-  { url: 'https://www.sahibinden.com/satilik-yali/mugla-bodrum', listing_type: 'satilik', property_type: 'yali' },
-  { url: 'https://www.sahibinden.com/satilik-yali-dairesi/mugla-bodrum', listing_type: 'satilik', property_type: 'yali_dairesi' },
   { url: 'https://www.sahibinden.com/satilik-yazlik/mugla-bodrum', listing_type: 'satilik', property_type: 'yazlik' },
 
   // Kiralik Konut
+  { url: 'https://www.sahibinden.com/kiralik-daire/mugla-bodrum', listing_type: 'kiralik', property_type: 'daire' },
   { url: 'https://www.sahibinden.com/kiralik-rezidans/mugla-bodrum', listing_type: 'kiralik', property_type: 'rezidans' },
   { url: 'https://www.sahibinden.com/kiralik-mustakil-ev/mugla-bodrum', listing_type: 'kiralik', property_type: 'mustakil' },
   { url: 'https://www.sahibinden.com/kiralik-villa/mugla-bodrum', listing_type: 'kiralik', property_type: 'villa' },
-  { url: 'https://www.sahibinden.com/kiralik-ciftlik-evi/mugla-bodrum', listing_type: 'kiralik', property_type: 'ciftlik_evi' },
-  { url: 'https://www.sahibinden.com/kiralik-yali-dairesi/mugla-bodrum', listing_type: 'kiralik', property_type: 'yali_dairesi' },
-  { url: 'https://www.sahibinden.com/kiralik-daire/mugla-bodrum', listing_type: 'kiralik', property_type: 'daire' },
 
   // Satilik Isyeri
   { url: 'https://www.sahibinden.com/satilik-is-yeri-buro-ofis/mugla-bodrum', listing_type: 'satilik', property_type: 'buro_ofis' },
+  { url: 'https://www.sahibinden.com/satilik-is-yeri-depo-antrepo/mugla-bodrum', listing_type: 'satilik', property_type: 'depo' },
   { url: 'https://www.sahibinden.com/satilik-is-yeri-dukkan-magaza/mugla-bodrum', listing_type: 'satilik', property_type: 'dukkan' },
   { url: 'https://www.sahibinden.com/satilik-is-yeri-komple-bina/mugla-bodrum', listing_type: 'satilik', property_type: 'komple_bina' },
 
   // Kiralik Isyeri
   { url: 'https://www.sahibinden.com/kiralik-is-yeri-buro-ofis/mugla-bodrum', listing_type: 'kiralik', property_type: 'buro_ofis' },
-  { url: 'https://www.sahibinden.com/kiralik-is-yeri-depo-antrepo/mugla-bodrum', listing_type: 'kiralik', property_type: 'depo' },
   { url: 'https://www.sahibinden.com/kiralik-is-yeri-dukkan-magaza/mugla-bodrum', listing_type: 'kiralik', property_type: 'dukkan' },
-  { url: 'https://www.sahibinden.com/satilik-is-yeri-depo-antrepo/mugla-bodrum', listing_type: 'satilik', property_type: 'depo' },
-
-  // Devren Kiralik
-  { url: 'https://www.sahibinden.com/devren-kiralik-is-yeri-dukkan-magaza/mugla-bodrum', listing_type: 'devren', property_type: 'dukkan' },
-  { url: 'https://www.sahibinden.com/devren-kiralik-is-yeri-kuafor-guzellik-merkezi/mugla-bodrum', listing_type: 'devren', property_type: 'kuafor' },
-  { url: 'https://www.sahibinden.com/devren-kiralik-is-yeri-market/mugla-bodrum', listing_type: 'devren', property_type: 'market' },
-  { url: 'https://www.sahibinden.com/devren-kiralik-is-yeri-restoran-lokanta/mugla-bodrum', listing_type: 'devren', property_type: 'restoran' },
 
   // Arsa
   { url: 'https://www.sahibinden.com/satilik-arsa/mugla-bodrum', listing_type: 'satilik', property_type: 'arsa' },
@@ -78,7 +73,6 @@ const BASE_URLS = [
 
   // Bina
   { url: 'https://www.sahibinden.com/satilik-bina/mugla-bodrum', listing_type: 'satilik', property_type: 'bina' },
-  { url: 'https://www.sahibinden.com/kiralik-bina/mugla-bodrum', listing_type: 'kiralik', property_type: 'bina' },
 
   // Devre Mulk
   { url: 'https://www.sahibinden.com/satilik-devre-mulk/mugla-bodrum', listing_type: 'satilik', property_type: 'devre_mulk' },
@@ -86,13 +80,8 @@ const BASE_URLS = [
 
   // Turistik Tesis
   { url: 'https://www.sahibinden.com/satilik-otel/mugla-bodrum', listing_type: 'satilik', property_type: 'otel' },
-  { url: 'https://www.sahibinden.com/satilik-apart-otel/mugla-bodrum', listing_type: 'satilik', property_type: 'apart_otel' },
-  { url: 'https://www.sahibinden.com/satilik-butik-otel/mugla-bodrum', listing_type: 'satilik', property_type: 'butik_otel' },
-  { url: 'https://www.sahibinden.com/satilik-pansiyon/mugla-bodrum', listing_type: 'satilik', property_type: 'pansiyon' },
   { url: 'https://www.sahibinden.com/kiralik-otel/mugla-bodrum', listing_type: 'kiralik', property_type: 'otel' },
   { url: 'https://www.sahibinden.com/kiralik-apart-otel/mugla-bodrum', listing_type: 'kiralik', property_type: 'apart_otel' },
-  { url: 'https://www.sahibinden.com/kiralik-butik-otel/mugla-bodrum', listing_type: 'kiralik', property_type: 'butik_otel' },
-  { url: 'https://www.sahibinden.com/kiralik-pansiyon/mugla-bodrum', listing_type: 'kiralik', property_type: 'pansiyon' },
 ];
 
 // Her base URL'den 2 URL uret: /sahibinden ve /emlak-ofisinden

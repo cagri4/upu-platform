@@ -43,16 +43,16 @@ fi
 COOKIE_COUNT=$(echo "$COOKIE_OUT" | grep -oP '\d+ cookie' | head -1)
 echo "$DATE — ✅ Cookie: $COOKIE_COUNT" >> "$LOG_FILE"
 
-# 2. Scrape V3 — partiye göre URL seçimi (38 URL toplam, sadece sahibi)
+# 2. Scrape V3 — partiye göre URL seçimi (23 URL toplam, sadece sahibi)
 # Daily leads pipeline: sahibi ilanları 3 partide çekilir
-# part1: ilk 13, part2: 13-26, part3: 26-38
+# part1: ilk 8, part2: 8-16, part3: 16-23
 SCRAPE_ARGS="--days=1 --sahibi-only"
 if [ "$PART" = "part1" ]; then
-  SCRAPE_ARGS="$SCRAPE_ARGS --take=13"
+  SCRAPE_ARGS="$SCRAPE_ARGS --take=8"
 elif [ "$PART" = "part2" ]; then
-  SCRAPE_ARGS="$SCRAPE_ARGS --skip=13 --take=13"
+  SCRAPE_ARGS="$SCRAPE_ARGS --skip=8 --take=8"
 elif [ "$PART" = "part3" ]; then
-  SCRAPE_ARGS="$SCRAPE_ARGS --skip=26"
+  SCRAPE_ARGS="$SCRAPE_ARGS --skip=16"
 fi
 
 $NODE scripts/scrape-v3.mjs $SCRAPE_ARGS > "$SCRAPE_DETAIL" 2>&1
