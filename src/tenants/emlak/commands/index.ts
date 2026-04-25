@@ -26,6 +26,8 @@ import { handleIlanTakip } from "./ilan-takip";
 import { handlePortfoyAra } from "./portfoy-ara";
 import { handleSunumOlustur } from "./sunum-olustur";
 import { handleMulklerim } from "./mulklerim";
+import { handleProfilDuzenle } from "./profil-duzenle";
+import { handleWebSayfam } from "./web-sayfam";
 
 export const emlakCommands: TenantCommandRegistry = {
   commands: {
@@ -39,6 +41,8 @@ export const emlakCommands: TenantCommandRegistry = {
     sunumolustur: handleSunumOlustur,
     portfoyara: handlePortfoyAra,
     mulklerim: handleMulklerim,
+    profilduzenle: handleProfilDuzenle,
+    websayfam: handleWebSayfam,
     eslestir: handleEslestir,
     ilantakip: handleIlanTakip,
 
@@ -134,6 +138,13 @@ export const emlakCommands: TenantCommandRegistry = {
     "mulkleri yonet": "mulklerim",
     "portföyüm": "mulklerim",
     "portfoyum": "mulklerim",
+    "profil düzenle": "profilduzenle",
+    "profil duzenle": "profilduzenle",
+    "profil": "profilduzenle",
+    "web sayfam": "websayfam",
+    "web sayfası": "websayfam",
+    "websitem": "websayfam",
+    "landing": "websayfam",
     "ipuclari": "ipucu",
     "ipuçları": "ipucu",
     "tip": "ipucu",

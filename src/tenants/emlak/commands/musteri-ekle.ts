@@ -53,8 +53,31 @@ function fmtBudget(val: number): string {
 // ── Command handler: /musteriEkle ────────────────────────────────────
 
 export async function handleMusteriEkle(ctx: WaContext): Promise<void> {
-  await startSession(ctx.userId, ctx.tenantId, "musteriEkle", "name");
-  await sendText(ctx.phone, "👤 Müşterinizin adını ve soyadını yazın:");
+  // Yeni davranış: WA içi step-by-step yerine magic link → web form.
+  // Eski step handler kodu (handleMusteriEkleStep / Callback) duruyor ama
+  // tetiklenmiyor.
+  const { sendUrlButton } = await import("@/platform/whatsapp/send");
+  const { randomBytes } = await import("crypto");
+  const supabase = getServiceClient();
+
+  const token = randomBytes(16).toString("hex");
+  const expires = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  await supabase.from("magic_link_tokens").insert({
+    user_id: ctx.userId,
+    token,
+    expires_at: expires,
+  });
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
+  const url = `${appUrl}/tr/musteri-ekle-form?t=${token}`;
+
+  await sendUrlButton(
+    ctx.phone,
+    `🤝 *Müşteri Ekle*\n\nMüşterinizin bilgilerini ve aradığı kriterleri form üzerinden ekleyin. Kayıt sonrası size bilgi mesajı gönderirim.`,
+    "🤝 Formu Aç",
+    url,
+    { skipNav: true },
+  );
 }
 
 // ── Step handler ─────────────────────────────────────────────────────
