@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
 
         await sendUrlButton(
           userPhone,
-          `👍 Gördüğünüz gibi bugün size uyan *${results?.length || 0} ilan* var.\n\n*Şimdi her sabah düzenli gelecek takibini kuralım.* Hangi kriterlere uyan ilanlar günlük brifinginizde olsun?`,
+          `🎯 *Şimdi her sabah düzenli gelecek takibini kuralım.* Hangi kriterlere uyan ilanlar günlük brifinginizde olsun?`,
           "🎯 Takip Kur",
           takipUrl,
           { skipNav: true },
