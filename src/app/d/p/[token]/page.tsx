@@ -162,7 +162,9 @@ export default async function PresentationPage({ params }: PageProps) {
   const content = pres.content as PresentationContent;
   const properties = content.properties || [];
   const firstProp = properties[0];
-  const agentName = pres.agent?.display_name || "Emlak Danışmanı";
+  // agentName intentionally not displayed — emlakçılar arası paylaşımda
+  // gizliliğe aykırı. Sadece agentPhone closing slide butonlarında
+  // kullanılıyor.
   const agentPhone = pres.agent?.whatsapp_phone;
 
   // İlk görüntüleme: WA'ya devam mesajı + Sunumlar butonu (idempotent)
@@ -296,7 +298,6 @@ export default async function PresentationPage({ params }: PageProps) {
                   <p className="text-base md:text-lg text-stone-600 mb-6 font-medium">{subtitle}</p>
                 )}
                 <p className="text-sm text-stone-500 italic">{formattedDate}</p>
-                <p className="text-xs text-stone-400 mt-2">— {agentName}</p>
               </div>
             </div>
           </div>
@@ -424,10 +425,6 @@ export default async function PresentationPage({ params }: PageProps) {
                 <p className="text-stone-600 text-sm md:text-base mb-6 max-w-md leading-relaxed">
                   Detaylı bilgi ve mülk gezme randevusu için lütfen iletişime geçiniz.
                 </p>
-                <div className="space-y-2 text-sm text-stone-700">
-                  <p className="font-semibold text-stone-900">{agentName}</p>
-                  {agentPhone && <p>📞 {agentPhone}</p>}
-                </div>
                 <div className="flex flex-col sm:flex-row gap-3 mt-6">
                   {agentPhone && (
                     <a
