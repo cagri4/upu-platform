@@ -30,6 +30,7 @@ export default function MulklerimPage() {
   const [error, setError] = useState("");
   const [items, setItems] = useState<PropItem[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [finishing, setFinishing] = useState(false);
 
   useEffect(() => {
     if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
@@ -42,6 +43,22 @@ export default function MulklerimPage() {
       })
       .catch(() => { setStatus("error"); setError("Bağlantı hatası."); });
   }, [token]);
+
+  async function handleFinish() {
+    setFinishing(true);
+    try {
+      const res = await fetch("/api/mulklerim/finish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const d = await res.json().catch(() => ({}));
+      const waUrl = (d?.wa_url as string) || `https://wa.me/${BOT_WA_NUMBER}`;
+      window.location.href = waUrl;
+    } catch {
+      window.location.href = `https://wa.me/${BOT_WA_NUMBER}`;
+    }
+  }
 
   async function handleDelete(id: string) {
     if (!confirm("Bu mülkü silmek istediğinize emin misiniz? Geri alabilmek için destek ile iletişime geçmeniz gerekir.")) return;
@@ -147,23 +164,16 @@ export default function MulklerimPage() {
           </div>
         )}
 
-        {/* Sonraki adım — Müşteri Ekle CTA */}
-        <a
-          href={`/tr/musteri-ekle-form?t=${token || ""}`}
-          className="block mt-6 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-semibold text-base shadow-lg text-center active:scale-95"
+        <button
+          onClick={() => void handleFinish()}
+          disabled={finishing}
+          className="block w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-semibold text-base shadow-lg text-center active:scale-95 disabled:opacity-60"
         >
-          🤝 Sıradaki: Müşteri Ekle
-        </a>
+          {finishing ? "⏳ Yönlendiriliyor..." : "💬 WhatsApp'a Dön"}
+        </button>
         <p className="text-xs text-slate-500 text-center mt-2 px-4">
-          Bir müşteri profili ekleyince ileride mülklerinizle eşleştirip otomatik sunum hazırlamanıza yardım ederim.
+          WhatsApp&apos;a döndüğünüzde sıradaki adım için yeni bir mesaj sizi bekliyor olacak.
         </p>
-
-        <a
-          href={`https://wa.me/${BOT_WA_NUMBER}`}
-          className="block mt-4 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-medium text-base text-center active:scale-95"
-        >
-          💬 WhatsApp&apos;a Dön
-        </a>
       </div>
     </div>
   );

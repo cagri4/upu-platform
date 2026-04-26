@@ -237,7 +237,7 @@ export default function MulkEkleFormPage() {
         ? "Değişiklikler kaydedildi. Mülklerim sayfasına geri dönebilirsiniz."
         : "Sunum birkaç saniye içinde WhatsApp'ınıza düşecek. WhatsApp'a dönüp bekleyebilirsiniz."}
     </p>
-    <a href={`https://wa.me/${BOT_WA_NUMBER}?text=${encodeURIComponent("devam")}`}
+    <a href={`https://wa.me/${BOT_WA_NUMBER}`}
       className="block bg-green-600 text-white px-6 py-4 rounded-xl font-semibold text-lg">💬 WhatsApp'a Dön</a>
   </Center>;
 

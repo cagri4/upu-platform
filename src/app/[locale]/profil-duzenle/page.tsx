@@ -110,7 +110,7 @@ export default function ProfilDuzenlePage() {
     <div className="text-5xl mb-3">✨</div>
     <h1 className="text-xl font-bold mb-2">Profil kaydedildi!</h1>
     <p className="text-slate-600 text-sm mb-6">Web sayfanız WhatsApp&apos;a düşecek. WhatsApp&apos;a dönün.</p>
-    <a href={`https://wa.me/${BOT_WA_NUMBER}?text=${encodeURIComponent("devam")}`}
+    <a href={`https://wa.me/${BOT_WA_NUMBER}`}
       className="block bg-green-600 text-white px-6 py-4 rounded-xl font-semibold text-lg">💬 WhatsApp&apos;a Dön</a>
   </Center>;
 

@@ -213,7 +213,7 @@ export default function AraPage() {
             )}
 
             <a
-              href={`https://wa.me/${BOT_WA_NUMBER}?text=${encodeURIComponent("devam")}`}
+              href={`https://wa.me/${BOT_WA_NUMBER}`}
               className="block bg-green-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg text-center active:scale-95 mt-4"
             >
               💬 WhatsApp'a Dön
