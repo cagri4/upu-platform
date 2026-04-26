@@ -112,3 +112,6 @@ if [ "$PART" = "part3" ] || [ "$PART" = "full" ]; then
   NOTIFY_OUT=$(curl -s "${DEPLOY_URL}/api/cron/tracking-notify" 2>&1)
   echo "$(date '+%Y-%m-%d %H:%M') — 🔔 Takip bildirimi: $NOTIFY_OUT" >> "$LOG_FILE"
 fi
+
+# 7. 5-imza monitoring — bug sinyali tetiklenirse WA admin'e alert
+bash "$PROJECT_DIR/scripts/monitor-scrape.sh" "$PART" >> "$LOG_FILE" 2>&1
