@@ -322,6 +322,9 @@ export default function MulkEkleFormPage() {
                 </span>
               </label>
               <p className="text-xs text-slate-500">Sunumda otomatik kullanılacak. İlk fotoğraf kapak olur.</p>
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                💡 <strong>Mobilde ipucu:</strong> Bazı tarayıcılarda 5+ foto seçince galeri sessizce başarısız olabiliyor. <strong>Tek seferde 4 foto</strong> seçip yüklemenizi, sonra tekrar &quot;Fotoğraf Ekle&quot;ye basıp yenisini eklemenizi öneririm. (Toplam 15&apos;e kadar.)
+              </p>
 
               {photoError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
