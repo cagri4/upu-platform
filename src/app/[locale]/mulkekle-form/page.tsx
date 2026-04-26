@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { ChromeSuggest } from "./chrome-suggest";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -130,10 +131,20 @@ export default function MulkEkleFormPage() {
 
   async function handlePhotoInput(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+    if (files.length === 0) {
+      // onChange fire etti ama files boş — WebView/mobil tarayıcı bug'ı
+      setPhotoError("Galeri foto seçemedi (mobil tarayıcı sınırı). Tek seferde 4 max foto deneyin veya yukarıdaki Chrome'da Aç butonunu kullanın.");
+      return;
+    }
     const remaining = 15 - photoUrls.length;
     if (remaining <= 0) { setPhotoError("Maksimum 15 fotoğraf."); return; }
-    const toUpload = files.slice(0, remaining);
+
+    // Hard cap 4: mobilde 5+ silent fail riskli, kullanıcı 8 seçse bile sadece 4 işlenir
+    const SAFE_BATCH = 4;
+    let toUpload = files.slice(0, Math.min(remaining, SAFE_BATCH));
+    if (files.length > SAFE_BATCH) {
+      setPhotoError(`${files.length} foto seçtiniz — sadece ilk ${SAFE_BATCH}'ünü yüklüyorum. Geri kalanını "Fotoğraf Ekle"ye tekrar basıp ekleyin.`);
+    }
     setPhotoUploading(true);
     setPhotoError("");
     setPhotoProgress({ done: 0, total: toUpload.length });
@@ -251,6 +262,8 @@ export default function MulkEkleFormPage() {
             {isEdit ? "Bilgileri güncelleyin ve kaydedin." : "Ne kadar bilgi girerseniz AI o kadar iyi sunum yazar."}
           </p>
         </div>
+
+        <ChromeSuggest />
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <Section title="📋 Temel Bilgiler">
