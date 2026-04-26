@@ -26,27 +26,50 @@ export function ChromeSuggest() {
     const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
     if (!isMobile) return;
 
-    // Standalone Chrome zaten OK
-    const isStandaloneChrome = /CriOS|Chrome\//i.test(ua) && !/wv\)|; wv\b/i.test(ua) && !/(WhatsApp|FBAN|FBAV|Instagram|Twitter|Line)/i.test(ua);
-    if (isStandaloneChrome) return;
+    // WhatsApp / Instagram / FB / Twitter / Line UA'sı varsa banner göster
+    const isInAppBrowser = /(WhatsApp|FBAN|FBAV|Instagram|Twitter|Line|wv\)|; wv\b)/i.test(ua);
 
-    setIsAndroid(/Android/i.test(ua));
-    setCurrentUrl(window.location.href);
-    setShow(true);
+    // Chrome Custom Tabs (WhatsApp Android) — UA Chrome gibi görünür ama
+    // dış uygulamadan açıldığı için referrer boş veya android-app://
+    const ref = document.referrer || "";
+    const fromExternalApp = ref === "" || /^android-app:/i.test(ref);
+
+    // ?chrome=1 ile gelen → standalone Chrome'da olduğunu bildirdik, banner yok
+    const sp = new URLSearchParams(window.location.search);
+    const cameFromBanner = sp.get("chrome") === "1";
+
+    // localStorage'da dismiss edilmişse de gösterme
+    let dismissed = false;
+    try { dismissed = localStorage.getItem("chrome-suggest-dismissed") === "1"; } catch {}
+
+    if (cameFromBanner || dismissed) return;
+
+    if (isInAppBrowser || fromExternalApp) {
+      setIsAndroid(/Android/i.test(ua));
+      setCurrentUrl(window.location.href);
+      setShow(true);
+    }
   }, []);
+
+  function dismiss() {
+    try { localStorage.setItem("chrome-suggest-dismissed", "1"); } catch {}
+    setShow(false);
+  }
 
   if (!show) return null;
 
   // Android: intent:// scheme ile Chrome'a yönlendir
   // iOS: googlechrome:// scheme (Chrome kuruluysa)
+  // ?chrome=1 ekleyerek standalone Chrome'da banner'ı tekrar göstermemesini sağla
   let chromeUrl = "";
   if (currentUrl) {
     try {
       const u = new URL(currentUrl);
+      const search = u.search ? `${u.search}&chrome=1` : `?chrome=1`;
       if (isAndroid) {
-        chromeUrl = `intent://${u.host}${u.pathname}${u.search}#Intent;scheme=https;package=com.android.chrome;end`;
+        chromeUrl = `intent://${u.host}${u.pathname}${search}#Intent;scheme=https;package=com.android.chrome;end`;
       } else {
-        chromeUrl = `googlechrome://${u.host}${u.pathname}${u.search}`;
+        chromeUrl = `googlechrome://${u.host}${u.pathname}${search}`;
       }
     } catch {
       chromeUrl = currentUrl;
@@ -64,13 +87,20 @@ export function ChromeSuggest() {
   }
 
   return (
-    <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 mb-4 text-sm">
-      <p className="font-semibold text-amber-900 mb-2">
+    <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 mb-4 text-sm relative">
+      <button
+        onClick={dismiss}
+        aria-label="Kapat"
+        className="absolute top-2 right-2 w-7 h-7 rounded-full text-amber-700 hover:bg-amber-100 flex items-center justify-center text-base leading-none"
+      >
+        ✕
+      </button>
+      <p className="font-semibold text-amber-900 mb-2 pr-8">
         💡 Daha iyi foto yükleme için Chrome&apos;da açın
       </p>
       <p className="text-amber-800 text-xs mb-3 leading-relaxed">
-        Şu an WhatsApp tarayıcısındasınız. WhatsApp tarayıcısı bazı durumlarda 5+ foto seçimini desteklemiyor.
-        Daha güvenli bir deneyim için bu sayfayı Chrome&apos;da açın.
+        WhatsApp&apos;ın açtığı tarayıcı 5+ foto seçimini desteklemiyor olabilir.
+        Daha güvenli foto yükleme için sayfayı Chrome&apos;da açın.
       </p>
       <div className="flex flex-col sm:flex-row gap-2">
         <a
