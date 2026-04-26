@@ -24,6 +24,7 @@ export default function WebSayfamPage() {
   const [error, setError] = useState("");
   const [data, setData] = useState<Data | null>(null);
   const [copied, setCopied] = useState(false);
+  const [finishing, setFinishing] = useState(false);
 
   useEffect(() => {
     if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
@@ -55,6 +56,22 @@ export default function WebSayfamPage() {
   function shareWA() {
     const text = encodeURIComponent(`Kişisel emlak portföyüm: ${fullUrl}`);
     window.open(`https://wa.me/?text=${text}`, "_blank");
+  }
+
+  async function handleFinish() {
+    setFinishing(true);
+    try {
+      const res = await fetch("/api/websayfam/finish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const d = await res.json().catch(() => ({}));
+      const waUrl = (d?.wa_url as string) || `https://wa.me/${BOT_WA_NUMBER}`;
+      window.location.href = waUrl;
+    } catch {
+      window.location.href = `https://wa.me/${BOT_WA_NUMBER}`;
+    }
   }
 
   if (status === "loading") return <Center><div className="text-4xl mb-3">⏳</div><p>Yükleniyor...</p></Center>;
@@ -118,12 +135,16 @@ export default function WebSayfamPage() {
           </a>
         </div>
 
-        <a
-          href={`https://wa.me/${BOT_WA_NUMBER}`}
-          className="block mt-6 bg-stone-100 hover:bg-stone-200 text-stone-700 py-3 rounded-xl font-medium text-sm text-center"
+        <button
+          onClick={() => void handleFinish()}
+          disabled={finishing}
+          className="block w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-semibold text-base shadow-lg text-center active:scale-95 disabled:opacity-60"
         >
-          💬 WhatsApp&apos;a Dön
-        </a>
+          {finishing ? "⏳ Yönlendiriliyor..." : "💬 WhatsApp'a Dön"}
+        </button>
+        <p className="text-xs text-slate-500 text-center mt-2 px-4">
+          WhatsApp&apos;a döndüğünüzde sıradaki adım için yeni bir mesaj sizi bekliyor olacak.
+        </p>
       </div>
     </div>
   );

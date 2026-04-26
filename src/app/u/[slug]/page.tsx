@@ -7,6 +7,7 @@
 import { notFound } from "next/navigation";
 import { getServiceClient } from "@/platform/auth/supabase";
 import type { Metadata } from "next";
+import { EditFAB } from "./edit-fab";
 
 interface AgentProfile {
   full_name?: string;
@@ -179,45 +180,65 @@ export default async function AgentLandingPage({ params }: PageProps) {
   const phone = agent.phone || "";
   const email = agent.email || "";
 
+  // Stats — verilerden otomatik
+  const totalProps = properties.length;
+  const uniqueLocations = new Set(properties.map(p => (p.location || "").split("/")[0].trim()).filter(Boolean));
+  const propertyTypeCount = new Set(properties.map(p => p.type).filter(Boolean)).size;
+  const stats = [
+    agent.years_experience ? { label: "Yıl Tecrübe", value: `${agent.years_experience}+` } : null,
+    totalProps > 0 ? { label: "Aktif Portföy", value: `${totalProps}` } : null,
+    uniqueLocations.size > 0 ? { label: "Bölge", value: `${uniqueLocations.size}` } : null,
+    propertyTypeCount > 0 ? { label: "Mülk Tipi", value: `${propertyTypeCount}` } : null,
+  ].filter((x): x is { label: string; value: string } => x !== null);
+
   return (
     <html lang="tr">
       <body className="bg-stone-50 text-stone-900 antialiased">
-        <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        <EditFAB slug={slug} />
 
-          {/* Hero — profil */}
-          <section className="bg-white rounded-3xl shadow-sm overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              <div className="bg-[#B89B89] flex items-center justify-center p-8">
-                <div className="w-40 h-40 md:w-52 md:h-52 rounded-full overflow-hidden bg-white shadow-lg">
+        <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+
+          {/* Hero — büyük foto + büyük tipografi */}
+          <section className="relative bg-white rounded-3xl shadow-sm overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-5">
+              {/* Sol: foto kolonu (2/5) */}
+              <div className="md:col-span-2 bg-[#B89B89] flex items-center justify-center p-6 md:p-10 min-h-[280px] relative">
+                <div className="absolute top-4 left-4 w-6 h-6 bg-white/30"></div>
+                <div className="absolute bottom-4 right-4 w-10 h-10 bg-white/20"></div>
+                <div className="relative w-44 h-56 md:w-56 md:h-72 bg-white shadow-2xl overflow-hidden">
                   {agent.photo_url ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={agent.photo_url} alt={name} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-6xl text-stone-300">👤</div>
+                    <div className="w-full h-full flex items-center justify-center text-7xl text-stone-300">👤</div>
                   )}
                 </div>
               </div>
-              <div className="relative p-8 md:p-10 flex flex-col justify-center">
-                <div className="absolute top-6 right-6 w-8 h-8 bg-[#B89B89]"></div>
-                <p className="text-xs uppercase tracking-[0.2em] text-stone-500 mb-2 font-semibold">Emlak Danışmanı</p>
-                <h1 className="text-3xl md:text-4xl font-black text-stone-900 mb-2 uppercase tracking-tight">{name}</h1>
-                {agent.years_experience && (
-                  <p className="text-sm text-stone-600 mb-1">🎓 {agent.years_experience} yıl tecrübe</p>
+              {/* Sağ: text kolonu (3/5) */}
+              <div className="md:col-span-3 relative p-8 md:p-12 flex flex-col justify-center">
+                <div className="absolute top-6 right-10 w-10 h-10 bg-[#B89B89]/30"></div>
+                <div className="absolute top-16 right-6 w-6 h-6 bg-[#B89B89]"></div>
+                <div className="absolute bottom-10 right-16 w-7 h-7 bg-[#B89B89]/40"></div>
+
+                <p className="text-xs uppercase tracking-[0.25em] text-[#B89B89] mb-3 font-bold">Real Estate Specialist</p>
+                <h1 className="text-4xl md:text-6xl font-black text-stone-900 mb-3 uppercase tracking-tight leading-[0.95]">{name}</h1>
+                {agent.bio && (
+                  <p className="text-base md:text-lg text-stone-600 mb-5 max-w-md italic">&quot;{agent.bio.split("\n")[0]}&quot;</p>
                 )}
-                {agent.office_address && (
-                  <p className="text-sm text-stone-600 mb-4">📍 {agent.office_address}</p>
+                {!agent.bio && agent.office_address && (
+                  <p className="text-base text-stone-600 mb-5">📍 {agent.office_address}</p>
                 )}
                 <div className="flex flex-wrap gap-2 mt-2">
                   {phone && (
                     <a href={`https://wa.me/${phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium px-4 py-2 rounded-full">
-                      💬 WhatsApp
+                      className="inline-flex items-center gap-1.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-md">
+                      💬 WhatsApp&apos;ta Yaz
                     </a>
                   )}
                   {phone && (
                     <a href={`tel:${phone}`}
-                      className="inline-flex items-center gap-1.5 border-2 border-stone-900 text-stone-900 hover:bg-stone-100 text-sm font-medium px-4 py-2 rounded-full">
-                      📞 Ara
+                      className="inline-flex items-center gap-1.5 border-2 border-stone-900 text-stone-900 hover:bg-stone-100 text-sm font-semibold px-5 py-2.5 rounded-full">
+                      📞 Hemen Ara
                     </a>
                   )}
                 </div>
@@ -225,19 +246,52 @@ export default async function AgentLandingPage({ params }: PageProps) {
             </div>
           </section>
 
-          {/* About */}
-          <section className="bg-white rounded-3xl shadow-sm p-8">
-            <p className="text-xs uppercase tracking-[0.2em] text-[#B89B89] mb-3 font-semibold">Hakkımızda</p>
-            <div className="text-stone-700 leading-relaxed whitespace-pre-line text-base">
-              {aboutText}
+          {/* Stats card */}
+          {stats.length > 0 && (
+            <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {stats.map((s, i) => (
+                <div key={i} className="bg-white rounded-2xl shadow-sm p-5 text-center">
+                  <p className="text-3xl md:text-4xl font-black text-[#B89B89] leading-none">{s.value}</p>
+                  <p className="text-xs uppercase tracking-wider text-stone-500 mt-2 font-semibold">{s.label}</p>
+                </div>
+              ))}
+            </section>
+          )}
+
+          {/* About — split: text sol + decorative photo sağ */}
+          <section className="bg-white rounded-3xl shadow-sm overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2">
+              <div className="p-8 md:p-12">
+                <p className="text-xs uppercase tracking-[0.25em] text-[#B89B89] mb-3 font-bold">Hakkımızda</p>
+                <h2 className="text-3xl md:text-4xl font-black text-stone-900 mb-5 uppercase leading-tight">
+                  Güvenilir<br/>Bir İş Ortağı
+                </h2>
+                <div className="text-stone-700 leading-relaxed whitespace-pre-line text-base">
+                  {aboutText}
+                </div>
+              </div>
+              <div className="bg-stone-100 hidden md:flex items-center justify-center p-6 relative">
+                {properties[0]?.cover ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={properties[0].cover} alt="" className="w-full h-full object-cover rounded-xl" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-6xl text-stone-300">🏛️</div>
+                )}
+                <div className="absolute top-4 right-4 w-6 h-6 bg-[#B89B89]"></div>
+              </div>
             </div>
           </section>
 
           {/* Properties */}
           {properties.length > 0 && (
             <section>
-              <p className="text-xs uppercase tracking-[0.2em] text-[#B89B89] mb-3 font-semibold px-2">Aktif Portföy</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="px-2 mb-4">
+                <p className="text-xs uppercase tracking-[0.25em] text-[#B89B89] mb-2 font-bold">Aktif Portföy</p>
+                <h2 className="text-3xl md:text-4xl font-black text-stone-900 uppercase">
+                  Sunduğumuz Mülkler
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {properties.map(p => (
                   <a
                     key={p.id}
@@ -280,28 +334,49 @@ export default async function AgentLandingPage({ params }: PageProps) {
             </section>
           )}
 
-          {/* Contact closing */}
-          <section className="bg-white rounded-3xl shadow-sm p-8 text-center">
-            <p className="text-xs uppercase tracking-[0.2em] text-[#B89B89] mb-3 font-semibold">İletişim</p>
-            <h2 className="text-2xl md:text-3xl font-black text-stone-900 mb-4 uppercase">Bana Ulaşın</h2>
-            <div className="space-y-1 text-sm text-stone-700 mb-6">
-              {phone && <p>📞 {phone}</p>}
-              {email && <p>✉️ {email}</p>}
-              {agent.office_address && <p>📍 {agent.office_address}</p>}
-            </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              {phone && (
-                <a href={`https://wa.me/${phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 rounded-full">
-                  💬 WhatsApp ile İletişim
-                </a>
-              )}
-              {phone && (
-                <a href={`tel:${phone}`}
-                  className="inline-flex items-center gap-1.5 border-2 border-stone-900 text-stone-900 hover:bg-stone-100 text-sm font-semibold px-5 py-2.5 rounded-full">
-                  📞 Hemen Ara
-                </a>
-              )}
+          {/* Contact closing — büyük "İLETİŞİM" + foto + dekoratif */}
+          <section className="bg-white rounded-3xl shadow-sm overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2">
+              <div className="relative p-8 md:p-12 flex flex-col justify-center">
+                <div className="absolute top-8 left-8 w-20 h-1.5 bg-[#B89B89]"></div>
+                <div className="absolute bottom-8 right-8 w-16 h-1.5 bg-[#B89B89]"></div>
+                <p className="text-xs uppercase tracking-[0.25em] text-[#B89B89] mb-3 font-bold">İletişim</p>
+                <h2 className="text-4xl md:text-6xl font-black text-stone-900 leading-[0.9] mb-6 uppercase tracking-tight">
+                  Sizinle<br/>Çalışmak<br/>İsterim
+                </h2>
+                <div className="space-y-1.5 text-sm text-stone-700 mb-6">
+                  {phone && <p>📞 {phone}</p>}
+                  {email && <p>✉️ {email}</p>}
+                  {agent.office_address && <p>📍 {agent.office_address}</p>}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {phone && (
+                    <a href={`https://wa.me/${phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-semibold px-5 py-2.5 rounded-full">
+                      💬 WhatsApp&apos;ta Yaz
+                    </a>
+                  )}
+                  {phone && (
+                    <a href={`tel:${phone}`}
+                      className="inline-flex items-center gap-1.5 border-2 border-stone-900 text-stone-900 hover:bg-stone-100 text-sm font-semibold px-5 py-2.5 rounded-full">
+                      📞 Hemen Ara
+                    </a>
+                  )}
+                </div>
+              </div>
+              <div className="bg-[#B89B89] hidden md:block relative">
+                {agent.photo_url ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={agent.photo_url} alt={name} className="w-full h-full object-cover" />
+                ) : properties[0]?.cover ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={properties[0].cover} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="h-full flex items-center justify-center text-6xl text-white/40">🏛️</div>
+                )}
+                <div className="absolute top-4 right-4 w-8 h-8 bg-white"></div>
+                <div className="absolute bottom-4 right-12 w-6 h-6 bg-white/50"></div>
+              </div>
             </div>
           </section>
 
