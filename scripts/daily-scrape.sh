@@ -47,6 +47,15 @@ echo "$DATE — ✅ Cookie: $COOKIE_COUNT" >> "$LOG_FILE"
 # Daily leads pipeline: sahibi ilanları 3 partide çekilir
 # part1: ilk 8, part2: 8-16, part3: 16-23
 SCRAPE_ARGS="--days=1 --sahibi-only"
+
+# Part1 her gün taze başlamalı: yesterday'in progress file'ı varsa sil.
+# (scrape-v3.mjs persistent PROGRESS_FILE kullanıyor, gün sonunda reset
+# etmediği için günü atlatıp eski veriyi tekrar import ediyordu.)
+if [ "$PART" = "part1" ] || [ "$PART" = "full" ]; then
+  rm -f "$PROJECT_DIR/scripts/output/v3-progress.json" "$PROJECT_DIR/scripts/output/v3-bodrum.json"
+  echo "$(date '+%Y-%m-%d %H:%M') — 🗑️  Progress reset (taze scrape için)" >> "$LOG_FILE"
+fi
+
 if [ "$PART" = "part1" ]; then
   SCRAPE_ARGS="$SCRAPE_ARGS --take=8"
 elif [ "$PART" = "part2" ]; then
