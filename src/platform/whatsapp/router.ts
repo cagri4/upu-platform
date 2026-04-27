@@ -11,6 +11,7 @@ import { muhasebeCommands } from "@/tenants/muhasebe/commands";
 import { otelCommands } from "@/tenants/otel/commands";
 import { siteyonetimCommands } from "@/tenants/siteyonetim/commands";
 import { marketCommands } from "@/tenants/market/commands";
+import { restoranCommands } from "@/tenants/restoran/commands";
 import { getTenantByKey } from "@/tenants/config";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { COMMAND_LABELS } from "./command-labels";
@@ -26,6 +27,7 @@ const REGISTRIES: Record<string, TenantCommandRegistry> = {
   otel: otelCommands,
   siteyonetim: siteyonetimCommands,
   market: marketCommands,
+  restoran: restoranCommands,
 };
 
 // ── Capability gate ──────────────────────────────────────────────────────

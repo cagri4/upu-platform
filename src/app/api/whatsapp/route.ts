@@ -107,6 +107,10 @@ registerAgentSetup(muhTahsilatUzmaniSetup);
 import { marketOnboardingFlow } from "@/tenants/market/onboarding-flow";
 registerOnboardingFlow(marketOnboardingFlow);
 
+// ─── Register restoran onboarding flow ─────────────────────────────────
+import { restoranOnboardingFlow } from "@/tenants/restoran/onboarding-flow";
+registerOnboardingFlow(restoranOnboardingFlow);
+
 // ─── Register market agent setup flows ─────────────────────────────────
 import {
   stokSorumlusuSetup as mktStokSorumlusuSetup,

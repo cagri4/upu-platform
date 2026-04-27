@@ -168,6 +168,26 @@ const TENANTS: Record<string, TenantConfig> = {
     guide: "",
     defaultFavorites: ["stoksorgula", "raporgunluk", "siparisler"],
   },
+  restoran: {
+    key: "restoran",
+    name: "Restoran Asistanı",
+    slug: "restoranai",
+    tenantId: "03f58dcb-b931-4dcf-bd47-a0885f9286e8",
+    saasType: "restoran",
+    whatsappPhone: "31644967207",
+    icon: "🍽",
+    color: "#EA580C",
+    description: "Restoran ve cafe işletmecileri için AI destekli sanal ekip",
+    welcomeFeatures: "Sipariş yönetimi, masa & rezervasyon, stok takibi, AI müşteri asistanı",
+    employees: [
+      { key: "asistan", name: "Asistan", icon: "📋", description: "Günlük brifing, gün sonu özeti", commands: ["brifing", "gunsonu", "ozet"] },
+      { key: "servis", name: "Servis", icon: "🍽", description: "Sipariş, masa ve rezervasyon yönetimi", commands: ["siparis", "masa", "rezervasyon"] },
+      { key: "mutfakStok", name: "Mutfak / Stok", icon: "📦", description: "Stok takibi ve menü yönetimi", commands: ["stok", "menukalemleri"] },
+    ],
+    commandMap: {},
+    guide: "",
+    defaultFavorites: ["siparis", "masa", "rezervasyon", "stok", "brifing", "menukalemleri"],
+  },
 };
 
 // ─── Domain → Tenant mapping ─────────────────────────────────────────────
@@ -180,6 +200,7 @@ const DOMAIN_MAP: Record<string, string> = {
   "hotelai.upudev.nl": "otel",
   "residenceai.upudev.nl": "siteyonetim",
   "marketai.upudev.nl": "market",
+  "restoranai.upudev.nl": "restoran",
   "adminpanel.upudev.nl": "admin",
   // Localhost development
   "localhost:3000": "emlak",
