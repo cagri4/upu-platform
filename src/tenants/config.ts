@@ -13,6 +13,11 @@ export interface VirtualEmployee {
   commands: string[];
 }
 
+export interface TenantPricingTier {
+  price: number;
+  currency: "EUR";
+}
+
 export interface TenantConfig {
   key: string;
   name: string;
@@ -30,6 +35,10 @@ export interface TenantConfig {
   commandMap: Record<string, string>;
   guide: string;         // SaaS-specific usage guide text
   defaultFavorites: string[];  // Default favorite command names
+  pricing: {
+    starter: TenantPricingTier;
+    pro: TenantPricingTier;
+  };
 }
 
 // ─── Tenant Registry ─────────────────────────────────────────────────────
@@ -56,6 +65,10 @@ const TENANTS: Record<string, TenantConfig> = {
     commandMap: {},
     guide: "",
     defaultFavorites: ["mulkekle", "mulklerim", "portfoyara", "ilantakip", "sunumolustur", "sunumlarim", "musteriEkle", "websayfam", "profilduzenle", "fiyatbelirle", "eslestir", "hatirlatma", "webpanel"],
+    pricing: {
+      starter: { price: 59, currency: "EUR" },
+      pro: { price: 95, currency: "EUR" },
+    },
   },
   bayi: {
     key: "bayi",
@@ -84,6 +97,10 @@ const TENANTS: Record<string, TenantConfig> = {
     commandMap: {},
     guide: "",
     defaultFavorites: ["ozet", "siparisler", "stok"],
+    pricing: {
+      starter: { price: 119, currency: "EUR" },
+      pro: { price: 249, currency: "EUR" },
+    },
   },
   muhasebe: {
     key: "muhasebe",
@@ -105,6 +122,10 @@ const TENANTS: Record<string, TenantConfig> = {
     commandMap: {},
     guide: "",
     defaultFavorites: ["brifing", "son_faturalar", "alacaklar"],
+    pricing: {
+      starter: { price: 19, currency: "EUR" },
+      pro: { price: 89, currency: "EUR" },
+    },
   },
   otel: {
     key: "otel",
@@ -126,6 +147,10 @@ const TENANTS: Record<string, TenantConfig> = {
     commandMap: {},
     guide: "",
     defaultFavorites: ["brifing", "durum", "rezervasyonlar"],
+    pricing: {
+      starter: { price: 29, currency: "EUR" },
+      pro: { price: 59, currency: "EUR" },
+    },
   },
   siteyonetim: {
     key: "siteyonetim",
@@ -147,6 +172,10 @@ const TENANTS: Record<string, TenantConfig> = {
     commandMap: {},
     guide: "",
     defaultFavorites: ["borcum", "rapor", "ariza"],
+    pricing: {
+      starter: { price: 39, currency: "EUR" },
+      pro: { price: 75, currency: "EUR" },
+    },
   },
   market: {
     key: "market",
@@ -167,6 +196,10 @@ const TENANTS: Record<string, TenantConfig> = {
     commandMap: {},
     guide: "",
     defaultFavorites: ["stoksorgula", "raporgunluk", "siparisler"],
+    pricing: {
+      starter: { price: 49, currency: "EUR" },
+      pro: { price: 75, currency: "EUR" },
+    },
   },
   restoran: {
     key: "restoran",
@@ -187,6 +220,10 @@ const TENANTS: Record<string, TenantConfig> = {
     commandMap: {},
     guide: "",
     defaultFavorites: ["siparis", "masa", "rezervasyon", "stok", "brifing", "menukalemleri"],
+    pricing: {
+      starter: { price: 29, currency: "EUR" },
+      pro: { price: 49, currency: "EUR" },
+    },
   },
 };
 
