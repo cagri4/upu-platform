@@ -176,7 +176,7 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
               <h3 className="text-lg font-semibold text-slate-900 mb-1">{t("pricing_starter")}</h3>
               <p className="text-sm text-slate-500 mb-4">{t("pricing_starter_desc")}</p>
               <div className="mb-6">
-                <span className="text-4xl font-bold text-slate-900">{t("pricing_starter_price")}</span>
+                <span className="text-4xl font-bold text-slate-900">€{tenant.pricing.starter.price}</span>
                 <span className="text-slate-500">{t("pricing_per_month")}</span>
               </div>
               <ul className="space-y-2 mb-8">
@@ -198,7 +198,7 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
               <h3 className="text-lg font-semibold text-slate-900 mb-1">{t("pricing_pro")}</h3>
               <p className="text-sm text-slate-500 mb-4">{t("pricing_pro_desc")}</p>
               <div className="mb-6">
-                <span className="text-4xl font-bold text-slate-900">{t("pricing_pro_price")}</span>
+                <span className="text-4xl font-bold text-slate-900">€{tenant.pricing.pro.price}</span>
                 <span className="text-slate-500">{t("pricing_per_month")}</span>
               </div>
               <ul className="space-y-2 mb-8">
