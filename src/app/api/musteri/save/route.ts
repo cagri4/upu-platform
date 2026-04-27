@@ -1,15 +1,16 @@
 /**
  * /api/musteri/save — yeni müşteri kaydı (eşleştirme YOK).
- * Kayıt sonrası WA'ya "✅ Müşteri kaydedildi" mesajı + sonraki flow
- * (Profil Düzenle) magic link butonu after() içinde gönderilir.
+ * Kayıt sonrası WA'ya "✅ Müşteri kaydedildi" mesajı + 2 yollu seçim
+ * butonları after() içinde gönderilir:
+ *   - 📋 Sözleşme Oluştur (cmd:sozlesme) — handleSozlesme tetiklenir
+ *   - 🪪 Sonra (cmd:profilduzenle) — handleProfilDuzenle tetiklenir
  *
  * POST { token, name, phone, email?, listing_type, property_type[], rooms?,
  *        budget_min?, budget_max?, location?, notes? }
  */
 import { NextRequest, NextResponse, after } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { sendUrlButton, sendText } from "@/platform/whatsapp/send";
-import { randomBytes } from "crypto";
+import { sendButtons } from "@/platform/whatsapp/send";
 
 export const dynamic = "force-dynamic";
 
@@ -79,33 +80,20 @@ export async function POST(req: NextRequest) {
 
     const userPhone = profile?.whatsapp_phone as string | undefined;
 
-    // WA bildirimi + Sonraki flow (Profil Düzenle) — after() içinde
+    // WA bildirimi + 2 yollu seçim (Sözleşme veya Sonra-Profil) — after() içinde
+    // WA Cloud API kısıtı: tek mesajda reply + URL button mix yok. İki reply
+    // button kullanıyoruz; "Sonra" → cmd:profilduzenle → handleProfilDuzenle
+    // kendi magic link URL button'unu zaten gönderiyor.
     after(async () => {
       try {
         if (!userPhone) return;
-        const sb = getServiceClient();
-
-        await sendText(
+        await sendButtons(
           userPhone,
-          `✅ *Müşteri kaydedildi!*\n\n👤 ${name}\n📞 ${phone}\n\nMüşteri profili sisteme eklendi. İleride menüden *🤝 Müşteri Ekle* veya *Müşteriler* ile yenisi ekleyip listeyi yönetebilirsin.`,
-        );
-
-        // Sonraki flow: Profil Düzenle
-        const profilToken = randomBytes(16).toString("hex");
-        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-        await sb.from("magic_link_tokens").insert({
-          user_id: magicToken.user_id,
-          token: profilToken,
-          expires_at: expires,
-        });
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
-        const profilUrl = `${appUrl}/tr/profil-duzenle?t=${profilToken}`;
-
-        await sendUrlButton(
-          userPhone,
-          `🪪 *Şimdi profilinizi tamamlayalım.*\n\nVerdiğiniz bilgiler birazdan oluşturacağımız *kişisel web sayfanızda* kullanılacak. Aşağıdaki forma adres, sektör tecrübeniz, profil fotoğrafı gibi bilgileri ekleyin.`,
-          "🪪 Profili Düzenle",
-          profilUrl,
+          `✅ *Müşteri kaydedildi!*\n\n👤 ${name}\n📞 ${phone}\n\nİsterseniz şimdi bu müşteri için *Yetkilendirme Sözleşmesi* oluşturalım. Veya 'Sonra' ile profil adımına geçin.`,
+          [
+            { id: "cmd:sozlesme", title: "📋 Sözleşme Yap" },
+            { id: "cmd:profilduzenle", title: "🪪 Sonra (Profil)" },
+          ],
           { skipNav: true },
         );
       } catch (err) {

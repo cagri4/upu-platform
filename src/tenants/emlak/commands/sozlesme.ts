@@ -1,7 +1,7 @@
 import type { WaContext } from "@/platform/whatsapp/types";
 import type { CommandSession } from "@/platform/whatsapp/session";
 import { startSession, updateSession, endSession } from "@/platform/whatsapp/session";
-import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
+import { sendText, sendButtons, sendList, sendUrlButton } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { handleError, logEvent } from "@/platform/whatsapp/error-handler";
 import { randomBytes } from "crypto";
@@ -87,6 +87,26 @@ function validatePhone(phone: string): string | null {
 
 export async function handleSozlesme(ctx: WaContext): Promise<void> {
   const supabase = getServiceClient();
+
+  // Flow chain telemetry: sözleşme akışına ilk girişi flag'le (idempotent).
+  // Müşteri-ekle sonrası "Sözleşme Yap" butonundan veya manuel /sozlesme komutundan
+  // gelen ilk girişte set edilir; sonraki çağrılarda dokunulmaz.
+  try {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("metadata")
+      .eq("id", ctx.userId)
+      .single();
+    const meta = (prof?.metadata as Record<string, unknown> | null) || {};
+    if (!meta.sozlesme_chain_started_at) {
+      await supabase
+        .from("profiles")
+        .update({ metadata: { ...meta, sozlesme_chain_started_at: new Date().toISOString() } })
+        .eq("id", ctx.userId);
+    }
+  } catch (err) {
+    console.error("[sozlesme] chain flag write failed:", err);
+  }
 
   const { data: properties } = await supabase
     .from("emlak_properties")
@@ -372,4 +392,43 @@ async function createSozlesme(ctx: WaContext): Promise<void> {
   await sendText(ctx.phone,
     `✅ Sözleşme hazırlandı!\n\n📋 ${d.property_title || d.property_address}\n👤 ${d.owner_name}\n\n🔗 İmza linki:\n${signLink}\n\nMüşteri linke tıklayarak imza atabilir.`,
   );
+
+  // Flow chain devam: ilk sözleşme oluşturulduğunda Profil Düzenle linkini gönder.
+  // sozlesme_finished_at flag'i ile idempotent — birden fazla sözleşme oluştursa da
+  // profil mesajı sadece ilkinde gider.
+  try {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("metadata")
+      .eq("id", ctx.userId)
+      .single();
+    const meta = (prof?.metadata as Record<string, unknown> | null) || {};
+    if (meta.sozlesme_finished_at) return;
+
+    await supabase
+      .from("profiles")
+      .update({ metadata: { ...meta, sozlesme_finished_at: new Date().toISOString() } })
+      .eq("id", ctx.userId);
+
+    // UX gecikmesi: WA mesaj akışında 2-3sn ara — onay mesajı ile yeni CTA üst üste binmesin.
+    await new Promise((r) => setTimeout(r, 2500));
+
+    const profilToken = randomBytes(16).toString("hex");
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    await supabase.from("magic_link_tokens").insert({
+      user_id: ctx.userId,
+      token: profilToken,
+      expires_at: expires,
+    });
+    const profilUrl = `${appUrl}/tr/profil-duzenle?t=${profilToken}`;
+    await sendUrlButton(
+      ctx.phone,
+      `🪪 *Şimdi profilinizi tamamlayalım.*\n\nVerdiğiniz bilgiler birazdan oluşturacağımız *kişisel web sayfanızda* kullanılacak. Aşağıdaki forma adres, sektör tecrübeniz, profil fotoğrafı gibi bilgileri ekleyin.`,
+      "🪪 Profili Düzenle",
+      profilUrl,
+      { skipNav: true },
+    );
+  } catch (err) {
+    console.error("[sozlesme] profil chain failed:", err);
+  }
 }
