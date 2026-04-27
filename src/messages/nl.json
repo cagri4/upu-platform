@@ -65,6 +65,15 @@
         "siparisYoneticisi": { "name": "Bestelbeheerder", "description": "Leveranciers, bestellingen & leveringsbeheer" },
         "finansAnalisti": { "name": "Financieel Analist", "description": "Prijzen, acties, verkoop & kassarapporten" }
       }
+    },
+    "restoran": {
+      "name": "Restaurantassistent",
+      "description": "AI-gestuurd bestellings-, tafel-, reserverings- en voorraadbeheer voor restaurants en cafés",
+      "employees": {
+        "asistan": { "name": "Assistent", "description": "Dagelijkse briefing, dagafsluiting en herinneringen" },
+        "servis": { "name": "Bediening", "description": "Bestellingen, tafels en reserveringen" },
+        "mutfakStok": { "name": "Keuken / Voorraad", "description": "Voorraadbeheer, menu en leveranciers" }
+      }
     }
   },
   "common": {
@@ -104,7 +113,6 @@
     "pricing_subtitle": "Probeer 14 dagen gratis, kies daarna het plan dat bij u past",
     "pricing_starter": "Starter",
     "pricing_starter_desc": "Voor individuele gebruikers",
-    "pricing_starter_price": "€29",
     "pricing_starter_f1": "Alle virtuele medewerkers",
     "pricing_starter_f2": "Basisfuncties",
     "pricing_starter_f3": "WhatsApp-integratie",
@@ -113,7 +121,6 @@
     "pricing_pro": "Professioneel",
     "pricing_pro_badge": "Populair",
     "pricing_pro_desc": "Voor teams en kantoren",
-    "pricing_pro_price": "€99",
     "pricing_pro_f1": "Alle virtuele medewerkers",
     "pricing_pro_f2": "Geavanceerde functies",
     "pricing_pro_f3": "Onbeperkte opdrachten",

@@ -65,6 +65,15 @@
         "siparisYoneticisi": { "name": "Order Manager", "description": "Supplier, order & delivery management" },
         "finansAnalisti": { "name": "Financial Analyst", "description": "Pricing, promotions, sales & register reports" }
       }
+    },
+    "restoran": {
+      "name": "Restaurant Assistant",
+      "description": "AI-powered order, table, reservation and inventory management for restaurants and cafés",
+      "employees": {
+        "asistan": { "name": "Assistant", "description": "Daily briefing, end-of-day summary and reminders" },
+        "servis": { "name": "Service", "description": "Order, table and reservation management" },
+        "mutfakStok": { "name": "Kitchen / Inventory", "description": "Stock tracking, menu and supplier management" }
+      }
     }
   },
   "common": {
@@ -104,7 +113,6 @@
     "pricing_subtitle": "Try free for 14 days, then choose the plan that suits you",
     "pricing_starter": "Starter",
     "pricing_starter_desc": "For individual users",
-    "pricing_starter_price": "€29",
     "pricing_starter_f1": "All virtual employees",
     "pricing_starter_f2": "Basic capabilities",
     "pricing_starter_f3": "WhatsApp integration",
@@ -113,7 +121,6 @@
     "pricing_pro": "Professional",
     "pricing_pro_badge": "Popular",
     "pricing_pro_desc": "For teams and offices",
-    "pricing_pro_price": "€99",
     "pricing_pro_f1": "All virtual employees",
     "pricing_pro_f2": "Advanced capabilities",
     "pricing_pro_f3": "Unlimited commands",

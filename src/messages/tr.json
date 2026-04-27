@@ -65,6 +65,15 @@
         "siparisYoneticisi": { "name": "Sipariş Yöneticisi", "description": "Tedarikçi, sipariş ve teslimat yönetimi" },
         "finansAnalisti": { "name": "Finans Analisti", "description": "Fiyat, kampanya, satış ve kasa raporları" }
       }
+    },
+    "restoran": {
+      "name": "Restoran Asistanı",
+      "description": "Restoran ve cafe işletmecileri için AI destekli sipariş, masa, rezervasyon ve stok yönetimi",
+      "employees": {
+        "asistan": { "name": "Asistan", "description": "Günlük brifing, gün sonu özeti ve hatırlatmalar" },
+        "servis": { "name": "Servis", "description": "Sipariş, masa ve rezervasyon yönetimi" },
+        "mutfakStok": { "name": "Mutfak / Stok", "description": "Stok takibi, menü ve tedarikçi yönetimi" }
+      }
     }
   },
   "common": {
@@ -104,7 +113,6 @@
     "pricing_subtitle": "14 gün ücretsiz deneyin, sonra size uygun planı seçin",
     "pricing_starter": "Başlangıç",
     "pricing_starter_desc": "Bireysel kullanıcılar için",
-    "pricing_starter_price": "₺399",
     "pricing_starter_f1": "Tüm sanal elemanlar",
     "pricing_starter_f2": "Temel yetenekler",
     "pricing_starter_f3": "WhatsApp entegrasyonu",
@@ -113,7 +121,6 @@
     "pricing_pro": "Profesyonel",
     "pricing_pro_badge": "Popüler",
     "pricing_pro_desc": "Ekipler ve ofisler için",
-    "pricing_pro_price": "₺1.199",
     "pricing_pro_f1": "Tüm sanal elemanlar",
     "pricing_pro_f2": "Gelişmiş yetenekler",
     "pricing_pro_f3": "Sınırsız komut",
