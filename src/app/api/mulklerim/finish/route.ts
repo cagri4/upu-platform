@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
         const sb = getServiceClient();
         const musteriToken = randomBytes(16).toString("hex");
-        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
         await sb.from("magic_link_tokens").insert({
           user_id: magicToken.user_id,
           token: musteriToken,

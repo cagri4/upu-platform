@@ -191,7 +191,7 @@ export default async function PresentationPage({ params }: PageProps) {
 
         // Sunumlar listesi için magic link üret
         const sunumlarToken = randomBytes(16).toString("hex");
-        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
         await sb.from("magic_link_tokens").insert({
           user_id: userId,
           token: sunumlarToken,

@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
 
         // Generate magic token for takip page
         const takipToken = randomBytes(16).toString("hex");
-        const takipExpires = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+        const takipExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
         await supabase.from("magic_link_tokens").insert({
           user_id: magicToken.user_id,
           token: takipToken,

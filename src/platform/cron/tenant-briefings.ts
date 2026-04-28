@@ -140,7 +140,7 @@ registerBriefing("emlak", async (userId) => {
 
   // Magic token for the takip page (user can always edit criteria)
   const takipToken = randomBytes(16).toString("hex");
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   await supabase.from("magic_link_tokens").insert({
     user_id: userId,
     token: takipToken,

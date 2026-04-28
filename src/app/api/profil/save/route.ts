@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
       // Generate form magic link (2h) so welcome message directly opens property form
       const formToken = randomBytes(32).toString("hex");
-      const formExpires = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+      const formExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
       await supabase.from("magic_link_tokens").insert({
         user_id: magicToken.user_id,
         token: formToken,
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       const formUrl = `https://estateai.upudev.nl/tr/mulkekle-form?t=${formToken}`;
 
       await sendUrlButton(userPhone,
-        `🎉 Hoşgeldin ${firstName}!\n\nProfilin hazır. Şimdi ilk mülkünü ekleyip satışları artıralım.\n\nMülk bilgilerini doldurman için sana özel bir form hazırladım. Formu aç, kolayca doldur, kaydet butonuyla WhatsApp'a dön.\n\n_Link 2 saat geçerlidir._`,
+        `🎉 Hoşgeldin ${firstName}!\n\nProfilin hazır. Şimdi ilk mülkünü ekleyip satışları artıralım.\n\nMülk bilgilerini doldurman için sana özel bir form hazırladım. Formu aç, kolayca doldur, kaydet butonuyla WhatsApp'a dön.\n\n_Link 1 hafta geçerlidir._`,
         "📝 Formu Aç",
         formUrl,
         { skipNav: true },

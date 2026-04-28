@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
 
         // Auto-chain: mülk ekle butonu (intro flow)
         const mulkToken = randomBytes(32).toString("hex");
-        const mulkExpires = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+        const mulkExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
         await sb.from("magic_link_tokens").insert({
           user_id: magicToken.user_id,
           token: mulkToken,

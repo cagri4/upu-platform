@@ -221,7 +221,7 @@ export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
   const supabase = getServiceClient();
   const { randomBytes } = await import("crypto");
   const token = randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   await supabase.from("magic_link_tokens").insert({
     user_id: ctx.userId,
     token,
@@ -231,7 +231,7 @@ export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
 
   const { sendUrlButton } = await import("@/platform/whatsapp/send");
   await sendUrlButton(ctx.phone,
-    `🏠 *Mülk Ekle*\n\nMülk bilgilerini doldurman için sana özel bir form hazırladım. Formu aç, kolayca doldur, kaydet butonuyla WhatsApp'a dön.\n\n_Link 2 saat geçerlidir._`,
+    `🏠 *Mülk Ekle*\n\nMülk bilgilerini doldurman için sana özel bir form hazırladım. Formu aç, kolayca doldur, kaydet butonuyla WhatsApp'a dön.\n\n_Link 1 hafta geçerlidir._`,
     "📝 Formu Aç",
     formUrl,
     { skipNav: true },
