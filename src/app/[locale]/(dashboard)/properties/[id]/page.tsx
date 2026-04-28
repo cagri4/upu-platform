@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
+import { SahibindenLink } from '@/components/sahibinden-link';
 import { ArrowLeft, MapPin, Home } from 'lucide-react';
 
 interface Property {
@@ -118,9 +119,9 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
           )}
 
           {property.source_url && (
-            <a href={property.source_url} target="_blank" rel="noreferrer" className="inline-block text-indigo-600 hover:underline text-sm">
+            <SahibindenLink href={property.source_url} target="_blank" rel="noreferrer" className="inline-block text-indigo-600 hover:underline text-sm">
               Kaynak ilan →
-            </a>
+            </SahibindenLink>
           )}
         </div>
       </Card>

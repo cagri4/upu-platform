@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { SahibindenLink } from "@/components/sahibinden-link";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -173,10 +174,10 @@ function LeadCard({ lead, saving, onAction }: { lead: Lead; saving: boolean; onA
         <div className="bg-slate-100 text-slate-500 text-sm text-center py-2.5 rounded-lg mb-2">Telefon bulunamadı</div>
       )}
 
-      <a href={lead.source_url} target="_blank" rel="noopener noreferrer"
+      <SahibindenLink href={lead.source_url} target="_blank" rel="noopener noreferrer"
         className="block text-xs text-blue-600 hover:underline mb-3 truncate">
         🔗 Sahibinden ilanına git
-      </a>
+      </SahibindenLink>
 
       <div className="grid grid-cols-2 gap-2">
         <button onClick={() => onAction("called")} disabled={saving}

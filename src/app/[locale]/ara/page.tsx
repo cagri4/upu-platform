@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { SahibindenLink } from "@/components/sahibinden-link";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -205,9 +206,9 @@ export default function AraPage() {
                     {r.area && <span className="text-slate-700">📐 {r.area} m²</span>}
                     {r.price && <span className="font-bold text-slate-900">💰 {new Intl.NumberFormat("tr-TR").format(r.price)} ₺</span>}
                   </div>
-                  <a href={r.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline break-all">
+                  <SahibindenLink href={r.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline break-all">
                     🔗 Sahibinden'de gör
-                  </a>
+                  </SahibindenLink>
                 </div>
               ))
             )}
