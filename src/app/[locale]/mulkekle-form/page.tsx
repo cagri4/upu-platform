@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChromeSuggest } from "./chrome-suggest";
+import { useIsInAppBrowser } from "./use-in-app-browser";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -35,6 +36,8 @@ export default function MulkEkleFormPage() {
   const token = searchParams.get("t") || searchParams.get("token");
   const editId = searchParams.get("id");
   const isEdit = !!editId;
+
+  const { isInAppBrowser } = useIsInAppBrowser();
 
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState("");
@@ -133,17 +136,24 @@ export default function MulkEkleFormPage() {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) {
       // onChange fire etti ama files boş — WebView/mobil tarayıcı bug'ı
-      setPhotoError("Galeri foto seçemedi (mobil tarayıcı sınırı). Tek seferde 4 max foto deneyin veya yukarıdaki Chrome'da Aç butonunu kullanın.");
+      setPhotoError(
+        isInAppBrowser
+          ? "Galeri foto seçemedi (mobil tarayıcı sınırı). Tek seferde 4 max foto deneyin veya yukarıdaki Chrome'da Aç butonunu kullanın."
+          : "Galeri foto seçemedi. Lütfen tekrar deneyin.",
+      );
       return;
     }
     const remaining = 15 - photoUrls.length;
     if (remaining <= 0) { setPhotoError("Maksimum 15 fotoğraf."); return; }
 
-    // Hard cap 4: mobilde 5+ silent fail riskli, kullanıcı 8 seçse bile sadece 4 işlenir
-    const SAFE_BATCH = 4;
-    let toUpload = files.slice(0, Math.min(remaining, SAFE_BATCH));
-    if (files.length > SAFE_BATCH) {
-      setPhotoError(`${files.length} foto seçtiniz — sadece ilk ${SAFE_BATCH}'ünü yüklüyorum. Geri kalanını "Fotoğraf Ekle"ye tekrar basıp ekleyin.`);
+    // WebView'de 5+ foto silent fail riskli — cap=4. Standalone Chrome/desktop'ta
+    // limit yok, kullanıcı remaining kadar yükleyebilir (toplam 15'e dek).
+    const cap = isInAppBrowser ? 4 : remaining;
+    let toUpload = files.slice(0, Math.min(remaining, cap));
+    if (isInAppBrowser && files.length > cap) {
+      setPhotoError(`${files.length} foto seçtiniz — sadece ilk ${cap}'ünü yüklüyorum. Geri kalanını "Fotoğraf Ekle"ye tekrar basıp ekleyin.`);
+    } else if (files.length > remaining) {
+      setPhotoError(`${files.length} foto seçtiniz — kalan ${remaining} slot için sadece ilk ${remaining}'ü yüklüyorum.`);
     }
     setPhotoUploading(true);
     setPhotoError("");
@@ -335,9 +345,11 @@ export default function MulkEkleFormPage() {
                 </span>
               </label>
               <p className="text-xs text-slate-500">Sunumda otomatik kullanılacak. İlk fotoğraf kapak olur.</p>
-              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                💡 <strong>Mobilde ipucu:</strong> Bazı tarayıcılarda 5+ foto seçince galeri sessizce başarısız olabiliyor. <strong>Tek seferde 4 foto</strong> seçip yüklemenizi, sonra tekrar &quot;Fotoğraf Ekle&quot;ye basıp yenisini eklemenizi öneririm. (Toplam 15&apos;e kadar.)
-              </p>
+              {isInAppBrowser && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  💡 <strong>Bu tarayıcıda ipucu:</strong> WhatsApp / in-app tarayıcılar 5+ foto seçimini sessizce kaybedebiliyor. <strong>Tek seferde 4 foto</strong> seçip yüklemenizi, sonra tekrar &quot;Fotoğraf Ekle&quot;ye basıp yenisini eklemenizi öneririm. (Toplam 15&apos;e kadar.)
+                </p>
+              )}
 
               {photoError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">

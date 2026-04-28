@@ -1,62 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useIsInAppBrowser } from "./use-in-app-browser";
 
 /**
  * Mülk ekle form'unda foto upload sorunlarını önlemek için
  * WebView/in-app browser kullanıcılarını sistem Chrome'una yönlendirir.
  *
- * Algılama:
- * - WhatsApp WebView (UA: "WhatsApp")
- * - Instagram, Facebook, Twitter in-app browsers
- * - Generic Android WebView (UA: "wv" veya Chrome version bilgisi eksik)
- *
- * Desktop ve standalone Chrome kullanıcılarına hiç gösterilmez.
+ * Algılama use-in-app-browser hook'una taşındı — page.tsx'teki SAFE_BATCH
+ * cap'i ile aynı kaynağı paylaşır.
  */
 export function ChromeSuggest() {
-  const [show, setShow] = useState(false);
+  const { isInAppBrowser, bannerDismissed, isReady } = useIsInAppBrowser();
+  const [dismissedLocal, setDismissedLocal] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
   const [currentUrl, setCurrentUrl] = useState("");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (typeof navigator === "undefined") return;
-    const ua = navigator.userAgent || "";
-
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
-    if (!isMobile) return;
-
-    // WhatsApp / Instagram / FB / Twitter / Line UA'sı varsa banner göster
-    const isInAppBrowser = /(WhatsApp|FBAN|FBAV|Instagram|Twitter|Line|wv\)|; wv\b)/i.test(ua);
-
-    // Chrome Custom Tabs (WhatsApp Android) — UA Chrome gibi görünür ama
-    // dış uygulamadan açıldığı için referrer boş veya android-app://
-    const ref = document.referrer || "";
-    const fromExternalApp = ref === "" || /^android-app:/i.test(ref);
-
-    // ?chrome=1 ile gelen → standalone Chrome'da olduğunu bildirdik, banner yok
-    const sp = new URLSearchParams(window.location.search);
-    const cameFromBanner = sp.get("chrome") === "1";
-
-    // localStorage'da dismiss edilmişse de gösterme
-    let dismissed = false;
-    try { dismissed = localStorage.getItem("chrome-suggest-dismissed") === "1"; } catch {}
-
-    if (cameFromBanner || dismissed) return;
-
-    if (isInAppBrowser || fromExternalApp) {
-      setIsAndroid(/Android/i.test(ua));
-      setCurrentUrl(window.location.href);
-      setShow(true);
-    }
-  }, []);
+    if (!isReady || !isInAppBrowser) return;
+    setIsAndroid(/Android/i.test(navigator.userAgent || ""));
+    setCurrentUrl(window.location.href);
+  }, [isReady, isInAppBrowser]);
 
   function dismiss() {
     try { localStorage.setItem("chrome-suggest-dismissed", "1"); } catch {}
-    setShow(false);
+    setDismissedLocal(true);
   }
 
-  if (!show) return null;
+  if (!isReady || !isInAppBrowser || bannerDismissed || dismissedLocal) return null;
 
   // Android: intent:// scheme ile Chrome'a yönlendir
   // iOS: googlechrome:// scheme (Chrome kuruluysa)
