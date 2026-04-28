@@ -96,6 +96,21 @@ export const CAPABILITY_LABELS: Record<BayiCapability, { label: string; group: s
 };
 
 /**
+ * Default capability set for a profile being created with the given role.
+ * Owner (admin/user) gets wildcard, dealer gets DEALER_PRESET, employee
+ * starts empty (owner picks via /calisanekle web form).
+ *
+ * Centralized here so every signup INSERT site (whatsapp webhook, register,
+ * admin invite) seeds capabilities consistently — otherwise new owners
+ * land with capabilities='{}' and the router gate refuses every command.
+ */
+export function defaultCapabilitiesForRole(role: string | null | undefined): string[] {
+  if (role === "admin" || role === "user") return [OWNER_ALL];
+  if (role === "dealer") return [...DEALER_PRESET];
+  return [];
+}
+
+/**
  * Does the user's capability list grant the required capability?
  * Wildcard "*" grants everything.
  * Passing `null` for required means "no capability needed".

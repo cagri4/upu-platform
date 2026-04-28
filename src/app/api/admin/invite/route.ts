@@ -73,13 +73,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Kullanici olusturulamadi' }, { status: 500 });
     }
 
-    // Create profile
+    // Create profile. Legacy single-use invites grant owner role + wildcard
+    // capabilities so the invited user's first menu render isn't blocked by
+    // the bayi capability gate.
+    const { defaultCapabilitiesForRole } = await import('@/tenants/bayi/capabilities');
     await supabase.from('profiles').insert({
       id: authUser.user.id,
       tenant_id: tenantId,
       display_name: name,
       email,
       phone,
+      role: 'admin',
+      capabilities: defaultCapabilitiesForRole('admin'),
     });
 
     // Generate invite code

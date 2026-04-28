@@ -29,14 +29,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Kayıt başarısız" }, { status: 400 });
     }
 
-    // Create profile
+    // Create profile. Self-registered users are owners of their own tenant
+    // — seed wildcard capability so the bayi gate doesn't block their first
+    // command.
     if (data.user) {
+      const { defaultCapabilitiesForRole } = await import("@/tenants/bayi/capabilities");
       await supabase.from("profiles").insert({
         id: data.user.id,
         tenant_id: tenant?.id || null,
         display_name: name,
         email,
         phone,
+        role: "admin",
+        capabilities: defaultCapabilitiesForRole("admin"),
         metadata: { company },
       });
     }

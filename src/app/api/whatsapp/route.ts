@@ -250,15 +250,11 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ status: "ok" });
         }
 
-        // Create profile with dealer role. Bayi dealers joining via
-        // bayi_invite_links get DEALER_PRESET capabilities so their menu
-        // shows siparişver/bakiyem/faturalarim out of the box.
+        // Create profile. Capabilities seeded by role: owner gets "*",
+        // dealer gets DEALER_PRESET, employee starts empty.
         const role = (inviteLink.role as string) || "dealer";
-        let dealerCaps: string[] = [];
-        if (role === "dealer") {
-          const { DEALER_PRESET } = await import("@/tenants/bayi/capabilities");
-          dealerCaps = [...DEALER_PRESET];
-        }
+        const { defaultCapabilitiesForRole } = await import("@/tenants/bayi/capabilities");
+        const seededCaps = defaultCapabilitiesForRole(role);
 
         await supabase.from("profiles").insert({
           id: authUser.user.id,
@@ -267,7 +263,7 @@ export async function POST(req: NextRequest) {
           whatsapp_phone: phone,
           role,
           permissions: inviteLink.permissions || {},
-          capabilities: dealerCaps,
+          capabilities: seededCaps,
           invited_by: inviteLink.created_by,
         });
 
@@ -309,7 +305,7 @@ export async function POST(req: NextRequest) {
           role: (dealerRole as WaContext["role"]),
           permissions: (inviteLink.permissions as Record<string, unknown>) || {},
           dealerId: null,
-          capabilities: [],
+          capabilities: seededCaps,
         };
 
         const { startIntro } = await import("@/platform/whatsapp/intro");
@@ -391,14 +387,19 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ status: "ok" });
         }
 
-        // Create profile with role from link
+        // Create profile with role from link. Capabilities seeded by role
+        // (owner="*", dealer=DEALER_PRESET) so the user's first menu render
+        // doesn't fail every capability gate.
+        const universalRole = uLink.role || "admin";
+        const { defaultCapabilitiesForRole: defCapsU } = await import("@/tenants/bayi/capabilities");
         await supabase.from("profiles").insert({
           id: authUser.user.id,
           tenant_id: uLink.tenant_id,
           display_name: phone,  // Will be updated during onboarding
           whatsapp_phone: phone,
-          role: uLink.role || "admin",
+          role: universalRole,
           permissions: uLink.permissions || {},
+          capabilities: defCapsU(universalRole),
           invited_by: uLink.created_by,
         });
 
@@ -434,7 +435,7 @@ export async function POST(req: NextRequest) {
           role: (uLink.role as WaContext["role"]) || "admin",
           permissions: (uLink.permissions as Record<string, unknown>) || {},
           dealerId: null,
-          capabilities: [],
+          capabilities: defCapsU(universalRole),
         };
 
         // Try intro flow first (emlak etc.); fall back to direct onboarding
@@ -498,7 +499,7 @@ export async function POST(req: NextRequest) {
         // Get user info
         const { data: invitedUser } = await supabase
           .from("profiles")
-          .select("display_name, tenant_id")
+          .select("display_name, tenant_id, role, capabilities")
           .eq("id", invite.user_id)
           .single();
 
@@ -536,7 +537,10 @@ export async function POST(req: NextRequest) {
               phone, userId: invite.user_id, tenantId: invite.tenant_id,
               tenantKey, userName, locale: "tr",
               messageId: "", text: "", interactiveId: "",
-              role: "admin", permissions: {}, dealerId: null, capabilities: [],
+              role: ((invitedUser?.role as WaContext["role"]) || "admin"),
+              permissions: {},
+              dealerId: null,
+              capabilities: ((invitedUser?.capabilities as string[]) || []),
             };
             await sendOnboardingStep(ctx, state);
           }
