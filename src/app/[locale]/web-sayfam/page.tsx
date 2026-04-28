@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { whatsappDeeplink } from "@/lib/whatsapp-deeplink";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -61,17 +62,15 @@ export default function WebSayfamPage() {
   async function handleFinish() {
     setFinishing(true);
     try {
-      const res = await fetch("/api/websayfam/finish", {
+      await fetch("/api/websayfam/finish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
       });
-      const d = await res.json().catch(() => ({}));
-      const waUrl = (d?.wa_url as string) || `https://wa.me/${BOT_WA_NUMBER}`;
-      window.location.href = waUrl;
     } catch {
-      window.location.href = `https://wa.me/${BOT_WA_NUMBER}`;
+      // chain devam mesajı server'dan after() ile gider; navigate yine de yap
     }
+    window.location.href = whatsappDeeplink(BOT_WA_NUMBER);
   }
 
   if (status === "loading") return <Center><div className="text-4xl mb-3">⏳</div><p>Yükleniyor...</p></Center>;

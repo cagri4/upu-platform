@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { whatsappDeeplink } from "@/lib/whatsapp-deeplink";
+
+const BOT_WA_NUMBER = "31644967207";
 
 /**
  * Sunumun en altındaki "Devam Et" call-to-action.
@@ -14,18 +17,15 @@ export function FinishCTA({ presToken }: { presToken: string }) {
   async function handleClick() {
     setLoading(true);
     try {
-      const res = await fetch("/api/sunum/finish", {
+      await fetch("/api/sunum/finish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: presToken }),
       });
-      const d = await res.json().catch(() => ({}));
-      const waUrl = (d?.wa_url as string) || "https://wa.me/31644967207";
-      window.location.href = waUrl;
     } catch {
-      // Network/JSON hatası bile olsa WhatsApp'a yönlendir
-      window.location.href = "https://wa.me/31644967207";
+      // chain devam mesajı server'dan after() ile gider; navigate yine de yap
     }
+    window.location.href = whatsappDeeplink(BOT_WA_NUMBER);
   }
 
   return (

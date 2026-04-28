@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { whatsappDeeplink } from "@/lib/whatsapp-deeplink";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -47,17 +48,15 @@ export default function MulklerimPage() {
   async function handleFinish() {
     setFinishing(true);
     try {
-      const res = await fetch("/api/mulklerim/finish", {
+      await fetch("/api/mulklerim/finish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
       });
-      const d = await res.json().catch(() => ({}));
-      const waUrl = (d?.wa_url as string) || `https://wa.me/${BOT_WA_NUMBER}`;
-      window.location.href = waUrl;
     } catch {
-      window.location.href = `https://wa.me/${BOT_WA_NUMBER}`;
+      // chain devam mesajı server'dan after() ile gider; navigate yine de yap
     }
+    window.location.href = whatsappDeeplink(BOT_WA_NUMBER);
   }
 
   async function handleDelete(id: string) {

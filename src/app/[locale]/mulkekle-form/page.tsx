@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChromeSuggest } from "./chrome-suggest";
 import { useIsInAppBrowser } from "./use-in-app-browser";
+import { useWhatsappDeeplink } from "@/lib/whatsapp-deeplink";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -38,6 +39,7 @@ export default function MulkEkleFormPage() {
   const isEdit = !!editId;
 
   const { isInAppBrowser } = useIsInAppBrowser();
+  const waReturnHref = useWhatsappDeeplink(BOT_WA_NUMBER);
 
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState("");
@@ -258,7 +260,7 @@ export default function MulkEkleFormPage() {
         ? "Değişiklikler kaydedildi. Mülklerim sayfasına geri dönebilirsiniz."
         : "Sunum birkaç saniye içinde WhatsApp'ınıza düşecek. WhatsApp'a dönüp bekleyebilirsiniz."}
     </p>
-    <a href={`https://wa.me/${BOT_WA_NUMBER}`}
+    <a href={waReturnHref}
       className="block bg-green-600 text-white px-6 py-4 rounded-xl font-semibold text-lg">💬 WhatsApp'a Dön</a>
   </Center>;
 
