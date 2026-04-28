@@ -104,7 +104,7 @@ async function getPresentation(token: string) {
   const { data: profile } = await supabase
     .from("profiles")
     .select("display_name, whatsapp_phone, email")
-    .eq("user_id", data.user_id)
+    .eq("id", data.user_id)
     .single();
 
   return { ...data, agent: profile };
