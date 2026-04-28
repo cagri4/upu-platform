@@ -22,7 +22,7 @@ import {
 import { getServiceClient } from "@/platform/auth/supabase";
 import { startSession, updateSession, getSession, endSession } from "./session";
 
-const INTRO_TENANTS = new Set(["emlak"]);
+const INTRO_TENANTS = new Set(["emlak", "bayi"]);
 
 const PROPERTY_TYPES = [
   { id: "vf:type:villa", title: "Villa" },
@@ -57,6 +57,10 @@ const LISTED_BY = [
  */
 export async function startIntro(ctx: WaContext): Promise<boolean> {
   if (!INTRO_TENANTS.has(ctx.tenantKey)) return false;
+
+  if (ctx.tenantKey === "bayi") {
+    return await startBayiIntro(ctx);
+  }
 
   const supabase = getServiceClient();
 
@@ -104,6 +108,35 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
     `🔍 *Şimdi arama kriterlerinize uygun olarak en yeni ilanları birlikte görelim.*\n\nAşağıdaki formdan ilan tipi, mülk tipi ve fiyat aralığını seçin — son 24 saatte yayınlanan uyan sahibi ilanlar altta dökülecek.\n\n💡 Aynı sayfada mülk tipini değiştirerek farklı sonuçlara da ulaşabilirsiniz.\n\n_(Bu sayfaya istediğiniz zaman ana menü > 🔍 Portföy Ara komutu ile geri dönebilirsiniz.)_`,
     "🔍 Hızlı Arama",
     araUrl,
+    { skipNav: true },
+  );
+
+  return true;
+}
+
+/**
+ * Bayi intro — UPU first-person + 5 yetenek vaadi + "Başlayalım" CTA.
+ *
+ * Bayi'de public veri yok (B2B veri her firmaya özel) — emlak'ın
+ * value-first demo'su yerine doğrudan kısa onboarding'e bağlanıyoruz.
+ * Onboarding (3 soru) bittiğinde bayi/onboarding-flow.ts onFinish
+ * startBayiDiscoveryChain'i tetikler ve firma profili magic link akışı
+ * başlar.
+ */
+async function startBayiIntro(ctx: WaContext): Promise<boolean> {
+  const introMsg =
+    `👋 Merhaba! Ben UPU, bayi yönetim asistanınız. 7/24 dağıtım operasyonunuzu kolaylaştıracağım.\n\n` +
+    `*Yapabileceklerimden bazıları:*\n\n` +
+    `• Her sabah günlük brifing — açık siparişler, kritik stok, vadesi gelen ödemeler özet\n` +
+    `• Bayilerinizden gelen siparişleri telefonla çağırınca tek tıkla sisteme kaydederim\n` +
+    `• Vadesi yaklaşan tahsilatlar için otomatik hatırlatma metni hazırlarım, onayınızla bayiye gönderirim\n` +
+    `• Tüm bayilerinize tek tıkla kampanya duyurusu yaparım — %10 indirim, hızlı sipariş kampanyası gibi\n` +
+    `• Stok kritik seviyeye düşünce uyarır, tedarikçi sipariş önerisi sunarım`;
+
+  await sendText(ctx.phone, introMsg);
+
+  await sendButtons(ctx.phone, "Şimdi sizi tanıyayım! 👇",
+    [{ id: "vf:start", title: "🚀 Başlayalım" }],
     { skipNav: true },
   );
 
