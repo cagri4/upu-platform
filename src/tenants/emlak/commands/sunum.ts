@@ -567,7 +567,7 @@ async function generatePresentation(ctx: WaContext): Promise<void> {
   // Discovery chain: advance after sunum created
   try {
     const { advanceDiscovery } = await import("@/platform/whatsapp/discovery-chain");
-    await advanceDiscovery(ctx.userId, ctx.phone, "sunum_hazir");
+    await advanceDiscovery(ctx.userId, ctx.tenantKey, ctx.phone, "sunum_hazir");
   } catch { /* don't break flow */ }
 
 }

@@ -365,7 +365,7 @@ async function saveTracking(ctx: WaContext): Promise<void> {
   // Discovery chain: advance after tarama kuruldu
   try {
     const { advanceDiscovery } = await import("@/platform/whatsapp/discovery-chain");
-    await advanceDiscovery(ctx.userId, ctx.phone, "tarama_kuruldu");
+    await advanceDiscovery(ctx.userId, ctx.tenantKey, ctx.phone, "tarama_kuruldu");
   } catch { /* don't break flow */ }
 
 }

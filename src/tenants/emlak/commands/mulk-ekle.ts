@@ -1077,7 +1077,7 @@ async function finalizeProperty(ctx: WaContext): Promise<void> {
   // Discovery chain: advance if user is in guided first-use flow
   try {
     const { advanceDiscovery } = await import("@/platform/whatsapp/discovery-chain");
-    await advanceDiscovery(ctx.userId, ctx.phone, "mulk_eklendi");
+    await advanceDiscovery(ctx.userId, ctx.tenantKey, ctx.phone, "mulk_eklendi");
   } catch { /* don't break main flow */ }
 
   // Check for customer matches

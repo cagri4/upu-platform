@@ -325,7 +325,7 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       const action = ctx.interactiveId.replace("disc:", "");
       if (action === "portfoy_ok") {
         const { advanceDiscovery } = await import("./discovery-chain");
-        await advanceDiscovery(ctx.userId, ctx.phone, "portfoy_tanitildi");
+        await advanceDiscovery(ctx.userId, ctx.tenantKey, ctx.phone, "portfoy_tanitildi");
       }
       return;
     }
