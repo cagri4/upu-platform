@@ -89,7 +89,9 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   // Demo araması tamamlanınca /api/ara/save takip kurma mesajını tetikler.
   const { randomBytes } = await import("crypto");
   const araToken = randomBytes(16).toString("hex");
-  const araExpires = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  // Discovery chain — kullanıcı sabah 06:03 mesajını alıyor; 2sa TTL gün içinde
+  // dolup "Linkin süresi dolmuş" hatasıyla kapatıyordu. 7 güne uzatıldı.
+  const araExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   await supabase.from("magic_link_tokens").insert({
     user_id: ctx.userId,
     token: araToken,
