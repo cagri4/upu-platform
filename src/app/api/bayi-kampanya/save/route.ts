@@ -163,6 +163,12 @@ export async function POST(req: NextRequest) {
           ],
         );
       } catch { /* ignore */ }
+
+      // Discovery chain step 4 (last): kapanış mesajı (web panel + çalışan davet + menü)
+      try {
+        const { advanceDiscovery } = await import("@/platform/whatsapp/discovery-chain");
+        await advanceDiscovery(profile.id, "bayi", profile.whatsapp_phone, "kampanya_olusturuldu");
+      } catch { /* don't break flow */ }
     }
 
     return NextResponse.json({ success: true, campaignId: camp.id, broadcast: sent });

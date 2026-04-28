@@ -5,10 +5,12 @@
  *   1. company_name  — Firma/şirket adı (serbest metin)
  *   2. dealer_count  — Kaç bayiniz var? (seçenekli)
  *   3. briefing      — Günlük brifing göndereyim mi? (Evet/Hayır)
+ *
+ * onFinish triggers the bayi discovery chain (5-step:
+ * profil → ürün → bayi davet → kampanya → kapanış).
  */
 
 import type { OnboardingFlow } from "@/platform/whatsapp/onboarding";
-import { sendButtons } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 
 export const bayiOnboardingFlow: OnboardingFlow = {
@@ -52,14 +54,9 @@ export const bayiOnboardingFlow: OnboardingFlow = {
       },
     }).eq("id", ctx.userId);
 
-    let msg = "✅ *Kurulum tamamlandı!*\n\n";
-    if (data.company_name) msg += `🏢 ${data.company_name}\n`;
-    if (data.dealer_count) msg += `📊 ${data.dealer_count} bayi\n`;
-    msg += `📋 Brifing: ${data.briefing === "evet" ? "Aktif" : "Pasif"}\n`;
-    msg += `\nHazırsınız! Ürün eklemek için alttaki butona tıklayın ya da "menü" yazın.`;
-
-    await sendButtons(ctx.phone, msg, [
-      { id: "cmd:yeniurun", title: "📦 Ürün Ekle" },
-    ]);
+    // Start the bayi discovery chain — first prompt is a magic link to
+    // /tr/bayi-profil (firma profili formu).
+    const { startBayiDiscoveryChain } = await import("@/platform/whatsapp/discovery-chain");
+    await startBayiDiscoveryChain(ctx.userId, ctx.phone, (data.company_name as string) || undefined);
   },
 };

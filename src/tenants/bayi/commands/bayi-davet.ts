@@ -69,6 +69,12 @@ export async function handleBayiDavet(ctx: WaContext): Promise<void> {
         { id: "cmd:menu", title: "Ana Menü" },
       ],
     );
+
+    // Discovery chain step 3: bayi davet linki üretildi → kampanya magic link
+    try {
+      const { advanceDiscovery } = await import("@/platform/whatsapp/discovery-chain");
+      await advanceDiscovery(ctx.userId, ctx.tenantKey, ctx.phone, "bayi_davet_olusturuldu");
+    } catch { /* don't break flow */ }
   } catch (err) {
     await handleError(ctx, "bayi:bayidavet", err, "db");
   }
