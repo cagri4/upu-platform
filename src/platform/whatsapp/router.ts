@@ -366,10 +366,15 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         await handler(ctx);
         return;
       }
-    } else if (lower === "sifirla" || lower === "sıfırla" || lower === "yukle" || lower === "yükle" || lower === "kaydet") {
-      // Test state commands must bypass active sessions — otherwise the
-      // admin can't escape a mid-flow step to rollback. End the session
-      // and fall through to the normal routing which dispatches them.
+    } else if (
+      lower === "sifirla" || lower === "sıfırla" ||
+      lower === "yukle" || lower === "yükle" ||
+      lower === "kaydet" ||
+      lower === "degistir" || lower === "değiştir" || lower === "switch"
+    ) {
+      // Test state komutları + tenant değiştir aktif session'ı bypass etmeli —
+      // aksi halde kullanıcı onboarding/multi-step akışın ortasında kalır,
+      // değiştir/sıfırla yazınca step handler "geçerli değil" yanıtı verir.
       await endSession(ctx.userId);
       // fall through
     } else {
