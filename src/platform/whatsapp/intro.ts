@@ -283,7 +283,25 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
   }
 
   if (step === "start") {
-    // Start onboarding
+    // Bayi: WA onboarding atlandı — onay mesajı gösterip tek-form web akışına yönlendiriyoruz.
+    if (ctx.tenantKey === "bayi") {
+      const onayMsg =
+        `📝 *Sistemi kullanmaya hazır olmak için aşağıdaki bilgileri sizden alacağım:*\n\n` +
+        `• Firma adı, sektör, bayi sayısı\n` +
+        `• Yetkili adı, telefon, e-posta\n` +
+        `• Ofis adresi\n` +
+        `• Brifing tercihiniz (sabah günlük özet ister misiniz)\n` +
+        `• (Opsiyonel) Vergi bilgileri, IBAN, kısa tanıtım\n\n` +
+        `⏱ Tahmini süre: ~5 dakika.\n` +
+        `Tek formda hızlıca dolduracağız.`;
+      await sendButtons(ctx.phone, onayMsg, [
+        { id: "vf:bayi_onay", title: "✅ Tamam, başlayalım" },
+        { id: "vf:bayi_sonra", title: "❌ Sonra" },
+      ], { skipNav: true });
+      return;
+    }
+
+    // Emlak (ve diğer intro tenant'lar) — onboarding form
     const flow = getOnboardingFlow(ctx.tenantKey);
     if (flow) {
       await initOnboarding(ctx.userId, ctx.tenantId, ctx.tenantKey);
@@ -292,6 +310,36 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
     } else {
       await sendText(ctx.phone, "✅ Hazırsın. Komutları kullanmaya başlayabilirsin.");
     }
+    return;
+  }
+
+  // Bayi: "✅ Tamam, başlayalım" → magic link bayi-profil web form
+  if (step === "bayi_onay") {
+    const { randomBytes } = await import("crypto");
+    const { sendUrlButton } = await import("./send");
+    const sb = getServiceClient();
+    const token = randomBytes(16).toString("hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    await sb.from("magic_link_tokens").insert({
+      user_id: ctx.userId, token, expires_at: expiresAt,
+    });
+    const url = `https://retailai.upudev.nl/tr/bayi-profil?t=${token}`;
+    await sendUrlButton(ctx.phone,
+      `🏢 *Firma Profili*\n\nAşağıdaki butona tıklayıp formu doldurun. Tüm bilgileri tek seferde gireceğiz; opsiyonelleri sonra da tamamlayabilirsiniz.`,
+      "📝 Form'u Aç",
+      url,
+      { skipNav: true },
+    );
+    return;
+  }
+
+  // Bayi: "❌ Sonra" → menüden firmaprofili komutu ile ulaşılabilir
+  if (step === "bayi_sonra") {
+    await sendButtons(ctx.phone,
+      `✅ Anlaşıldı. Hazır olduğunuzda menüden *🏢 Firma Profili*'ne tıklayın veya *"profilim"* yazın.\n\n` +
+      `_Sipariş, kampanya, bayi davet gibi işlemler firma profili tamamlanmadan kullanılamaz — sadece okuma komutları (özet, rapor) çalışır._`,
+      [{ id: "cmd:menu", title: "📋 Ana Menü" }],
+    );
     return;
   }
 }
