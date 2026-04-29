@@ -8,6 +8,7 @@
 import type { TenantCommandRegistry } from "@/platform/whatsapp/types";
 import { createPlaceholderHandler } from "@/platform/whatsapp/placeholder";
 import { BAYI_CAPABILITIES as C } from "../capabilities";
+import { withProfileGate as gp } from "./helpers";
 
 // Yonetim
 import { handleOzet } from "./ozet";
@@ -82,17 +83,17 @@ export const bayiCommands: TenantCommandRegistry = {
     rapor: handleRapor,
 
     // ── Satis / Satis Muduru ─────────────────────────
-    kampanyaolustur: handleKampanyaOlustur,
+    kampanyaolustur: gp(handleKampanyaOlustur),
     kampanyalar: handleKampanyalar,
-    teklifver: handleTeklifVer,
+    teklifver: gp(handleTeklifVer),
     performans: handlePerformans,
     segment: handleSegment,
 
     // ── Satis / Satis Temsilcisi ─────────────────────
-    siparisolustur: handleSiparisOlustur,
+    siparisolustur: gp(handleSiparisOlustur),
     siparisler: handleSiparisler,
     bayidurum: handleBayiDurum,
-    ziyaretnotu: handleZiyaretNotu,
+    ziyaretnotu: gp(handleZiyaretNotu),
     ziyaretler: handleZiyaretler,
 
     // ── Finans / Muhasebeci ──────────────────────────
@@ -105,14 +106,14 @@ export const bayiCommands: TenantCommandRegistry = {
     // ── Finans / Tahsildar ───────────────────────────
     vadeler: handleVadeler,
     tahsilat: handleTahsilat,
-    hatirlatgonder: handleHatirlatGonder,
+    hatirlatgonder: gp(handleHatirlatGonder),
 
     // ── Depo / Depocu ────────────────────────────────
     stok: handleStok,
     kritikstok: handleKritikStok,
     stokhareketleri: handleStokHareketleri,
     tedarikciler: handleTedarikciler,
-    satinalma: handleSatinAlma,
+    satinalma: gp(handleSatinAlma),
     ihtiyac: handleIhtiyac,
 
     // ── Lojistik / Lojistikci ────────────────────────
@@ -123,21 +124,21 @@ export const bayiCommands: TenantCommandRegistry = {
     // ── Urun / Urun Yoneticisi ───────────────────────
     urunler: handleUrunler,
     fiyatliste: handleFiyatListe,
-    yeniurun: handleYeniUrun,
-    fiyatguncelle: handleFiyatGuncelle,
+    yeniurun: gp(handleYeniUrun),
+    fiyatguncelle: gp(handleFiyatGuncelle),
 
     // ── Ekip Yönetimi ─────────────────────────────────
-    calisanekle: handleCalisanEkle,
+    calisanekle: gp(handleCalisanEkle),
     calisanyonet: handleCalisanYonet,
-    talimat: handleTalimat,
+    talimat: gp(handleTalimat),
 
     // ── Bayi Davet ───────────────────────────────────
-    bayidavet: handleBayiDavet,
+    bayidavet: gp(handleBayiDavet),
 
     // ── Bildirim / İletişim ─────────────────────────
-    kampanyabildir: handleKampanyaBildir,
-    tahsilatbildir: handleTahsilatBildir,
-    duyuru: handleDuyuru,
+    kampanyabildir: gp(handleKampanyaBildir),
+    tahsilatbildir: gp(handleTahsilatBildir),
+    duyuru: gp(handleDuyuru),
 
     // ── Dealer commands ─────────────────────────────
     siparisver: handleDealerSiparisVer,

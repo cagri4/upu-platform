@@ -769,7 +769,27 @@ async function handleProfileEditCallback(ctx: WaContext) {
     await startSession(ctx.userId, ctx.tenantId, "profil_edit", "phone");
     await sendText(ctx.phone, "📱 Yeni telefon numaranızı yazın (ör. 05xx xxx xx xx):");
   } else if (field === "business") {
-    // Re-run onboarding flow to update business info
+    // Bayi: tek-form web akışı (onboarding kaldırıldı) — magic link bayi-profil
+    if (ctx.tenantKey === "bayi") {
+      const { randomBytes } = await import("crypto");
+      const sb = getServiceClient();
+      const token = randomBytes(16).toString("hex");
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      await sb.from("magic_link_tokens").insert({
+        user_id: ctx.userId, token, expires_at: expiresAt,
+      });
+      const url = `https://retailai.upudev.nl/tr/bayi-profil?t=${token}`;
+      const { sendUrlButton } = await import("./send");
+      await sendUrlButton(ctx.phone,
+        `🏢 *Firma Profili*\n\nMevcut bilgileriniz forma yüklenecek; düzenleyip kaydedin.`,
+        "📝 Form'u Aç",
+        url,
+        { skipNav: true },
+      );
+      return;
+    }
+
+    // Emlak (ve diğer onboarding'i olan tenant'lar) — re-run onboarding flow
     const { initOnboarding, getOnboardingState: getOnbState, sendOnboardingStep } = await import("@/platform/whatsapp/onboarding");
     await initOnboarding(ctx.userId, ctx.tenantId, ctx.tenantKey);
     const state = await getOnbState(ctx.userId);
