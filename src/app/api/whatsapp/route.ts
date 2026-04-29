@@ -31,8 +31,9 @@ export const maxDuration = 60;
 registerOnboardingFlow(emlakOnboardingFlow);
 import { siteyonetimOnboardingFlow } from "@/tenants/siteyonetim/onboarding-flow";
 registerOnboardingFlow(siteyonetimOnboardingFlow);
-import { bayiOnboardingFlow } from "@/tenants/bayi/onboarding-flow";
-registerOnboardingFlow(bayiOnboardingFlow);
+// Bayi WA onboarding kaldırıldı — tek-form web akışı (vf:bayi_onay → /tr/bayi-profil)
+// onboarding'in yerine geçti. getOnboardingFlow("bayi") null döner; intro callback
+// bayi tenant'ı için ayrı bir branch çalıştırıyor (intro.ts).
 import { otelOnboardingFlow } from "@/tenants/otel/onboarding-flow";
 registerOnboardingFlow(otelOnboardingFlow);
 import { muhasebeOnboardingFlow } from "@/tenants/muhasebe/onboarding-flow";
