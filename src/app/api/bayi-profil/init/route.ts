@@ -46,6 +46,12 @@ export async function GET(req: NextRequest) {
       ofis_telefon: (firma.ofis_telefon as string) || "",
       ofis_adresi: (firma.ofis_adresi as string) || "",
       sektor: (firma.sektor as string) || "",
+      // Onboarding'den gelirse metadata.dealer_count'da, ondan da fallback boş
+      bayi_sayisi: (firma.bayi_sayisi as string) || (meta.dealer_count as string) || "",
+      // briefing_enabled boolean → "evet"/"hayir" string. Yeni profilde default "evet".
+      brifing_enabled: typeof firma.brifing_enabled === "string"
+        ? (firma.brifing_enabled as string)
+        : (meta.briefing_enabled === false ? "hayir" : "evet"),
       vergi_dairesi: (firma.vergi_dairesi as string) || "",
       vergi_no: (firma.vergi_no as string) || "",
       kurulus_yili: (firma.kurulus_yili as string) || "",

@@ -1,11 +1,15 @@
 /**
- * POST /api/bayi-profil/save — save firma profili (zorunlu 5 + opsiyonel)
- * to profiles.metadata.firma_profili. Triggers discovery chain step 1
- * (firma_kaydedildi) which fires the next-step magic link via WA.
+ * POST /api/bayi-profil/save — save firma profili (zorunlu 7 + opsiyonel)
+ * to profiles.metadata.firma_profili. Tek-form akış: WA onboarding'in
+ * yerine geçer, briefing tercihi ve bayi sayısı da burada toplanır.
+ * Save sonrası onboarding_completed=true set edilir, advanceDiscovery
+ * step 1 (firma_kaydedildi) tetiklenir → bir sonraki magic link
+ * (ürün ekle) WA'ya düşer.
  *
  * Body: {
  *   token,
- *   ticari_unvan, yetkili_adi, ofis_telefon, ofis_adresi, sektor,    // zorunlu
+ *   ticari_unvan, yetkili_adi, ofis_telefon, ofis_adresi, sektor,
+ *   bayi_sayisi, brifing_enabled,                                 // zorunlu
  *   vergi_dairesi?, vergi_no?, kurulus_yili?, email_kurumsal?,
  *   web_sitesi?, iban?, banka?, hesap_sahibi?, tanitim?
  * }
@@ -16,12 +20,18 @@ import { getServiceClient } from "@/platform/auth/supabase";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const REQUIRED = ["ticari_unvan", "yetkili_adi", "ofis_telefon", "ofis_adresi", "sektor"] as const;
+const REQUIRED = [
+  "ticari_unvan", "yetkili_adi", "ofis_telefon", "ofis_adresi", "sektor",
+  "bayi_sayisi", "brifing_enabled",
+] as const;
 
 const SEKTOR_VALUES = new Set([
   "boya", "insaat", "elektrik", "tesisat", "hirdavat",
   "klima", "mobilya", "gida", "otomotiv", "tekstil", "diger",
 ]);
+
+const BAYI_SAYISI_VALUES = new Set(["1-10", "11-50", "50+"]);
+const BRIFING_VALUES = new Set(["evet", "hayir"]);
 
 function s(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
@@ -52,6 +62,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Geçerli sektör seçin." }, { status: 400 });
     }
 
+    const bayiSayisi = s(body.bayi_sayisi);
+    if (!BAYI_SAYISI_VALUES.has(bayiSayisi)) {
+      return NextResponse.json({ error: "Geçerli bayi sayısı seçin." }, { status: 400 });
+    }
+    const brifingEnabled = s(body.brifing_enabled);
+    if (!BRIFING_VALUES.has(brifingEnabled)) {
+      return NextResponse.json({ error: "Brifing tercihi seçin." }, { status: 400 });
+    }
+
     const supabase = getServiceClient();
     const { data: magicToken } = await supabase
       .from("magic_link_tokens")
@@ -79,6 +98,8 @@ export async function POST(req: NextRequest) {
       ofis_telefon: ofisTelefon,
       ofis_adresi: ofisAdresi,
       sektor,
+      bayi_sayisi: bayiSayisi,
+      brifing_enabled: brifingEnabled,
       vergi_dairesi: s(body.vergi_dairesi) || null,
       vergi_no: s(body.vergi_no) || null,
       kurulus_yili: s(body.kurulus_yili) || null,
@@ -91,10 +112,21 @@ export async function POST(req: NextRequest) {
       completed_at: new Date().toISOString(),
     };
 
-    const newMeta = {
+    // Tek-form akış: bu form WA onboarding'in yerine geçtiği için
+    // onboarding_completed bayrağını da burada set ediyoruz. Eski
+    // metadata.company_name / dealer_count / briefing_enabled alanlarını
+    // da geriye uyumluluk için dolduruyoruz (router/cron eski alanları
+    // okuyabilir).
+    const existingSteps = (existingMeta.discovery_steps || {}) as Record<string, number>;
+    const newMeta: Record<string, unknown> = {
       ...existingMeta,
       firma_profili: firmaProfili,
       firma_profili_completed: true,
+      onboarding_completed: true,
+      company_name: ticariUnvan,
+      dealer_count: bayiSayisi,
+      briefing_enabled: brifingEnabled === "evet",
+      discovery_steps: { ...existingSteps, bayi: existingSteps.bayi ?? 0 },
     };
 
     const { error: updErr } = await supabase

@@ -13,6 +13,8 @@ interface Firma {
   ofis_telefon: string;
   ofis_adresi: string;
   sektor: string;
+  bayi_sayisi: string;        // "1-10" | "11-50" | "50+"
+  brifing_enabled: string;    // "evet" | "hayir"
   vergi_dairesi: string;
   vergi_no: string;
   kurulus_yili: string;
@@ -38,8 +40,15 @@ const SEKTORLER: Array<{ id: string; label: string }> = [
   { id: "diger", label: "Diğer" },
 ];
 
+const BAYI_SAYISI_OPTIONS: Array<{ id: string; label: string }> = [
+  { id: "1-10", label: "1-10 bayi" },
+  { id: "11-50", label: "11-50 bayi" },
+  { id: "50+", label: "50+ bayi" },
+];
+
 const empty: Firma = {
   ticari_unvan: "", yetkili_adi: "", ofis_telefon: "", ofis_adresi: "", sektor: "",
+  bayi_sayisi: "", brifing_enabled: "evet",
   vergi_dairesi: "", vergi_no: "", kurulus_yili: "", email_kurumsal: "", web_sitesi: "",
   iban: "", banka: "", hesap_sahibi: "", tanitim: "",
 };
@@ -76,6 +85,8 @@ export default function BayiProfilPage() {
     if (firma.ofis_telefon.replace(/\D/g, "").length < 10) { setError("Geçerli telefon girin."); return; }
     if (!firma.ofis_adresi.trim()) { setError("Ofis adresi girin."); return; }
     if (!firma.sektor) { setError("Sektör seçin."); return; }
+    if (!firma.bayi_sayisi) { setError("Bayi sayısı seçin."); return; }
+    if (firma.brifing_enabled !== "evet" && firma.brifing_enabled !== "hayir") { setError("Brifing tercihi seçin."); return; }
 
     setStatus("saving");
     try {
@@ -117,7 +128,7 @@ export default function BayiProfilPage() {
         <div className="bg-gradient-to-br from-emerald-600 to-teal-600 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">🏢</div>
           <h1 className="text-xl font-bold">Firma Profili</h1>
-          <p className="text-emerald-100 text-sm mt-1">5 zorunlu alan, 90 saniye. Gerisi sonra.</p>
+          <p className="text-emerald-100 text-sm mt-1">7 zorunlu alan + brifing tercihi. ~5 dakika.</p>
         </div>
 
         <Section title="🔴 Zorunlu">
@@ -143,6 +154,32 @@ export default function BayiProfilPage() {
               <option value="">Seçin...</option>
               {SEKTORLER.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
+          </Field>
+          <Field label="Bayi Sayısı">
+            <select value={firma.bayi_sayisi} onChange={e => update({ bayi_sayisi: e.target.value })}
+              className={inputCls} required>
+              <option value="">Seçin...</option>
+              {BAYI_SAYISI_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Brifing — Sabah Günlük Özet">
+            <div className="flex gap-3">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="radio" name="brifing" value="evet"
+                  checked={firma.brifing_enabled === "evet"}
+                  onChange={() => update({ brifing_enabled: "evet" })}
+                  className="accent-emerald-600" />
+                <span>Evet, gönder</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="radio" name="brifing" value="hayir"
+                  checked={firma.brifing_enabled === "hayir"}
+                  onChange={() => update({ brifing_enabled: "hayir" })}
+                  className="accent-emerald-600" />
+                <span>Hayır</span>
+              </label>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">Açık siparişler, kritik stok, vadesi gelen ödemeler özet.</p>
           </Field>
         </Section>
 
