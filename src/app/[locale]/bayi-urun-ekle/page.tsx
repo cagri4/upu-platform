@@ -46,6 +46,8 @@ export default function BayiUrunEklePage() {
   const [minOrder, setMinOrder] = useState("");
   const [brand, setBrand] = useState("");
   const [description, setDescription] = useState("");
+  const [vatRate, setVatRate] = useState("21"); // NL default; TR kullanıcısı 20'ye değiştirir
+  const [ean, setEan] = useState("");
   const [photos, setPhotos] = useState<PhotoSlot[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -114,6 +116,8 @@ export default function BayiUrunEklePage() {
           description: description.trim() || undefined,
           image_url: photoUrls[0] || undefined,
           images: photoUrls,
+          vat_rate: vatRate ? Number(vatRate) : 0,
+          ean: ean.trim() || undefined,
         }),
       });
       const d = await res.json();
@@ -225,6 +229,22 @@ export default function BayiUrunEklePage() {
             <Field label="Min. Sipariş">
               <input type="number" min="1" value={minOrder} onChange={e => setMinOrder(e.target.value)}
                 placeholder="1" className={inputCls} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="BTW / KDV Oranı">
+              <select value={vatRate} onChange={e => setVatRate(e.target.value)} className={inputCls}>
+                <option value="21">%21 (NL standart)</option>
+                <option value="9">%9 (NL azaltılmış)</option>
+                <option value="20">%20 (TR standart)</option>
+                <option value="10">%10 (TR azaltılmış)</option>
+                <option value="1">%1 (TR temel gıda)</option>
+                <option value="0">%0 (vergi yok / ihracat)</option>
+              </select>
+            </Field>
+            <Field label="EAN Barkod">
+              <input value={ean} onChange={e => setEan(e.target.value)}
+                placeholder="8 veya 13 hane" className={inputCls} inputMode="numeric" />
             </Field>
           </div>
           <Field label="Açıklama">

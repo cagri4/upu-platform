@@ -18,6 +18,13 @@ export const maxDuration = 30;
 
 const VALID_UNITS = new Set(["adet", "kg", "lt", "m2", "m", "kutu", "koli", "palet", "paket"]);
 
+// BTW / KDV oranları — country-aware. NL: 21% standart / 9% azaltılmış (gıda) / 0% ihracat.
+// TR: 20% standart / 10% azaltılmış / 1% temel gıda. Default 0 = serbest (kullanıcı seçmedi).
+const VALID_VAT_RATES = new Set([0, 1, 9, 10, 20, 21]);
+
+// EAN-13 / EAN-8 barkod regex. Boş kabul (opsiyonel alan).
+const EAN_REGEX = /^(\d{8}|\d{12,13})$/;
+
 function s(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
 }
@@ -89,6 +96,20 @@ export async function POST(req: NextRequest) {
       .filter((u: unknown): u is string => typeof u === "string" && u.startsWith("http"))
       .slice(0, 5);
 
+    // BTW / KDV oranı (Faz 4) — fatura kesme + Mollie webhook için lazım.
+    // Boş geçilirse 0 (kullanıcı sonra ayarlar ürün düzenleme'den).
+    const vatRate = num(body.vat_rate) ?? 0;
+    if (!VALID_VAT_RATES.has(vatRate)) {
+      return NextResponse.json({ error: "Geçersiz BTW/KDV oranı." }, { status: 400 });
+    }
+
+    // EAN barkod (Faz 4) — opsiyonel; bayi WA'dan barkod fotoğrafı gönderince
+    // AI ile eşleştirme için lazım (Faz 7).
+    const ean = s(body.ean);
+    if (ean && !EAN_REGEX.test(ean)) {
+      return NextResponse.json({ error: "EAN barkod 8 veya 13 hane olmalı." }, { status: 400 });
+    }
+
     const { data: inserted, error } = await supabase
       .from("bayi_products")
       .insert({
@@ -108,6 +129,12 @@ export async function POST(req: NextRequest) {
         images: images.length > 0 ? images : [],
         brand,
         is_active: true,
+        // Yeni alanlar profile.metadata.firma_profili.country'e bağlı semantic.
+        // DB schema kolonu yoksa metadata jsonb'ye yazıyoruz — geriye-uyumlu.
+        metadata: {
+          vat_rate: vatRate,
+          ean: ean || null,
+        },
       })
       .select("id")
       .single();

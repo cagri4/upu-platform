@@ -12,9 +12,42 @@ import { startSession, updateSession, endSession } from "@/platform/whatsapp/ses
 import { sendText, sendButtons, sendList } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { handleError } from "@/platform/whatsapp/error-handler";
+import { formatCurrency, type SupportedCurrency, type SupportedLocale } from "@/platform/i18n/currency";
 
 function formatPrice(n: number): string {
   return new Intl.NumberFormat("tr-TR").format(n);
+}
+
+/**
+ * Owner profilinden currency + locale + payment adapter okur. Tahsilat
+ * mesajının doğru para birimi + ödeme yöntemiyle gitmesi için.
+ */
+async function getOwnerLocaleAndPayment(userId: string): Promise<{
+  currency: SupportedCurrency;
+  locale: SupportedLocale;
+  payment: string;
+}> {
+  const supabase = getServiceClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("metadata")
+    .eq("id", userId)
+    .maybeSingle();
+  const meta = (profile?.metadata || {}) as Record<string, unknown>;
+  const localeSettings = (meta.tenant_locale || {}) as Record<string, unknown>;
+  const adapters = (meta.enabled_adapters || {}) as Record<string, unknown>;
+  return {
+    currency: (localeSettings.currency as SupportedCurrency) || "EUR",
+    locale: (localeSettings.locale as SupportedLocale) || "tr-NL",
+    payment: (adapters.payment as string) || "manual",
+  };
+}
+
+function paymentMethodHint(payment: string): string {
+  if (payment === "mollie") return "iDEAL veya SEPA otomatik tahsilat ile ödeyebilirsiniz.";
+  if (payment === "stripe") return "Kart veya banka transferi ile ödeyebilirsiniz.";
+  if (payment === "iyzico") return "Kart veya havale ile ödeyebilirsiniz.";
+  return "Banka transferi veya yüz yüze ödeme yapabilirsiniz.";
 }
 
 // ── Helper: get all dealer phones for this firm owner ───────────────
@@ -206,6 +239,11 @@ export async function handleTahsilatBildirCallback(ctx: WaContext, data: string)
     if (p.dealer_id && p.whatsapp_phone) phoneMap[p.dealer_id] = p.whatsapp_phone;
   }
 
+  // Faz 4: country/currency/payment ipucunu owner profilinden oku → bayiye
+  // doğru para birimi + uygun ödeme yöntemiyle hatırlatma gider.
+  const { currency, locale, payment } = await getOwnerLocaleAndPayment(ctx.userId);
+  const paymentHint = paymentMethodHint(payment);
+
   let sent = 0;
   for (const d of debtDealers || []) {
     const phone = phoneMap[d.id];
@@ -215,8 +253,9 @@ export async function handleTahsilatBildirCallback(ctx: WaContext, data: string)
       await sendButtons(phone,
         `💳 *Ödeme Hatırlatması*\n\n` +
         `Sayın ${d.name},\n\n` +
-        `Güncel bakiyeniz: *${formatPrice(d.balance)} TL*\n\n` +
-        `Ödeme bilgisi için lütfen bizimle iletişime geçin.`,
+        `Güncel bakiyeniz: *${formatCurrency(d.balance, currency, locale)}*\n\n` +
+        `${paymentHint}\n\n` +
+        `Detay için bakiyem komutu ile bakabilirsiniz.`,
         [
           { id: "cmd:bakiyem", title: "💰 Bakiyem" },
           { id: "cmd:mesajgonder", title: "✉️ Mesaj Gönder" },
