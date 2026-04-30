@@ -169,7 +169,13 @@ export async function resolveShippingAdapter(userId: string): Promise<ShippingAd
 export async function resolveEinvoiceAdapter(userId: string): Promise<EinvoiceAdapter | null> {
   const sel = await getUserAdapterSelection(userId);
   if (!sel.einvoice || sel.einvoice === "none") return null;
-  // İleri faz: Storecove Peppol Access Point.
+
+  // Aşama 4: Storecove Peppol Access Point. STORECOVE_API_KEY +
+  // STORECOVE_LEGAL_ENTITY_ID env-var varsa gerçek API; yoksa stub.
+  if (sel.einvoice === "storecove") {
+    const { buildStorecoveEinvoiceAdapter } = await import("./einvoice/storecove");
+    return buildStorecoveEinvoiceAdapter();
+  }
   return makeStub<EinvoiceAdapter>("einvoice", sel.einvoice, ["sendInvoice"]);
 }
 
