@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check, UserPlus, MessageSquare, Rocket } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { LanguageDropdown } from "./language-dropdown";
+import { RevisionBadge } from "@/tenants/bayi/components/RevisionBadge";
 
 export default async function HomePage({
   params,
@@ -67,6 +68,18 @@ async function PlatformOverview({ locale }: { locale: string }) {
 async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale: string }) {
   const t = await getTranslations("landing");
   const tt = await getTranslations(`tenants.${tenant.key}` as "tenants");
+  const tr = await getTranslations("revisions");
+
+  // RevisionBadge bayi-only şu an; locale parse + i18n labels client'a paslı.
+  const localeShort = (locale === "nl" || locale === "en") ? locale : "tr";
+  const revisionLabels = {
+    badge: tr("badge"),
+    title: tr("title"),
+    no_revisions: tr("no_revisions"),
+    older_count: tr("older_count"),
+    aria_open: tr("aria_open"),
+  };
+
   return (
     <div className="min-h-screen">
       {/* ── Navbar ── */}
@@ -89,7 +102,7 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
       </nav>
 
       {/* ── Hero ── */}
-      <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 text-white py-24">
+      <section className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 text-white py-24">
         <div className="max-w-4xl mx-auto px-6 text-center">
           {tenant.employees.length > 0 && (
             <div className="inline-block bg-indigo-500/20 text-indigo-300 text-sm px-4 py-1 rounded-full mb-6">
@@ -116,6 +129,11 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
           </div>
           <p className="text-sm text-slate-500 mt-4">{t("hero_no_cc")}</p>
         </div>
+        {tenant.key === "bayi" && (
+          <div className="absolute bottom-3 left-4">
+            <RevisionBadge componentKey="hero" locale={localeShort} theme="dark" labels={revisionLabels} />
+          </div>
+        )}
       </section>
 
       {/* ── Features: bayi tenant'ı için 5 değer önerisi, diğer tenant'lar için sanal eleman gridi ── */}
@@ -189,7 +207,8 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
 
       {/* ── Pricing ── */}
       {tenant.key === "bayi" && tenant.pricing.growth ? (
-        <BayiPricing tenant={tenant} locale={locale} t={t} tt={tt} />
+        <BayiPricing tenant={tenant} locale={locale} t={t} tt={tt}
+          revisionLocale={localeShort} revisionLabels={revisionLabels} />
       ) : (
         <section id="pricing" className="py-20 bg-white">
           <div className="max-w-4xl mx-auto px-6">
@@ -300,19 +319,27 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
 type TFn = Awaited<ReturnType<typeof getTranslations>>;
 
 function BayiPricing({
-  tenant, locale, t, tt,
+  tenant, locale, t, tt, revisionLocale, revisionLabels,
 }: {
   tenant: TenantConfig;
   locale: string;
   t: TFn;
   tt: TFn;
+  revisionLocale: "tr" | "nl" | "en";
+  revisionLabels: {
+    badge: string;
+    title: string;
+    no_revisions: string;
+    older_count: string;
+    aria_open: string;
+  };
 }) {
   const setup = tenant.pricing.setup;
   const referral = tenant.pricing.referral;
   const growth = tenant.pricing.growth!;
 
   return (
-    <section id="pricing" className="py-20 bg-white">
+    <section id="pricing" className="relative py-20 bg-white">
       <div className="max-w-5xl mx-auto px-6">
         <h2 className="text-3xl font-bold text-center text-slate-900 mb-4">{t("pricing_title")}</h2>
         <p className="text-center text-slate-500 mb-8">{t("pricing_subtitle")}</p>
@@ -378,6 +405,9 @@ function BayiPricing({
             </p>
           </div>
         )}
+      </div>
+      <div className="absolute bottom-3 left-4">
+        <RevisionBadge componentKey="pricing" locale={revisionLocale} theme="light" labels={revisionLabels} />
       </div>
     </section>
   );

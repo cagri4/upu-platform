@@ -147,6 +147,13 @@
     "footer_privacy": "Gizlilik Politikası",
     "footer_rights": "Tüm hakları saklıdır."
   },
+  "revisions": {
+    "badge": "revizyonlar",
+    "title": "Revizyon Geçmişi",
+    "no_revisions": "Henüz revizyon yok.",
+    "older_count": "+{count} eski revizyon",
+    "aria_open": "Revizyon geçmişini aç"
+  },
   "platform": {
     "title": "Sanal Eleman Platformu",
     "subtitle": "Her sektör için AI destekli sanal çalışan ekipleri",

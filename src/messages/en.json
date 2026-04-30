@@ -147,6 +147,13 @@
     "footer_privacy": "Privacy Policy",
     "footer_rights": "All rights reserved."
   },
+  "revisions": {
+    "badge": "revisions",
+    "title": "Revision History",
+    "no_revisions": "No revisions yet.",
+    "older_count": "+{count} older revision(s)",
+    "aria_open": "Open revision history"
+  },
   "platform": {
     "title": "Virtual Employee Platform",
     "subtitle": "AI-powered virtual employee teams for every industry",

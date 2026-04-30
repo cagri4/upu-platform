@@ -147,6 +147,13 @@
     "footer_privacy": "Privacybeleid",
     "footer_rights": "Alle rechten voorbehouden."
   },
+  "revisions": {
+    "badge": "revisies",
+    "title": "Revisiegeschiedenis",
+    "no_revisions": "Nog geen revisies.",
+    "older_count": "+{count} oudere revisies",
+    "aria_open": "Revisiegeschiedenis openen"
+  },
   "platform": {
     "title": "Virtueel Medewerkersplatform",
     "subtitle": "AI-aangedreven virtuele medewerkersteams voor elke sector",
