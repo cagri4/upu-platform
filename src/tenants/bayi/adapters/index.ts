@@ -154,7 +154,15 @@ export async function resolvePaymentAdapter(userId: string): Promise<PaymentAdap
 export async function resolveShippingAdapter(userId: string): Promise<ShippingAdapter | null> {
   const sel = await getUserAdapterSelection(userId);
   if (!sel.shipping || sel.shipping === "other" || sel.shipping === "own_fleet") return null;
-  // Faz 8'de PostNL import edilecek.
+
+  // Faz 8: PostNL Send API (etiket basma + tracking). POSTNL_API_KEY +
+  // CUSTOMER_CODE + CUSTOMER_NUMBER env-var varsa gerçek API; yoksa stub.
+  if (sel.shipping === "postnl") {
+    const { buildPostNLShippingAdapter } = await import("./shipping/postnl");
+    return buildPostNLShippingAdapter();
+  }
+
+  // dhl / yurtici / mng — ileri faz
   return makeStub<ShippingAdapter>("shipping", sel.shipping, ["createLabel", "trackShipment"]);
 }
 
