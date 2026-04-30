@@ -35,12 +35,26 @@ export async function GET(req: NextRequest) {
 
   const meta = (profile.metadata || {}) as Record<string, unknown>;
   const firma = (meta.firma_profili || {}) as Record<string, unknown>;
+  const localeSettings = (meta.tenant_locale || {}) as Record<string, unknown>;
+  const adapters = (meta.enabled_adapters || {}) as Record<string, unknown>;
 
   return NextResponse.json({
     success: true,
     callerName: profile.display_name || null,
     onboardingCompanyName: (meta.company_name as string) || null,
     firma: {
+      // Lokalizasyon — daha önce kaydedilmişse okunur, yoksa NL Türk dağıtıcı
+      // default'u (NL + EUR + tr-NL).
+      country: (firma.country as string) || (localeSettings.country as string) || "NL",
+      currency: (localeSettings.currency as string) || "EUR",
+      locale: (localeSettings.locale as string) || "tr-NL",
+
+      // Adapter seçimi — daha önce kaydedilmişse okunur, yoksa boş.
+      accounting: (adapters.accounting as string) || "",
+      payment: (adapters.payment as string) || "",
+      shipping: (adapters.shipping as string) || "",
+      einvoice: (adapters.einvoice as string) || "none",
+
       ticari_unvan: (firma.ticari_unvan as string) || (meta.company_name as string) || "",
       yetkili_adi: (firma.yetkili_adi as string) || profile.display_name || "",
       ofis_telefon: (firma.ofis_telefon as string) || "",
@@ -54,6 +68,7 @@ export async function GET(req: NextRequest) {
         : (meta.briefing_enabled === false ? "hayir" : "evet"),
       vergi_dairesi: (firma.vergi_dairesi as string) || "",
       vergi_no: (firma.vergi_no as string) || "",
+      kvk_no: (firma.kvk_no as string) || "",
       kurulus_yili: (firma.kurulus_yili as string) || "",
       email_kurumsal: (firma.email_kurumsal as string) || "",
       web_sitesi: (firma.web_sitesi as string) || "",
