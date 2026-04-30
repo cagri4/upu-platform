@@ -27,6 +27,7 @@ import { formatCurrency, type SupportedCurrency, type SupportedLocale } from "@/
 
 interface ProductCatalogItem {
   id: string;
+  code: string;
   name: string;
   unit: string;
   unit_price: number;
@@ -240,7 +241,7 @@ export async function handleDealerOrderMessage(ctx: WaContext): Promise<boolean>
   // Owner'ın aktif ürün kataloğunu çek (max 50)
   const { data: products } = await supabase
     .from("bayi_products")
-    .select("id, name, unit, unit_price, brand, category")
+    .select("id, code, name, unit, unit_price, brand, category")
     .eq("user_id", profileCtx.ownerId)
     .eq("is_active", true)
     .limit(50);
@@ -254,6 +255,21 @@ export async function handleDealerOrderMessage(ctx: WaContext): Promise<boolean>
   const matchedLines = extracted.lines.filter(l => l.product_id && l.line_total !== null);
   if (matchedLines.length === 0) return false;
 
+  // Bayi profil'inden dealer_id ve dealer_name çek
+  const { data: dealerProfile } = await supabase
+    .from("profiles")
+    .select("dealer_id, display_name")
+    .eq("id", ctx.userId)
+    .maybeSingle();
+  if (!dealerProfile?.dealer_id) return false;
+
+  const { data: dealerRow } = await supabase
+    .from("bayi_dealers")
+    .select("id, name")
+    .eq("id", dealerProfile.dealer_id)
+    .maybeSingle();
+  if (!dealerRow) return false;
+
   const total = matchedLines.reduce((s, l) => s + (l.line_total || 0), 0);
   const lineSummary = matchedLines.map(l =>
     `• ${l.product_name} × ${l.quantity} ${l.unit} = ${formatCurrency(l.line_total || 0, profileCtx.currency, profileCtx.locale)}`
@@ -261,15 +277,44 @@ export async function handleDealerOrderMessage(ctx: WaContext): Promise<boolean>
 
   const summary = `📦 *Sipariş özeti*\n\n${lineSummary}\n\n*Toplam: ${formatCurrency(total, profileCtx.currency, profileCtx.locale)}*\n\nOnaylıyor musunuz?`;
 
-  // Pending order'ı session'a kaydet — onaylanınca siparis_olustur'a çevir.
-  // Bu commit'te basit text özet + butonlar; gerçek sipariş insert ileride
-  // (siparis_olustur callback handler'ı zaten var — onunla bağlanacak).
+  // Aşama 3: extracted order'ı siparis_olustur session pattern'inde session'a
+  // yaz — mevcut handleSiparisOnayCallback ('siparis_onay:onayla') sessiondan
+  // okuyup gerçek bayi_orders + bayi_order_items + bayi_dealer_transactions
+  // insert'lerini yapar. Bayi formu açılmaz, tek tıkta sipariş kaydedilir.
+  const productById = new Map(products.map(p => [p.id, p as ProductCatalogItem]));
+  const orderItems = matchedLines.map(l => {
+    const product = productById.get(l.product_id!);
+    const unitPrice = l.unit_price ?? product?.unit_price ?? 0;
+    const lineTotal = l.line_total ?? unitPrice * l.quantity;
+    return {
+      product_id: l.product_id!,
+      product_code: product?.code || "",
+      product_name: l.product_name || product?.name || "",
+      quantity: l.quantity,
+      unit_price: unitPrice,
+      total_price: lineTotal,
+    };
+  });
+
+  const { startSession } = await import("@/platform/whatsapp/session");
+  await startSession(ctx.userId, ctx.tenantId, "siparisolustur", "confirm");
+  await supabase
+    .from("command_sessions")
+    .update({
+      data: {
+        dealer_id: dealerRow.id,
+        dealer_name: dealerRow.name,
+        items: orderItems,
+        source: "wa_ai_extract",
+      },
+    })
+    .eq("user_id", ctx.userId);
+
   await sendButtons(ctx.phone, summary, [
-    { id: "cmd:siparisver", title: "✅ Onayla, Sipariş Oluştur" },
-    { id: "cmd:menu", title: "❌ İptal" },
+    { id: "siparis_onay:onayla", title: "✅ Onayla" },
+    { id: "siparis_onay:iptal", title: "❌ İptal" },
   ]);
 
-  // Sessizde sahibe upu hint mesajı atılabilir (Faz 7+); şimdilik no-op.
   return true;
 }
 
