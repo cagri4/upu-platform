@@ -118,8 +118,18 @@ export async function getUserAdapterSelection(userId: string): Promise<AdapterSe
 export async function resolveAccountingAdapter(userId: string): Promise<AccountingAdapter | null> {
   const sel = await getUserAdapterSelection(userId);
   if (!sel.accounting || sel.accounting === "none" || sel.accounting === "other") return null;
-  // Faz 5'te Chift unified üzerinden yuki/exact/snelstart import edilecek.
-  // Şimdilik stub:
+
+  // Faz 5: Chift Unified API ile yuki/exact/snelstart desteklendi. CHIFT_API_KEY
+  // env-var ve user connection tamamlanmışsa gerçek API; yoksa stub fallback
+  // (her metod AdapterNotReadyError throw eder, çağıran kod yakalar).
+  if (sel.accounting === "yuki" || sel.accounting === "exact" || sel.accounting === "snelstart") {
+    const { buildChiftAccountingAdapter } = await import("./accounting/chift");
+    return buildChiftAccountingAdapter(userId, sel.accounting);
+  }
+
+  // logo_nl / mikro — Türkiye muhasebe yazılımları, ileri faz (TR pazarı
+  // genişletilince doğrudan API ile bağlanılacak; Chift bu yazılımları
+  // şu an desteklemiyor).
   return makeStub<AccountingAdapter>("accounting", sel.accounting, [
     "getDealerBalance", "pushInvoice", "listRecentInvoices",
   ]);
