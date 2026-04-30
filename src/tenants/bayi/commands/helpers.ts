@@ -93,3 +93,39 @@ export function withProfileGate(handler: CommandHandler): CommandHandler {
     );
   };
 }
+
+/**
+ * Wrap a command so it requires a specific tier feature. Çalışan tier'ı
+ * yetersizse "Bu özellik X paketinde — yükseltme" mesajı gösterir,
+ * orijinal handler çağrılmaz.
+ *
+ * Aşama 6 — multi_accounting / sepa_direct_debit / position_presets /
+ * ai_dunning_text / multi_territory / storecove_peppol / custom_api /
+ * custom_integrations / audit_log feature'ları için kullanılır.
+ */
+export function withTierGate(
+  feature: "multi_accounting" | "sepa_direct_debit" | "position_presets" | "ai_dunning_text" | "multi_territory" | "storecove_peppol" | "custom_api" | "custom_integrations" | "audit_log",
+  handler: CommandHandler,
+): CommandHandler {
+  return async (ctx: WaContext) => {
+    const { getUserTier, tierAllows, MIN_TIER_FOR_FEATURE } = await import("../billing/tier-features");
+    // Owner için kendi tier'ı; dealer/employee için owner tier'ı (helper içinde halledilir).
+    const lookupId = (ctx.role === "dealer" || ctx.role === "employee")
+      ? ctx.userId  // helper invited_by chain'i kendi takip eder
+      : ctx.userId;
+    const tier = await getUserTier(lookupId);
+
+    if (tierAllows(tier, feature)) {
+      await handler(ctx);
+      return;
+    }
+
+    const requiredTier = MIN_TIER_FOR_FEATURE[feature];
+    const tierLabel = requiredTier === "growth" ? "Growth (€249/ay)" : "Pro (€599/ay)";
+    await sendText(ctx.phone,
+      `🔒 Bu özellik *${tierLabel}* paketinde geliyor.\n\n` +
+      `Mevcut paket: *${tier === "starter" ? "Starter" : tier === "growth" ? "Growth" : "Pro"}*.\n\n` +
+      `Yükseltmek için: *retailai.upudev.nl/tr#pricing*`,
+    );
+  };
+}

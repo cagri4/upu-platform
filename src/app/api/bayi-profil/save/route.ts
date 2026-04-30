@@ -199,6 +199,10 @@ export async function POST(req: NextRequest) {
       // Adapter seçimi — runtime'da adapters/index.ts resolver buradan
       // tenant_id + adapter_key okuyup ilgili modülü çağırır.
       enabled_adapters: { accounting, payment, shipping, einvoice },
+      // Tier (Aşama 6): yeni profil "starter" tier'ında başlar; Stripe
+      // billing entegrasyonu sonrası upgrade akışında metadata.tier
+      // değişir. Mevcut tier varsa korunur.
+      tier: (existingMeta.tier as string) || "starter",
       discovery_steps: { ...existingSteps, bayi: existingSteps.bayi ?? 0 },
     };
 

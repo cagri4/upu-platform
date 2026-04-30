@@ -63,6 +63,20 @@ export async function POST(req: NextRequest) {
       .single();
     if (!owner?.tenant_id) return NextResponse.json({ error: "Profil eksik." }, { status: 500 });
 
+    // Aşama 6 — Tier quota check: Starter 3 / Growth 10 / Pro sınırsız
+    const { canAddEmployee } = await import("@/tenants/bayi/billing/tier-features");
+    const quota = await canAddEmployee(owner.id);
+    if (!quota.allowed) {
+      const nextTier = quota.tier === "starter" ? "Growth" : "Pro";
+      return NextResponse.json({
+        error: `${quota.tier === "starter" ? "Starter" : "Growth"} paketi ${quota.limit} çalışan limitine ulaştı (${quota.current} aktif). ${nextTier} paketine yükseltin.`,
+        tier: quota.tier,
+        limit: quota.limit,
+        current: quota.current,
+        upgrade_to: nextTier.toLowerCase(),
+      }, { status: 403 });
+    }
+
     // Create auth user (placeholder email, same pattern as old invite flow)
     const { data: authUser, error: authErr } = await supabase.auth.admin.createUser({
       email: `emp_${Date.now()}_${randomBytes(4).toString("hex")}@placeholder.upudev.nl`,

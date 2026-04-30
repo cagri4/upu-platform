@@ -8,7 +8,7 @@
 import type { TenantCommandRegistry } from "@/platform/whatsapp/types";
 import { createPlaceholderHandler } from "@/platform/whatsapp/placeholder";
 import { BAYI_CAPABILITIES as C } from "../capabilities";
-import { withProfileGate as gp } from "./helpers";
+import { withProfileGate as gp, withTierGate as tg } from "./helpers";
 
 // Yonetim
 import { handleOzet } from "./ozet";
@@ -106,7 +106,8 @@ export const bayiCommands: TenantCommandRegistry = {
     // ── Finans / Tahsildar ───────────────────────────
     vadeler: handleVadeler,
     tahsilat: handleTahsilat,
-    hatirlatgonder: gp(handleHatirlatGonder),
+    // hatirlatgonder: AI tahsilat metni Growth+ özellik (ai_dunning_text)
+    hatirlatgonder: gp(tg("ai_dunning_text", handleHatirlatGonder)),
 
     // ── Depo / Depocu ────────────────────────────────
     stok: handleStok,
@@ -137,7 +138,8 @@ export const bayiCommands: TenantCommandRegistry = {
 
     // ── Bildirim / İletişim ─────────────────────────
     kampanyabildir: gp(handleKampanyaBildir),
-    tahsilatbildir: gp(handleTahsilatBildir),
+    // tahsilatbildir: SEPA Direct Debit linki Growth+ özellik
+    tahsilatbildir: gp(tg("sepa_direct_debit", handleTahsilatBildir)),
     duyuru: gp(handleDuyuru),
 
     // ── Dealer commands ─────────────────────────────

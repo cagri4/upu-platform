@@ -6,6 +6,7 @@ import { Check, UserPlus, MessageSquare, Rocket } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { LanguageDropdown } from "./language-dropdown";
 import { RevisionBadge } from "@/tenants/bayi/components/RevisionBadge";
+import { TIER_FEATURES } from "@/tenants/bayi/billing/tier-features";
 
 export default async function HomePage({
   params,
@@ -360,11 +361,19 @@ function BayiPricing({
           {/* Starter */}
           <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
             <h3 className="text-lg font-semibold text-slate-900 mb-1">{t("pricing_starter")}</h3>
-            <p className="text-xs text-slate-500 mb-4">{tt("pricing_starter_desc")}</p>
-            <div className="mb-6">
+            <p className="text-xs text-slate-500 mb-3">{tt("pricing_starter_desc")}</p>
+            <div className="mb-4">
               <span className="text-3xl font-bold text-slate-900">€{tenant.pricing.starter.price}</span>
               <span className="text-slate-500 text-sm">{t("pricing_per_month")}</span>
             </div>
+            <ul className="text-xs text-slate-600 space-y-1 mb-5">
+              <li>👥 {TIER_FEATURES.starter.employees} çalışan</li>
+              <li>🏪 {TIER_FEATURES.starter.dealersFairUse} bayi (adil kullanım)</li>
+              <li>💬 {TIER_FEATURES.starter.waMessagesFairUseMonth!.toLocaleString("tr-NL")} WA mesaj/ay</li>
+              <li>📊 1 muhasebe yazılımı (Yuki / Exact / SnelStart)</li>
+              <li>💳 Mollie iDEAL</li>
+              <li>📧 E-mail destek (24h)</li>
+            </ul>
             <Link href={`/${locale}/register`} className="block text-center bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl transition font-medium text-sm">
               {t("pricing_starter_cta")}
             </Link>
@@ -376,11 +385,21 @@ function BayiPricing({
               {t("pricing_pro_badge")}
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-1">Growth</h3>
-            <p className="text-xs text-slate-500 mb-4">{tt("pricing_growth_desc")}</p>
-            <div className="mb-6">
+            <p className="text-xs text-slate-500 mb-3">{tt("pricing_growth_desc")}</p>
+            <div className="mb-4">
               <span className="text-3xl font-bold text-slate-900">€{growth.price}</span>
               <span className="text-slate-500 text-sm">{t("pricing_per_month")}</span>
             </div>
+            <ul className="text-xs text-slate-600 space-y-1 mb-5">
+              <li>👥 {TIER_FEATURES.growth.employees} çalışan</li>
+              <li>🏪 {TIER_FEATURES.growth.dealersFairUse} bayi</li>
+              <li>💬 {TIER_FEATURES.growth.waMessagesFairUseMonth!.toLocaleString("tr-NL")} WA mesaj/ay</li>
+              <li>✨ Multi-accounting (3'ü paralel)</li>
+              <li>✨ SEPA Direct Debit (otomatik vade çekim)</li>
+              <li>✨ Pozisyon presetleri + AI tahsilat metni</li>
+              <li>🎁 Setup ücretsiz dahil</li>
+              <li>⚡ Priority destek (4h) + WA</li>
+            </ul>
             <Link href={`/${locale}/register`} className="block text-center bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 rounded-xl transition font-medium text-sm">
               {t("pricing_pro_cta")}
             </Link>
@@ -389,11 +408,23 @@ function BayiPricing({
           {/* Pro */}
           <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
             <h3 className="text-lg font-semibold text-slate-900 mb-1">{t("pricing_pro")}</h3>
-            <p className="text-xs text-slate-500 mb-4">{tt("pricing_pro_desc")}</p>
-            <div className="mb-6">
+            <p className="text-xs text-slate-500 mb-3">{tt("pricing_pro_desc")}</p>
+            <div className="mb-4">
               <span className="text-3xl font-bold text-slate-900">€{tenant.pricing.pro.price}</span>
               <span className="text-slate-500 text-sm">{t("pricing_per_month")}</span>
             </div>
+            <ul className="text-xs text-slate-600 space-y-1 mb-5">
+              <li>👥 Sınırsız çalışan</li>
+              <li>🏪 Sınırsız bayi</li>
+              <li>💬 Sınırsız WA mesaj</li>
+              <li>✨ Growth'taki her şey</li>
+              <li>🇪🇺 Storecove Peppol e-fatura</li>
+              <li>🌐 Multi-territory hiyerarşi</li>
+              <li>🔌 REST API + custom entegrasyonlar</li>
+              <li>📋 Audit log + compliance</li>
+              <li>🎁 Setup ücretsiz dahil</li>
+              <li>👤 Dedicated AM (1h) + Slack</li>
+            </ul>
             <Link href={`/${locale}/register`} className="block text-center bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl transition font-medium text-sm">
               {t("pricing_pro_cta")}
             </Link>
