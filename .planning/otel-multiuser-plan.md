@@ -1,540 +1,425 @@
-# Otel Multi-User + Permission Tasarım Önerisi
+# Otel Multi-User + Misafir CRM — MVP1 Plan
 
-> Faz 1 (kod yok) — sadece tasarım. Onaydan sonra implementasyona geçilir.
-> Tarih: 2026-04-27 · Author: Claude (upu-platform agent)
-> Referans: `bayi-multiuser-plan.md`, `restoran-multiuser-plan.md`,
-> `src/tenants/bayi/capabilities.ts`, `src/tenants/bayi/commands/index.ts:197+`
-
----
-
-## 1) Mevcut emlak / platform altyapısında gördüklerim
-
-**Kısa cevap:** Capability-based multi-user pattern'i **bayi**'de production'a
-girmiş, **restoran** için plan yazılmış (henüz uygulanmamış olabilir). Otel için
-aynı pattern'i birebir uyarlayacağız — yeni altyapı yazmaya gerek yok.
-
-### 1.1 Platform-genelinde hazır altyapı (otel için yeniden yazılmayacak)
-
-`profiles` tablosunda otel'e yetecek tüm alanlar var:
-
-| Alan | Tip | Anlamı |
-|------|------|--------|
-| `role` | `text` | `admin` \| `employee` \| `dealer` \| `system` \| `user` (admin = owner) |
-| `capabilities` | `text[]` | `["*"]` = owner; alt-set = personel |
-| `permissions` | `jsonb` | **eski model**, capabilities geldikten sonra ölü — otel'de yazmıyoruz |
-| `invited_by` | `uuid` | Davet eden owner'ın `profiles.id`'si — `/calisanyonet` listede filtre |
-| `dealer_id` | `uuid` | Bayi'ye özel; otel'de `null` (otel'in branch konsepti `otel_user_hotels` üzerinden) |
-| `metadata` | `jsonb` | Tenant-spesifik (otel: `position`, `shift_hours`, `assigned_floors`) |
-
-**Otel'e özel mevcut tablo:** `otel_user_hotels` zaten DB'de — owner'ın 1+ otele
-sahip olabilmesi için `profile_id × hotel_id` join tablosu. Bu, multi-property
-zinciri için temel — bayi'de `dealer_id` ne işe yarıyorsa otel'de `hotel_id`
-aynı işi görüyor.
-
-Davet altyapısı (3 yol — hepsi production):
-- `invite_codes` — 6-hex single-use (admin paneli + employee davet)
-- `invite_links` — universal multi-use (`role` + `capabilities` ön-belli)
-- `magic_link_tokens` — 2h web form linki (owner WA'da `/calisanekle` → web form)
-
-### 1.2 Capability gate (router.ts'in iç işleyişi)
-
-Doğrulanmış: `src/platform/whatsapp/router.ts:34-50` — `hasCommandCapability(registry, ctx.capabilities, cmd)`.
-
-Her tenant `TenantCommandRegistry.requiredCapabilities` map'i tanımlar (bayi referans):
-
-```ts
-requiredCapabilities: {
-  rezervasyonlar: C.RESERVATIONS_VIEW,           // tek capability
-  odeme: [C.FINANCE_PAYMENTS, C.FINANCE_OWN],    // alternatifli (or)
-  brifing: null,                                  // herkese açık
-}
-```
-
-`*` wildcard owner'a otomatik tüm yetki. Aynı filtre **menüde**
-(`tenant.employees[].commands`) ve `defaultFavorites`'larda da uygulanır
-(router.ts:629, 844). Yetkisiz komut → "Bu işlem için yetkin yok" mesajı.
-
-### 1.3 "Test as employee" view
-
-`saas_active_session.view_as_role` ile owner çalışan menüsünü simüle edebiliyor
-(`/degistir` komutu, router.ts:111). Otel'de otomatik gelir.
-
-### 1.4 Davet web formu pattern'i
-
-`src/app/[locale]/bayi-calisan-davet/page.tsx` + `/api/bayi-calisan-davet/{init,save}`
-referans. Otel klonlayacak:
-1. Owner WA'da `/calisanekle` → 2h `magic_link_tokens` üretilir → buton
-2. Form: ad + telefon + pozisyon + capability checkbox grupları + (opsiyonel) hotel_id
-3. POST: `auth.users.create` + `profiles.insert (role=employee, capabilities=...)`
-   + `invite_codes` 6-hex pending → çalışana WA mesajı: "Kayıt kodun: ABC123"
-4. Çalışan kodu yazınca `profiles.whatsapp_phone` eşlenir, hesap aktif
-
-### 1.5 Mevcut otel tenant durumu
-
-- Config: `src/tenants/config.ts:109-128` — slug `hotelai`, 4 employee group (resepsiyon/rezervasyon/katHizmetleri/misafirDeneyimi). **Yönetim ve Muhasebe grubu yok** → revize edilecek.
-- Commands: `src/tenants/otel/commands/index.ts` — 20 komut, `requiredCapabilities` map'i **henüz yok**.
-- DB: `otel_reservations`, `otel_rooms`, `otel_hotels`, `otel_housekeeping_tasks`, `otel_guest_messages`, `otel_guest_requests`, `otel_guest_reviews`, `otel_user_hotels` — 8 tablo (production-yakını).
+> **Revize: 2026-05-01.** Orijinal plan (2026-04-27) personel-only ve single-hotel
+> idi. Reframe sonrası MVP1 büyüdü: lifetime guest CRM + mekik web panel + multi-tenant
+> ölçek + online check-in MVP1'e dahil. Eski plan git history'de.
+>
+> Author: Claude (upu-platform agent) · Referans: `bayi-multiuser-plan.md`,
+> `bayi-tek-asistan-vision-2026-04-30.md`, `src/tenants/bayi/capabilities.ts`,
+> `src/tenants/bayi/commands/calisan.ts`, `src/app/api/bayi-calisan-davet/save/route.ts`
 
 ---
 
-## 2) Önerilen rol modeli — Otel
+## 0) Kararlar (kullanıcı onayı alınmış)
 
-7 rol. Hepsi `profiles.role` seviyesinde, ayrım `capabilities` array'iyle.
+| # | Karar | Not |
+|---|-------|-----|
+| K1 | Misafir = role `guest`, **lifetime** | Capability silinmez, tarihçe kalır → loyalty CRM motorunun temel veri katmanı |
+| K2 | Misafir tarafı **WA-driven** + mekik web panel | Browse'da arama yok, sadece WA'dan tıklanan tokenized link açılır, kalıcı hesap yok |
+| K3 | **Binlerce otel** ölçeği | `hotel_id` propagasyonu zorunlu, RLS Phase-1'de |
+| K4 | Online check-in **MVP1**'de | Cron T-24h auto-trigger + `cekin` komutu + resepsiyon push, mekik formuyla |
+| K5 | F&B + brand + loyalty engine **MVP2** | F&B preset davet formuna girmiyor, brand isimlendirme MVP1'de yer-tutucu |
 
-| Rol | DB role | Capabilities (preset) | Tipik kullanım |
-|------|---------|----------------------|----------------|
-| **Sahip** | `admin` | `["*"]` | Her şey, çalışan ekle, finans, fiyat değiştir |
-| **Müdür** | `employee` | tüm view + write (EMPLOYEES_MANAGE hariç) | Operasyonel günlük yönetim, brifing alır |
-| **Resepsiyon** | `employee` | RESERVATIONS_*, GUESTS_*, ROOMS_VIEW, AVAILABILITY_VIEW, PRICING_VIEW, HOUSEKEEPING_VIEW | Check-in/out, rezervasyon ekle, misafir mesajı |
-| **Temizlik Şefi** | `employee` | HOUSEKEEPING_*, ROOMS_VIEW, ROOMS_STATUS_EDIT, GUESTS_VIEW | Görev atama, oda durumu (kirli/temiz) |
-| **Kat Görevlisi** | `employee` | HOUSEKEEPING_VIEW_OWN, HOUSEKEEPING_COMPLETE_OWN, ROOMS_VIEW | Sadece kendine atanan görevleri görür/kapatır |
-| **F&B Şefi** | `employee` | FNB_*, GUESTS_VIEW, ROOMS_VIEW | Mutfak/restoran/oda servisi (Phase 2 — komut yok henüz) |
-| **Muhasebeci** | `employee` | FINANCE_*, REPORTS_VIEW, RESERVATIONS_VIEW | Gelir, fatura, vergi, gün sonu raporları |
+---
+
+## 1) MVP1 vs MVP2 scope sınırı
+
+### MVP1 (bu plan kapsamı)
+- ✅ **Faz A — Capability altyapısı** (registry + presets + requiredCapabilities map)
+- ✅ **Faz B — Multi-property RLS** (`hotel_employees` tablosu + hotel_id-aware policies)
+- ✅ **Faz C — Personel davet** (`/calisanekle` + web form clone'u + role presetler)
+- ✅ **Faz D — Misafir** (role=guest lifetime + GUEST_PRESET + WA komutlar + `/misafirdavet`)
+- ✅ **Faz E — Online check-in** (mekik form + `otel_pre_checkins` + cron T-24h)
+
+### MVP2 (ayrı milestone — bu plan kapsamı dışı)
+- ❌ Brand katmanı (`otel_brands` + brand-scoped persona/wa_phone)
+- ❌ Loyalty engine (cron + AI segment + owner approval queue + opt-in)
+- ❌ Ek hizmet rezervasyon mekik linkleri (spa/transfer/restoran)
+- ❌ F&B Şefi preset + komutlar (`oda-servisi`, `mutfak-siparis`)
+- ❌ Misafir yorumu (`/yorum` mekik link)
+- ❌ Vardiya bazlı capability gate
+- ❌ Channel manager (Booking.com / Airbnb / Expedia)
+
+---
+
+## 2) Roller (8 rol — 7 personel + 1 misafir)
+
+| Rol | DB role | Capability (preset) | Lifecycle |
+|-----|---------|---------------------|-----------|
+| **Sahip** | `admin` | `["*"]` | Kalıcı |
+| **Müdür** | `employee` | tüm view + write (EMPLOYEES_MANAGE hariç) | Kalıcı |
+| **Resepsiyon** | `employee` | RESERVATIONS_*, GUESTS_*, ROOMS_VIEW, AVAILABILITY_VIEW, PRICING_VIEW, HOUSEKEEPING_VIEW, GUESTS_INVITE, PRE_CHECKIN_VIEW | Kalıcı |
+| **Temizlik Şefi** | `employee` | HOUSEKEEPING_*, ROOMS_VIEW, ROOMS_STATUS_EDIT, GUESTS_VIEW | Kalıcı |
+| **Kat Görevlisi** | `employee` | HOUSEKEEPING_VIEW_OWN, HOUSEKEEPING_COMPLETE_OWN, ROOMS_VIEW | Kalıcı |
+| **Muhasebeci** | `employee` | FINANCE_*, REPORTS_VIEW, RESERVATIONS_VIEW | Kalıcı |
+| **F&B Şefi** | `employee` | FNB_*, GUESTS_VIEW, ROOMS_VIEW | **MVP2** |
+| **🆕 Misafir** | `guest` | GUEST_PRESET (sadece read + tek-yön talep) | **Lifetime** — silinmez |
 
 **Notlar:**
-- "Pozisyon" `profiles.metadata.position` alanında ("Resepsiyonist", "Kat Görevlisi", "Mutfak Şefi") — UI etiketi için.
-- Aynı kişi birden fazla preset alabilir (örn: küçük butik otelde Müdür + Muhasebeci aynı kişi): davet formunda capability'ler birleştirilerek seçilir.
-- Multi-property: `otel_user_hotels` üzerinden. Owner birden fazla otelde "*" olabilir; çalışan tek otele bağlı.
+- Misafir DB'de `role='guest'` ile, **`profiles.capabilities` = GUEST_PRESET**, `metadata.invited_for_hotel_id` set.
+- Misafir capability'leri **sıfırlanmaz**. Checkout sonrası bile aynı yetkilerle (kendi rezervasyon geçmişi + hizmet sorgu) WA'da kalır → loyalty CRM motoru bu sayede çalışır.
+- Owner asla `guest` rolüne dönmez; misafirlerin de `*` yok.
 
 ---
 
-## 3) Otel Capability Registry
-
-Yeni dosya: `src/tenants/otel/capabilities.ts` (bayi'nin clone'u, prefix farklı).
+## 3) Capability Registry (`src/tenants/otel/capabilities.ts`)
 
 ```
-OTEL_CAPABILITIES:
+OTEL_CAPABILITIES (personel):
   # Rezervasyon
   RESERVATIONS_VIEW         "reservations:view"
-  RESERVATIONS_CREATE       "reservations:create"     // yeni rez ekle
-  RESERVATIONS_EDIT         "reservations:edit"       // değiştir/iptal
-  RESERVATIONS_CHECKIN      "reservations:checkin"    // check-in/out işlemi
+  RESERVATIONS_CREATE       "reservations:create"
+  RESERVATIONS_EDIT         "reservations:edit"
+  RESERVATIONS_CHECKIN      "reservations:checkin"
 
   # Oda
-  ROOMS_VIEW                "rooms:view"              // oda listesi/durum
-  ROOMS_STATUS_EDIT         "rooms:status-edit"       // boş/dolu/temiz/kirli toggle
-  ROOMS_CONFIG_EDIT         "rooms:config-edit"       // oda tipi/kapasite/özellik (admin'e yakın)
+  ROOMS_VIEW                "rooms:view"
+  ROOMS_STATUS_EDIT         "rooms:status-edit"
+  ROOMS_CONFIG_EDIT         "rooms:config-edit"
 
-  # Kat hizmetleri (housekeeping)
-  HOUSEKEEPING_VIEW         "housekeeping:view"       // tüm görevleri gör
-  HOUSEKEEPING_VIEW_OWN     "housekeeping:view-own"   // sadece kendine atanan
-  HOUSEKEEPING_ASSIGN       "housekeeping:assign"     // görev ata
-  HOUSEKEEPING_COMPLETE     "housekeeping:complete"   // görev kapat (her görev)
-  HOUSEKEEPING_COMPLETE_OWN "housekeeping:complete-own" // sadece kendi görevini kapat
+  # Kat hizmetleri
+  HOUSEKEEPING_VIEW         "housekeeping:view"
+  HOUSEKEEPING_VIEW_OWN     "housekeeping:view-own"
+  HOUSEKEEPING_ASSIGN       "housekeeping:assign"
+  HOUSEKEEPING_COMPLETE     "housekeeping:complete"
+  HOUSEKEEPING_COMPLETE_OWN "housekeeping:complete-own"
 
-  # Misafir
-  GUESTS_VIEW               "guests:view"             // misafir listesi/profil
-  GUESTS_MESSAGE            "guests:message"          // mesaj/yanıt yaz
-  GUESTS_REVIEWS            "guests:reviews"          // yorum yönetimi (yanıtla)
+  # Misafir (personel-tarafı)
+  GUESTS_VIEW               "guests:view"
+  GUESTS_MESSAGE            "guests:message"
+  GUESTS_REVIEWS            "guests:reviews"
+  GUESTS_INVITE             "guests:invite"          # /misafirdavet komutu (resepsiyon)
 
-  # Fiyat / müsaitlik / revenue management
+  # Müsaitlik / fiyat
   AVAILABILITY_VIEW         "availability:view"
-  PRICING_VIEW              "pricing:view"            // sezon fiyat sorgu
-  PRICING_EDIT              "pricing:edit"            // fiyat güncelle (RM)
+  PRICING_VIEW              "pricing:view"
+  PRICING_EDIT              "pricing:edit"
 
-  # Finans
-  FINANCE_VIEW              "finance:view"            // gelir, fatura görüntüle
-  FINANCE_EDIT              "finance:edit"            // gelir kaydı, fatura kesme
-  REPORTS_VIEW              "reports:view"            // gün sonu, doluluk raporu
+  # Finans / rapor
+  FINANCE_VIEW              "finance:view"
+  REPORTS_VIEW              "reports:view"
 
-  # F&B (Phase 2 — komutlar henüz yok, ilerideki write-komutlar için)
-  FNB_VIEW                  "fnb:view"                // mutfak menü / sipariş listesi
-  FNB_EDIT                  "fnb:edit"                // sipariş hazırlama, oda servisi
+  # Online check-in
+  PRE_CHECKIN_VIEW          "pre-checkin:view"       # online check-in tamamlanmış misafiri görüntüle
+  PRE_CHECKIN_PUSH          "pre-checkin:push"       # /cekinlink komutu — manuel push
+
+  # MVP2 (rezerve kalıyor, davet formunda gizli)
+  FNB_VIEW                  "fnb:view"
+  FNB_EDIT                  "fnb:edit"
 
   # Yönetim
-  ANNOUNCEMENTS             "announcements:send"      // ekibe duyuru
-  EMPLOYEES_MANAGE          "employees:manage"        // çalışan ekle/sil — owner-only
+  ANNOUNCEMENTS             "announcements:send"
+  EMPLOYEES_MANAGE          "employees:manage"
+
+GUEST_CAPABILITIES (misafir-tarafı, lifetime):
+  RESERVATIONS_VIEW_OWN     "reservations:view-own"
+  GUEST_SERVICES_VIEW       "guest-services:view"     # otel hizmet listesi (wifi, kahvaltı, spa-var-mı)
+  GUEST_REQUEST_CREATE      "guest-request:create"    # talep / şikayet
+  GUEST_PRE_CHECKIN_FORM    "guest-pre-checkin:form"  # mekik check-in linkini açabilir
+  GUEST_RESERVATION_CANCEL  "reservations:cancel-own" # iptal politikasına göre
 ```
 
 ### Presetler
 
 ```
-MANAGER_PRESET (Müdür):
-  RESERVATIONS_VIEW, RESERVATIONS_CREATE, RESERVATIONS_EDIT, RESERVATIONS_CHECKIN,
-  ROOMS_VIEW, ROOMS_STATUS_EDIT, ROOMS_CONFIG_EDIT,
-  HOUSEKEEPING_VIEW, HOUSEKEEPING_ASSIGN, HOUSEKEEPING_COMPLETE,
-  GUESTS_VIEW, GUESTS_MESSAGE, GUESTS_REVIEWS,
-  AVAILABILITY_VIEW, PRICING_VIEW, PRICING_EDIT,
-  FINANCE_VIEW, REPORTS_VIEW,
-  ANNOUNCEMENTS
-
-RECEPTION_PRESET (Resepsiyon):
-  RESERVATIONS_VIEW, RESERVATIONS_CREATE, RESERVATIONS_EDIT, RESERVATIONS_CHECKIN,
-  GUESTS_VIEW, GUESTS_MESSAGE,
-  ROOMS_VIEW, AVAILABILITY_VIEW, PRICING_VIEW,
-  HOUSEKEEPING_VIEW   // oda hazır mı görmek için
-
-HOUSEKEEPING_CHIEF_PRESET (Temizlik Şefi):
-  HOUSEKEEPING_VIEW, HOUSEKEEPING_ASSIGN, HOUSEKEEPING_COMPLETE,
-  ROOMS_VIEW, ROOMS_STATUS_EDIT,
-  GUESTS_VIEW   // misafir check-out etti mi kontrolü
-
-HOUSEKEEPER_PRESET (Kat Görevlisi):
-  HOUSEKEEPING_VIEW_OWN, HOUSEKEEPING_COMPLETE_OWN,
-  ROOMS_VIEW    // kendi katındaki odaları görmek (read-only)
-
-FNB_CHIEF_PRESET (F&B Şefi — Phase 2 komut bekleniyor):
-  FNB_VIEW, FNB_EDIT,
-  GUESTS_VIEW, ROOMS_VIEW,    // oda servisi için
-  REPORTS_VIEW  // F&B gelir raporu
-
-ACCOUNTANT_PRESET (Muhasebeci):
-  FINANCE_VIEW, FINANCE_EDIT,
-  REPORTS_VIEW,
-  RESERVATIONS_VIEW   // rezervasyon ↔ fatura ilişkisi
+MANAGER_PRESET:           tüm OTEL_CAPABILITIES (EMPLOYEES_MANAGE hariç) + PRE_CHECKIN_VIEW
+RECEPTION_PRESET:         RESERVATIONS_*, GUESTS_*, ROOMS_VIEW, AVAILABILITY_VIEW,
+                          PRICING_VIEW, HOUSEKEEPING_VIEW, GUESTS_INVITE,
+                          PRE_CHECKIN_VIEW, PRE_CHECKIN_PUSH
+HOUSEKEEPING_CHIEF_PRESET: HOUSEKEEPING_*, ROOMS_VIEW, ROOMS_STATUS_EDIT, GUESTS_VIEW
+HOUSEKEEPER_PRESET:       HOUSEKEEPING_VIEW_OWN, HOUSEKEEPING_COMPLETE_OWN, ROOMS_VIEW
+ACCOUNTANT_PRESET:        FINANCE_VIEW, REPORTS_VIEW, RESERVATIONS_VIEW
+GUEST_PRESET:             RESERVATIONS_VIEW_OWN, GUEST_SERVICES_VIEW, GUEST_REQUEST_CREATE,
+                          GUEST_PRE_CHECKIN_FORM, GUEST_RESERVATION_CANCEL
 ```
 
-**Caveat:** Presetler kod tarafında hardcoded (bayi'deki `DEALER_PRESET` gibi).
-Owner formda preset dropdown'dan seçer, sonra checkbox'larda ince ayar yapar.
-
 ---
 
-## 4) Komut → capability matrisi
+## 4) Multi-Tenant Ölçek — `hotel_employees` + RLS
 
-Mevcut 20 komut için `requiredCapabilities` planı + Phase 2'de eklenmesi gereken
-write komutlar:
+### 4.1 Mimari karar
 
-| Komut | Capability | Sahip | Müdür | Resep. | T.Şefi | Kat Gör. | F&B | Muh. |
-|-------|------------|:-----:|:-----:|:------:|:------:|:--------:|:---:|:----:|
-| `durum` | `null` (genel) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `brifing` | `REPORTS_VIEW` | ✅ | ✅ | — | — | — | — | ✅ |
-| `rapor` | `REPORTS_VIEW` | ✅ | ✅ | — | — | — | — | ✅ |
-| `gelir` | `FINANCE_VIEW` | ✅ | ✅ | — | — | — | — | ✅ |
-| `rezervasyonlar` | `RESERVATIONS_VIEW` | ✅ | ✅ | ✅ | — | — | — | ✅ |
-| `rezervasyonekle` | `RESERVATIONS_CREATE` | ✅ | ✅ | ✅ | — | — | — | — |
-| `rezervasyondetay` | `RESERVATIONS_VIEW` | ✅ | ✅ | ✅ | — | — | — | ✅ |
-| `checkin` | `RESERVATIONS_CHECKIN` | ✅ | ✅ | ✅ | — | — | — | — |
-| `checkout` | `RESERVATIONS_CHECKIN` | ✅ | ✅ | ✅ | — | — | — | — |
-| `musaitlik` | `AVAILABILITY_VIEW` | ✅ | ✅ | ✅ | — | — | — | — |
-| `fiyat` | `PRICING_VIEW` | ✅ | ✅ | ✅ | — | — | — | — |
-| `misafirler` | `GUESTS_VIEW` | ✅ | ✅ | ✅ | ✅ | — | ✅ | — |
-| `mesajlar` | `GUESTS_MESSAGE` | ✅ | ✅ | ✅ | — | — | — | — |
-| `yanitla` | `GUESTS_MESSAGE` | ✅ | ✅ | ✅ | — | — | — | — |
-| `yorumlar` | `GUESTS_REVIEWS` | ✅ | ✅ | ✅ | — | — | — | — |
-| `odalar` | `ROOMS_VIEW` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| `odaguncelle` | `ROOMS_STATUS_EDIT` (durum) / `ROOMS_CONFIG_EDIT` (config) | ✅ | ✅ | — | ✅* | — | — | — |
-| `temizlik` | `[HOUSEKEEPING_VIEW, HOUSEKEEPING_VIEW_OWN]` | ✅ | ✅ | — | ✅ | ✅** | — | — |
-| `gorevata` | `HOUSEKEEPING_ASSIGN` | ✅ | ✅ | — | ✅ | — | — | — |
-| `doluluk` | `REPORTS_VIEW` | ✅ | ✅ | — | — | — | — | ✅ |
+`profiles.capabilities` **flat array**, hotel_id taşımıyor. Multi-property ölçeğinde:
+**bir resepsiyonist sadece atandığı oteldeki rezervasyonu görmeli.** Bu yüzden:
 
-\* Temizlik şefi sadece status (kirli/temiz/dnd) toggle eder, oda config (tip, kapasite) admin/müdüre kalır.
-\** Kat görevlisi `temizlik` listesini görüyor ama handler-level filter ile **sadece kendine atanan** satırları gösteriyor (bayi'deki `*_OWN` pattern aynı).
+- `profiles.capabilities` = **default/global capability bundle** (tek otelliler için yeterli)
+- **Yeni: `hotel_employees(hotel_id, profile_id, capabilities, created_at)`** — per-hotel override
+- Resolver: `getEffectiveCapabilities(profile_id, hotel_id)` → `hotel_employees` varsa onu kullan, yoksa `profiles.capabilities` fallback
 
-### Phase 2 (yeni write komutları — bu plan kapsamı dışı)
+### 4.2 RLS politika örneği
 
-| Komut | Capability | Sahip | Müdür | Resep. | T.Şefi | Kat Gör. | F&B | Muh. |
-|-------|------------|:-----:|:-----:|:------:|:------:|:--------:|:---:|:----:|
-| `gorevkapat` (housekeeper) | `[HOUSEKEEPING_COMPLETE, HOUSEKEEPING_COMPLETE_OWN]` | ✅ | ✅ | — | ✅ | ✅ | — | — |
-| `fiyatguncelle` (RM) | `PRICING_EDIT` | ✅ | ✅ | — | — | — | — | — |
-| `faturakes` | `FINANCE_EDIT` | ✅ | ✅ | — | — | — | — | ✅ |
-| `gelirkaydi` | `FINANCE_EDIT` | ✅ | ✅ | — | — | — | — | ✅ |
-| `oda-servisi` (F&B) | `FNB_EDIT` | ✅ | ✅ | — | — | — | ✅ | — |
-| `mutfak-siparis` (F&B) | `FNB_VIEW` | ✅ | ✅ | — | — | — | ✅ | — |
-| `duyuru` | `ANNOUNCEMENTS` | ✅ | ✅ | — | — | — | — | — |
-| `calisanekle` / `calisanyonet` | `EMPLOYEES_MANAGE` (= `*`) | ✅ | — | — | — | — | — | — |
-
-**Per-rol view filtering:** Capability gate sadece komuta erişim verir/vermez.
-Kat görevlisinin "kendi görevleri" filtresi handler içinde
-`firstMatchingCapability(...)` çağrısıyla ayrılır (bayi'deki `ORDERS_VIEW_OWN`
-pattern aynı: capabilities listesinde `_OWN` versiyonu varsa `assigned_to = ctx.userId` filter'ı atılır).
-
----
-
-## 5) DB değişiklikleri
-
-**Yeni tablo gerekmez.** Hepsi mevcut platform + otel tablolarıyla yürür.
-
-### 5.1 Mevcut tablolarda küçük migration'lar (önerilen)
-
-| Tablo | Alan | Tip | Neden |
-|-------|------|------|-------|
-| `otel_housekeeping_tasks` | `assigned_to` | `uuid REFERENCES profiles(id) ON DELETE SET NULL` | Kat görevlisinin "own" filter'ı için. (Muhtemelen zaten var — verify.) |
-| `otel_reservations` | `created_by` | `uuid REFERENCES profiles(id) ON DELETE SET NULL` | Hangi resepsiyonist yarattı izlensin (audit) |
-| `otel_reservations` | `checked_in_by` / `checked_out_by` | `uuid REFERENCES profiles(id)` | Vardiya bazlı denetim için |
-| `otel_guest_messages` | `replied_by` | `uuid REFERENCES profiles(id)` | Hangi resepsiyonist yanıtladı |
-
-**Not:** Bunlar **şimdi eklenmeyecek** — write komutları gelirken ayrı migration. Sadece `otel_housekeeping_tasks.assigned_to` Phase 1'de gerekli (own filter).
-
-### 5.2 RLS
-
-Mevcut `tenant_id = jwt.tenant_id` filter'ı yetiyor. Multi-hotel için ek RLS:
 ```sql
--- Eğer profiles.role != 'admin', otel_user_hotels'de kayıtlı hotel_id'lerle sınırla
-USING (hotel_id IN (
-  SELECT hotel_id FROM otel_user_hotels WHERE profile_id = auth.uid()
-))
-```
-Bu Faz 2 — şu an tek otelli senaryoda gerekmez.
-
-### 5.3 `otel_user_hotels` rolü
-
-Çalışan davet edilirken `otel_user_hotels` insert ile hangi otelde çalıştığı
-işaretlenir. Owner'ın 1+ otel olabilir; default davette owner'ın aktif oteline
-eklenir, multi-hotel chain'de form'da dropdown.
-
----
-
-## 6) Onboarding akışı
-
-### 6.1 Sahip onboarding (zaten yazıldı)
-
-`otelOnboardingFlow` mevcut: 4 adım — hotel_name, location, room_count, briefing.
-**Hiçbir değişiklik gerekmez.** Owner default `capabilities: ["*"]` aldığı için tam erişimle başlar.
-
-**Tek küçük ekleme:** onboarding bitince `otel_user_hotels` ve `otel_hotels`
-tablolarına ilk otel kaydı atılsın (multi-hotel hazır olsun). Şu an manuel
-büyük olasılıkla — verify.
-
-### 6.2 Personel davet web formu — yeni
-
-Yol: `/tr/otel-calisan-davet?t=<token>` — bayi-calisan-davet'ın clone'u.
-
-**Form alanları:**
-1. **Ad-soyad** (zorunlu)
-2. **WhatsApp telefonu** (zorunlu, otomatik normalize)
-3. **Rol** (dropdown — preset seçer):
-   - Müdür / Resepsiyon / Temizlik Şefi / Kat Görevlisi / F&B Şefi / Muhasebeci / *Özel*
-4. **Yetkiler** (checkboxlar — preset'e göre default tikli, owner ekle/çıkar):
-   - Gruplar: Rezervasyon, Misafir, Oda, Temizlik, Fiyat, Finans, Yönetim
-5. **Pozisyon başlığı** (opsiyonel, freetext — örn "Gece Resepsiyonisti")
-6. **Vardiya saatleri** (opsiyonel — "08:00–16:00" / "Gece"; Phase 2'de cron-bazlı brifing)
-7. **Atanmış katlar** (Kat Görevlisi için, opsiyonel — "1, 2, 3" gibi; UI'da dropdown çoklu seç)
-8. **Otel** (multi-hotel'li owner için zorunlu dropdown; tek otelli auto)
-
-**POST `/api/otel-calisan-davet/save`:**
-- Token doğrula (`magic_link_tokens`, 2h)
-- `auth.users.create` placeholder email
-- `profiles.insert`: `role: "employee"`, `capabilities: [...]`, `invited_by: ownerId`,
-  `metadata: { position, shift_hours, assigned_floors }`, `tenant_id: otel`
-- `otel_user_hotels.insert`: `profile_id × hotel_id` link
-- `invite_codes.insert`: 6-hex pending kod
-- `subscriptions.insert`: trial (varsa)
-- WA mesajı yeni çalışana: `"Kayıt kodun: ABC123 — kod ile bağlan"`
-
-### 6.3 Personel ilk WA bağlanması
-
-Davet kodu mesajı geldiğinde mevcut `invite_codes` flow zaten çalışır
-(`route.ts:466`). Çalışan için **mini-onboarding bypass**: tenantKey `otel`
-ise direkt rol-spesifik welcome:
-
-```
-👋 Hoş geldin Ayşe!
-Marina Resort ekibine eklendin
-(Resepsiyonist — Gündüz vardiyası).
-
-Komutların:
-• rezervasyonlar — bugünkü rezervasyonlar
-• checkin — misafir karşıla
-• checkout — misafir uğurla
-• mesajlar — okunmamış mesajlar
-• misafirler — misafir listesi
-
-[Ana Menü]
+-- otel_reservations için
+CREATE POLICY "hotel_scoped_read" ON otel_reservations
+  FOR SELECT
+  USING (
+    -- Owner ('*'): tüm hotelleri otel_user_hotels üzerinden görür
+    hotel_id IN (SELECT hotel_id FROM otel_user_hotels WHERE profile_id = auth.uid())
+    OR
+    -- Employee: hotel_employees'de bağlı olduğu otel
+    hotel_id IN (SELECT hotel_id FROM hotel_employees WHERE profile_id = auth.uid())
+    OR
+    -- Misafir: kendi rezervasyonu (hotel_id = bu rez'in hotel_id'si zaten — guest_id eşleşmesi)
+    guest_profile_id = auth.uid()
+  );
 ```
 
-### 6.4 Davet kuralları (owner görmesi gerekenler)
+**Not:** `auth.uid()` Supabase JWT'sinden gelir. WhatsApp router context'inde service-role kullandığımız için RLS bypass edilir, ama web panel ve API'ler RLS-aware olmalı.
 
-- **Aynı telefon**: aynı `tenant_id` altında zaten profile varsa "Bu kişi zaten ekipte" hatası
-- **Hesabı silme**: `/calisanyonet` → çalışan detay → "Sil" (bayi pattern aynı, prefix değişir)
-- **Yetki güncelleme**: ŞU AN YOK (bayi'de de yok). Phase 2 — sil + tekrar davet workaround
-- **Vardiya bazlı login engeli**: ŞU AN YOK — feature flag'li gelecek (Açık soru 8.2)
+### 4.3 Misafir hotel_id binding
+
+- `profiles.metadata.invited_for_hotel_id` — davet edildiği otel
+- `otel_guest_hotels(profile_id, hotel_id, first_visit, last_visit, total_stays)` rollup — loyalty segment için (MVP2 başlığı altında, MVP1'de boş tablo+trigger okuyacak şekilde hazırlanır)
 
 ---
 
-## 7) WA UX — rol bazlı menü
+## 5) Mekik UX Pattern (`bayi-calisan-davet` referans)
 
-`tenants/config.ts` içindeki `otel.employees` array'i mevcut **4 grupla yetersiz**
-— `Yönetim` ve `Muhasebe` eksik. Revize:
+Misafir için web panel **kalıcı hesap istemez** — emlak'ın "ara sunum" pattern'i:
 
-```ts
-employees: [
-  { key: "asistan", name: "Asistan", icon: "📋",
-    description: "Brifing, rapor ve günlük özet",
-    commands: ["brifing", "durum", "rapor", "doluluk"] },
-
-  { key: "resepsiyon", name: "Resepsiyon", icon: "🛎️",
-    description: "Rezervasyon, check-in/out, misafir mesajları",
-    commands: ["rezervasyonlar", "rezervasyonekle", "rezervasyondetay",
-               "checkin", "checkout", "musaitlik", "fiyat",
-               "misafirler", "mesajlar", "yanitla"] },
-
-  { key: "katHizmetleri", name: "Kat Hizmetleri", icon: "🧹",
-    description: "Oda durumu, temizlik ve görev atama",
-    commands: ["odalar", "odaguncelle", "temizlik", "gorevata"] },
-
-  { key: "misafirDeneyimi", name: "Misafir Deneyimi", icon: "⭐",
-    description: "Yorumlar, geri bildirim",
-    commands: ["yorumlar"] },
-
-  { key: "muhasebe", name: "Muhasebe", icon: "💰",
-    description: "Gelir, fatura, finansal raporlar",
-    commands: ["gelir", "rapor", "doluluk"] },
-
-  { key: "yonetim", name: "Yönetim", icon: "⚙️",
-    description: "Ekip ve duyuru (sadece sahip/müdür)",
-    commands: ["calisanekle", "calisanyonet", "duyuru"] },
-],
+```
+WA → "Online check-in için tıkla → [link]"
+       ↓
+   Tokenized URL (magic_link_tokens, 72h, multi-use)
+       ↓
+   Form/sayfa açılır → işini yapar → kapatır
 ```
 
-`requiredCapabilities` filtresi otomatik gizler — hiçbir özel kod gerekmez
-(router.ts:844 zaten yapıyor). `defaultFavorites: ["brifing", "durum", "rezervasyonlar"]`
-kalabilir; capability filtresi yetkisizlere göstermez.
+### 5.1 Token ailesi
 
-### 7.1 Rol-bazında menü görünümü (örnekler)
+`magic_link_tokens` mevcut tablo (bayi'de var). MVP1'de `purpose` alanı genişletilir:
 
-**Müdür** (manager preset) görür:
-- Asistan, Resepsiyon, Kat Hizmetleri, Misafir Deneyimi, Muhasebe, Yönetim (calisanekle gizli)
+| `purpose` | Süre | Use | Kim için |
+|-----------|------|-----|----------|
+| `bayi-calisan-davet` | 2h | single-use | personel davet |
+| `otel-calisan-davet` | 2h | single-use | personel davet (yeni) |
+| `otel-pre-checkin` | 72h | **multi-use** | misafir online check-in (geri dönüp düzeltebilir) |
+| `otel-iptal` | 24h | single-use | misafir rez iptal onayı (MVP2) |
 
-**Resepsiyonist** (reception preset):
-- Resepsiyon (tüm), Kat Hizmetleri (sadece `odalar` ve `temizlik`-VIEW görünür çünkü diğerleri ASSIGN/EDIT cap'i ister), Asistan ve Muhasebe gizli
+**Gerekiyorsa migration:** `magic_link_tokens.purpose TEXT` ve `magic_link_tokens.metadata JSONB` alanları doğrula/ekle.
 
-**Temizlik Şefi**:
-- Kat Hizmetleri (tüm), Misafir Deneyimi gizli, Asistan'dan sadece `durum`
+### 5.2 Misafir mekik sayfaları (MVP1)
 
-**Kat Görevlisi**:
-- Sadece "Kat Hizmetleri" altında `odalar` (read) ve `temizlik` (own filter)
-- Çok dar menü — neredeyse tek-amaçlı; UX OK
+| Yol | Amaç | Token |
+|-----|------|-------|
+| `/tr/otel-cekin?t=<token>` | Online check-in formu | otel-pre-checkin |
 
-**Muhasebeci**:
-- Asistan (rapor), Muhasebe (tüm), Resepsiyon'dan sadece `rezervasyonlar` ve `rezervasyondetay` (read)
-
-**F&B Şefi** (Phase 2 — komutlar gelmeden boş görünür, şimdi davet edilemesin)
+MVP2'de eklenecek: `/tr/otel-iptal`, `/tr/otel-yorum`, `/tr/otel-spa`, `/tr/otel-fatura/<id>`.
 
 ---
 
-## 8) Açık sorular / tradeoff'lar
+## 6) Online Check-in Akışı (MVP1 Faz E)
 
-### 8.1 Multi-hotel: şimdi mi sonra mı?
+### 6.1 Tetikleyiciler
 
-**Mevcut durum:** `otel_user_hotels` ve `otel_hotels` tabloları zaten var. Owner zaten teorik olarak çoklu otel sahibi olabiliyor.
+| Tetik | Kim | Ne zaman |
+|-------|-----|----------|
+| **Cron** (default) | Sistem | Rez `check_in_date - 24h` → otomatik WA mesajı |
+| **Misafir manuel** | Misafir | `cekin` komutu → 72h link |
+| **Resepsiyon push** | Yetkili | `/cekinlink <rezId>` (cap: PRE_CHECKIN_PUSH) |
 
-**Tavsiye:** Faz 1'de capability gate **tek otelli** akışta çalışsın (owner'ın
-ilk oteli default scope). Davet formuna `hotel_id` dropdown koyalım ama tek
-otel varsa otomatik seçilsin. Faz 2'de RLS ile `otel_*` tablolarına `hotel_id`
-filter ekleyelim. Geç olmadan plana dahil etmek migration ağrısını azaltır.
+### 6.2 Form içeriği (`otel-cekin` mekik sayfası)
 
-### 8.2 Vardiya enforcement — capability mi metadata mı?
+- Otel header (logo + ad — MVP1: tenant-default)
+- Misafir ad/soyad (rez'den ön-doldurulur, düzeltilebilir)
+- Kimlik foto upload (TC kimlik / passport) → Supabase Storage `pre-checkins/{hotel_id}/{rez_id}/`
+- E-imza (signature pad — KVKK aydınlatma + konaklama sözleşmesi)
+- Kişisel tercih: yastık tipi, kahvaltı diyet (vegan/glütensiz), allerji, sigara, varış saati ETA
+- KVKK + Pazarlama opt-in (ayrı tik) — MVP2 loyalty için kritik
 
-**Tavsiye:** Şu an metadata-only (`profiles.metadata.shift_hours`). Capability
-seviyesinde "vardiya dışı kullanılamaz" gate'i değil. UI'da "Vardiya: 16:00–24:00"
-gösterilir, davet edilirken planlanır. Phase 3'te:
-- `cron` tetikli vardiya başlangıç bildirimi
-- "X saat dışında write komut" gate'i (capability'leri runtime'da kısıtla)
+### 6.3 Submit sonrası (atomik)
 
-### 8.3 Kat Görevlisi "own" filtresi: capability mi, query mi?
+```
+otel_pre_checkins(rez_id, hotel_id, kimlik_foto_url, signature_url,
+                  preferences, kvkk_accepted_at, marketing_opt_in, completed_at) INSERT
+otel_reservations.pre_checkin_complete = true UPDATE
+profiles.metadata.marketing_opt_in = true (eğer tik)
+WA → misafir: "Online check-in tamamlandı, otele gelince anahtar kartınız hazır olacak"
+WA → resepsiyon (PRE_CHECKIN_VIEW yetkili): "Misafir X online check-in yaptı, kimlik+imza hazır"
+magic_link_tokens.used_at IS NULL kalır (multi-use, geri dönüş mümkün) — ama 72h sonra expires_at fail eder
+```
 
-**Tavsiye (bayi pattern):** İki capability gerekli: `HOUSEKEEPING_VIEW` (full)
-ve `HOUSEKEEPING_VIEW_OWN` (kısıtlı). Handler `firstMatchingCapability(...)` ile
-ilk eşleşeni alır:
-- `_VIEW` varsa: tüm tasks
-- `_VIEW_OWN` varsa: `WHERE assigned_to = ctx.userId`
-- İkisi de yoksa: capability gate zaten yetkisiz mesajı verir
+### 6.4 Fiziksel check-in
 
-Bu, sahip görmek istediğinde tüm görevleri, kat görevlisinin sadece kendininkini
-görmesini tek handler'da kotarır. **Şart:** `otel_housekeeping_tasks.assigned_to`
-FK profiles olmalı (verify et, eksikse migration).
-
-### 8.4 Misafir self-service (online check-in via SMS) — scope dışı mı?
-
-**Bu farklı bir kanal:** Misafir kendisi otelle WhatsApp üzerinden iletişime
-geçer (rezervasyon onaylama, online check-in formu, oda servis sipariş).
-Personel rol modeliyle alakasız — public-facing interface, ayrı plan.
-**Phase 3+ olarak ayrı doküman** (`otel-misafir-self-service.md`).
-
-### 8.5 F&B (Mutfak/Restoran şefi) — şimdi mi?
-
-**Mevcut durum:** Otel'de F&B tablosu/komut yok. Restoran SaaS'ı ayrı tenant.
-
-**Tavsiye:** F&B preset'ini şimdilik form'a koyma — boş menü gösterir, kafa
-karıştırır. Phase 2'de:
-- `otel_fnb_orders`, `otel_fnb_menu` tablolar
-- `oda-servisi`, `mutfak-siparis`, `mutfak-hazir` komutları
-- F&B preset enable
-
-Alternatif: küçük oteller restoran tenant'ını ayrı abone olur (multi-SaaS aynı
-WA hesabında zaten çalışıyor — `/degistir` ile geçiş).
-
-### 8.6 Misafir mesajları multi-channel?
-
-`otel_guest_messages` şu an WA ile mi sınırlı, Booking/Airbnb mesajlarıyla
-da entegre mi? Eğer ileride entegrasyon olursa `GUESTS_MESSAGE` tek capability
-yetiyor — kanal bazlı bölmeye gerek yok şimdilik.
-
-### 8.7 Owner kendi capability'lerini değiştirebilir mi?
-
-**Tavsiye:** HAYIR. Owner her zaman `["*"]`. UI'da kendi capability'sini
-göstermeyelim (yanlışlıkla kaldırırsa DB'den kurtulması gerekir).
-
-### 8.8 Aynı telefon, birden fazla otel sahibi (zincir)
-
-`profiles` her tenant için ayrı satır, aynı `whatsapp_phone`. Otel
-zincirinde owner her bir otel için ayrı `profiles` kaydı (tenant aynı, hotel_id
-farklı). `otel_user_hotels` ile ilişkilenir.
-
-**Açık soru:** Aynı tenant'ta aynı kişiyi 2 otele bağlayalım mı, yoksa her otel
-ayrı tenant mı? **Tavsiye:** Tek tenant + multi `otel_user_hotels` — RLS hotel_id
-filter'ı yapar, tek WA bot, tek menü.
-
-### 8.9 Çalışan silinince ilişkili kayıtlar
-
-**Tavsiye:**
-- `otel_housekeeping_tasks.assigned_to` → `ON DELETE SET NULL`
-- `otel_reservations.created_by/checked_in_by/checked_out_by` → `ON DELETE SET NULL`
-- `otel_guest_messages.replied_by` → `ON DELETE SET NULL`
-Loglar kaybolmaz, "Personel: -" gösterilir.
-
-### 8.10 Resepsiyonist gece vardiyası raporu
-
-**Tradeoff:** `REPORTS_VIEW` resepsiyona verilse mi? Gece vardiyası
-ertesi gün owner için "gece kaç check-in oldu" raporu görmek isteyebilir.
-
-**Tavsiye:** Default vermesin — Müdüre ve Muhasebeciye yeter. Eğer ihtiyaç
-çıkarsa owner formda manuel ekler (capability checkbox'larından `REPORTS_VIEW`
-tikler).
+Misafir otele gelince **resepsiyon yetkilisi `RESERVATIONS_CHECKIN`** ile sistem üzerinden onaylar → status='checked_in'. Bu adım **manuel kalır** (yasal sebep: kimlik fizibıl doğrulama otelin yükümlülüğü).
 
 ---
 
-## 9) İmplementasyon yol haritası (onay sonrası)
+## 7) Komut → Capability Matrisi
 
-**Faz A — Capability altyapısı (1-2 saat)**
-- `src/tenants/otel/capabilities.ts` (registry + presetler + labels)
-- `src/tenants/otel/commands/index.ts` → `requiredCapabilities` map ekle (tüm 20 komut)
-- `src/tenants/config.ts` `otel.employees` revize (mevcut 4 grup + Muhasebe + Yönetim)
-- Test: owner WA'dan tüm komutları çalıştırabiliyor mu (mevcut akışta regression yok mu)
+### 7.1 Personel komutları (mevcut 20)
 
-**Faz B — Personel davet (3-4 saat)**
-- `src/tenants/otel/commands/calisan.ts` (`/calisanekle` + `/calisanyonet` + `/duyuru` — bayi clone)
-- `src/app/[locale]/otel-calisan-davet/page.tsx` (web form, capability checkbox grupları, preset dropdown, hotel_id dropdown)
-- `src/app/api/otel-calisan-davet/save/route.ts` (POST endpoint)
-- `otel_user_hotels` insert mantığı save endpoint'inde
-- Test: owner çalışan davet → kod ile login → çalışan kısıtlı menü görüyor
+| Komut | Capability | Sahip | Müdür | Resep. | T.Şefi | Kat Gör. | Muh. |
+|-------|------------|:-----:|:-----:|:------:|:------:|:--------:|:----:|
+| durum | null | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| brifing | REPORTS_VIEW | ✅ | ✅ | — | — | — | ✅ |
+| rapor | REPORTS_VIEW | ✅ | ✅ | — | — | — | ✅ |
+| gelir | FINANCE_VIEW | ✅ | ✅ | — | — | — | ✅ |
+| rezervasyonlar | RESERVATIONS_VIEW | ✅ | ✅ | ✅ | — | — | ✅ |
+| rezervasyonekle | RESERVATIONS_CREATE | ✅ | ✅ | ✅ | — | — | — |
+| rezervasyondetay | RESERVATIONS_VIEW | ✅ | ✅ | ✅ | — | — | ✅ |
+| checkin | RESERVATIONS_CHECKIN | ✅ | ✅ | ✅ | — | — | — |
+| checkout | RESERVATIONS_CHECKIN | ✅ | ✅ | ✅ | — | — | — |
+| musaitlik | AVAILABILITY_VIEW | ✅ | ✅ | ✅ | — | — | — |
+| fiyat | PRICING_VIEW | ✅ | ✅ | ✅ | — | — | — |
+| misafirler | GUESTS_VIEW | ✅ | ✅ | ✅ | ✅ | — | — |
+| mesajlar | GUESTS_MESSAGE | ✅ | ✅ | ✅ | — | — | — |
+| yanitla | GUESTS_MESSAGE | ✅ | ✅ | ✅ | — | — | — |
+| yorumlar | GUESTS_REVIEWS | ✅ | ✅ | ✅ | — | — | — |
+| odalar | ROOMS_VIEW | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| odaguncelle | ROOMS_STATUS_EDIT | ✅ | ✅ | — | ✅ | — | — |
+| temizlik | [HOUSEKEEPING_VIEW, HOUSEKEEPING_VIEW_OWN] | ✅ | ✅ | — | ✅ | ✅* | — |
+| gorevata | HOUSEKEEPING_ASSIGN | ✅ | ✅ | — | ✅ | — | — |
+| doluluk | REPORTS_VIEW | ✅ | ✅ | — | — | — | ✅ |
 
-**Faz C — `_OWN` filter & migration (1 saat)**
-- `otel_housekeeping_tasks.assigned_to` FK kontrol/migration (eksikse ekle)
-- `temizlik` ve (Phase 2) `gorevkapat` handler'larında `firstMatchingCapability(...)` ile own/full filter
-- Test: kat görevlisi sadece kendi görevlerini görüyor
+\* `_OWN` yetkisiyle handler `firstMatchingCapability` ile filtreler → sadece `assigned_to = ctx.userId`.
 
-**Faz D — Multi-hotel RLS (Phase 2 — ayrı görev)**
-- `otel_*` tablolarına `hotel_id` filter'lı RLS politikaları
-- Owner'ın multi-hotel test akışı
+### 7.2 Yeni personel komutları (MVP1)
 
-**Faz E — Write komutları + F&B (Phase 2 — ayrı görev)**
-- Bu doküman **bunu kapsamıyor** — ayrı plan.
+| Komut | Capability | Sahip | Müdür | Resep. |
+|-------|------------|:-----:|:-----:|:------:|
+| `/calisanekle` | EMPLOYEES_MANAGE | ✅ | — | — |
+| `/calisanyonet` | EMPLOYEES_MANAGE | ✅ | — | — |
+| `/duyuru` | ANNOUNCEMENTS | ✅ | ✅ | — |
+| `/misafirdavet <telefon> <rezId?>` | GUESTS_INVITE | ✅ | ✅ | ✅ |
+| `/cekinlink <rezId>` | PRE_CHECKIN_PUSH | ✅ | ✅ | ✅ |
+
+### 7.3 Misafir komutları (MVP1)
+
+| Komut | Capability | Açıklama |
+|-------|------------|----------|
+| `rezervasyonum` | RESERVATIONS_VIEW_OWN | Aktif rez bilgisi |
+| `rezervasyonlarim` | RESERVATIONS_VIEW_OWN | Lifetime tarihçe (geçmiş + aktif + iptal) |
+| `hizmetler` | GUEST_SERVICES_VIEW | Otel hizmet listesi (kahvaltı saati, wifi var/yok, vb.) |
+| `wifi` | GUEST_SERVICES_VIEW | Wi-Fi şifre + saat |
+| `talep <metin>` | GUEST_REQUEST_CREATE | `otel_guest_requests` insert + resepsiyona WA bildirim |
+| `cekin` | GUEST_PRE_CHECKIN_FORM | 72h mekik link gönderir |
+| `iptal` | GUEST_RESERVATION_CANCEL | Politika kontrolü → buton onay → status='cancelled' |
 
 ---
 
-## 10) Onay için sorular
+## 8) DB Migration Listesi (MVP1)
 
-1. **Rol sayısı 7 (sahip + 6 personel) yeterli mi?** "Güvenlik şefi", "SPA yöneticisi", "Animasyon" gibi extra preset eklesek mi?
-2. **F&B Şefi preset'i şimdi form'a koyalım mı** (boş menü görür) yoksa Phase 2'ye mi erteleyelim?
-3. **Multi-hotel** Phase 1'de mi (RLS dahil) yoksa Phase 2'ye mi (basitlik için tek-otel scope)?
-4. **Vardiya saatleri** form alanı opsiyonel mi yoksa zorunlu mu? Phase 3'te enforcement gelecekse şimdiden zorunlu yapalım mı?
-5. **Çalışanın gördüğü welcome mesajı** rol-spesifik mi (yukarıdaki örnek gibi) yoksa generic mi?
-6. **`otel_user_hotels` kayıt mantığı** — owner onboarding'de otomatik ilk otel oluşturuluyor mu? Eğer hayırsa Faz A'ya bu da girsin.
-7. **Faz A önce tek başına mergelensin mi** (capability gate aktif, davet sonra), yoksa Faz A+B+C bütün halinde mi push edilsin?
-8. **Misafir self-service** ayrı milestone'a mı, yoksa otel multi-user ile aynı milestone'a mı sıkıştırılsın?
+Tek migration dosyası: `supabase/migrations/<TS>_otel_multiuser_v1.sql`
+
+```sql
+-- 1. profiles.role 'guest' enum genişletme (TEXT olduğu için constraint yoksa no-op)
+-- 2. magic_link_tokens.purpose ve metadata var mı verify, eksikse ekle
+-- 3. hotel_employees tablosu
+CREATE TABLE IF NOT EXISTS hotel_employees (
+  hotel_id UUID NOT NULL REFERENCES otel_hotels(id) ON DELETE CASCADE,
+  profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  capabilities TEXT[] NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (hotel_id, profile_id)
+);
+CREATE INDEX IF NOT EXISTS idx_hotel_employees_profile ON hotel_employees(profile_id);
+
+-- 4. otel_pre_checkins
+CREATE TABLE IF NOT EXISTS otel_pre_checkins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reservation_id UUID NOT NULL REFERENCES otel_reservations(id) ON DELETE CASCADE,
+  hotel_id UUID NOT NULL REFERENCES otel_hotels(id) ON DELETE CASCADE,
+  guest_profile_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  id_photo_url TEXT,
+  signature_url TEXT,
+  preferences JSONB NOT NULL DEFAULT '{}',
+  kvkk_accepted_at TIMESTAMPTZ,
+  marketing_opt_in BOOLEAN NOT NULL DEFAULT false,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_otel_pre_checkins_rez ON otel_pre_checkins(reservation_id);
+
+-- 5. otel_reservations.pre_checkin_complete
+ALTER TABLE otel_reservations
+  ADD COLUMN IF NOT EXISTS pre_checkin_complete BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE otel_reservations
+  ADD COLUMN IF NOT EXISTS guest_profile_id UUID REFERENCES profiles(id) ON DELETE SET NULL;
+
+-- 6. otel_housekeeping_tasks.assigned_to (verify, eksikse ekle)
+ALTER TABLE otel_housekeeping_tasks
+  ADD COLUMN IF NOT EXISTS assigned_to UUID REFERENCES profiles(id) ON DELETE SET NULL;
+
+-- 7. otel_guest_hotels (loyalty rollup — MVP1'de boş, MVP2'de cron doldurur)
+CREATE TABLE IF NOT EXISTS otel_guest_hotels (
+  profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  hotel_id UUID NOT NULL REFERENCES otel_hotels(id) ON DELETE CASCADE,
+  first_visit DATE,
+  last_visit DATE,
+  total_stays INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (profile_id, hotel_id)
+);
+
+-- 8. RLS politikaları (otel_reservations, otel_rooms, otel_guest_messages, otel_guest_requests, otel_pre_checkins)
+-- Hot path için service role kullandığımızdan WA tarafı bypass eder; web panel okumalarında devreye girer.
+-- Detay: PolicyAddPolicy section'unda her tablo için ayrı.
+```
+
+**Not:** SQL migration **kullanıcı Supabase dashboard'dan uygular**. Kod commit eder, kullanıcı SQL'i çalıştırır.
 
 ---
 
-**Tahmini süre**: Faz A+B+C birlikte ~5-7 saat (review + test dahil).
-**Onaydan sonra başlanacak.**
+## 9) Davet Akışları
+
+### 9.1 Personel davet (`/calisanekle` — bayi clone)
+
+```
+WA: /calisanekle
+ → 2h magic_link_tokens (purpose='otel-calisan-davet')
+ → owner'a buton: "Çalışan ekle linki" → /tr/otel-calisan-davet?t=<token>
+ → form: ad + telefon + rol-preset dropdown + capability checkbox + hotel_id (multi-hotel ise)
+ → POST /api/otel-calisan-davet/save
+   - auth user create
+   - profiles insert (role=employee, capabilities, invited_by, metadata.position)
+   - hotel_employees insert (hotel_id, profile_id, capabilities) — RLS scope için
+   - invite_codes 6-hex pending
+   - WA → çalışan: "Kayıt kodun: ABC123"
+```
+
+### 9.2 Misafir davet (`/misafirdavet`)
+
+```
+WA: /misafirdavet 905551234567 [rezId?]
+ → resepsiyon yazar, GUESTS_INVITE cap kontrolü
+ → davet kodu üretilir (8-hex, invite_codes tablosu, role=guest, hotel_id metadata)
+ → WA → misafir: "Marina Resort'a hoş geldiniz. Kod ile bağlanın: A1B2C3D4
+                  Tıkla: https://wa.me/31644967207?text=OTEL:A1B2C3D4"
+ → misafir kod yazar → router invite_codes flow:
+   - profile create (role=guest, capabilities=GUEST_PRESET, metadata.invited_for_hotel_id, lifetime)
+   - WA → misafir: rol-spesifik welcome + komut listesi
+```
+
+**Lifetime kuralı:** Misafir `role='guest'` profili **hiçbir zaman silinmez/sessizleşmez**. Capability'ler de sıfırlanmaz. Marketing/loyalty mesajı için **`marketing_opt_in=true`** ek koşulu (transactional mesajlar opt-in gerektirmez).
+
+### 9.3 WA Business uyumluluk
+
+- Davet anında KVKK linki + opt-in seçeneği gösterilir
+- 24h serbest mesaj penceresi dışında **template** mesaj gerekir (Meta WA policy)
+- Marketing kategorisi mesajlar `marketing_opt_in=true` olmadan **YASAK**
+
+---
+
+## 10) MVP1 Yol Haritası — Pipeline mode
+
+| Faz | İçerik | Süre | Commit |
+|-----|--------|------|--------|
+| **A** | `src/tenants/otel/capabilities.ts` + `requiredCapabilities` map + config groups (Yönetim+Muhasebe) | 1-2h | `feat(otel): capability registry + requiredCapabilities map` |
+| **B** | SQL migration (`hotel_employees`, `otel_pre_checkins`, `otel_guest_hotels`, RLS) + resolver fonksiyonu `getEffectiveCapabilities` | 2-3h | `feat(otel): hotel_employees + RLS + multi-property resolver` |
+| **C** | `/calisanekle` + web form clone'u + save API + role presetler dropdown | 3-4h | `feat(otel): personel davet web formu + /calisanekle` |
+| **D** | role=guest + GUEST_PRESET + `/misafirdavet` + 5 misafir komut handler'ı (rezervasyonum, rezervasyonlarim, hizmetler, wifi, talep) | 3-4h | `feat(otel): misafir lifetime rolü + WA komutları` |
+| **E** | `otel-cekin` mekik form + API + `cekin` + `/cekinlink` + cron T-24h job | 4-5h | `feat(otel): online check-in mekik form + cron` |
+
+**Toplam tahmin:** 13-18 saat. Pipeline mode → her faz biter bitmez `git commit && git push`.
+
+**Build hatası dışında dur kararı verme** (kullanıcı talimatı).
+
+---
+
+## 11) Açık tradeoff'lar (karar alındı, not için)
+
+- **K1 lifetime guest:** GDPR/KVKK için manuel silme mekanizması var (admin panelden), ama otomatik silme yok — kullanıcı tercihi.
+- **K2 mekik UX:** WA'da manage edilemeyecek karmaşıklıkta hiçbir misafir akışı yok MVP1'de — sadece check-in. İptal/yorum/ek-hizmet MVP2.
+- **K3 multi-tenant:** `hotel_employees` mevcut `profiles.capabilities`'i **override** eder, fallback olarak korunur. Bu, "tek otelliler için kolay başlangıç + ölçeklenince zincir desteği" sağlar.
+- **K4 check-in MVP1:** Cron job + 72h multi-use token + atomik insert; resepsiyon notif `PRE_CHECKIN_VIEW`'a göre.
+- **K5 brand MVP2:** MVP1'de `otel_hotels.name` brand görevi görür (yer-tutucu). Persona/wa_phone Faz 2.
