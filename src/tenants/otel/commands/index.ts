@@ -46,6 +46,14 @@ import {
   handleDuyuru, handleDuyuruStep,
 } from "./calisan";
 
+// Misafir tarafı (role='guest', lifetime)
+import {
+  handleMisafirDavet, handleMisafirDavetStep,
+  handleRezervasyonum, handleRezervasyonlarim,
+  handleHizmetler, handleWifi,
+  handleTalep, handleTalepStep,
+} from "./misafir";
+
 export const otelCommands: TenantCommandRegistry = {
   commands: {
     // ── Genel ──────────────────────────────────────────
@@ -82,6 +90,16 @@ export const otelCommands: TenantCommandRegistry = {
     calisanekle: handleCalisanEkle,
     calisanyonet: handleCalisanYonet,
     duyuru: handleDuyuru,
+
+    // ── Misafir davet (resepsiyon+) ────────────────────
+    misafirdavet: handleMisafirDavet,
+
+    // ── Misafir komutları (role='guest') ───────────────
+    rezervasyonum: handleRezervasyonum,
+    rezervasyonlarim: handleRezervasyonlarim,
+    hizmetler: handleHizmetler,
+    wifi: handleWifi,
+    talep: handleTalep,
   },
 
   stepHandlers: {
@@ -90,6 +108,8 @@ export const otelCommands: TenantCommandRegistry = {
     gorevata: handleGorevAtaStep,
     calisanekle: handleCalisanEkleStep,
     duyuru: handleDuyuruStep,
+    misafirdavet: handleMisafirDavetStep,
+    talep: handleTalepStep,
   },
 
   callbackPrefixes: {
@@ -168,6 +188,22 @@ export const otelCommands: TenantCommandRegistry = {
     "yardım": "menu",
     "yardim": "menu",
     "help": "menu",
+
+    // Misafir tarafı (role='guest')
+    // "rezervasyon" personel için rezervasyonlar'a map'lendi (line 161),
+    // misafir "rezum" veya direkt "rezervasyonum" yazsın.
+    "rezum": "rezervasyonum",
+    "tarihce": "rezervasyonlarim",
+    "rezlerim": "rezervasyonlarim",
+    "hizmet": "hizmetler",
+    "servisler": "hizmetler",
+    "wifi": "wifi",
+    "internet": "wifi",
+    "talep": "talep",
+    "şikayet": "talep",
+    "sikayet": "talep",
+    "misafirdavet": "misafirdavet",
+    "yenirezmisafir": "misafirdavet",
   },
 
   // ── Capability requirements ──────────────────────────────────────────
@@ -210,5 +246,15 @@ export const otelCommands: TenantCommandRegistry = {
     calisanekle: C.EMPLOYEES_MANAGE,
     calisanyonet: C.EMPLOYEES_MANAGE,
     duyuru: C.ANNOUNCEMENTS,
+
+    // ── Misafir davet — resepsiyon, müdür, sahip ──────
+    misafirdavet: C.GUESTS_INVITE,
+
+    // ── Misafir komutları (lifetime, role='guest') ────
+    rezervasyonum: C.RESERVATIONS_VIEW_OWN,
+    rezervasyonlarim: C.RESERVATIONS_VIEW_OWN,
+    hizmetler: C.GUEST_SERVICES_VIEW,
+    wifi: C.GUEST_SERVICES_VIEW,
+    talep: C.GUEST_REQUEST_CREATE,
   },
 };

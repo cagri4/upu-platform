@@ -517,8 +517,11 @@ export async function POST(req: NextRequest) {
         const userName = invitedUser?.display_name || "";
         const tenantCfg = getTenantByKey(tenantKey);
         const features = tenantCfg?.welcomeFeatures || "iş süreçlerinizi";
+        // Guest role: skip owner-onboarding (misafir kendi kişisel verisini
+        // mekik check-in formunda dolduruyor; WA'da owner soruları görünmesin).
+        const skipOnboarding = invitedUser?.role === "guest";
 
-        if (onbFlow) {
+        if (onbFlow && !skipOnboarding) {
           // Narrative intro — explain the concept before onboarding questions
           await sendText(phone,
             `Merhaba ${userName}! 👋\n\n` +
