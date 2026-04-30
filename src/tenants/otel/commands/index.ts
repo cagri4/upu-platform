@@ -39,6 +39,13 @@ import { handleGorevAta, handleGorevAtaStep, handleGorevAtaCallback } from "./go
 // Analiz
 import { handleDoluluk } from "./doluluk";
 
+// Yönetim — çalışan + duyuru
+import {
+  handleCalisanEkle, handleCalisanEkleStep, handleCalisanEkleCallback,
+  handleCalisanYonet,
+  handleDuyuru, handleDuyuruStep,
+} from "./calisan";
+
 export const otelCommands: TenantCommandRegistry = {
   commands: {
     // ── Genel ──────────────────────────────────────────
@@ -70,12 +77,19 @@ export const otelCommands: TenantCommandRegistry = {
 
     // ── Analiz ─────────────────────────────────────────
     doluluk: handleDoluluk,
+
+    // ── Yönetim (sahip) ────────────────────────────────
+    calisanekle: handleCalisanEkle,
+    calisanyonet: handleCalisanYonet,
+    duyuru: handleDuyuru,
   },
 
   stepHandlers: {
     rezekle: handleRezervasyonEkleStep,
     yanitla: handleYanitlaStep,
     gorevata: handleGorevAtaStep,
+    calisanekle: handleCalisanEkleStep,
+    duyuru: handleDuyuruStep,
   },
 
   callbackPrefixes: {
@@ -106,6 +120,9 @@ export const otelCommands: TenantCommandRegistry = {
 
     // Yorumlar
     "yorum_filter:": handleYorumlarCallback,
+
+    // Çalışan ekle (detail/sil)
+    "calisanekle:": handleCalisanEkleCallback,
   },
 
   aliases: {
@@ -188,5 +205,10 @@ export const otelCommands: TenantCommandRegistry = {
 
     // ── Analiz ─────────────────────────────────────────
     doluluk: C.REPORTS_VIEW,
+
+    // ── Yönetim (owner-only komutları wildcard '*' ile geçer) ─────
+    calisanekle: C.EMPLOYEES_MANAGE,
+    calisanyonet: C.EMPLOYEES_MANAGE,
+    duyuru: C.ANNOUNCEMENTS,
   },
 };
