@@ -6,7 +6,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { BAYI_CAPABILITIES, CAPABILITY_LABELS, DEALER_PRESET } from "@/tenants/bayi/capabilities";
+import { BAYI_CAPABILITIES, CAPABILITY_LABELS, DEALER_PRESET, POSITION_PRESETS } from "@/tenants/bayi/capabilities";
 
 export const dynamic = "force-dynamic";
 
@@ -54,10 +54,24 @@ export async function GET(req: NextRequest) {
     groups[meta.group].push({ id: key, label: meta.label });
   }
 
+  // Pozisyon presetleri (Faz 3): owner formdan dropdown ile pozisyon
+  // seçer, checkbox listesi pre-fill olur. Dealer-only kapsamlar dahil
+  // değil (owner çalışan davet ediyor, bayi değil).
+  const positions: Array<{ id: string; label: string; capabilities: string[] }> = [];
+  for (const [key, value] of Object.entries(POSITION_PRESETS)) {
+    if (key === "dealer_employee") continue; // bu preset bayi sahibinin kendi çalışanı için, ayrı akış
+    positions.push({
+      id: key,
+      label: value.label,
+      capabilities: [...value.preset],
+    });
+  }
+
   return NextResponse.json({
     success: true,
     ownerName: owner?.display_name || "",
     groups,
+    positions,
     presets: {
       dealer: DEALER_PRESET,
     },

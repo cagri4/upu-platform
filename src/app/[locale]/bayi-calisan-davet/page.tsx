@@ -11,9 +11,16 @@ interface Group {
   [groupName: string]: { id: string; label: string }[];
 }
 
+interface PositionPreset {
+  id: string;
+  label: string;
+  capabilities: string[];
+}
+
 interface InitResponse {
   ownerName: string;
   groups: Group;
+  positions: PositionPreset[];
   presets: { dealer: string[] };
 }
 
@@ -29,6 +36,20 @@ export default function BayiCalisanDavetPage() {
   const [phone, setPhone] = useState("");
   const [position, setPosition] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  // Pozisyon değiştiğinde preset capability'ler otomatik seçilir.
+  // Owner manuel olarak rafineleştirebilir (ek/çıkarma).
+  function applyPositionPreset(positionKey: string) {
+    setPosition(positionKey);
+    if (!positionKey) {
+      setSelected(new Set());
+      return;
+    }
+    const preset = init?.positions.find(p => p.id === positionKey);
+    if (preset) {
+      setSelected(new Set(preset.capabilities));
+    }
+  }
 
   useEffect(() => {
     if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
@@ -134,10 +155,17 @@ export default function BayiCalisanDavetPage() {
             <p className="text-[11px] text-slate-500 mt-1">Başında 0 veya ülke kodu olsun, boşluk önemli değil.</p>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Pozisyon (opsiyonel)</label>
-            <input value={position} onChange={e => setPosition(e.target.value)}
-              placeholder="Örn. Satış Müdürü"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+            <label className="block text-xs font-medium text-slate-600 mb-1">Pozisyon</label>
+            <select value={position} onChange={e => applyPositionPreset(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+              <option value="">Özel — yetkileri sen seç</option>
+              {init?.positions.map(p => (
+                <option key={p.id} value={p.id}>{p.label}</option>
+              ))}
+            </select>
+            <p className="text-[11px] text-slate-500 mt-1">
+              Pozisyon seçince yetkiler otomatik dolar — istersen aşağıdan ekleyip çıkarabilirsin.
+            </p>
           </div>
         </div>
 
