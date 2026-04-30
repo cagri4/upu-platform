@@ -5,6 +5,8 @@
  * Domain-based routing: middleware detects domain → loads correct tenant config.
  */
 
+import type { SupportedCurrency, SupportedLocale } from "@/platform/i18n/currency";
+
 export interface VirtualEmployee {
   key: string;
   name: string;
@@ -15,7 +17,45 @@ export interface VirtualEmployee {
 
 export interface TenantPricingTier {
   price: number;
-  currency: "EUR";
+  currency: SupportedCurrency;
+}
+
+/**
+ * Setup ücreti — opsiyonel, taksit destekli. Tenant default'u kullanmak
+ * istemeyen müşteri "self-service" yolundan setup'sız da geçebilir.
+ */
+export interface TenantSetupTier {
+  price: number;
+  currency: SupportedCurrency;
+  optional: boolean;
+  installments: number;
+}
+
+/**
+ * Referral / launch promo — ilk N müşteriye setup ücretsiz + ay başına
+ * indirimli abonelik. Pazarlama mesajı için tek noktada tutuluyor.
+ */
+export interface TenantReferralPromo {
+  firstN: number;
+  setupWaived: boolean;
+  monthlyDiscount: number;        // 0..1 oranı (0.5 = %50 indirim)
+  monthsDiscounted: number;
+}
+
+/**
+ * Adapter listesi — kullanıcı onboarding sırasında muhasebe / ödeme /
+ * kargo / e-invoice yazılımını seçer; seçim profile.metadata'ya kaydedilir,
+ * runtime'da `src/tenants/<tenant>/adapters/` resolver tarafından okunur.
+ *
+ * MVP'de NL adapter'ları (yuki, exact, snelstart, mollie, postnl, storecove)
+ * implement edilir; TR adapter'ları (logo_nl, mikro, iyzico, yurtici, mng)
+ * stub'tır — kullanıcı seçerse "Coming soon" mesajı görür.
+ */
+export interface TenantAdapterCatalog {
+  accounting?: string[];
+  payment?: string[];
+  shipping?: string[];
+  einvoice?: string[];
 }
 
 export interface TenantConfig {
@@ -38,7 +78,20 @@ export interface TenantConfig {
   pricing: {
     starter: TenantPricingTier;
     pro: TenantPricingTier;
+    growth?: TenantPricingTier;
+    setup?: TenantSetupTier;
+    referral?: TenantReferralPromo;
   };
+
+  // Multi-locale framework — opsiyonel, eklenmemişse platform default
+  // (EUR + tr-NL) uygulanır. Her tenant kendi pazarına göre seçer.
+  country?: string;                       // ISO 2-letter (NL, TR, BE, DE)
+  defaultCurrency?: SupportedCurrency;
+  defaultLocale?: SupportedLocale;
+  supportedCountries?: string[];
+  supportedCurrencies?: SupportedCurrency[];
+  supportedLocales?: SupportedLocale[];
+  availableAdapters?: TenantAdapterCatalog;
 }
 
 // ─── Tenant Registry ─────────────────────────────────────────────────────
@@ -79,27 +132,33 @@ const TENANTS: Record<string, TenantConfig> = {
     whatsappPhone: "31644967207",
     icon: "📦",
     color: "#059669",
-    description: "Bayi ağınızın her bireyi cebinde tek UPU asistanıyla",
-    welcomeFeatures: "Sipariş yönetimi, stok takibi, bayi ağı yönetimi ve daha fazlasını",
-    employees: [
-      { key: "asistan", name: "Asistan", icon: "📊", description: "Günlük özet, takvim ve hatırlatmalar", commands: ["ozet", "takvim", "hatirlatma", "rapor"] },
-      { key: "satisMuduru", name: "Satış Müdürü", icon: "💰", description: "Kampanya, teklif ve performans analizi", commands: ["kampanyaolustur", "kampanyalar", "teklifver", "performans", "segment"] },
-      { key: "satisTemsilcisi", name: "Satış Temsilcisi", icon: "🤝", description: "Sipariş alma, ürün önerisi, ziyaret yönetimi", commands: ["siparisolustur", "siparisler", "bayidurum", "ziyaretnotu", "ziyaretler"] },
-      { key: "muhasebeci", name: "Muhasebeci", icon: "💳", description: "Bakiye, fatura takibi ve hesap ekstresi", commands: ["bakiye", "faturalar", "borcdurum", "ekstre", "odeme"] },
-      { key: "tahsildar", name: "Tahsildar", icon: "📋", description: "Vadesi gelen ödemeler ve tahsilat takibi", commands: ["vadeler", "tahsilat", "hatirlatgonder"] },
-      { key: "depocu", name: "Depocu", icon: "📦", description: "Stok durumu, kritik stok ve tedarik yönetimi", commands: ["stok", "kritikstok", "stokhareketleri", "tedarikciler", "satinalma"] },
-      { key: "lojistikci", name: "Lojistikçi", icon: "🚛", description: "Teslimat planlaması ve kargo takibi", commands: ["teslimatlar", "rota", "kargotakip"] },
-      { key: "urunYoneticisi", name: "Ürün Yöneticisi", icon: "🏷", description: "Ürün kataloğu ve fiyat listesi", commands: ["urunler", "fiyatliste", "yeniurun", "fiyatguncelle"] },
-      { key: "ekipYonetimi", name: "Ekip Yönetimi", icon: "👥", description: "Çalışan ve bayi iletişimi", commands: ["calisanekle", "calisanyonet", "talimat", "kampanyabildir", "tahsilatbildir", "duyuru"] },
-      { key: "bayiAsistan", name: "Bayi Asistanı", icon: "🤖", description: "Sipariş, bakiye, katalog ve kampanyalar", commands: ["siparisver", "siparislerim", "tekrarsiparis", "bakiyem", "faturalarim", "odemelerim", "fiyatlar", "aktifkampanyalar", "mesajgonder"] },
-    ],
-    dealerEmployees: ["bayiAsistan"],
+    description: "Türk dağıtıcılar için AI + WhatsApp destekli bayi satış portalı",
+    welcomeFeatures: "WhatsApp'tan sipariş alma, AI tahsilat asistanı, saha satış yönetimi, kampanya bildirimi ve muhasebe entegrasyonu",
+    // Tek-asistan vizyon: 8 sanal eleman kalıntısı kaldırıldı.
+    // Komut menüsü artık capability seti üzerinden filtreleniyor
+    // (registry.requiredCapabilities), employee gruplaması yok.
+    employees: [],
     commandMap: {},
     guide: "",
     defaultFavorites: ["ozet", "siparisler", "stok"],
     pricing: {
-      starter: { price: 119, currency: "EUR" },
-      pro: { price: 249, currency: "EUR" },
+      starter: { price: 99, currency: "EUR" },
+      growth: { price: 249, currency: "EUR" },
+      pro: { price: 599, currency: "EUR" },
+      setup: { price: 749, currency: "EUR", optional: true, installments: 3 },
+      referral: { firstN: 10, setupWaived: true, monthlyDiscount: 0.5, monthsDiscounted: 3 },
+    },
+    country: "NL",
+    defaultCurrency: "EUR",
+    defaultLocale: "tr-NL",
+    supportedCountries: ["NL", "TR", "BE", "DE"],
+    supportedCurrencies: ["EUR", "TRY"],
+    supportedLocales: ["tr-NL", "tr-TR", "nl-NL", "en-US"],
+    availableAdapters: {
+      accounting: ["yuki", "exact", "snelstart", "logo_nl", "mikro", "other", "none"],
+      payment:    ["mollie", "stripe", "iyzico", "manual", "none"],
+      shipping:   ["postnl", "dhl", "yurtici", "mng", "own_fleet", "other"],
+      einvoice:   ["storecove", "none"],
     },
   },
   muhasebe: {
