@@ -195,10 +195,10 @@ export async function handleRezervasyonum(ctx: WaContext): Promise<void> {
     const today = new Date().toISOString().slice(0, 10);
     const { data: rez } = await supabase
       .from("otel_reservations")
-      .select("id, room_id, check_in_date, check_out_date, guest_count, status, total_amount, pre_checkin_complete")
+      .select("id, room_id, check_in, check_out, status, total_price, pre_checkin_complete, otel_rooms(name)")
       .eq("guest_profile_id", ctx.userId)
-      .gte("check_out_date", today)
-      .order("check_in_date", { ascending: true })
+      .gte("check_out", today)
+      .order("check_in", { ascending: true })
       .limit(1)
       .maybeSingle();
 
@@ -213,8 +213,9 @@ export async function handleRezervasyonum(ctx: WaContext): Promise<void> {
       return;
     }
 
-    const ci = new Date(rez.check_in_date).toLocaleDateString("tr-TR");
-    const co = new Date(rez.check_out_date).toLocaleDateString("tr-TR");
+    const ci = new Date(rez.check_in).toLocaleDateString("tr-TR");
+    const co = new Date(rez.check_out).toLocaleDateString("tr-TR");
+    const roomName = (rez.otel_rooms as unknown as { name?: string } | null)?.name;
     const statusLabel = rez.status === "confirmed" ? "✅ Onaylı"
       : rez.status === "checked_in" ? "🟢 Konaklamada"
       : rez.status === "pending" ? "⏳ Beklemede"
@@ -223,9 +224,9 @@ export async function handleRezervasyonum(ctx: WaContext): Promise<void> {
     let text = `🏨 *Rezervasyonunuz*\n\n`;
     text += `📅 Giriş: ${ci}\n`;
     text += `📅 Çıkış: ${co}\n`;
-    text += `👥 Kişi: ${rez.guest_count || "—"}\n`;
+    if (roomName) text += `🚪 Oda: ${roomName}\n`;
     text += `${statusLabel}\n`;
-    if (rez.total_amount) text += `💰 Toplam: ${rez.total_amount}\n`;
+    if (rez.total_price) text += `💰 Toplam: ${rez.total_price}\n`;
     text += `\n${rez.pre_checkin_complete ? "✅ Online check-in tamamlandı" : "⚠️ Online check-in bekliyor"}`;
 
     const buttons: Array<{ id: string; title: string }> = [];
@@ -244,9 +245,9 @@ export async function handleRezervasyonlarim(ctx: WaContext): Promise<void> {
     const supabase = getServiceClient();
     const { data: rezs } = await supabase
       .from("otel_reservations")
-      .select("id, check_in_date, check_out_date, guest_count, status")
+      .select("id, check_in, check_out, status")
       .eq("guest_profile_id", ctx.userId)
-      .order("check_in_date", { ascending: false })
+      .order("check_in", { ascending: false })
       .limit(20);
 
     if (!rezs?.length) {
@@ -256,14 +257,14 @@ export async function handleRezervasyonlarim(ctx: WaContext): Promise<void> {
 
     let text = `📜 *Rezervasyon Tarihçeniz* (${rezs.length})\n\n`;
     for (const r of rezs) {
-      const ci = new Date(r.check_in_date).toLocaleDateString("tr-TR");
-      const co = new Date(r.check_out_date).toLocaleDateString("tr-TR");
+      const ci = new Date(r.check_in).toLocaleDateString("tr-TR");
+      const co = new Date(r.check_out).toLocaleDateString("tr-TR");
       const icon = r.status === "checked_out" ? "✅"
         : r.status === "checked_in" ? "🟢"
         : r.status === "confirmed" ? "📅"
         : r.status === "cancelled" ? "❌"
         : "⏳";
-      text += `${icon} ${ci} → ${co} (${r.guest_count || "?"} kişi)\n`;
+      text += `${icon} ${ci} → ${co}\n`;
     }
 
     await sendButtons(ctx.phone, text, [
@@ -399,8 +400,8 @@ async function submitTalep(ctx: WaContext, message: string): Promise<void> {
       .from("otel_reservations")
       .select("id, room_id")
       .eq("guest_profile_id", ctx.userId)
-      .lte("check_in_date", today)
-      .gte("check_out_date", today)
+      .lte("check_in", today)
+      .gte("check_out", today)
       .maybeSingle();
 
     await supabase.from("otel_guest_requests").insert({

@@ -54,6 +54,9 @@ import {
   handleTalep, handleTalepStep,
 } from "./misafir";
 
+// Online check-in (mekik link)
+import { handleCekin, handleCekinLink } from "./cekin";
+
 export const otelCommands: TenantCommandRegistry = {
   commands: {
     // ── Genel ──────────────────────────────────────────
@@ -100,6 +103,10 @@ export const otelCommands: TenantCommandRegistry = {
     hizmetler: handleHizmetler,
     wifi: handleWifi,
     talep: handleTalep,
+
+    // ── Online check-in (mekik) ────────────────────────
+    cekin: handleCekin,
+    cekinlink: handleCekinLink,
   },
 
   stepHandlers: {
@@ -204,6 +211,12 @@ export const otelCommands: TenantCommandRegistry = {
     "sikayet": "talep",
     "misafirdavet": "misafirdavet",
     "yenirezmisafir": "misafirdavet",
+
+    // Online check-in
+    "cekin": "cekin",
+    "checkin_online": "cekin",
+    "online_checkin": "cekin",
+    "cekinlink": "cekinlink",
   },
 
   // ── Capability requirements ──────────────────────────────────────────
@@ -256,5 +269,11 @@ export const otelCommands: TenantCommandRegistry = {
     hizmetler: C.GUEST_SERVICES_VIEW,
     wifi: C.GUEST_SERVICES_VIEW,
     talep: C.GUEST_REQUEST_CREATE,
+
+    // ── Online check-in (mekik) ───────────────────────
+    // cekin: misafir kendisi açar (GUEST_PRE_CHECKIN_FORM cap = guest preset'inde)
+    // cekinlink: resepsiyon push (PRE_CHECKIN_PUSH cap = reception preset'inde)
+    cekin: C.GUEST_PRE_CHECKIN_FORM,
+    cekinlink: C.PRE_CHECKIN_PUSH,
   },
 };
