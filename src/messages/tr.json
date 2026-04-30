@@ -32,6 +32,7 @@
       "setup_label": "Kurulum (canlı veri import + 1 saat eğitim)",
       "setup_installments": "{count} taksit imkanı",
       "referral_banner": "🎁 İlk {count} müşteri: kurulum ücretsiz + 3 ay yarı abonelik",
+      "refund_banner": "🔒 {days} gün içinde memnun kalmazsanız tam iade — soru sormadan, abonelik + kurulum tamamen geri",
       "employees": {}
     },
     "muhasebe": {

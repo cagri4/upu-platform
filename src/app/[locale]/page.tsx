@@ -336,6 +336,7 @@ function BayiPricing({
 }) {
   const setup = tenant.pricing.setup;
   const referral = tenant.pricing.referral;
+  const refund = tenant.pricing.refund;
   const growth = tenant.pricing.growth!;
 
   return (
@@ -345,8 +346,13 @@ function BayiPricing({
         <p className="text-center text-slate-500 mb-8">{t("pricing_subtitle")}</p>
 
         {referral && (
-          <div className="max-w-2xl mx-auto mb-10 bg-amber-50 border border-amber-200 rounded-xl p-4 text-center text-amber-900 text-sm font-medium">
+          <div className="max-w-2xl mx-auto mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-center text-amber-900 text-sm font-medium">
             {tt("referral_banner", { count: referral.firstN })}
+          </div>
+        )}
+        {refund && (
+          <div className="max-w-2xl mx-auto mb-10 bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center text-emerald-900 text-sm font-medium">
+            {tt("refund_banner", { days: refund.firstNDays })}
           </div>
         )}
 

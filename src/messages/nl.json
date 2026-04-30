@@ -32,6 +32,7 @@
       "setup_label": "Setup (live data import + 1u training)",
       "setup_installments": "Verdeeld over {count} termijnen",
       "referral_banner": "🎁 Eerste {count} klanten: setup gratis + 3 maanden halve prijs",
+      "refund_banner": "🔒 Niet tevreden binnen {days} dagen? Volledige terugbetaling — abonnement + setup, zonder vragen",
       "employees": {}
     },
     "muhasebe": {

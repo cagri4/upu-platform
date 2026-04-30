@@ -32,6 +32,7 @@
       "setup_label": "Setup (live data import + 1h training)",
       "setup_installments": "{count}-installment payment plan",
       "referral_banner": "🎁 First {count} customers: free setup + 3 months at half price",
+      "refund_banner": "🔒 Not happy within {days} days? Full refund — subscription + setup, no questions asked",
       "employees": {}
     },
     "muhasebe": {

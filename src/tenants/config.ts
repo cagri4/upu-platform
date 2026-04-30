@@ -43,6 +43,17 @@ export interface TenantReferralPromo {
 }
 
 /**
+ * İade policy — müşteri X gün içinde iade isterse ödediğini geri alır.
+ * Stripe billing tarafında "refund created" akışı bu config'e göre
+ * çalışır. fullRefund=true tüm ödemeyi (abonelik + setup) iade eder;
+ * false sadece abonelik kısmını.
+ */
+export interface TenantRefundPolicy {
+  firstNDays: number;             // İade süresi (gün)
+  fullRefund: boolean;            // true = setup + abonelik; false = sadece abonelik
+}
+
+/**
  * Adapter listesi — kullanıcı onboarding sırasında muhasebe / ödeme /
  * kargo / e-invoice yazılımını seçer; seçim profile.metadata'ya kaydedilir,
  * runtime'da `src/tenants/<tenant>/adapters/` resolver tarafından okunur.
@@ -81,6 +92,7 @@ export interface TenantConfig {
     growth?: TenantPricingTier;
     setup?: TenantSetupTier;
     referral?: TenantReferralPromo;
+    refund?: TenantRefundPolicy;
   };
 
   // Multi-locale framework — opsiyonel, eklenmemişse platform default
@@ -147,6 +159,7 @@ const TENANTS: Record<string, TenantConfig> = {
       pro: { price: 599, currency: "EUR" },
       setup: { price: 749, currency: "EUR", optional: true, installments: 3 },
       referral: { firstN: 10, setupWaived: true, monthlyDiscount: 0.5, monthsDiscounted: 3 },
+      refund: { firstNDays: 30, fullRefund: true },
     },
     country: "NL",
     defaultCurrency: "EUR",
@@ -202,6 +215,7 @@ const TENANTS: Record<string, TenantConfig> = {
       { key: "rezervasyon", name: "Rezervasyon Uzmanı", icon: "📅", description: "Müsaitlik, fiyat sorgulama ve check-in/out", commands: ["rezervasyonlar", "checkin", "checkout", "musaitlik", "fiyat", "rezervasyonekle"] },
       { key: "katHizmetleri", name: "Kat Hizmetleri", icon: "🧹", description: "Oda durumu, temizlik ve görev atama", commands: ["odalar", "temizlik", "odaguncelle", "gorevata"] },
       { key: "misafirDeneyimi", name: "Misafir Deneyimi", icon: "⭐", description: "Bilgi bankası, tavsiye ve yorum yönetimi", commands: ["faq", "odabilgi", "tavsiye", "yorumlar", "brifing"] },
+      { key: "muhasebe", name: "Muhasebe", icon: "💰", description: "Gelir, fatura ve finansal raporlar", commands: ["gelir", "rapor", "doluluk", "brifing"] },
     ],
     commandMap: {},
     guide: "",

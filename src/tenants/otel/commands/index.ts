@@ -10,6 +10,7 @@
  */
 
 import type { TenantCommandRegistry } from "@/platform/whatsapp/types";
+import { OTEL_CAPABILITIES as C } from "../capabilities";
 
 // Genel
 import { handleDurum } from "./durum";
@@ -150,5 +151,42 @@ export const otelCommands: TenantCommandRegistry = {
     "yardım": "menu",
     "yardim": "menu",
     "help": "menu",
+  },
+
+  // ── Capability requirements ──────────────────────────────────────────
+  // Owner wildcard "*" grants everything automatically.
+  // Null / omitted = no capability needed (open to anyone with a profile).
+  // Array form = OR (user needs at least one of the listed capabilities).
+  // See ../capabilities.ts for the registry.
+  requiredCapabilities: {
+    // ── Genel ──────────────────────────────────────────
+    durum: null,
+    brifing: C.REPORTS_VIEW,
+    rapor: C.REPORTS_VIEW,
+    gelir: C.FINANCE_VIEW,
+
+    // ── Rezervasyon ────────────────────────────────────
+    rezervasyonlar: C.RESERVATIONS_VIEW,
+    rezervasyonekle: C.RESERVATIONS_CREATE,
+    rezervasyondetay: C.RESERVATIONS_VIEW,
+    checkin: C.RESERVATIONS_CHECKIN,
+    checkout: C.RESERVATIONS_CHECKIN,
+    musaitlik: C.AVAILABILITY_VIEW,
+    fiyat: C.PRICING_VIEW,
+
+    // ── Misafir (personel-tarafı) ──────────────────────
+    misafirler: C.GUESTS_VIEW,
+    mesajlar: C.GUESTS_MESSAGE,
+    yanitla: C.GUESTS_MESSAGE,
+    yorumlar: C.GUESTS_REVIEWS,
+
+    // ── Oda ────────────────────────────────────────────
+    odalar: C.ROOMS_VIEW,
+    odaguncelle: C.ROOMS_STATUS_EDIT,
+    temizlik: [C.HOUSEKEEPING_VIEW, C.HOUSEKEEPING_VIEW_OWN],
+    gorevata: C.HOUSEKEEPING_ASSIGN,
+
+    // ── Analiz ─────────────────────────────────────────
+    doluluk: C.REPORTS_VIEW,
   },
 };
