@@ -134,7 +134,7 @@ export async function getUserTier(userId: string): Promise<BayiTier> {
   if (!profile) return "starter";
 
   // Dealer/employee → ownership chain üzerinden owner tier'ı
-  let lookupId = profile.id || userId;
+  let lookupId = userId;
   if ((profile.role === "dealer" || profile.role === "employee") && profile.invited_by) {
     lookupId = profile.invited_by;
     const { data: ownerProfile } = await supabase
