@@ -138,7 +138,16 @@ export async function resolveAccountingAdapter(userId: string): Promise<Accounti
 export async function resolvePaymentAdapter(userId: string): Promise<PaymentAdapter | null> {
   const sel = await getUserAdapterSelection(userId);
   if (!sel.payment || sel.payment === "none" || sel.payment === "manual") return null;
-  // Faz 6'da Mollie import edilecek.
+
+  // Faz 6: Mollie iDEAL + SEPA Direct Debit. MOLLIE_API_KEY env-var
+  // varsa gerçek API; yoksa graceful stub fallback.
+  if (sel.payment === "mollie") {
+    const { buildMolliePaymentAdapter } = await import("./payment/mollie");
+    return buildMolliePaymentAdapter();
+  }
+
+  // stripe / iyzico — ileri faz (TR pazarı genişletilince Iyzico, global
+  // genişlemede Stripe).
   return makeStub<PaymentAdapter>("payment", sel.payment, ["createPaymentLink", "createMandate"]);
 }
 
