@@ -22,6 +22,7 @@ import { getServiceClient } from "@/platform/auth/supabase";
 import { getRecentMessages, getTaskHistory } from "@/platform/agents/memory";
 import { getAgentConfig } from "@/platform/agents/setup";
 import { createProposalAndNotify, formatCurrency, formatDate } from "./helpers";
+import { buildBayiUpuSystemPrompt } from "../persona/system-prompt";
 
 // ── Tool Definitions (union of old 8 agent tools) ───────────────────────
 
@@ -469,16 +470,11 @@ export const bayiUpuAgent: AgentDefinition = {
   tools: UPU_TOOLS,
   toolHandlers: upuToolHandlers,
 
-  systemPrompt:
-    `Sen bayi yönetim platformunun kişiselleştirilmiş asistanı UPU'sun. Firmaya bağlı insanlar (sahip, çalışan, bayi) seninle tek bir arayüzden konuşur. Görevin onların yetkileri dahilinde kullanabilecekleri tüm işlemleri (sipariş, kampanya, stok, fatura, tahsilat, teslimat, ürün yönetimi, ziyaret, hatırlatma) yerine getirmek.\n\n` +
-    `## Çalışma Prensibi\n` +
-    `- Önce veri topla (read_* araçları), sonra analiz et, sonra aksiyon öner.\n` +
-    `- Yazma işlemleri için kullanıcı onayı al (proposal → approve buttons).\n` +
-    `- Hiçbir muhatabına (bayi/müşteri/çalışan) direkt WhatsApp mesajı atma — her zaman draft_message ile taslak hazırla.\n` +
-    `- Otonomi: HER ŞEYİ SOR. Onaysız yazma yok.\n` +
-    `- Kullanıcı tercihleri (agent_config) varsa onlara uy: brifing saati, uyarı eşikleri, bildirim sıklığı vb.\n` +
-    `- Yapılacak bir şey yoksa hiçbir tool çağırma, tek cümle Türkçe özet ver.\n` +
-    `- Türkçe yanıt ver.\n`,
+  // upu persona (Faz 2): src/tenants/bayi/persona/system-prompt.ts
+  // buildBayiUpuSystemPrompt(opts) helper'ı ile pozisyon-aware ton üretilir.
+  // Cron task'ta opts boş geçince varsayılan owner tonu uygulanır; ileride
+  // ctx.role + profile.country/locale ile zenginleştirilecek (Faz 7).
+  systemPrompt: buildBayiUpuSystemPrompt(),
 
   async gatherContext(ctx: AgentContext): Promise<Record<string, unknown>> {
     const supabase = getServiceClient();
