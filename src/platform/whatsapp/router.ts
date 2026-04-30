@@ -542,6 +542,20 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     }
   } catch { /* ignore */ }
 
+  // Faz 7: bayi tenant'ı için conversational dispatch — komut/session/
+  // callback hiçbiri eşleşmediyse AI agent'a düş. Sipariş niyetli mesaj
+  // (dealer için) veya serbest soru (sahip/çalışan için) handle edilir.
+  // İki handler de match yapmazsa "anlamadım" devam.
+  if (ctx.tenantKey === "bayi") {
+    try {
+      const { handleBayiConversational } = await import("@/tenants/bayi/agents/conversational");
+      const handled = await handleBayiConversational(ctx);
+      if (handled) return;
+    } catch (err) {
+      console.error("[router:bayi-conversational]", err);
+    }
+  }
+
   // Unrecognized
   await sendButtons(ctx.phone, "Komutu anlamadım.", [
     { id: "cmd:menu", title: "📋 Ana Menü" },
