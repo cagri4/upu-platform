@@ -6,34 +6,43 @@ import { sendText, sendUrlButton } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { randomBytes } from "crypto";
 import type { CommandHandler, WaContext } from "@/platform/whatsapp/types";
+import {
+  formatCurrency as platformFormatCurrency,
+  type SupportedCurrency,
+  type SupportedLocale,
+} from "@/platform/i18n/currency";
+import {
+  today as platformToday,
+  formatDate as platformFormatDate,
+  shortDate as platformShortDate,
+} from "@/platform/i18n/datetime";
 
 const WEB_PANEL = "https://upu-platform.vercel.app/bayi";
 
+// Tenant default — bayi tenant'ı NL Türk dağıtıcı odaklı (EUR + tr-NL).
+// Per-order veya per-user override gerekiyorsa platform utility'sine
+// currency/locale parametresi geçilir.
+const TENANT_DEFAULT_CURRENCY: SupportedCurrency = "EUR";
+const TENANT_DEFAULT_LOCALE: SupportedLocale = "tr-NL";
+
 export function today(): string {
-  return new Date().toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  return platformToday(TENANT_DEFAULT_LOCALE);
 }
 
-export function formatCurrency(amount: number): string {
-  return `₺${amount.toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+export function formatCurrency(
+  amount: number,
+  currency: SupportedCurrency = TENANT_DEFAULT_CURRENCY,
+  locale: SupportedLocale = TENANT_DEFAULT_LOCALE,
+): string {
+  return platformFormatCurrency(amount, currency, locale);
 }
 
 export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return platformFormatDate(dateStr, TENANT_DEFAULT_LOCALE);
 }
 
 export function shortDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("tr-TR", {
-    day: "2-digit",
-    month: "2-digit",
-  });
+  return platformShortDate(dateStr, TENANT_DEFAULT_LOCALE);
 }
 
 export function webPanelRedirect(phone: string, action: string): Promise<void> {
