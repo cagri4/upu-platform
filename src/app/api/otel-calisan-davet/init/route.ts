@@ -64,11 +64,11 @@ export async function GET(req: NextRequest) {
     capabilities: [...value.caps],
   }));
 
-  // Owner'ın bağlı otelleri (multi-property dropdown için)
+  // Owner'ın bağlı otelleri (multi-property dropdown için — column: user_id)
   const { data: hotels } = await supabase
     .from("otel_user_hotels")
     .select("hotel_id, otel_hotels(id, name, location)")
-    .eq("profile_id", magicToken.user_id);
+    .eq("user_id", magicToken.user_id);
 
   const hotelOptions = (hotels || []).map((row: any) => ({
     id: row.hotel_id,

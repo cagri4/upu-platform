@@ -25,11 +25,11 @@ export async function getUserHotelIds(
 ): Promise<string[]> {
   const ids = new Set<string>();
 
-  // Owner kanalı (otel_user_hotels)
+  // Owner kanalı (otel_user_hotels — column: user_id)
   const { data: owned } = await supabase
     .from("otel_user_hotels")
     .select("hotel_id")
-    .eq("profile_id", profileId);
+    .eq("user_id", profileId);
   for (const r of owned ?? []) if (r.hotel_id) ids.add(r.hotel_id);
 
   // Employee kanalı (hotel_employees)
@@ -72,12 +72,12 @@ export async function getEffectiveCapabilities(
   // global capability bundle yeterli.
   if (!hotelId) return profileCaps;
 
-  // Owner: otel_user_hotels bağlılığı kontrolü
+  // Owner: otel_user_hotels bağlılığı kontrolü (column: user_id)
   if (isOwner) {
     const { data: bind } = await supabase
       .from("otel_user_hotels")
       .select("hotel_id")
-      .eq("profile_id", profileId)
+      .eq("user_id", profileId)
       .eq("hotel_id", hotelId)
       .maybeSingle();
     return bind ? [OWNER_ALL] : [];
@@ -121,7 +121,7 @@ export async function getActiveHotelId(
   const { data: owned } = await supabase
     .from("otel_user_hotels")
     .select("hotel_id, created_at")
-    .eq("profile_id", profileId)
+    .eq("user_id", profileId)
     .order("created_at", { ascending: true })
     .limit(1);
 

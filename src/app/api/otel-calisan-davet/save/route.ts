@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
       const { data: bind } = await supabase
         .from("otel_user_hotels")
         .select("hotel_id")
-        .eq("profile_id", owner.id)
+        .eq("user_id", owner.id)
         .eq("hotel_id", hotelId)
         .maybeSingle();
       if (!bind) return NextResponse.json({ error: "Bu otel sizinle bağlı değil." }, { status: 403 });

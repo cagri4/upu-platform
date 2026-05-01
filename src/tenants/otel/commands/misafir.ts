@@ -74,7 +74,7 @@ async function startMisafirInvite(ctx: WaContext, phoneRaw: string, rezId: strin
       const { data: ouh } = await supabase
         .from("otel_user_hotels")
         .select("hotel_id")
-        .eq("profile_id", ctx.userId)
+        .eq("user_id", ctx.userId)
         .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();

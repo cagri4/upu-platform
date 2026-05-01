@@ -195,7 +195,7 @@ RETURNS BOOLEAN LANGUAGE SQL STABLE SECURITY DEFINER AS $$
     EXISTS (
       SELECT 1 FROM profiles p
       WHERE p.id = auth.uid() AND '*' = ANY(p.capabilities)
-        AND EXISTS (SELECT 1 FROM otel_user_hotels ouh WHERE ouh.profile_id = p.id AND ouh.hotel_id = target_hotel_id)
+        AND EXISTS (SELECT 1 FROM otel_user_hotels ouh WHERE ouh.user_id = p.id AND ouh.hotel_id = target_hotel_id)
     )
     OR EXISTS (
       SELECT 1 FROM hotel_employees he
@@ -291,13 +291,13 @@ CREATE POLICY hotel_employees_modify ON hotel_employees
     EXISTS (
       SELECT 1 FROM profiles p
       WHERE p.id = auth.uid() AND '*' = ANY(p.capabilities)
-        AND EXISTS (SELECT 1 FROM otel_user_hotels ouh WHERE ouh.profile_id = p.id AND ouh.hotel_id = hotel_employees.hotel_id)
+        AND EXISTS (SELECT 1 FROM otel_user_hotels ouh WHERE ouh.user_id = p.id AND ouh.hotel_id = hotel_employees.hotel_id)
     )
   )
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM profiles p
       WHERE p.id = auth.uid() AND '*' = ANY(p.capabilities)
-        AND EXISTS (SELECT 1 FROM otel_user_hotels ouh WHERE ouh.profile_id = p.id AND ouh.hotel_id = hotel_employees.hotel_id)
+        AND EXISTS (SELECT 1 FROM otel_user_hotels ouh WHERE ouh.user_id = p.id AND ouh.hotel_id = hotel_employees.hotel_id)
     )
   );
