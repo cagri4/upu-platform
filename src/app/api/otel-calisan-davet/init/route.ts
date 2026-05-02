@@ -64,16 +64,17 @@ export async function GET(req: NextRequest) {
     capabilities: [...value.caps],
   }));
 
-  // Owner'ın bağlı otelleri (multi-property dropdown için — column: user_id)
+  // Owner'ın bağlı otelleri (multi-property dropdown için — otel_hotels gerçek
+  // şema: name, address, city, country)
   const { data: hotels } = await supabase
     .from("otel_user_hotels")
-    .select("hotel_id, otel_hotels(id, name, location)")
+    .select("hotel_id, otel_hotels(id, name, city, address)")
     .eq("user_id", magicToken.user_id);
 
   const hotelOptions = (hotels || []).map((row: any) => ({
     id: row.hotel_id,
     name: row.otel_hotels?.name || "Otel",
-    location: row.otel_hotels?.location || "",
+    location: row.otel_hotels?.city || row.otel_hotels?.address || "",
   })).filter((h: any) => h.id);
 
   return NextResponse.json({

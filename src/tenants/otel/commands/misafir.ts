@@ -298,16 +298,16 @@ export async function handleHizmetler(ctx: WaContext): Promise<void> {
     const supabase = getServiceClient();
     const { data: hotel } = await supabase
       .from("otel_hotels")
-      .select("name, location, metadata")
+      .select("name, city, check_in_time, check_out_time, contact_phone, metadata")
       .eq("id", hotelId)
       .maybeSingle();
 
     const meta = (hotel?.metadata || {}) as Record<string, unknown>;
     const breakfastTime = (meta.breakfast_time as string) || "07:00 - 10:30";
     const wifi = meta.wifi_ssid ? `Var (SSID: ${meta.wifi_ssid})` : "Var — şifre için 'wifi' yazın";
-    const checkInTime = (meta.check_in_time as string) || "14:00";
-    const checkOutTime = (meta.check_out_time as string) || "12:00";
-    const reception = (meta.reception_phone as string) || "İç hat 0";
+    const checkInTime = (hotel?.check_in_time as string) || (meta.check_in_time as string) || "14:00";
+    const checkOutTime = (hotel?.check_out_time as string) || (meta.check_out_time as string) || "12:00";
+    const reception = (hotel?.contact_phone as string) || (meta.reception_phone as string) || "İç hat 0";
 
     let text = `🛎 *${hotel?.name || "Otel"} Hizmetleri*\n\n`;
     text += `🌅 Kahvaltı: ${breakfastTime}\n`;
