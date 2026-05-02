@@ -3,7 +3,9 @@
  */
 
 export function formatCurrency(amount: number): string {
-  return `₺${amount.toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  // NL pazarı: EUR varsayılan. Tutar 100 ve üzeriyse ondalık göster, küçükse yuvarla.
+  const decimals = Math.abs(amount) < 100 ? 2 : 0;
+  return `€${amount.toLocaleString("tr-NL", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
 }
 
 export function shortDate(dateStr: string): string {

@@ -278,19 +278,33 @@ const TENANTS: Record<string, TenantConfig> = {
     whatsappPhone: "31644967207",
     icon: "🍽",
     color: "#EA580C",
-    description: "Restoran ve cafe işletmecileri için AI destekli sanal ekip",
-    welcomeFeatures: "Sipariş yönetimi, masa & rezervasyon, stok takibi, AI müşteri asistanı",
-    employees: [
-      { key: "asistan", name: "Asistan", icon: "📋", description: "Günlük brifing, gün sonu özeti", commands: ["brifing", "gunsonu", "ozet"] },
-      { key: "servis", name: "Servis", icon: "🍽", description: "Sipariş, masa ve rezervasyon yönetimi", commands: ["siparis", "masa", "rezervasyon"] },
-      { key: "mutfakStok", name: "Mutfak / Stok", icon: "📦", description: "Stok takibi ve menü yönetimi", commands: ["stok", "menukalemleri"] },
-    ],
+    description: "Türk lokantaları için AI + WhatsApp destekli müdavim, rezervasyon ve günlük rapor asistanı",
+    welcomeFeatures: "Müdavim takibi, rezervasyon yönetimi, sabah brifingi, menü ve stok — mevcut kasanıza dokunmadan",
+    // Tek-asistan vizyonu (bayi pattern): employee gruplaması yok,
+    // komut menüsü capability seti üzerinden filtreleniyor.
+    employees: [],
     commandMap: {},
     guide: "",
-    defaultFavorites: ["siparis", "masa", "rezervasyon", "stok", "brifing", "menukalemleri"],
+    defaultFavorites: ["brifing", "rezervasyon", "rezervasyonekle", "masa", "siparis", "menukalemleri", "sadakat"],
     pricing: {
-      starter: { price: 29, currency: "EUR" },
-      pro: { price: 49, currency: "EUR" },
+      starter: { price: 39, currency: "EUR" },
+      growth: { price: 89, currency: "EUR" },
+      pro: { price: 199, currency: "EUR" },
+      setup: { price: 299, currency: "EUR", optional: true, installments: 3 },
+      referral: { firstN: 10, setupWaived: true, monthlyDiscount: 0.5, monthsDiscounted: 3 },
+      refund: { firstNDays: 30, fullRefund: true },
+    },
+    country: "NL",
+    defaultCurrency: "EUR",
+    defaultLocale: "tr-NL",
+    supportedCountries: ["NL", "TR", "BE", "DE"],
+    supportedCurrencies: ["EUR", "TRY"],
+    supportedLocales: ["tr-NL", "tr-TR", "nl-NL", "en-US"],
+    availableAdapters: {
+      // 2026-05-02 stratejisi: muhasebe haricinde adapter yok — restoran
+      // mevcut POS/ödeme/teslimat sistemlerini bırakmıyor. Yuki/Exact ile
+      // muhasebe export'u (BTW raporu, gün sonu satış) bayi altyapısı.
+      accounting: ["yuki", "exact", "snelstart", "other", "none"],
     },
   },
 };
