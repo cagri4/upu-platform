@@ -24,3 +24,26 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Placeholder kontrast — Tailwind v4 default'u (slate-400 ~ #94a3b8)
+   mobile'da neredeyse okunmuyor. slate-500 (#64748b) ile %30 daha
+   koyu, hala input metniyle ayrışır ama net okunabilir. Tüm
+   input/select/textarea placeholder'larına global uygulanır;
+   per-component override gerekmiyor. */
+input::placeholder,
+textarea::placeholder {
+  color: #64748b !important;        /* slate-500 */
+  opacity: 1;                        /* Firefox default 0.54 — override */
+}
+
+select:invalid,
+select option[value=""] {
+  color: #64748b;                    /* "Seçin..." varsayılan option */
+}
+
+@media (prefers-color-scheme: dark) {
+  input::placeholder,
+  textarea::placeholder {
+    color: #94a3b8 !important;       /* dark mode'da slate-400 yeter */
+  }
+}
