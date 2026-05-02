@@ -30,7 +30,11 @@ export interface StaffContext {
  * Tries (in order):
  *   1. sy_buildings.manager_id = userId → role: manager
  *   2. sy_user_residents link → role: staff (+ unit info)
- *   3. First building in tenant → role: staff (fallback for new users)
+ *
+ * No tenant-fallback: returning a context for a user with no building link
+ * leaks staff data to anyone (#3 in earlier code did this — every resident
+ * appeared as "first building staff"). Callers must handle null and tell
+ * the user to register.
  */
 export async function getStaffContext(userId: string): Promise<StaffContext | null> {
   const supabase = getServiceClient();
@@ -83,18 +87,6 @@ export async function getStaffContext(userId: string): Promise<StaffContext | nu
 
       return { userId, role: "staff", building, unit };
     }
-  }
-
-  // 3. Fallback: first building in tenant (for new managers not yet linked)
-  const { data: anyBuilding } = await supabase
-    .from("sy_buildings")
-    .select("id, name, access_code")
-    .eq("tenant_id", TENANT_ID)
-    .limit(1)
-    .maybeSingle();
-
-  if (anyBuilding) {
-    return { userId, role: "staff", building: anyBuilding };
   }
 
   return null;
