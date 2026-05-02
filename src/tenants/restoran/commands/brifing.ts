@@ -18,10 +18,12 @@ export async function handleBrifing(ctx: WaContext): Promise<void> {
       return d.toISOString().slice(0, 10);
     })();
 
-    const [salesYday, openOrders, todayReservations, criticalStock, tableStatus] = await Promise.all([
+    const todayMD = today.slice(5);
+    const twoWeeksAgo = new Date(Date.now() - 14 * 86400000).toISOString();
+    const [salesYday, openOrders, todayReservations, criticalStock, tableStatus, birthdays, dormant] = await Promise.all([
       supabase
         .from("rst_orders")
-        .select("total_amount")
+        .select("total_amount, order_type")
         .eq("tenant_id", ctx.tenantId)
         .eq("status", "paid")
         .gte("created_at", `${yesterday}T00:00:00`)
@@ -33,14 +35,15 @@ export async function handleBrifing(ctx: WaContext): Promise<void> {
         .in("status", ["new", "preparing", "ready", "served"]),
       supabase
         .from("rst_reservations")
-        .select("id, party_size", { count: "exact" })
+        .select("id, party_size, guest_name, reserved_at, notes")
         .eq("tenant_id", ctx.tenantId)
         .gte("reserved_at", `${today}T00:00:00`)
         .lte("reserved_at", `${today}T23:59:59`)
-        .not("status", "in", "(cancelled,no_show)"),
+        .not("status", "in", "(cancelled,no_show)")
+        .order("reserved_at"),
       supabase
         .from("rst_inventory")
-        .select("name, quantity, low_threshold")
+        .select("name, quantity, low_threshold, unit")
         .eq("tenant_id", ctx.tenantId)
         .eq("is_active", true)
         .not("low_threshold", "is", null),
@@ -49,46 +52,102 @@ export async function handleBrifing(ctx: WaContext): Promise<void> {
         .select("status")
         .eq("tenant_id", ctx.tenantId)
         .eq("is_active", true),
+      supabase
+        .from("rst_loyalty_members")
+        .select("guest_name")
+        .eq("tenant_id", ctx.tenantId)
+        .eq("is_active", true)
+        .eq("birthday", todayMD)
+        .limit(5),
+      supabase
+        .from("rst_loyalty_members")
+        .select("guest_name, last_visit_at, visit_count")
+        .eq("tenant_id", ctx.tenantId)
+        .eq("is_active", true)
+        .gte("visit_count", 10)
+        .lt("last_visit_at", twoWeeksAgo)
+        .order("visit_count", { ascending: false })
+        .limit(3),
     ]);
 
     const yesterdayTotal = (salesYday.data || []).reduce((s, r) => s + (r.total_amount || 0), 0);
     const yesterdayCount = salesYday.data?.length || 0;
+    const dineIn = (salesYday.data || []).filter(o => o.order_type === "dine_in").length;
+    const takeaway = (salesYday.data || []).filter(o => o.order_type === "takeaway").length;
+    const delivery = (salesYday.data || []).filter(o => o.order_type === "delivery").length;
     const openCount = openOrders.count || 0;
     const openTotal = (openOrders.data || []).reduce((s, r) => s + (r.total_amount || 0), 0);
-    const reservationCount = todayReservations.count || 0;
-    const reservationGuests = (todayReservations.data || []).reduce((s, r) => s + (r.party_size || 0), 0);
+    const reservations = todayReservations.data || [];
+    const reservationCount = reservations.length;
+    const reservationGuests = reservations.reduce((s, r) => s + (r.party_size || 0), 0);
     const critical = (criticalStock.data || []).filter(
       i => i.low_threshold != null && i.quantity <= i.low_threshold,
     );
     const tables = tableStatus.data || [];
     const occupied = tables.filter(t => t.status === "occupied").length;
     const totalTables = tables.length;
+    const birthdayMembers = birthdays.data || [];
+    const dormantMembers = dormant.data || [];
 
-    let msg = `☀️ *Günlük Brifing*\n${new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", weekday: "long" })}\n\n`;
+    const lines: string[] = [];
+    lines.push(`☀️ *Günlük Brifing*`);
+    lines.push(`${new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", weekday: "long" })}`);
+    lines.push("");
 
-    msg += `💰 *Dün:* ${yesterdayCount} sipariş — ${formatCurrency(yesterdayTotal)}\n\n`;
+    lines.push(`💰 *Dün:* ${yesterdayCount} sipariş — ${formatCurrency(yesterdayTotal)}`);
+    if (yesterdayCount > 0) {
+      const parts: string[] = [];
+      if (dineIn) parts.push(`${dineIn} salon`);
+      if (takeaway) parts.push(`${takeaway} paket`);
+      if (delivery) parts.push(`${delivery} teslimat`);
+      if (parts.length) lines.push(`   ${parts.join(" · ")}`);
+    }
+    lines.push("");
 
-    msg += `📋 *Açık siparişler:* ${openCount}`;
-    if (openCount > 0) msg += ` (${formatCurrency(openTotal)})`;
-    msg += `\n`;
+    lines.push(`📋 Açık sipariş: *${openCount}*${openCount > 0 ? ` (${formatCurrency(openTotal)})` : ""}`);
+    lines.push(`🍽 Masa doluluk: *${occupied}/${totalTables}*`);
+    lines.push("");
 
-    msg += `🍽 *Masa doluluk:* ${occupied}/${totalTables}\n`;
-
-    msg += `📅 *Bugün rezervasyon:* ${reservationCount}`;
-    if (reservationGuests > 0) msg += ` (${reservationGuests} kişi)`;
-    msg += `\n`;
-
-    if (critical.length) {
-      msg += `\n🔴 *Kritik stok* (${critical.length}):\n`;
-      msg += critical.slice(0, 5).map(i => `   • ${i.name}: ${i.quantity}`).join("\n");
-      if (critical.length > 5) msg += `\n   …ve ${critical.length - 5} kalem daha`;
+    if (reservationCount > 0) {
+      lines.push(`📅 *Bugün ${reservationCount} rezervasyon* (${reservationGuests} kişi)`);
+      for (const r of reservations.slice(0, 4)) {
+        const t = new Date(r.reserved_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+        const note = r.notes ? ` — ${r.notes.length > 30 ? r.notes.slice(0, 30) + "..." : r.notes}` : "";
+        lines.push(`   • ${t} ${r.guest_name} (${r.party_size}p)${note}`);
+      }
+      lines.push("");
     } else {
-      msg += `\n🟢 *Stok:* Tüm kalemler yeterli`;
+      lines.push(`📅 Bugün rezervasyon yok`);
+      lines.push("");
     }
 
-    await sendButtons(ctx.phone, msg, [
-      { id: "cmd:siparis", title: "📋 Siparişler" },
-      { id: "cmd:masa", title: "🍽 Masalar" },
+    if (birthdayMembers.length > 0) {
+      lines.push(`🎂 *Bugün doğum günü* (${birthdayMembers.length})`);
+      for (const m of birthdayMembers.slice(0, 3)) lines.push(`   • ${m.guest_name}`);
+      lines.push("");
+    }
+
+    if (dormantMembers.length > 0) {
+      lines.push(`💤 *Geri çağırma adayları*`);
+      for (const m of dormantMembers) {
+        const days = Math.floor((Date.now() - new Date(m.last_visit_at).getTime()) / 86400000);
+        lines.push(`   • ${m.guest_name} — ${days} gün, ${m.visit_count} ziyaret`);
+      }
+      lines.push("");
+    }
+
+    if (critical.length) {
+      lines.push(`🔴 *Kritik stok* (${critical.length})`);
+      for (const i of critical.slice(0, 4)) {
+        lines.push(`   • ${i.name}: ${i.quantity} ${i.unit || ""}`);
+      }
+    } else {
+      lines.push(`🟢 *Stok:* Tüm kalemler yeterli`);
+    }
+
+    await sendButtons(ctx.phone, lines.join("\n"), [
+      { id: "cmd:rezervasyonekle", title: "➕ Rezervasyon" },
+      { id: "cmd:sadakat", title: "💝 Müdavim" },
       { id: "cmd:menu", title: "Ana Menü" },
     ]);
   } catch (err) {

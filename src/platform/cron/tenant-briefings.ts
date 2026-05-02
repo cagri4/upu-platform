@@ -579,3 +579,115 @@ registerBriefing("market", async (_userId, tenantId) => {
   const { count: lowStock } = await supabase.from("market_products").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).lt("stock_quantity", 5);
   return `📊 Günaydın! Market brifing:\n\n🛒 Ürünler: ${products || 0}\n🔴 Düşük stok: ${lowStock || 0}\n\nİyi çalışmalar!`;
 });
+
+// ── Restoran ───────────────────────────────────────────────────────────
+
+registerBriefing("restoran", async (_userId, tenantId) => {
+  const supabase = getServiceClient();
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); })();
+  const todayMD = today.slice(5);  // "MM-DD" — birthday match için
+
+  const [salesYday, todayReservations, criticalStock, dormantMembers, birthdaysToday] = await Promise.all([
+    supabase.from("rst_orders")
+      .select("total_amount, order_type")
+      .eq("tenant_id", tenantId)
+      .eq("status", "paid")
+      .gte("created_at", `${yesterday}T00:00:00`)
+      .lte("created_at", `${yesterday}T23:59:59`),
+    supabase.from("rst_reservations")
+      .select("guest_name, party_size, reserved_at, notes")
+      .eq("tenant_id", tenantId)
+      .gte("reserved_at", `${today}T00:00:00`)
+      .lte("reserved_at", `${today}T23:59:59`)
+      .not("status", "in", "(cancelled,no_show)")
+      .order("reserved_at"),
+    supabase.from("rst_inventory")
+      .select("name, quantity, low_threshold, unit")
+      .eq("tenant_id", tenantId)
+      .eq("is_active", true)
+      .not("low_threshold", "is", null),
+    supabase.from("rst_loyalty_members")
+      .select("guest_name, last_visit_at, visit_count")
+      .eq("tenant_id", tenantId)
+      .eq("is_active", true)
+      .gte("visit_count", 10)
+      .lt("last_visit_at", new Date(Date.now() - 14 * 86400000).toISOString())
+      .order("visit_count", { ascending: false })
+      .limit(3),
+    supabase.from("rst_loyalty_members")
+      .select("guest_name, guest_phone")
+      .eq("tenant_id", tenantId)
+      .eq("is_active", true)
+      .eq("birthday", todayMD)
+      .limit(5),
+  ]);
+
+  const yesterdayTotal = (salesYday.data || []).reduce((s, r) => s + (r.total_amount || 0), 0);
+  const yesterdayCount = salesYday.data?.length || 0;
+  const dineIn = (salesYday.data || []).filter(o => o.order_type === "dine_in").length;
+  const takeaway = (salesYday.data || []).filter(o => o.order_type === "takeaway").length;
+  const delivery = (salesYday.data || []).filter(o => o.order_type === "delivery").length;
+  const reservations = todayReservations.data || [];
+  const totalGuests = reservations.reduce((s, r) => s + (r.party_size || 0), 0);
+  const critical = (criticalStock.data || []).filter(i => i.low_threshold != null && i.quantity <= i.low_threshold);
+  const fmtEur = (n: number) => `€${n.toLocaleString("tr-NL", { maximumFractionDigits: 0 })}`;
+
+  const lines: string[] = [];
+  lines.push(`☀️ *Günaydın!*`);
+  lines.push(`${new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", weekday: "long" })}`);
+  lines.push("");
+  lines.push(`💰 *Dün:* ${yesterdayCount} sipariş, ${fmtEur(yesterdayTotal)}`);
+  if (yesterdayCount > 0) {
+    const parts: string[] = [];
+    if (dineIn) parts.push(`${dineIn} salon`);
+    if (takeaway) parts.push(`${takeaway} paket`);
+    if (delivery) parts.push(`${delivery} teslimat`);
+    if (parts.length) lines.push(`   ${parts.join(" · ")}`);
+  }
+  lines.push("");
+
+  if (reservations.length) {
+    lines.push(`📅 *Bugün ${reservations.length} rezervasyon* (${totalGuests} kişi)`);
+    for (const r of reservations.slice(0, 4)) {
+      const t = new Date(r.reserved_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+      const note = r.notes ? ` — ${r.notes.length > 35 ? r.notes.slice(0, 35) + "..." : r.notes}` : "";
+      lines.push(`   • ${t} ${r.guest_name} (${r.party_size}p)${note}`);
+    }
+  } else {
+    lines.push(`📅 Bugün rezervasyon yok`);
+  }
+  lines.push("");
+
+  if (birthdaysToday.data && birthdaysToday.data.length > 0) {
+    lines.push(`🎂 *Bugün doğum günü* (${birthdaysToday.data.length})`);
+    for (const m of birthdaysToday.data.slice(0, 3)) {
+      lines.push(`   • ${m.guest_name}`);
+    }
+    lines.push(`   _Tebrik mesajı atayım mı? \`/sadakat\`_`);
+    lines.push("");
+  }
+
+  if (dormantMembers.data && dormantMembers.data.length > 0) {
+    lines.push(`💤 *2+ haftadır gelmeyen müdavimler*`);
+    for (const m of dormantMembers.data) {
+      const daysSince = Math.floor((Date.now() - new Date(m.last_visit_at).getTime()) / 86400000);
+      lines.push(`   • ${m.guest_name} — ${daysSince} gün, ${m.visit_count} ziyaret`);
+    }
+    lines.push("");
+  }
+
+  if (critical.length) {
+    lines.push(`🔴 *Kritik stok* (${critical.length})`);
+    for (const i of critical.slice(0, 4)) {
+      lines.push(`   • ${i.name}: ${i.quantity} ${i.unit || ""}`);
+    }
+  } else {
+    lines.push(`🟢 Stok yeterli`);
+  }
+
+  lines.push("");
+  lines.push(`Detay için: \`brifing\` · \`rezervasyon\` · \`sadakat\` · \`stok\``);
+
+  return lines.join("\n");
+});

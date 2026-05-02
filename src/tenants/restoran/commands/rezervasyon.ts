@@ -25,6 +25,7 @@ export async function handleRezervasyon(ctx: WaContext): Promise<void> {
 
     if (!reservations?.length) {
       await sendButtons(ctx.phone, "📅 *Rezervasyonlar*\n\nBugün ve yarın için rezervasyon yok.", [
+        { id: "cmd:rezervasyonekle", title: "➕ Yeni Ekle" },
         { id: "cmd:masa", title: "🍽 Masa Durumu" },
         { id: "cmd:menu", title: "Ana Menü" },
       ]);
@@ -59,8 +60,8 @@ export async function handleRezervasyon(ctx: WaContext): Promise<void> {
       ctx.phone,
       `📅 *Rezervasyonlar*\n\n${sections.join("\n\n")}`,
       [
+        { id: "cmd:rezervasyonekle", title: "➕ Yeni Ekle" },
         { id: "cmd:masa", title: "🍽 Masa Durumu" },
-        { id: "cmd:webpanel", title: "🖥 Web Panel" },
         { id: "cmd:menu", title: "Ana Menü" },
       ],
     );
