@@ -19,13 +19,16 @@ function formatPrice(n: number): string {
 }
 
 /**
- * Owner profilinden currency + locale + payment adapter okur. Tahsilat
- * mesajının doğru para birimi + ödeme yöntemiyle gitmesi için.
+ * Owner profilinden currency + locale okur. Tahsilat mesajının doğru
+ * para birimiyle gitmesi için.
+ *
+ * 2026-05-02: ödeme yöntemi adapter'ı kaldırıldı (distribütör kendi
+ * banka/Mollie sistemini kullanıyor). Hatırlatma mesajı jenerik metin
+ * sunar; sahip kendi tahsilat yöntemini bayiye söyler.
  */
-async function getOwnerLocaleAndPayment(userId: string): Promise<{
+async function getOwnerLocale(userId: string): Promise<{
   currency: SupportedCurrency;
   locale: SupportedLocale;
-  payment: string;
 }> {
   const supabase = getServiceClient();
   const { data: profile } = await supabase
@@ -35,19 +38,10 @@ async function getOwnerLocaleAndPayment(userId: string): Promise<{
     .maybeSingle();
   const meta = (profile?.metadata || {}) as Record<string, unknown>;
   const localeSettings = (meta.tenant_locale || {}) as Record<string, unknown>;
-  const adapters = (meta.enabled_adapters || {}) as Record<string, unknown>;
   return {
     currency: (localeSettings.currency as SupportedCurrency) || "EUR",
     locale: (localeSettings.locale as SupportedLocale) || "tr-NL",
-    payment: (adapters.payment as string) || "manual",
   };
-}
-
-function paymentMethodHint(payment: string): string {
-  if (payment === "mollie") return "iDEAL veya SEPA otomatik tahsilat ile ödeyebilirsiniz.";
-  if (payment === "stripe") return "Kart veya banka transferi ile ödeyebilirsiniz.";
-  if (payment === "iyzico") return "Kart veya havale ile ödeyebilirsiniz.";
-  return "Banka transferi veya yüz yüze ödeme yapabilirsiniz.";
 }
 
 // ── Helper: get all dealer phones for this firm owner ───────────────
@@ -239,10 +233,10 @@ export async function handleTahsilatBildirCallback(ctx: WaContext, data: string)
     if (p.dealer_id && p.whatsapp_phone) phoneMap[p.dealer_id] = p.whatsapp_phone;
   }
 
-  // Faz 4: country/currency/payment ipucunu owner profilinden oku → bayiye
-  // doğru para birimi + uygun ödeme yöntemiyle hatırlatma gider.
-  const { currency, locale, payment } = await getOwnerLocaleAndPayment(ctx.userId);
-  const paymentHint = paymentMethodHint(payment);
+  // 2026-05-02: country/currency owner profilinden, ödeme yöntemi
+  // jenerik metin (her distribütör kendi tahsilat sistemini kullanır).
+  const { currency, locale } = await getOwnerLocale(ctx.userId);
+  const paymentHint = "Ödeme bilgisi için bizimle iletişime geçin.";
 
   let sent = 0;
   for (const d of debtDealers || []) {

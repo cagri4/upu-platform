@@ -16,11 +16,10 @@ interface Firma {
   currency: Currency;
   locale: Locale;
 
-  // Adapter seçimi (onboarding sonrası ayarlardan değiştirilebilir)
-  accounting: string;     // yuki | exact | snelstart | logo_nl | mikro | other | none
-  payment: string;        // mollie | stripe | iyzico | manual | none
-  shipping: string;       // postnl | dhl | yurtici | mng | own_fleet | other
-  einvoice: string;       // storecove | none
+  // Muhasebe yazılımı seçimi (onboarding sonrası ayarlardan değiştirilebilir).
+  // 2026-05-02: dağıtıcı kendi tedarikçilerini kullanıyor — kargo/ödeme/e-fatura
+  // adapter'ları kaldırıldı, sadece muhasebe entegrasyonu kalır.
+  accounting: string;     // yuki | exact | snelstart | logo | none
 
   // Zorunlu firma bilgileri
   ticari_unvan: string;
@@ -97,37 +96,13 @@ const ACCOUNTING_OPTIONS: Array<{ id: string; label: string; country?: Country[]
   { id: "yuki", label: "Yuki", country: ["NL", "BE"] },
   { id: "exact", label: "Exact Online", country: ["NL", "BE"] },
   { id: "snelstart", label: "SnelStart", country: ["NL"] },
-  { id: "logo_nl", label: "Logo (Türkiye)", country: ["TR"] },
-  { id: "mikro", label: "Mikro", country: ["TR"] },
-  { id: "other", label: "Diğer / Manuel" },
-  { id: "none", label: "Henüz yok" },
-];
-
-const PAYMENT_OPTIONS: Array<{ id: string; label: string; country?: Country[] }> = [
-  { id: "mollie", label: "Mollie (iDEAL/SEPA)", country: ["NL", "BE", "DE"] },
-  { id: "stripe", label: "Stripe" },
-  { id: "iyzico", label: "Iyzico", country: ["TR"] },
-  { id: "manual", label: "Banka transferi (manuel)" },
-  { id: "none", label: "Henüz yok" },
-];
-
-const SHIPPING_OPTIONS: Array<{ id: string; label: string; country?: Country[] }> = [
-  { id: "postnl", label: "PostNL", country: ["NL"] },
-  { id: "dhl", label: "DHL" },
-  { id: "yurtici", label: "Yurtiçi Kargo", country: ["TR"] },
-  { id: "mng", label: "MNG", country: ["TR"] },
-  { id: "own_fleet", label: "Kendi araçlarım" },
-  { id: "other", label: "Diğer" },
-];
-
-const EINVOICE_OPTIONS: Array<{ id: string; label: string }> = [
-  { id: "storecove", label: "Storecove (Peppol)" },
-  { id: "none", label: "Henüz yok" },
+  { id: "logo", label: "Logo (Türkiye)", country: ["TR"] },
+  { id: "none", label: "Henüz yok / Manuel" },
 ];
 
 const empty: Firma = {
   country: "NL", currency: "EUR", locale: "tr-NL",
-  accounting: "", payment: "", shipping: "", einvoice: "none",
+  accounting: "",
   ticari_unvan: "", yetkili_adi: "", ofis_telefon: "", ofis_adresi: "", sektor: "",
   bayi_sayisi: "", brifing_enabled: "evet",
   vergi_dairesi: "", vergi_no: "", kvk_no: "", kurulus_yili: "",
@@ -177,8 +152,6 @@ export default function BayiProfilPage() {
       opts.filter(o => !o.country || o.country.includes(firma.country));
     return {
       accounting: filterByCountry(ACCOUNTING_OPTIONS),
-      payment: filterByCountry(PAYMENT_OPTIONS),
-      shipping: filterByCountry(SHIPPING_OPTIONS),
     };
   }, [firma.country]);
 
@@ -313,9 +286,9 @@ export default function BayiProfilPage() {
           </Field>
         </Section>
 
-        <Section title="🔌 Yazılım Entegrasyonları">
+        <Section title="🔌 Muhasebe Entegrasyonu">
           <p className="text-[11px] text-slate-500 -mt-1 mb-2">
-            Şu an kullandığınız yazılımları seçin — sistemimiz onlarla otomatik konuşacak. Henüz yoksa &quot;Henüz yok&quot; seçin.
+            Şu an kullandığınız muhasebe yazılımını seçin — sistemimiz bayi listenizi, ürünlerinizi, açık faturalarınızı oradan okur. Henüz yoksa &quot;Henüz yok / Manuel&quot; seçin (CSV import + elle ekleme ile çalışır).
           </p>
           <Field label="Muhasebe Yazılımı">
             <select value={firma.accounting} onChange={e => update({ accounting: e.target.value })}
@@ -323,30 +296,10 @@ export default function BayiProfilPage() {
               <option value="">Seçin...</option>
               {countryFiltered.accounting.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
+            <p className="text-[11px] text-slate-500 mt-1">
+              Kargo, ödeme tahsilatı ve e-fatura için kendi sisteminizi kullanmaya devam edebilirsiniz — bu katmanlara karışmıyoruz.
+            </p>
           </Field>
-          <Field label="Ödeme Servisi">
-            <select value={firma.payment} onChange={e => update({ payment: e.target.value })}
-              className={inputCls}>
-              <option value="">Seçin...</option>
-              {countryFiltered.payment.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-            </select>
-          </Field>
-          <Field label="Kargo Servisi">
-            <select value={firma.shipping} onChange={e => update({ shipping: e.target.value })}
-              className={inputCls}>
-              <option value="">Seçin...</option>
-              {countryFiltered.shipping.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-            </select>
-          </Field>
-          {isNL && (
-            <Field label="e-Fatura (Peppol)">
-              <select value={firma.einvoice} onChange={e => update({ einvoice: e.target.value })}
-                className={inputCls}>
-                {EINVOICE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-              </select>
-              <p className="text-[11px] text-slate-500 mt-1">Hollanda&apos;da B2B Peppol 2030&apos;da zorunlu olacak. Şimdilik opsiyonel.</p>
-            </Field>
-          )}
         </Section>
 
         <button type="button" onClick={() => setShowOptional(!showOptional)}

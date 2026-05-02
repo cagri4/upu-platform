@@ -1,100 +1,60 @@
 /**
  * Adapter Resolver — bayi tenant'ı için entegrasyon noktası.
  *
- * Tenant onboarding'de kullanıcı seçtiği yazılımları profile.metadata.
- * enabled_adapters'a kaydeder; runtime'da bu modül o seçimi okuyup
- * ilgili adapter modülünü lazy-load eder.
+ * 2026-05-02 stratejisi:
+ *   - Distribütör kendi tedarikçilerini kullanıyor: kargo (PostNL/DHL/
+ *     kendi araç), ödeme tahsilatı (kendi banka/Mollie), e-fatura
+ *     (zaten muhasebe yazılımı yapar). Bayi tenant bu katmanlara
+ *     karışmıyor.
+ *   - Geriye sadece **muhasebe entegrasyonu** kalıyor: Yuki/Exact/
+ *     SnelStart (Chift unified) + Logo (TR ileri faz iskelet).
  *
- * Faz 5+: Yuki/Exact/SnelStart implement edilecek (Chift unified API).
- * Faz 6: Mollie. Faz 8: PostNL.
+ * Plug-in seçimi: profile.metadata.accounting_provider =
+ *   "yuki" | "exact" | "snelstart" | "logo" | "none"
  *
- * MVP'de stub: implement edilmeyen adapter'lar `AdapterNotReadyError`
- * fırlatır; çağıran kod kullanıcıya "Henüz hazır değil" mesajı gösterir.
+ * "none" = manuel mod: müşteri CSV import + elle ürün/bayi ekler,
+ * adapter çağrısı yok.
  */
 
 import { getServiceClient } from "@/platform/auth/supabase";
 
-// ── Typed adapter contracts (her kategori farklı interface) ─────────────
+// ── Accounting adapter contract — read-only operations ──────────────────
+// Gerçek dağıtıcı muhasebesinde fatura/ödeme yazma akışı kompleks
+// (KDV/BTW kuralları, mutabakat, çift kayıt). Bu nedenle MVP'de SADECE
+// okuma operasyonları: bayi/ürün listesi, cari bakiye, açık fatura,
+// son ödemeler. Yazma akışı v2'ye atılı (muhasebeci yine kendi yazılımı
+// üzerinde fatura keser).
 
 export interface AccountingAdapter {
   key: string;
-  /** Read customer ledger (cari hesap) for a dealer. */
-  getDealerBalance: (dealerExternalId: string) => Promise<{ balance: number; currency: string } | null>;
-  /** Push a new invoice to the accounting system. */
-  pushInvoice: (invoice: {
-    dealerExternalId: string;
-    invoiceNo: string;
-    amount: number;
-    currency: string;
-    btwRate: number;
-    items: Array<{ name: string; quantity: number; unitPrice: number }>;
-    dueDate: string;
-  }) => Promise<{ externalId: string }>;
-  /** Get last N invoices for sync verification. */
-  listRecentInvoices?: (limit?: number) => Promise<Array<{ externalId: string; invoiceNo: string; amount: number }>>;
-}
-
-export interface PaymentAdapter {
-  key: string;
-  /** Create a payment link / iDEAL redirect for a dealer to pay an invoice. */
-  createPaymentLink: (params: {
-    invoiceId: string;
-    amount: number;
-    currency: string;
-    description: string;
-    redirectUrl: string;
-    webhookUrl: string;
-  }) => Promise<{ paymentId: string; checkoutUrl: string }>;
-  /** Setup a SEPA Direct Debit mandate for recurring collection. */
-  createMandate?: (params: { dealerId: string; iban: string; signedDate: string }) => Promise<{ mandateId: string }>;
-}
-
-export interface ShippingAdapter {
-  key: string;
-  /** Create a shipping label for an order. */
-  createLabel: (params: {
-    orderId: string;
-    receiverName: string;
-    receiverAddress: string;
-    receiverPostcode: string;
-    receiverCity: string;
-    receiverCountry: string;
-    weight: number;
-  }) => Promise<{ trackingNumber: string; labelUrl: string }>;
-  /** Track an existing shipment by tracking number. */
-  trackShipment?: (trackingNumber: string) => Promise<{ status: string; deliveredAt?: string }>;
-}
-
-export interface EinvoiceAdapter {
-  key: string;
-  /** Send a Peppol UBL invoice to the receiver via the network. */
-  sendInvoice: (params: {
-    invoiceXml: string;
-    receiverPeppolId: string;
-  }) => Promise<{ documentId: string }>;
+  /** List dealers/customers from accounting system (master data sync). */
+  listCustomers: () => Promise<Array<{ externalId: string; name: string; vatNumber?: string }>>;
+  /** List products/items with prices (master data sync). */
+  listProducts: () => Promise<Array<{ externalId: string; name: string; code?: string; unitPrice: number; vatRate: number }>>;
+  /** Get current account balance for a specific dealer. */
+  getCustomerBalance: (customerExternalId: string) => Promise<{ balance: number; currency: string } | null>;
+  /** List open (unpaid) invoices. Optional dealer filter. */
+  listOpenInvoices: (customerExternalId?: string) => Promise<Array<{ externalId: string; invoiceNo: string; amount: number; currency: string; dueDate: string }>>;
+  /** List payments received since a date (for cari hesap reconciliation). */
+  listPayments: (since: string) => Promise<Array<{ externalId: string; customerExternalId: string; amount: number; receivedAt: string }>>;
 }
 
 export class AdapterNotReadyError extends Error {
   constructor(category: string, key: string) {
-    super(`Adapter henüz hazır değil: ${category}/${key}. Faz 5/6/8'de implement edilecek.`);
+    super(`Adapter henüz hazır değil: ${category}/${key}.`);
     this.name = "AdapterNotReadyError";
   }
 }
 
-// ── User-bound adapter selection lookup ─────────────────────────────────
+// ── User-bound provider lookup ──────────────────────────────────────────
 
-interface AdapterSelection {
-  accounting?: string;
-  payment?: string;
-  shipping?: string;
-  einvoice?: string;
-}
+export type AccountingProvider = "yuki" | "exact" | "snelstart" | "logo" | "none";
 
 /**
- * Read user's enabled adapter selection from profiles.metadata.
- * Returns empty object if user hasn't filled the bayi-profil form yet.
+ * Read user's accounting provider from profile metadata.
+ * Default "none" — manuel mod (CSV import, elle bayi/ürün ekleme).
  */
-export async function getUserAdapterSelection(userId: string): Promise<AdapterSelection> {
+export async function getUserAccountingProvider(userId: string): Promise<AccountingProvider> {
   const supabase = getServiceClient();
   const { data: profile } = await supabase
     .from("profiles")
@@ -102,93 +62,29 @@ export async function getUserAdapterSelection(userId: string): Promise<AdapterSe
     .eq("id", userId)
     .maybeSingle();
   const meta = (profile?.metadata || {}) as Record<string, unknown>;
-  const adapters = (meta.enabled_adapters || {}) as Record<string, string>;
-  return {
-    accounting: adapters.accounting,
-    payment: adapters.payment,
-    shipping: adapters.shipping,
-    einvoice: adapters.einvoice,
-  };
+  const provider = meta.accounting_provider as string | undefined;
+  if (provider === "yuki" || provider === "exact" || provider === "snelstart" || provider === "logo") {
+    return provider;
+  }
+  return "none";
 }
 
-// ── Resolver functions (lazy-load per category) ─────────────────────────
-// Implementation adapters live in src/tenants/bayi/adapters/<category>/<key>/
-// MVP: tüm adapter'lar stub — çağırınca AdapterNotReadyError fırlatır.
+// ── Resolver — plug-in lazy load ────────────────────────────────────────
 
 export async function resolveAccountingAdapter(userId: string): Promise<AccountingAdapter | null> {
-  const sel = await getUserAdapterSelection(userId);
-  if (!sel.accounting || sel.accounting === "none" || sel.accounting === "other") return null;
+  const provider = await getUserAccountingProvider(userId);
+  if (provider === "none") return null;
 
-  // Faz 5: Chift Unified API ile yuki/exact/snelstart desteklendi. CHIFT_API_KEY
-  // env-var ve user connection tamamlanmışsa gerçek API; yoksa stub fallback
-  // (her metod AdapterNotReadyError throw eder, çağıran kod yakalar).
-  if (sel.accounting === "yuki" || sel.accounting === "exact" || sel.accounting === "snelstart") {
-    const { buildChiftAccountingAdapter } = await import("./accounting/chift");
-    return buildChiftAccountingAdapter(userId, sel.accounting);
+  // Logo: TR pazarı için iskelet — implementasyon müşteri Logo versiyonu
+  // (Tiger/GO/İşbaşı) netleşince yapılacak. Şu an scaffold döner,
+  // çağırılınca AdapterNotReadyError.
+  if (provider === "logo") {
+    const { buildLogoAccountingAdapter } = await import("./accounting/logo");
+    return buildLogoAccountingAdapter();
   }
 
-  // logo_nl / mikro — Türkiye muhasebe yazılımları, ileri faz (TR pazarı
-  // genişletilince doğrudan API ile bağlanılacak; Chift bu yazılımları
-  // şu an desteklemiyor).
-  return makeStub<AccountingAdapter>("accounting", sel.accounting, [
-    "getDealerBalance", "pushInvoice", "listRecentInvoices",
-  ]);
-}
-
-export async function resolvePaymentAdapter(userId: string): Promise<PaymentAdapter | null> {
-  const sel = await getUserAdapterSelection(userId);
-  if (!sel.payment || sel.payment === "none" || sel.payment === "manual") return null;
-
-  // Faz 6: Mollie iDEAL + SEPA Direct Debit. MOLLIE_API_KEY env-var
-  // varsa gerçek API; yoksa graceful stub fallback.
-  if (sel.payment === "mollie") {
-    const { buildMolliePaymentAdapter } = await import("./payment/mollie");
-    return buildMolliePaymentAdapter();
-  }
-
-  // stripe / iyzico — ileri faz (TR pazarı genişletilince Iyzico, global
-  // genişlemede Stripe).
-  return makeStub<PaymentAdapter>("payment", sel.payment, ["createPaymentLink", "createMandate"]);
-}
-
-export async function resolveShippingAdapter(userId: string): Promise<ShippingAdapter | null> {
-  const sel = await getUserAdapterSelection(userId);
-  if (!sel.shipping || sel.shipping === "other" || sel.shipping === "own_fleet") return null;
-
-  // Faz 8: PostNL Send API (etiket basma + tracking). POSTNL_API_KEY +
-  // CUSTOMER_CODE + CUSTOMER_NUMBER env-var varsa gerçek API; yoksa stub.
-  if (sel.shipping === "postnl") {
-    const { buildPostNLShippingAdapter } = await import("./shipping/postnl");
-    return buildPostNLShippingAdapter();
-  }
-
-  // dhl / yurtici / mng — ileri faz
-  return makeStub<ShippingAdapter>("shipping", sel.shipping, ["createLabel", "trackShipment"]);
-}
-
-export async function resolveEinvoiceAdapter(userId: string): Promise<EinvoiceAdapter | null> {
-  const sel = await getUserAdapterSelection(userId);
-  if (!sel.einvoice || sel.einvoice === "none") return null;
-
-  // Aşama 4: Storecove Peppol Access Point. STORECOVE_API_KEY +
-  // STORECOVE_LEGAL_ENTITY_ID env-var varsa gerçek API; yoksa stub.
-  if (sel.einvoice === "storecove") {
-    const { buildStorecoveEinvoiceAdapter } = await import("./einvoice/storecove");
-    return buildStorecoveEinvoiceAdapter();
-  }
-  return makeStub<EinvoiceAdapter>("einvoice", sel.einvoice, ["sendInvoice"]);
-}
-
-// ── Stub factory ────────────────────────────────────────────────────────
-// Her stub, key + AdapterNotReadyError fırlatan method'lara sahip. Çağıran
-// kod try/catch ile yakalayıp kullanıcıya "Henüz hazır değil" mesajı gösterir.
-
-function makeStub<T>(category: string, key: string, methods: string[]): T {
-  const stub = { key } as Record<string, unknown>;
-  for (const method of methods) {
-    stub[method] = async () => {
-      throw new AdapterNotReadyError(category, key);
-    };
-  }
-  return stub as T;
+  // Yuki / Exact / SnelStart — Chift unified API ile (CHIFT_API_KEY +
+  // user connection_id varsa gerçek; yoksa stub fallback).
+  const { buildChiftAccountingAdapter } = await import("./accounting/chift");
+  return buildChiftAccountingAdapter(userId, provider);
 }

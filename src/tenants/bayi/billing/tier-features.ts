@@ -23,14 +23,12 @@ export interface TierFeatures {
 
   // Feature flag'ler (boolean)
   features: {
-    multi_accounting: boolean;        // Yuki + Exact + SnelStart paralel
-    sepa_direct_debit: boolean;       // Mollie mandate (otomatik vade çekim)
+    multi_accounting: boolean;        // Birden çok muhasebe yazılımı paralel
     position_presets: boolean;        // 8 pozisyon preset (sales_manager vb.)
     ai_dunning_text: boolean;         // Kişiselleştirilmiş tahsilat metni
     multi_territory: boolean;         // Bölge müdürü hiyerarşisi
-    storecove_peppol: boolean;        // Peppol e-fatura
     custom_api: boolean;              // REST API erişimi
-    custom_integrations: boolean;     // Logo NL / Mikro / özel entegrasyonlar
+    custom_integrations: boolean;     // Müşteriye özel entegrasyonlar
     audit_log: boolean;               // compliance/audit görüntüleme
   };
 
@@ -47,11 +45,9 @@ export const TIER_FEATURES: Record<BayiTier, TierFeatures> = {
     waMessagesFairUseMonth: 1500,
     features: {
       multi_accounting: false,
-      sepa_direct_debit: false,
       position_presets: false,
       ai_dunning_text: false,
       multi_territory: false,
-      storecove_peppol: false,
       custom_api: false,
       custom_integrations: false,
       audit_log: false,
@@ -66,11 +62,9 @@ export const TIER_FEATURES: Record<BayiTier, TierFeatures> = {
     waMessagesFairUseMonth: 7500,
     features: {
       multi_accounting: true,
-      sepa_direct_debit: true,
       position_presets: true,
       ai_dunning_text: true,
       multi_territory: false,
-      storecove_peppol: false,
       custom_api: false,
       custom_integrations: false,
       audit_log: false,
@@ -85,11 +79,9 @@ export const TIER_FEATURES: Record<BayiTier, TierFeatures> = {
     waMessagesFairUseMonth: null,
     features: {
       multi_accounting: true,
-      sepa_direct_debit: true,
       position_presets: true,
       ai_dunning_text: true,
       multi_territory: true,
-      storecove_peppol: true,
       custom_api: true,
       custom_integrations: true,
       audit_log: true,
@@ -108,11 +100,9 @@ export type TierFeatureKey = keyof TierFeatures["features"];
  */
 export const MIN_TIER_FOR_FEATURE: Record<TierFeatureKey, BayiTier> = {
   multi_accounting: "growth",
-  sepa_direct_debit: "growth",
   position_presets: "growth",
   ai_dunning_text: "growth",
   multi_territory: "pro",
-  storecove_peppol: "pro",
   custom_api: "pro",
   custom_integrations: "pro",
   audit_log: "pro",

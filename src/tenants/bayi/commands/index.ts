@@ -138,8 +138,8 @@ export const bayiCommands: TenantCommandRegistry = {
 
     // ── Bildirim / İletişim ─────────────────────────
     kampanyabildir: gp(handleKampanyaBildir),
-    // tahsilatbildir: SEPA Direct Debit linki Growth+ özellik
-    tahsilatbildir: gp(tg("sepa_direct_debit", handleTahsilatBildir)),
+    // tahsilatbildir: hatırlatma metni AI ile yazılır → Growth+ özellik
+    tahsilatbildir: gp(tg("ai_dunning_text", handleTahsilatBildir)),
     duyuru: gp(handleDuyuru),
 
     // ── Dealer commands ─────────────────────────────

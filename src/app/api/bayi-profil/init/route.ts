@@ -36,7 +36,12 @@ export async function GET(req: NextRequest) {
   const meta = (profile.metadata || {}) as Record<string, unknown>;
   const firma = (meta.firma_profili || {}) as Record<string, unknown>;
   const localeSettings = (meta.tenant_locale || {}) as Record<string, unknown>;
-  const adapters = (meta.enabled_adapters || {}) as Record<string, unknown>;
+  // 2026-05-02: enabled_adapters yerine accounting_provider tek alan.
+  // Eski metadata.enabled_adapters.accounting fallback (geriye-uyumluluk).
+  const legacyAdapters = (meta.enabled_adapters || {}) as Record<string, unknown>;
+  const accountingProvider = (meta.accounting_provider as string)
+    || (legacyAdapters.accounting as string)
+    || "";
 
   return NextResponse.json({
     success: true,
@@ -49,11 +54,8 @@ export async function GET(req: NextRequest) {
       currency: (localeSettings.currency as string) || "EUR",
       locale: (localeSettings.locale as string) || "tr-NL",
 
-      // Adapter seçimi — daha önce kaydedilmişse okunur, yoksa boş.
-      accounting: (adapters.accounting as string) || "",
-      payment: (adapters.payment as string) || "",
-      shipping: (adapters.shipping as string) || "",
-      einvoice: (adapters.einvoice as string) || "none",
+      // Muhasebe yazılımı seçimi — daha önce kaydedilmişse okunur, yoksa boş.
+      accounting: accountingProvider,
 
       ticari_unvan: (firma.ticari_unvan as string) || (meta.company_name as string) || "",
       yetkili_adi: (firma.yetkili_adi as string) || profile.display_name || "",

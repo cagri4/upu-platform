@@ -5,8 +5,8 @@
  * Tek-form akış: WA onboarding'in yerine geçer. Save sonrası:
  *   - onboarding_completed = true
  *   - firma_profili_completed = true
- *   - tenant_locale_settings (country, currency, locale) profile.metadata'da
- *   - enabled_adapters (accounting, payment, shipping, einvoice) metadata'da
+ *   - tenant_locale (country, currency, locale) profile.metadata'da
+ *   - accounting_provider (yuki|exact|snelstart|logo|none) metadata'da
  *   - advanceDiscovery step 1 (firma_kaydedildi) tetiklenir → bir sonraki
  *     magic link (ürün ekle) WA'ya düşer.
  *
@@ -40,10 +40,9 @@ const COUNTRY_VALUES = new Set(["NL", "TR", "BE", "DE"]);
 const CURRENCY_VALUES = new Set(["EUR", "TRY", "USD", "GBP"]);
 const LOCALE_VALUES = new Set(["tr-NL", "tr-TR", "nl-NL", "en-US", "en-GB"]);
 
-const ACCOUNTING_VALUES = new Set(["yuki", "exact", "snelstart", "logo_nl", "mikro", "other", "none", ""]);
-const PAYMENT_VALUES = new Set(["mollie", "stripe", "iyzico", "manual", "none", ""]);
-const SHIPPING_VALUES = new Set(["postnl", "dhl", "yurtici", "mng", "own_fleet", "other", ""]);
-const EINVOICE_VALUES = new Set(["storecove", "none", ""]);
+// 2026-05-02: distribütör kendi tedarikçilerini kullanıyor — sadece
+// muhasebe yazılımı seçimi var (kargo/ödeme/e-fatura katmanları kaldırıldı).
+const ACCOUNTING_VALUES = new Set(["yuki", "exact", "snelstart", "logo", "none", ""]);
 
 function s(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
@@ -122,15 +121,9 @@ export async function POST(req: NextRequest) {
     if (!CURRENCY_VALUES.has(currency)) return NextResponse.json({ error: "Geçersiz para birimi." }, { status: 400 });
     if (!LOCALE_VALUES.has(locale)) return NextResponse.json({ error: "Geçersiz dil." }, { status: 400 });
 
-    // Adapter seçimi — opsiyonel, enum doğrulaması.
+    // Muhasebe yazılımı seçimi — opsiyonel, enum doğrulaması.
     const accounting = s(body.accounting);
-    const payment = s(body.payment);
-    const shipping = s(body.shipping);
-    const einvoice = s(body.einvoice) || "none";
     if (!ACCOUNTING_VALUES.has(accounting)) return NextResponse.json({ error: "Geçersiz muhasebe yazılımı." }, { status: 400 });
-    if (!PAYMENT_VALUES.has(payment)) return NextResponse.json({ error: "Geçersiz ödeme servisi." }, { status: 400 });
-    if (!SHIPPING_VALUES.has(shipping)) return NextResponse.json({ error: "Geçersiz kargo servisi." }, { status: 400 });
-    if (!EINVOICE_VALUES.has(einvoice)) return NextResponse.json({ error: "Geçersiz e-fatura servisi." }, { status: 400 });
 
     // Country-aware format validasyonu (opsiyonel alanlar için)
     const countryErr = validateCountryFields(country, body);
@@ -196,9 +189,10 @@ export async function POST(req: NextRequest) {
       // Lokalizasyon — runtime'da formatCurrency/formatDate per-user override
       // gerekiyorsa buradan okur. Yoksa tenant default uygulanır.
       tenant_locale: { country, currency, locale },
-      // Adapter seçimi — runtime'da adapters/index.ts resolver buradan
-      // tenant_id + adapter_key okuyup ilgili modülü çağırır.
-      enabled_adapters: { accounting, payment, shipping, einvoice },
+      // Muhasebe yazılımı seçimi — runtime'da adapters/index.ts resolver
+      // accounting_provider'ı okuyup ilgili modülü çağırır. Kargo/ödeme/
+      // e-fatura katmanları distribütörün kendi sisteminde kalır.
+      accounting_provider: accounting || "none",
       // Tier (Aşama 6): yeni profil "starter" tier'ında başlar; Stripe
       // billing entegrasyonu sonrası upgrade akışında metadata.tier
       // değişir. Mevcut tier varsa korunur.

@@ -54,19 +54,17 @@ export interface TenantRefundPolicy {
 }
 
 /**
- * Adapter listesi — kullanıcı onboarding sırasında muhasebe / ödeme /
- * kargo / e-invoice yazılımını seçer; seçim profile.metadata'ya kaydedilir,
+ * Adapter listesi — kullanıcı onboarding sırasında muhasebe yazılımını
+ * seçer; seçim profile.metadata.accounting_provider'a kaydedilir,
  * runtime'da `src/tenants/<tenant>/adapters/` resolver tarafından okunur.
  *
- * MVP'de NL adapter'ları (yuki, exact, snelstart, mollie, postnl, storecove)
- * implement edilir; TR adapter'ları (logo_nl, mikro, iyzico, yurtici, mng)
- * stub'tır — kullanıcı seçerse "Coming soon" mesajı görür.
+ * 2026-05-02 stratejisi: distribütör kendi tedarikçisini kullanıyor —
+ * kargo, ödeme tahsilatı, e-fatura katmanlarına karışmıyoruz. Sadece
+ * muhasebe entegrasyonu (Yuki/Exact/SnelStart Chift unified + Logo TR
+ * iskelet).
  */
 export interface TenantAdapterCatalog {
   accounting?: string[];
-  payment?: string[];
-  shipping?: string[];
-  einvoice?: string[];
 }
 
 export interface TenantConfig {
@@ -168,10 +166,7 @@ const TENANTS: Record<string, TenantConfig> = {
     supportedCurrencies: ["EUR", "TRY"],
     supportedLocales: ["tr-NL", "tr-TR", "nl-NL", "en-US"],
     availableAdapters: {
-      accounting: ["yuki", "exact", "snelstart", "logo_nl", "mikro", "other", "none"],
-      payment:    ["mollie", "stripe", "iyzico", "manual", "none"],
-      shipping:   ["postnl", "dhl", "yurtici", "mng", "own_fleet", "other"],
-      einvoice:   ["storecove", "none"],
+      accounting: ["yuki", "exact", "snelstart", "logo", "none"],
     },
   },
   muhasebe: {

@@ -99,12 +99,12 @@ export function withProfileGate(handler: CommandHandler): CommandHandler {
  * yetersizse "Bu özellik X paketinde — yükseltme" mesajı gösterir,
  * orijinal handler çağrılmaz.
  *
- * Aşama 6 — multi_accounting / sepa_direct_debit / position_presets /
- * ai_dunning_text / multi_territory / storecove_peppol / custom_api /
- * custom_integrations / audit_log feature'ları için kullanılır.
+ * Aşama 6 — multi_accounting / position_presets / ai_dunning_text /
+ * multi_territory / custom_api / custom_integrations / audit_log
+ * feature'ları için kullanılır (2026-05-02: SEPA + Peppol kaldırıldı).
  */
 export function withTierGate(
-  feature: "multi_accounting" | "sepa_direct_debit" | "position_presets" | "ai_dunning_text" | "multi_territory" | "storecove_peppol" | "custom_api" | "custom_integrations" | "audit_log",
+  feature: "multi_accounting" | "position_presets" | "ai_dunning_text" | "multi_territory" | "custom_api" | "custom_integrations" | "audit_log",
   handler: CommandHandler,
 ): CommandHandler {
   return async (ctx: WaContext) => {

@@ -65,85 +65,25 @@ export async function POST(req: NextRequest) {
     }, { status: 410 });
   }
 
+  // 2026-05-02: Stripe entegrasyonu kaldırıldı — UPU subscription tahsilatı
+  // Mollie üzerinde planlanıyor (ileri faz). Şu an tüm iade talepleri
+  // manuel işlenir: profile.metadata.refund_requests'e log atılır,
+  // info@upudev.nl üzerinden 2 iş günü içinde el ile geri ödeme yapılır.
   const meta = (profile.metadata || {}) as Record<string, unknown>;
-  const stripe = (meta.stripe || {}) as Record<string, unknown>;
-  const stripeApiKey = process.env.STRIPE_API_KEY;
-
-  if (!stripeApiKey || !stripe.customer_id) {
-    // Stripe henüz entegre değil veya müşteri Stripe'a bağlı değil. İade
-    // talebi kayıt altına alınır, manuel işlenir.
-    const refundLog = (meta.refund_requests as unknown[] | undefined) || [];
-    refundLog.push({
-      requested_at: new Date().toISOString(),
-      reason: body.reason || null,
-      status: "pending_manual",
-      policy_days: refundPolicy.firstNDays,
-    });
-    await supabase
-      .from("profiles")
-      .update({ metadata: { ...meta, refund_requests: refundLog } })
-      .eq("id", profile.id);
-    return NextResponse.json({
-      success: true,
-      manual: true,
-      message: "İade talebiniz alındı. 2 iş günü içinde info@upudev.nl üzerinden işlenecek.",
-    });
-  }
-
-  // Stripe entegre + customer var: gerçek iade akışı
-  try {
-    // 1) Customer'ın son ödemelerini list et, period_start refundDeadline öncesi olanları topla
-    const chargesRes = await fetch(`https://api.stripe.com/v1/charges?customer=${stripe.customer_id}&limit=10`, {
-      headers: { "Authorization": `Bearer ${stripeApiKey}` },
-    });
-    if (!chargesRes.ok) throw new Error("Stripe charges fetch failed");
-    const charges = await chargesRes.json() as { data: Array<{ id: string; amount: number; refunded: boolean }> };
-
-    let totalRefunded = 0;
-    for (const charge of charges.data) {
-      if (charge.refunded) continue;
-      // Setup fee dahil tam iade — config.refund.fullRefund=true ise hepsi
-      const refundRes = await fetch("https://api.stripe.com/v1/refunds", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${stripeApiKey}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: `charge=${charge.id}`,
-      });
-      if (refundRes.ok) {
-        totalRefunded += charge.amount;
-      }
-    }
-
-    // 2) Subscription cancel (varsa)
-    if (stripe.subscription_id) {
-      await fetch(`https://api.stripe.com/v1/subscriptions/${stripe.subscription_id}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${stripeApiKey}` },
-      });
-    }
-
-    // 3) profile metadata güncelle
-    await supabase
-      .from("profiles")
-      .update({
-        metadata: {
-          ...meta,
-          refunded_at: new Date().toISOString(),
-          refund_amount_cents: totalRefunded,
-          status: "refunded",
-        },
-      })
-      .eq("id", profile.id);
-
-    return NextResponse.json({
-      success: true,
-      manual: false,
-      refund_amount_cents: totalRefunded,
-    });
-  } catch (err) {
-    console.error("[bayi-billing:refund]", err);
-    return NextResponse.json({ error: "İade işlemi başarısız. info@upudev.nl üzerinden destek alın." }, { status: 500 });
-  }
+  const refundLog = (meta.refund_requests as unknown[] | undefined) || [];
+  refundLog.push({
+    requested_at: new Date().toISOString(),
+    reason: body.reason || null,
+    status: "pending_manual",
+    policy_days: refundPolicy.firstNDays,
+  });
+  await supabase
+    .from("profiles")
+    .update({ metadata: { ...meta, refund_requests: refundLog } })
+    .eq("id", profile.id);
+  return NextResponse.json({
+    success: true,
+    manual: true,
+    message: "İade talebiniz alındı. 2 iş günü içinde info@upudev.nl üzerinden işlenecek.",
+  });
 }

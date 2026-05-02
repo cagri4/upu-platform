@@ -370,8 +370,7 @@ function BayiPricing({
               <li>👥 {TIER_FEATURES.starter.employees} çalışan</li>
               <li>🏪 {TIER_FEATURES.starter.dealersFairUse} bayi (adil kullanım)</li>
               <li>💬 {TIER_FEATURES.starter.waMessagesFairUseMonth!.toLocaleString("tr-NL")} WA mesaj/ay</li>
-              <li>📊 1 muhasebe yazılımı (Yuki / Exact / SnelStart)</li>
-              <li>💳 Mollie iDEAL</li>
+              <li>📊 1 muhasebe yazılımı entegrasyonu</li>
               <li>📧 E-mail destek (24h)</li>
             </ul>
             <Link href={`/${locale}/register`} className="block text-center bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl transition font-medium text-sm">
@@ -394,8 +393,7 @@ function BayiPricing({
               <li>👥 {TIER_FEATURES.growth.employees} çalışan</li>
               <li>🏪 {TIER_FEATURES.growth.dealersFairUse} bayi</li>
               <li>💬 {TIER_FEATURES.growth.waMessagesFairUseMonth!.toLocaleString("tr-NL")} WA mesaj/ay</li>
-              <li>✨ Multi-accounting (3'ü paralel)</li>
-              <li>✨ SEPA Direct Debit (otomatik vade çekim)</li>
+              <li>✨ Birden çok muhasebe yazılımı paralel</li>
               <li>✨ Pozisyon presetleri + AI tahsilat metni</li>
               <li>🎁 Setup ücretsiz dahil</li>
               <li>⚡ Priority destek (4h) + WA</li>
@@ -417,10 +415,9 @@ function BayiPricing({
               <li>👥 Sınırsız çalışan</li>
               <li>🏪 Sınırsız bayi</li>
               <li>💬 Sınırsız WA mesaj</li>
-              <li>✨ Growth'taki her şey</li>
-              <li>🇪🇺 Storecove Peppol e-fatura</li>
+              <li>✨ Growth&apos;taki her şey</li>
               <li>🌐 Multi-territory hiyerarşi</li>
-              <li>🔌 REST API + custom entegrasyonlar</li>
+              <li>🔌 REST API + müşteriye özel entegrasyonlar</li>
               <li>📋 Audit log + compliance</li>
               <li>🎁 Setup ücretsiz dahil</li>
               <li>👤 Dedicated AM (1h) + Slack</li>
