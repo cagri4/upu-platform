@@ -10,6 +10,22 @@ type Country = "NL" | "TR" | "BE" | "DE";
 type Currency = "EUR" | "TRY" | "USD" | "GBP";
 type Locale = "tr-NL" | "tr-TR" | "nl-NL" | "en-US";
 
+// UI dropdown 3 seçenek (Türkçe/Nederlands/English). State hala full
+// Locale tutar; country'ye göre tr-NL ↔ tr-TR otomatik expand olur.
+type LocaleUI = "tr" | "nl" | "en";
+
+function uiLocaleFromState(loc: Locale): LocaleUI {
+  if (loc === "tr-NL" || loc === "tr-TR") return "tr";
+  if (loc === "nl-NL") return "nl";
+  return "en";
+}
+
+function stateLocaleFromUi(uiLoc: LocaleUI, country: Country): Locale {
+  if (uiLoc === "tr") return country === "TR" ? "tr-TR" : "tr-NL";
+  if (uiLoc === "nl") return "nl-NL";
+  return "en-US";
+}
+
 interface Firma {
   // Lokalizasyon
   country: Country;
@@ -85,11 +101,12 @@ const CURRENCY_OPTIONS: Array<{ id: Currency; label: string }> = [
   { id: "GBP", label: "£ GBP" },
 ];
 
-const LOCALE_OPTIONS: Array<{ id: Locale; label: string }> = [
-  { id: "tr-NL", label: "🇹🇷 Türkçe (Hollanda)" },
-  { id: "tr-TR", label: "🇹🇷 Türkçe (Türkiye)" },
-  { id: "nl-NL", label: "🇳🇱 Nederlands" },
-  { id: "en-US", label: "🇬🇧 English" },
+// Dil dropdown — Türkçe (Hollanda/Türkiye varyantı yok, country zaten
+// ayrı alan). 3 sade seçenek.
+const LOCALE_OPTIONS: Array<{ id: LocaleUI; label: string }> = [
+  { id: "tr", label: "🇹🇷 Türkçe" },
+  { id: "nl", label: "🇳🇱 Nederlands" },
+  { id: "en", label: "🇬🇧 English" },
 ];
 
 const ACCOUNTING_OPTIONS: Array<{ id: string; label: string; country?: Country[] }> = [
@@ -227,7 +244,8 @@ export default function BayiProfilPage() {
             </select>
           </Field>
           <Field label="Dil">
-            <select value={firma.locale} onChange={e => update({ locale: e.target.value as Locale })}
+            <select value={uiLocaleFromState(firma.locale)}
+              onChange={e => update({ locale: stateLocaleFromUi(e.target.value as LocaleUI, firma.country) })}
               className={inputCls}>
               {LOCALE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
