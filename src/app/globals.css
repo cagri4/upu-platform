@@ -25,11 +25,18 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Placeholder kontrast — Tailwind v4 default'u (slate-400 ~ #94a3b8)
-   mobile'da neredeyse okunmuyor. slate-500 (#64748b) ile %30 daha
-   koyu, hala input metniyle ayrışır ama net okunabilir. Tüm
-   input/select/textarea placeholder'larına global uygulanır;
-   per-component override gerekmiyor. */
+/* Form text + placeholder kontrast — Tailwind v4 default'u silik kalıyor.
+   - Input/textarea/select VALUE: slate-900 (koyu, "değer var" hissi)
+   - Placeholder: slate-500 (silik ama mobile'da okunabilir)
+   - Disabled "Seçin..." default option: slate-500
+   Per-component class gerekmiyor; tüm form'lar tek seferlik fix.
+   Checkbox/radio hariç (kendi rengi tema kontrol eder). */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  color: #0f172a;                    /* slate-900 — koyu metin */
+}
+
 input::placeholder,
 textarea::placeholder {
   color: #64748b !important;        /* slate-500 */
