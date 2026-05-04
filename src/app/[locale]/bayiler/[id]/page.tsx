@@ -12,7 +12,7 @@
  * "💰 Vade Hatırlatma" buton highlighted (Faz 4 entegrasyonu).
  *
  * Aksiyon butonları sticky bottom (mobile) / sağ float (desktop):
- *   📩 WA Mesaj | 📞 Ara | ➕ Yeni Sipariş | 💰 Vade Hatırlatma |
+ *   📩 WA Mesaj | 📞 Ara | 💰 Vade Hatırlatma |
  *   📝 Not Ekle | 🎁 Kampanya | ✏️ Düzenle | ⏸ Durum | 🗑 Sil
  *
  * Modal mantığı Faz 3b'de — şimdilik buton tıklayınca onClick: { setModal(...) }
@@ -105,7 +105,7 @@ interface DetailResp {
   }>;
 }
 
-type ModalKey = null | "wa" | "vade" | "not" | "kampanya" | "siparis" | "duzenle" | "durum" | "sil";
+type ModalKey = null | "wa" | "vade" | "not" | "kampanya" | "duzenle" | "durum" | "sil";
 
 function formatTry(n: number): string {
   return new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(n);
@@ -419,15 +419,7 @@ export default function BayiDetayPage() {
 
         {/* Orta — Sipariş geçmişi */}
         <section className="bg-white border border-slate-200 rounded-xl p-4 lg:col-span-1">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-slate-700">🛒 Sipariş Geçmişi</h3>
-            <button
-              onClick={() => setActiveModal("siparis")}
-              className="text-xs text-indigo-600 hover:underline"
-            >
-              + Yeni Sipariş
-            </button>
-          </div>
+          <h3 className="text-sm font-semibold text-slate-700 mb-3">🛒 Sipariş Geçmişi</h3>
           {orders.length === 0 ? (
             <p className="text-xs text-slate-400 text-center py-6">Henüz sipariş yok.</p>
           ) : (
@@ -493,7 +485,6 @@ export default function BayiDetayPage() {
             { key: "vade" as ModalKey, icon: "💰", label: "Vade Hatırlatma", primary: finance.isCritical },
             { key: "not" as ModalKey, icon: "📝", label: "Not" },
             { key: "kampanya" as ModalKey, icon: "🎁", label: "Kampanya" },
-            { key: "siparis" as ModalKey, icon: "➕", label: "Sipariş" },
             { key: "duzenle" as ModalKey, icon: "✏️", label: "Düzenle" },
             { key: "durum" as ModalKey, icon: "⏸", label: "Durum" },
             { key: "sil" as ModalKey, icon: "🗑", label: "Sil" },
@@ -609,7 +600,6 @@ function ActionModal({ modalKey, dealer, finance, onClose, onSuccess }: ActionMo
         {modalKey === "vade" && <VadeHatirlatmaForm dealer={dealer} finance={finance} onClose={onClose} onSuccess={onSuccess} />}
         {modalKey === "not" && <NotEkleForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
         {modalKey === "kampanya" && <KampanyaForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
-        {modalKey === "siparis" && <YeniSiparisForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
         {modalKey === "duzenle" && <DuzenleForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
         {modalKey === "durum" && <DurumForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
         {modalKey === "sil" && <SilForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
@@ -862,80 +852,6 @@ function KampanyaForm({ onClose, onSuccess }: { dealer: Dealer; onClose: () => v
         <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
         <button onClick={handleSave} disabled={saving || !name.trim()} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
           {saving ? "Tanımlanıyor…" : "Kampanyayı Tanımla"}
-        </button>
-      </div>
-    </ModalShell>
-  );
-}
-
-// ── Yeni Sipariş ─────────────────────────────────────────────────────
-function YeniSiparisForm({ dealer, onClose, onSuccess }: { dealer: Dealer; onClose: () => void; onSuccess: ActionModalProps["onSuccess"] }) {
-  const [items, setItems] = useState<Array<{ name: string; qty: number; price: number }>>([
-    { name: "", qty: 1, price: 0 },
-  ]);
-  const [saving, setSaving] = useState(false);
-  const total = items.reduce((s, it) => s + it.qty * it.price, 0);
-
-  function updateItem(idx: number, patch: Partial<{ name: string; qty: number; price: number }>) {
-    setItems(prev => prev.map((it, i) => i === idx ? { ...it, ...patch } : it));
-  }
-  function addItem() { setItems([...items, { name: "", qty: 1, price: 0 }]); }
-  function removeItem(idx: number) { setItems(items.filter((_, i) => i !== idx)); }
-
-  async function handleSave() {
-    const valid = items.filter(it => it.name.trim() && it.qty > 0 && it.price > 0);
-    if (valid.length === 0) return;
-    setSaving(true);
-    await new Promise(r => setTimeout(r, 400));
-    onSuccess({
-      type: "order",
-      icon: "🛒",
-      title: `Sipariş — ${valid.length} kalem`,
-      detail: `${formatTry(total)} · ${dealer.name}`,
-      timestamp: new Date().toISOString(),
-    }, "✅ Sipariş oluşturuldu");
-    setSaving(false);
-  }
-
-  return (
-    <ModalShell title="➕ Yeni Sipariş" onClose={onClose}>
-      <p className="text-xs text-slate-500 mb-3">Bayi: <strong>{dealer.name}</strong></p>
-      <div className="space-y-2">
-        {items.map((it, idx) => (
-          <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-            <input
-              value={it.name}
-              onChange={e => updateItem(idx, { name: e.target.value })}
-              placeholder="Ürün adı"
-              className="col-span-6 border border-slate-200 rounded-lg px-2 py-1.5 text-sm"
-            />
-            <input
-              type="number"
-              value={it.qty}
-              onChange={e => updateItem(idx, { qty: Number(e.target.value) })}
-              min={1}
-              className="col-span-2 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-center"
-            />
-            <input
-              type="number"
-              value={it.price}
-              onChange={e => updateItem(idx, { price: Number(e.target.value) })}
-              placeholder="₺"
-              className="col-span-3 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-right"
-            />
-            <button onClick={() => removeItem(idx)} className="col-span-1 text-rose-500 text-xl leading-none">×</button>
-          </div>
-        ))}
-        <button onClick={addItem} className="text-xs text-indigo-600 hover:underline">+ Kalem ekle</button>
-      </div>
-      <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
-        <span className="text-sm text-slate-600">Toplam</span>
-        <span className="text-lg font-bold">{formatTry(total)}</span>
-      </div>
-      <div className="flex gap-2 mt-4 justify-end">
-        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
-        <button onClick={handleSave} disabled={saving || total === 0} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-          {saving ? "Kaydediliyor…" : "Siparişi Oluştur"}
         </button>
       </div>
     </ModalShell>
