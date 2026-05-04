@@ -31,18 +31,30 @@ interface Dealer {
   contactPhone: string | null;
   email: string | null;
   city: string | null;
+  district: string | null;
   country: string | null;
-  address: string | null;
+  addressLine: string | null;
   isActive: boolean;
+  status: string;
   balance: number;
   creditLimit: number;
   createdAt: string;
   code: string | null;
+  tags: string[];
+  taxNumber: string | null;
+  taxOffice: string | null;
+  iban: string | null;
 }
 
 interface Finance {
   balance: number;
   creditLimit: number;
+  paymentTermDays: number | null;
+  discountRate: number | null;
+  riskStatus: "clean" | "watch" | "blacklist";
+  revenue30: number;
+  revenue60: number;
+  revenue90: number;
   openTotal: number;
   paidTotal: number;
   mostOverdueDays: number | null;
@@ -247,13 +259,17 @@ export default function BayiDetayPage() {
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl font-bold text-slate-900">{dealer.name}</h1>
                 {finance.isCritical && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-semibold">
-                    KRİTİK
-                  </span>
+                  <Chip color="rose" label="KRİTİK" />
                 )}
                 {!dealer.isActive && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">Pasif</span>
+                  <Chip color="slate" label="Pasif" />
                 )}
+                {dealer.tags?.includes("VIP") && <Chip color="violet" label="VIP" />}
+                {dealer.tags?.includes("yeni") && <Chip color="sky" label="Yeni" />}
+                {dealer.tags?.includes("kurumsal") && <Chip color="emerald" label="Kurumsal" />}
+                {dealer.tags?.filter(t => !["VIP","yeni","kurumsal","kritik"].includes(t)).map(t => (
+                  <Chip key={t} color="slate" label={t} />
+                ))}
               </div>
               <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-600">
                 {dealer.contactName && <div>👤 {dealer.contactName}</div>}
@@ -263,11 +279,13 @@ export default function BayiDetayPage() {
                   </div>
                 )}
                 {dealer.email && (
-                  <div>📧 <a href={`mailto:${dealer.email}`} className="text-indigo-600 hover:underline">{dealer.email}</a></div>
+                  <div className="truncate">📧 <a href={`mailto:${dealer.email}`} className="text-indigo-600 hover:underline">{dealer.email}</a></div>
                 )}
-                {(dealer.city || dealer.country) && <div>📍 {[dealer.city, dealer.country].filter(Boolean).join(", ")}</div>}
+                <div className="sm:col-span-2">
+                  📍 {[dealer.addressLine, dealer.district, dealer.city, dealer.country].filter(Boolean).join(", ") || <span className="text-slate-400">Adres girilmemiş</span>}
+                </div>
                 {dealer.code && <div>🏷 Kod: <span className="font-mono">{dealer.code}</span></div>}
-                <div>📅 Kayıt: {formatDate(dealer.createdAt)}</div>
+                <div className="text-slate-400">📅 Kayıt {formatDate(dealer.createdAt)}</div>
               </div>
             </div>
           </div>
@@ -278,15 +296,17 @@ export default function BayiDetayPage() {
       <div className="max-w-6xl mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Sol — Finansal */}
         <section className="space-y-3">
+          {/* Finansal Durum */}
           <div className="bg-white border border-slate-200 rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">💳 Finansal Durum</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-slate-700">💳 Finansal Durum</h3>
+              <RiskBadge status={finance.riskStatus} />
+            </div>
+
             <div>
               <div className="text-xs text-slate-500">Toplam Bakiye</div>
               <div className={`text-2xl font-bold ${finance.balance > 0 ? "text-rose-600" : finance.balance < 0 ? "text-emerald-600" : "text-slate-700"}`}>
                 {formatTry(finance.balance)}
-              </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">
-                {finance.balance > 0 ? "Bayi borçlu" : finance.balance < 0 ? "Avans var" : "Bakiye sıfır"}
               </div>
             </div>
 
@@ -294,18 +314,30 @@ export default function BayiDetayPage() {
               <div className="mt-3">
                 <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                   <span>Kredi limiti</span>
-                  <span>{formatTry(finance.balance)} / {formatTry(finance.creditLimit)}</span>
+                  <span>{formatTry(Math.max(0, finance.balance))} / {formatTry(finance.creditLimit)}</span>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className={`h-full ${finance.balance / finance.creditLimit > 0.8 ? "bg-rose-500" : finance.balance / finance.creditLimit > 0.5 ? "bg-amber-500" : "bg-emerald-500"}`}
-                    style={{ width: `${Math.min(100, (finance.balance / finance.creditLimit) * 100)}%` }}
+                    style={{ width: `${Math.min(100, Math.max(0, finance.balance / finance.creditLimit) * 100)}%` }}
                   />
                 </div>
               </div>
             )}
 
-            <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              {finance.paymentTermDays !== null && (
+                <div className="p-2 bg-slate-50 rounded-lg">
+                  <div className="text-[10px] text-slate-500 uppercase">Vade Günü</div>
+                  <div className="text-sm font-semibold text-slate-800">{finance.paymentTermDays} gün</div>
+                </div>
+              )}
+              {finance.discountRate !== null && finance.discountRate > 0 && (
+                <div className="p-2 bg-violet-50 rounded-lg">
+                  <div className="text-[10px] text-violet-600 uppercase">İskonto</div>
+                  <div className="text-sm font-semibold text-violet-700">%{finance.discountRate}</div>
+                </div>
+              )}
               <div className="p-2 bg-amber-50 rounded-lg">
                 <div className="text-[10px] text-amber-600 uppercase">Açık Vade</div>
                 <div className="text-sm font-semibold text-amber-700">{formatTry(finance.openTotal)}</div>
@@ -316,12 +348,44 @@ export default function BayiDetayPage() {
               </div>
             </div>
 
+            {/* 30/60/90 gün ciro */}
+            <div className="mt-3 border-t border-slate-100 pt-3">
+              <div className="text-[10px] text-slate-500 uppercase mb-1">Ciro</div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="text-center">
+                  <div className="text-slate-400">30 gün</div>
+                  <div className="font-semibold text-slate-800">{formatTry(finance.revenue30)}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-slate-400">60 gün</div>
+                  <div className="font-semibold text-slate-800">{formatTry(finance.revenue60)}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-slate-400">90 gün</div>
+                  <div className="font-semibold text-slate-800">{formatTry(finance.revenue90)}</div>
+                </div>
+              </div>
+            </div>
+
             {finance.mostOverdueDays !== null && finance.mostOverdueDays >= 0 && (
               <div className={`mt-3 p-2 rounded-lg text-xs ${finance.isCritical ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700"}`}>
                 ⏰ En geç vade: <strong>{finance.mostOverdueDays} gün</strong> {finance.mostOverdueDays > 0 ? "geçmiş" : "kaldı"}
               </div>
             )}
           </div>
+
+          {/* Vergi & Banka */}
+          {(dealer.taxNumber || dealer.taxOffice || dealer.iban || dealer.contactName) && (
+            <div className="bg-white border border-slate-200 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">🏦 Vergi & Banka</h3>
+              <div className="space-y-1.5 text-xs">
+                <KeyVal label="Vergi No" value={dealer.taxNumber} mono />
+                <KeyVal label="Vergi Dairesi" value={dealer.taxOffice} />
+                <KeyVal label="IBAN" value={dealer.iban} mono />
+                <KeyVal label="Yetkili Kişi" value={dealer.contactName} />
+              </div>
+            </div>
+          )}
 
           {/* Vade hareketleri (faturalar) */}
           {invoices.length > 0 && (
@@ -478,6 +542,46 @@ export default function BayiDetayPage() {
           {toast}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── UI helpers ───────────────────────────────────────────────────────
+
+function Chip({ color, label }: { color: "rose" | "slate" | "violet" | "sky" | "emerald" | "amber"; label: string }) {
+  const cls = {
+    rose:    "bg-rose-100 text-rose-700 font-semibold",
+    slate:   "bg-slate-100 text-slate-600",
+    violet:  "bg-violet-100 text-violet-700 font-semibold",
+    sky:     "bg-sky-100 text-sky-700",
+    emerald: "bg-emerald-100 text-emerald-700",
+    amber:   "bg-amber-100 text-amber-700",
+  }[color];
+  return <span className={`text-xs px-2 py-0.5 rounded-full ${cls}`}>{label}</span>;
+}
+
+function RiskBadge({ status }: { status: "clean" | "watch" | "blacklist" }) {
+  const map = {
+    clean:     { label: "🟢 Temiz",      cls: "bg-emerald-50 text-emerald-700" },
+    watch:     { label: "🟡 İzlemede",   cls: "bg-amber-50 text-amber-700" },
+    blacklist: { label: "🔴 Kara liste", cls: "bg-rose-50 text-rose-700 font-semibold" },
+  }[status];
+  return <span className={`text-[10px] px-2 py-0.5 rounded-full ${map.cls}`}>{map.label}</span>;
+}
+
+function KeyVal({ label, value, mono }: { label: string; value: string | null; mono?: boolean }) {
+  if (!value) {
+    return (
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-slate-500">{label}</span>
+        <span className="text-slate-400">—</span>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-slate-500">{label}</span>
+      <span className={`text-slate-800 ${mono ? "font-mono" : ""} text-right break-all`}>{value}</span>
     </div>
   );
 }
@@ -845,7 +949,7 @@ function DuzenleForm({ dealer, onClose, onSuccess }: { dealer: Dealer; onClose: 
   const [phone, setPhone] = useState(dealer.contactPhone || "");
   const [email, setEmail] = useState(dealer.email || "");
   const [city, setCity] = useState(dealer.city || "");
-  const [address, setAddress] = useState(dealer.address || "");
+  const [address, setAddress] = useState(dealer.addressLine || "");
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {

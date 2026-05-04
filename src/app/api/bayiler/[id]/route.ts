@@ -158,6 +158,20 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
   }
   timeline.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
+  // 30/60/90 gün ciro — son siparişleri tarih bucket'larına böl.
+  const now = today.getTime();
+  let revenue30 = 0, revenue60 = 0, revenue90 = 0;
+  for (const o of orders || []) {
+    const created = new Date(o.created_at).getTime();
+    const days = (now - created) / 86400000;
+    const total = Number(o.total_amount) || 0;
+    if (days <= 30) revenue30 += total;
+    if (days <= 60) revenue60 += total;
+    if (days <= 90) revenue90 += total;
+  }
+
+  const tagsArr = Array.isArray(dealer.tags) ? dealer.tags as string[] : [];
+
   return NextResponse.json({
     dealer: {
       id: dealer.id,
@@ -166,17 +180,28 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
       contactPhone: dealer.phone || dealer.contact_phone || null,
       email: dealer.email || null,
       city: dealer.city || null,
+      district: dealer.district || null,
       country: dealer.country || null,
-      address: dealer.address || null,
+      addressLine: dealer.address_line || dealer.address || null,
       isActive: dealer.is_active !== false,
+      status: dealer.status || (dealer.is_active === false ? "passive" : "active"),
       balance: Number(dealer.balance) || 0,
       creditLimit: Number(dealer.credit_limit) || 0,
       createdAt: dealer.created_at,
       code: dealer.code || null,
+      tags: tagsArr,
+      // Vergi & banka
+      taxNumber: dealer.tax_number || null,
+      taxOffice: dealer.tax_office || null,
+      iban: dealer.iban || null,
     },
     finance: {
       balance: Number(dealer.balance) || 0,
       creditLimit: Number(dealer.credit_limit) || 0,
+      paymentTermDays: dealer.payment_term_days ?? null,
+      discountRate: dealer.discount_rate !== null && dealer.discount_rate !== undefined ? Number(dealer.discount_rate) : null,
+      riskStatus: (dealer.risk_status as "clean" | "watch" | "blacklist") || "clean",
+      revenue30, revenue60, revenue90,
       openTotal,
       paidTotal,
       mostOverdueDays,

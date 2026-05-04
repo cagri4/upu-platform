@@ -20,6 +20,8 @@ export interface SectorProduct {
   ean: string | null;
 }
 
+export type RiskStatus = "clean" | "watch" | "blacklist";
+
 export interface SectorDealer {
   name: string;
   city: string;
@@ -29,6 +31,20 @@ export interface SectorDealer {
   is_active: boolean;
   balance: number;
   status_note?: string;
+
+  // Genişletilmiş alanlar (2026-05-04 migration sonrası).
+  // Hepsi opsiyonel — eski seed dataset'leri uyumlu kalır.
+  email?: string;
+  address_line?: string;
+  district?: string;
+  tax_number?: string;
+  tax_office?: string;
+  iban?: string;
+  credit_limit?: number;
+  payment_term_days?: number;
+  discount_rate?: number;       // 0-100 yüzde
+  risk_status?: RiskStatus;
+  tags?: string[];
 }
 
 export interface SectorOrder {

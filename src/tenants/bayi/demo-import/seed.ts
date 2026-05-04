@@ -84,15 +84,30 @@ export async function seedTenantDemoData(
     return { ok: false, reason: `Ürün insert hatası: ${pErr?.message || "unknown"}`, sector: dataset.slug };
   }
 
-  // 2) Bayiler
+  // 2) Bayiler — genişletilmiş alanlar (2026-05-04 migration sonrası).
+  // Migration uygulanmamışsa eski kolonlar payload'da; yeni alanları
+  // koşullu yazıyoruz ki tablo'da yoksa unknown column hatası alalım
+  // (debug kolaylığı için açık).
   const dealersPayload = dataset.dealers.map(d => ({
     tenant_id: tenantId,
     user_id: ownerId,
     name: d.name,
+    company_name: d.name,
     city: d.city,
+    district: d.district || null,
     country: d.country,
     contact_name: d.contact_name,
-    contact_phone: d.contact_phone,
+    phone: d.contact_phone,
+    email: d.email || null,
+    address_line: d.address_line || null,
+    tax_number: d.tax_number || null,
+    tax_office: d.tax_office || null,
+    iban: d.iban || null,
+    credit_limit: d.credit_limit ?? null,
+    payment_term_days: d.payment_term_days ?? null,
+    discount_rate: d.discount_rate ?? null,
+    risk_status: d.risk_status || "clean",
+    tags: d.tags || [],
     is_active: d.is_active,
     balance: d.balance,
   }));
