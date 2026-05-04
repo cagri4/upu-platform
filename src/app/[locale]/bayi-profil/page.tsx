@@ -231,7 +231,7 @@ export default function BayiProfilPage() {
         <div className="bg-gradient-to-br from-emerald-600 to-teal-600 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">🏢</div>
           <h1 className="text-xl font-bold">Firma Profili</h1>
-          <p className="text-emerald-100 text-sm mt-1">Zorunlu alanlar + ülke ve yazılım tercihleri. ~5 dakika.</p>
+          <p className="text-emerald-100 text-sm mt-1">Zorunlu alanlar + ülke ve yazılım tercihleri. ~5 dakika. Daha sonra güncelleyebilirsiniz.</p>
         </div>
 
         <Section title="🌐 Lokalizasyon">
