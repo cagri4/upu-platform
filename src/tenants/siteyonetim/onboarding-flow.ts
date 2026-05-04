@@ -112,20 +112,23 @@ export const siteyonetimOnboardingFlow: OnboardingFlow = {
       }
     }
 
-    // Build completion message
+    // Kapanış özeti — sade. Tour intro mesajı (step 1) advanceDiscovery
+    // tarafından ayrı gönderilecek, burada navigasyon kalabalığı yapma.
     let msg = "✅ *Kurulum tamamlandı!*\n\n";
     if (data.building_name) msg += `🏢 Bina: ${data.building_name}\n`;
     if (data.unit_count) msg += `🏠 Daire sayısı: ${data.unit_count}\n`;
     if (data.aidat_amount) msg += `💰 Aylık aidat: ₺${data.aidat_amount}\n`;
-    msg += `📋 Günlük brifing: ${data.briefing === "evet" ? "Aktif" : "Pasif"}\n`;
+    msg += `📋 Günlük brifing: ${data.briefing === "evet" ? "Aktif" : "Pasif"}`;
     msg += seedSummary;
-    msg += "\n\n💡 *Şunları deneyin:*\n";
-    msg += `• "rapor" — bina özeti (KPI)\n`;
-    msg += `• "aidat" — ödenmemiş aidat listesi\n`;
-    msg += `• "bakim" — açık arıza listesi`;
 
-    await sendButtons(ctx.phone, msg, [
-      { id: "cmd:menu", title: "Ana Menü" },
-    ]);
+    await sendButtons(ctx.phone, msg, [], { skipNav: true });
+
+    // Tour başlat — Task 1 (rapor) prompt'u gönderilir.
+    try {
+      const { advanceDiscovery } = await import("@/platform/whatsapp/discovery-chain");
+      await advanceDiscovery(ctx.userId, "siteyonetim", ctx.phone, "setup_complete");
+    } catch (err) {
+      console.error("[siteyonetim:onboarding] tour start err:", err);
+    }
   },
 };

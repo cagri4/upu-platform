@@ -333,6 +333,9 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
         // Tour'u atla → step direkt 9 (completed) → kapanış mesajı.
         const { skipBayiTour } = await import("@/tenants/bayi/onboarding/tour-progression");
         await skipBayiTour(ctx.userId, ctx.phone);
+      } else if (action === "tour_atla" && ctx.tenantKey === "siteyonetim") {
+        const { skipSiteyonetimTour } = await import("@/tenants/siteyonetim/onboarding/tour-progression");
+        await skipSiteyonetimTour(ctx.userId, ctx.phone);
       }
       return;
     }
@@ -487,14 +490,21 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     try {
       await handler(ctx);
       logCommand(ctx, resolved, true, Date.now() - start);
-      // Bayi AI-led tour ilerleme — komut tour beklenen komutla eşleşiyorsa
-      // bir sonraki step prompt'u tetiklenir. Diğer tenant'lar etkilenmez.
+      // AI-led tour ilerleme — komut tour beklenen komutla eşleşiyorsa
+      // bir sonraki step prompt'u tetiklenir. Tenant'a göre dispatch.
       if (ctx.tenantKey === "bayi") {
         try {
           const { advanceBayiTourIfMatched } = await import("@/tenants/bayi/onboarding/tour-progression");
           await advanceBayiTourIfMatched(ctx, resolved);
         } catch (err) {
-          console.error("[router] tour progression error:", err);
+          console.error("[router] bayi tour progression error:", err);
+        }
+      } else if (ctx.tenantKey === "siteyonetim") {
+        try {
+          const { advanceSiteyonetimTourIfMatched } = await import("@/tenants/siteyonetim/onboarding/tour-progression");
+          await advanceSiteyonetimTourIfMatched(ctx, resolved);
+        } catch (err) {
+          console.error("[router] siteyonetim tour progression error:", err);
         }
       }
     } catch (err) {

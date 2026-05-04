@@ -47,16 +47,28 @@ const STEP_TRIGGERS_BY_TENANT: Record<string, Record<string, number>> = {
     tour_sabah_done: 8,
     tour_tahsilat_done: 9,
   },
+  siteyonetim: {
+    setup_complete: 1,         // onboarding 4-soru tamamlandı + demo seed yüklendi
+    tour_rapor_done: 2,
+    tour_aidat_done: 3,
+    tour_borc_done: 4,
+    tour_bakim_done: 5,
+    tour_ariza_done: 6,
+    tour_gelirgider_done: 7,
+    tour_binakodu_done: 8,
+  },
 };
 
 const MAX_STEP_BY_TENANT: Record<string, number> = {
   emlak: 4,
   bayi: 9,
+  siteyonetim: 8,
 };
 
 const APP_URL_BY_TENANT: Record<string, string> = {
   emlak: "https://estateai.upudev.nl",
   bayi: "https://retailai.upudev.nl",
+  siteyonetim: "https://residenceai.upudev.nl",
 };
 
 // ── State helpers ────────────────────────────────────────────────────
@@ -125,6 +137,7 @@ export async function advanceDiscovery(
 
   if (tenantKey === "emlak") return sendEmlakStepPrompt(userId, phone, targetStep);
   if (tenantKey === "bayi") return sendBayiStepPrompt(userId, phone, targetStep);
+  if (tenantKey === "siteyonetim") return sendSiteyonetimStepPrompt(userId, phone, targetStep);
   return false;
 }
 
@@ -443,4 +456,164 @@ export async function startBayiDiscoveryChain(userId: string, phone: string, com
     url,
     { skipNav: true },
   );
+}
+
+// ── Siteyönetim prompts ──────────────────────────────────────────────
+//
+// 7-task tour. step 1 onboarding + demo seed sonrası başlar (Task 1: rapor),
+// step 7 son task (binakodu — sakin daveti), step 8 free-ride kapanışı.
+
+async function loadSiteyonetimTourContext(userId: string): Promise<{ buildingName?: string; firstName?: string }> {
+  try {
+    const sb = getServiceClient();
+    const { data: profile } = await sb
+      .from("profiles")
+      .select("display_name, metadata")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!profile) return {};
+    const meta = (profile.metadata || {}) as Record<string, unknown>;
+    const buildingName = (meta.building_name as string) || undefined;
+    const fullName = profile.display_name || "";
+    const firstName = fullName ? fullName.split(/\s+/)[0] : undefined;
+    return { buildingName, firstName };
+  } catch {
+    return {};
+  }
+}
+
+async function sendSiteyonetimStepPrompt(userId: string, phone: string, step: number): Promise<boolean> {
+  const ctx = await loadSiteyonetimTourContext(userId);
+  const greeting = ctx.firstName ? `${ctx.firstName} Bey, ` : "";
+  const bina = ctx.buildingName || "Binanız";
+
+  switch (step) {
+    case 1: {
+      // Onboarding + demo seed tamamlandı → Task 1: rapor (sabah brifingi).
+      await sendButtons(phone,
+        `🎉 *Sistem hazır!* (1/7)\n\n` +
+        `${greeting}${bina} için 18 sakin, 3 ay aidat, 3 açık arıza yükledim. Birkaç dakikada sistemi tanıyalım.\n\n` +
+        `*Adım 1 — Sabah brifingin*\n` +
+        `Her sabah günlük durumu özetliyorum: kaç borçlu daire, kaç açık arıza, kasada ne var. Bugünün özetini görmek için:\n\n` +
+        `   👉 *rapor*`,
+        [
+          { id: "cmd:rapor", title: "📊 rapor" },
+          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
+        ],
+        { skipNav: true },
+      );
+      return true;
+    }
+    case 2: {
+      // Task 2 — aidat: kim borçlu?
+      await sendButtons(phone,
+        `✅ *Brifingi gördün!* (2/7)\n\n` +
+        `*Adım 2 — Kim borçlu?*\n` +
+        `Hangi daireler aidat ödememiş, hangi dönem? Vade geçmiş borçları toplu görelim:\n\n` +
+        `   👉 *aidat*`,
+        [
+          { id: "cmd:aidat", title: "💰 aidat" },
+          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
+        ],
+        { skipNav: true },
+      );
+      return true;
+    }
+    case 3: {
+      // Task 3 — borc: daire bazlı detay (kritik durumu fark).
+      await sendButtons(phone,
+        `✅ *Borçlu listesini gördün!* (3/7)\n\n` +
+        `*Adım 3 — Daire bazlı borç*\n` +
+        `Daire 1A iki ay üst üste ödemedi — gecikme faiziyle birlikte detayı görelim:\n\n` +
+        `   👉 *borc*`,
+        [
+          { id: "cmd:borcum", title: "🏠 borc" },
+          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
+        ],
+        { skipNav: true },
+      );
+      return true;
+    }
+    case 4: {
+      // Task 4 — bakim: açık arızalar.
+      await sendButtons(phone,
+        `✅ *Borç detayını gördün!* (4/7)\n\n` +
+        `*Adım 4 — Açık arızalar*\n` +
+        `Sakinlerin bildirdiği arızalar tek listede: asansör, su sızıntısı, elektrik. Hepsi bekliyor:\n\n` +
+        `   👉 *bakim*`,
+        [
+          { id: "cmd:bakim", title: "🔧 bakim" },
+          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
+        ],
+        { skipNav: true },
+      );
+      return true;
+    }
+    case 5: {
+      // Task 5 — ariza: pratik yeni arıza yarat.
+      await sendButtons(phone,
+        `✅ *Açık arızaları gördün!* (5/7)\n\n` +
+        `*Adım 5 — Yeni arıza ekle*\n` +
+        `Pratik yapalım. Yeni bir arıza bildirimi yaratalım — 3 adımda kategori → öncelik → açıklama:\n\n` +
+        `   👉 *ariza*`,
+        [
+          { id: "cmd:ariza", title: "🆕 ariza" },
+          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
+        ],
+        { skipNav: true },
+      );
+      return true;
+    }
+    case 6: {
+      // Task 6 — gelir_gider: kasa.
+      await sendButtons(phone,
+        `✅ *Arıza bildirimini denedin!* (6/7)\n\n` +
+        `*Adım 6 — Kasa durumu*\n` +
+        `Aidat tahsilat + giderler (temizlik, elektrik, asansör bakımı). Tüm hareketleri ve net bakiyeyi görmek için:\n\n` +
+        `   👉 *gelir_gider*`,
+        [
+          { id: "cmd:gelir_gider", title: "💵 gelir_gider" },
+          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
+        ],
+        { skipNav: true },
+      );
+      return true;
+    }
+    case 7: {
+      // Task 7 — binakodu: sakin daveti.
+      await sendButtons(phone,
+        `✅ *Kasayı gördün!* (7/7)\n\n` +
+        `*Son adım — Sakinleri sisteme bağla*\n` +
+        `Sakinler kendi telefonlarından "kayit ABC123" yazarak bağlanır. ${bina} için bina kodunu görmek için:\n\n` +
+        `   👉 *binakodu*`,
+        [
+          { id: "cmd:binakodu", title: "🔑 binakodu" },
+          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
+        ],
+        { skipNav: true },
+      );
+      return true;
+    }
+    case 8: {
+      // Tour completed → free-ride.
+      await sendButtons(phone,
+        `🎓 *Tebrikler! Sistemi tanıdın.*\n\n` +
+        `Artık serbest mod. ${bina} için günlük yönetim akışı:\n` +
+        `• *rapor* — sabah brifingi\n` +
+        `• *aidat* / *borc* — tahsilat takibi\n` +
+        `• *bakim* / *ariza* — arıza yönetimi\n` +
+        `• *gelir_gider* — kasa hareketleri\n` +
+        `• *duyuru* — sakinlere toplu mesaj\n` +
+        `• *binakodu* — sakin davet kodu\n\n` +
+        `Tüm komutlar için *menu* yazın.`,
+        [
+          { id: "cmd:menu", title: "📋 Ana Menü" },
+          { id: "cmd:binakodu", title: "🔑 Bina Kodu" },
+        ],
+        { skipNav: true },
+      );
+      return true;
+    }
+  }
+  return false;
 }
