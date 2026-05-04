@@ -144,21 +144,29 @@ export async function handleIntroCallback(ctx: WaContext, interactiveId: string)
   const step = parts[1];
 
   if (step === "start") {
-    // Bayi: WA onboarding atlandı — onay mesajı gösterip tek-form web akışına yönlendiriyoruz.
+    // Bayi: tek mesaj — magic link direkt CTA URL butonuyla açılır.
+    // Eski "Tamam, başlayalım" onay adımı (ara mesaj) kaldırıldı —
+    // kullanıcı bir tıklamayla web formunu açıyor. "Sonra" konsepti
+    // metinde geçiyor: hazır değilse mesajı görmezden gelir, menüden
+    // sonra açar.
     if (ctx.tenantKey === "bayi") {
+      const { randomBytes } = await import("crypto");
+      const { sendUrlButton } = await import("./send");
+      const sb = getServiceClient();
+      const token = randomBytes(16).toString("hex");
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      await sb.from("magic_link_tokens").insert({
+        user_id: ctx.userId, token, expires_at: expiresAt,
+      });
+      const url = `https://retailai.upudev.nl/tr/bayi-profil?t=${token}`;
       const onayMsg =
-        `📝 *Sistemi kullanmaya hazır olmak için aşağıdaki bilgileri sizden alacağım:*\n\n` +
-        `• Firma adı, sektör, bayi sayısı\n` +
-        `• Yetkili adı, telefon, e-posta\n` +
-        `• Ofis adresi\n` +
-        `• Brifing tercihiniz (sabah günlük özet ister misiniz)\n` +
-        `• (Opsiyonel) Vergi bilgileri, IBAN, kısa tanıtım\n\n` +
-        `⏱ Tahmini süre: ~5 dakika.\n` +
-        `Tek formda hızlıca dolduracağız.`;
-      await sendButtons(ctx.phone, onayMsg, [
-        { id: "vf:bayi_onay", title: "✅ Tamam, başlayalım" },
-        { id: "vf:bayi_sonra", title: "❌ Sonra" },
-      ], { skipNav: true });
+        `📋 *Sistemi kullanmaya hazır olmak için bilgilerinizi alalım:*\n\n` +
+        `• Firma, yetkili, ofis adresi\n` +
+        `• Brifing tercihi (sabah günlük özet)\n` +
+        `• (Opsiyonel) Vergi, IBAN, kısa tanıtım\n\n` +
+        `⏱ Tahmini 5 dk — tek formda hızlıca dolduracağız.\n\n` +
+        `_Hazır değilseniz bu mesajı görmezden gelebilirsiniz; istediğiniz zaman menüden *🏢 Firma Profili*'ni açabilirsiniz._`;
+      await sendUrlButton(ctx.phone, onayMsg, "📝 Form'u Aç", url, { skipNav: true });
       return;
     }
 
