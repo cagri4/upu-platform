@@ -6,8 +6,13 @@
  * because each SaaS has a different killer feature sequence:
  *
  *   emlak: mulk_eklendi → sunum_hazir → tarama_kuruldu → portfoy_tanitildi
- *   bayi:  firma_kaydedildi → urun_eklendi → bayi_davet_olusturuldu
- *           → kampanya_olusturuldu
+ *   bayi:  firma_kaydedildi → demo_seed_yuklendi
+ *
+ * Bayi 2026-05-04 sonrası demo akış: profil kaydedildikten sonra sektör
+ * bazlı örnek veri yüklenir ("Devam Et" butonu), ardından kapanış mesajı.
+ * Eski 4-adım manuel akış (urun_eklendi → bayi_davet → kampanya) demo
+ * mode'da yerini tek-tıkla seed'e bıraktı; manuel ürün ekleme artık
+ * "Ürünler" sayfasındaki "Yeni Ürün" butonuyla erişilir.
  *
  * State is stored in profiles.metadata.discovery_steps[tenantKey] (number).
  * The legacy emlak-only key profiles.metadata.discovery_step is still read
@@ -33,15 +38,13 @@ const STEP_TRIGGERS_BY_TENANT: Record<string, Record<string, number>> = {
   },
   bayi: {
     firma_kaydedildi: 1,
-    urun_eklendi: 2,
-    bayi_davet_olusturuldu: 3,
-    kampanya_olusturuldu: 4,
+    demo_seed_yuklendi: 2,
   },
 };
 
 const MAX_STEP_BY_TENANT: Record<string, number> = {
   emlak: 4,
-  bayi: 4,
+  bayi: 2,
 };
 
 const APP_URL_BY_TENANT: Record<string, string> = {
@@ -161,58 +164,39 @@ async function sendEmlakStepPrompt(_userId: string, phone: string, step: number)
 
 // ── Bayi prompts ─────────────────────────────────────────────────────
 
-async function sendBayiStepPrompt(userId: string, phone: string, step: number): Promise<boolean> {
-  const appUrl = APP_URL_BY_TENANT.bayi;
+async function sendBayiStepPrompt(_userId: string, phone: string, step: number): Promise<boolean> {
   switch (step) {
     case 1: {
-      // Firma profili tamamlandı → "Ürün Ekle" magic link
-      const token = await mintMagicToken(userId);
-      const url = `${appUrl}/tr/bayi-urun-ekle?t=${token}`;
-      await sendUrlButton(phone,
+      // Firma profili tamamlandı → demo modu açıklaması + "Devam Et" callback.
+      // Devam Et tıklanınca router.ts → disc:demo_seed_yukle handler →
+      // seedTenantDemoData → step 2'ye geçer.
+      await sendButtons(phone,
         `✅ *Firma profiliniz hazır!*\n\n` +
-        `Şimdi ilk ürününüzü kataloğa ekleyelim — bayilerinizin sipariş vereceği ürün.\n\n` +
-        `Foto, fiyat ve stok bilgisi yeterli; ileride dilediğiniz zaman güncellersiniz.`,
-        "📦 Ürün Ekle",
-        url,
-        { skipNav: true },
+        `🔧 *Demo modu*\n` +
+        `Ürün ve bayi sisteminizden veri çekme işlemi entegrasyon ekibimiz tarafından kurulum sürecinde yapılacaktır. ` +
+        `Şimdilik *sektörünüze uygun örnek veriyle* başlıyorum:\n\n` +
+        `   • 5 örnek bayi (1 kritik vade)\n` +
+        `   • 5 kategori\n` +
+        `   • 20 ürün\n` +
+        `   • Birkaç sipariş + vade hareketi\n\n` +
+        `Sistemi anında deneyebilirsiniz.`,
+        [
+          { id: "disc:demo_seed_yukle", title: "▶️ Devam Et" },
+        ],
       );
       return true;
     }
     case 2: {
-      // Ürün eklendi → bayi davet WA komutu butonu (mevcut /bayidavet)
+      // Demo seed tamamlandı → kapanış mesajı + WA komut listesi.
       await sendButtons(phone,
-        `🎉 *İlk ürün kataloğunuzda!*\n\n` +
-        `Şimdi bayilerinizi sisteme davet edelim — onlara çoklu kullanımlık bir kayıt linki üretiyorum.\n\n` +
-        `Linki bayilerinize gönderdiğinizde her biri tek tıkla kayıt olup ürünlerinizi görüp sipariş verebilir.`,
-        [{ id: "cmd:bayidavet", title: "🏪 Bayi Davet Linki" }],
-      );
-      return true;
-    }
-    case 3: {
-      // Bayi davet linki üretildi → kampanya magic link
-      const token = await mintMagicToken(userId);
-      const url = `${appUrl}/tr/bayi-kampanya?t=${token}`;
-      await sendUrlButton(phone,
-        `📢 *Davet linki hazır!*\n\n` +
-        `Bayileriniz kayıt olmaya başladığında ilk siparişler düşmeye başlayacak.\n\n` +
-        `Tetiklemek için bir kampanya başlatalım — örn: %10 indirim, hızlı sipariş, sınırlı süre. ` +
-        `Bayilerinize otomatik bildirim gidecek.`,
-        "📣 Kampanya Oluştur",
-        url,
-        { skipNav: true },
-      );
-      return true;
-    }
-    case 4: {
-      // Kapanış — 3 buton
-      await sendButtons(phone,
-        `🚀 *Hazırsınız!*\n\n` +
-        `Firma profilinizi tamamladınız, ürün eklediniz, bayi davet linkiniz çalışıyor ve ilk kampanyanız aktif.\n\n` +
-        `Artık günlük rutininiz:\n` +
-        `• 🌅 Sabah brifinginiz WhatsApp'a düşer\n` +
-        `• 🛒 Bayi siparişleri anlık bildirim olarak gelir\n` +
-        `• 🖥 Web panelden tüm ağı yönetirsiniz\n\n` +
-        `İstediğiniz zaman *"menü"* yazarak tüm komutlara erişebilirsiniz.`,
+        `🎉 *Sistem hazır!*\n\n` +
+        `Sektör örnek veriniz yüklendi. Şimdi WhatsApp komutlarıyla deneyin:\n\n` +
+        `• *bayilerim* — bayi listesi\n` +
+        `• *urunler* — ürün katalog\n` +
+        `• *siparisler* — son siparişler\n` +
+        `• *vade* — vade durumu\n` +
+        `• *yardim* — tüm komutlar\n\n` +
+        `Web panelden ekibinizi davet edebilir, gerçek veri için entegrasyon talep edebilirsiniz.`,
         [
           { id: "cmd:webpanel", title: "🖥 Web Panel" },
           { id: "cmd:calisanekle", title: "👥 Çalışan Davet" },

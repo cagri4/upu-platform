@@ -326,6 +326,9 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       if (action === "portfoy_ok") {
         const { advanceDiscovery } = await import("./discovery-chain");
         await advanceDiscovery(ctx.userId, ctx.tenantKey, ctx.phone, "portfoy_tanitildi");
+      } else if (action === "demo_seed_yukle" && ctx.tenantKey === "bayi") {
+        const { runBayiDemoSeedFromCallback } = await import("@/tenants/bayi/onboarding/demo-seed-flow");
+        await runBayiDemoSeedFromCallback(ctx.userId, ctx.phone);
       }
       return;
     }
