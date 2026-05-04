@@ -52,6 +52,21 @@ export async function POST(req: NextRequest) {
 
     const propertyType = Array.isArray(body.property_type) ? body.property_type : [];
 
+    // looking_for primary array; legacy listing_type kolonu için derive et
+    // ('satilik'+'kiralik' = 'hepsi'). Eski body.listing_type da kabul edilir
+    // (geri uyum); yoksa array zorunlu.
+    const lookingForRaw = Array.isArray(body.looking_for) ? body.looking_for : [];
+    const lookingFor = lookingForRaw.filter((v: unknown): v is string => v === "satilik" || v === "kiralik");
+    if (lookingFor.length === 0 && body.listing_type) {
+      // backward-compat: tek string gelirse array'e çevir
+      if (body.listing_type === "hepsi") lookingFor.push("satilik", "kiralik");
+      else if (body.listing_type === "satilik" || body.listing_type === "kiralik") lookingFor.push(body.listing_type);
+    }
+    if (lookingFor.length === 0) {
+      return NextResponse.json({ error: "En az bir ilan tipi seçin (Satılık / Kiralık)." }, { status: 400 });
+    }
+    const listingTypeDerived = lookingFor.length === 2 ? "hepsi" : lookingFor[0];
+
     const { data: inserted, error } = await supabase
       .from("emlak_customers")
       .insert({
@@ -60,7 +75,8 @@ export async function POST(req: NextRequest) {
         name,
         phone,
         email: body.email ? String(body.email).trim() : null,
-        listing_type: body.listing_type || null,
+        looking_for: lookingFor,
+        listing_type: listingTypeDerived,
         property_type: propertyType.length > 0 ? propertyType : null,
         rooms: body.rooms || null,
         budget_min: body.budget_min ? Number(body.budget_min) : null,

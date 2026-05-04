@@ -32,7 +32,7 @@ export default function MusteriEkleFormPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [listingType, setListingType] = useState("satilik");
+  const [lookingFor, setLookingFor] = useState<string[]>([]);
   const [propertyTypes, setPropertyTypes] = useState<string[]>([]);
   const [rooms, setRooms] = useState("");
   const [budgetMin, setBudgetMin] = useState("");
@@ -56,10 +56,16 @@ export default function MusteriEkleFormPage() {
     setPropertyTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
   }
 
+  function toggleLookingFor(t: string) {
+    setError("");
+    setLookingFor(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (name.trim().length < 2) { setError("İsim en az 2 karakter."); return; }
     if (phone.trim().length < 7) { setError("Geçerli telefon gerekli."); return; }
+    if (lookingFor.length === 0) { setError("En az bir ilan tipi seçin (Satılık / Kiralık)."); return; }
     setStatus("saving");
     setError("");
     try {
@@ -71,7 +77,7 @@ export default function MusteriEkleFormPage() {
           name: name.trim(),
           phone: phone.trim(),
           email: email.trim() || null,
-          listing_type: listingType,
+          looking_for: lookingFor,
           property_type: propertyTypes,
           rooms: rooms || null,
           budget_min: budgetMin ? Number(budgetMin) : null,
@@ -127,7 +133,19 @@ export default function MusteriEkleFormPage() {
           </Section>
 
           <Section title="🎯 Aradığı Mülk">
-            <Pills label="İlan Tipi" value={listingType} options={[{id:"satilik",label:"Satılık"},{id:"kiralik",label:"Kiralık"}]} onPick={setListingType} />
+            <div>
+              <label className="block text-sm font-medium text-slate-900 mb-2">
+                İlan Tipi <span className="text-slate-400 text-xs">({lookingFor.length} seçili)</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[{id:"satilik",label:"Satılık"},{id:"kiralik",label:"Kiralık"}].map(o => (
+                  <button type="button" key={o.id} onClick={() => toggleLookingFor(o.id)}
+                    className={`py-2.5 rounded-lg text-sm font-medium border-2 ${lookingFor.includes(o.id) ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-slate-900 mb-2">
                 Mülk Tipi <span className="text-slate-400 text-xs">({propertyTypes.length} seçili)</span>

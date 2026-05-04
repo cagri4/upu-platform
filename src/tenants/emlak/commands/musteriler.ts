@@ -9,7 +9,7 @@ export async function handleMusteriler(ctx: WaContext): Promise<void> {
 
     const { data: customers, count } = await supabase
       .from("emlak_customers")
-      .select("id, name, phone, listing_type, location, status", { count: "exact" })
+      .select("id, name, phone, looking_for, listing_type, location, status", { count: "exact" })
       .eq("user_id", ctx.userId)
       .eq("tenant_id", ctx.tenantId)
       .order("created_at", { ascending: false })
@@ -25,7 +25,11 @@ export async function handleMusteriler(ctx: WaContext): Promise<void> {
 
     let text = `👥 *Müşterileriniz* (${count} toplam)\n\n`;
     for (const c of customers) {
-      const ltIcon = c.listing_type === "satilik" ? "🏷" : "🔑";
+      // looking_for array'i öncelikli; yoksa eski listing_type'a düş
+      const lf = Array.isArray(c.looking_for) ? (c.looking_for as string[]) : [];
+      const wantsSatilik = lf.includes("satilik") || c.listing_type === "satilik" || c.listing_type === "hepsi";
+      const wantsKiralik = lf.includes("kiralik") || c.listing_type === "kiralik" || c.listing_type === "hepsi";
+      const ltIcon = wantsSatilik && wantsKiralik ? "🏷🔑" : wantsSatilik ? "🏷" : wantsKiralik ? "🔑" : "•";
       text += `${ltIcon} *${c.name}*\n`;
       text += `   📱 ${c.phone || "-"} | 📍 ${c.location || "-"}\n\n`;
     }
