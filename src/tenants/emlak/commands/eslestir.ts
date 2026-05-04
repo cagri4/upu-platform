@@ -28,6 +28,7 @@ export async function handleEslestir(ctx: WaContext): Promise<void> {
       .from("emlak_customers")
       .select("id, name, budget_min, budget_max, location, property_type, rooms")
       .eq("user_id", ctx.userId)
+      .is("deleted_at", null)
       .ilike("name", `%${args}%`)
       .limit(1);
 
@@ -45,6 +46,7 @@ export async function handleEslestir(ctx: WaContext): Promise<void> {
     .select("id, name, phone")
     .eq("user_id", ctx.userId)
     .eq("tenant_id", ctx.tenantId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(10);
 
@@ -80,6 +82,7 @@ export async function handleEslestirCallback(ctx: WaContext, data: string): Prom
     .select("id, name, budget_min, budget_max, location, property_type, rooms")
     .eq("id", customerId)
     .eq("user_id", ctx.userId)
+    .is("deleted_at", null)
     .single();
 
   if (!customer) {

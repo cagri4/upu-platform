@@ -13,6 +13,7 @@ import { handleMusteriler } from "./musteriler";
 import { handleSozlesmelerim, handleWebpanel, handleSozlesme, handleSozlesmeStep, handleSozlesmeCallback } from "./sozlesme";
 import { handleMusteriEkle, handleMusteriEkleStep, handleMusteriEkleCallback } from "./musteri-ekle";
 import { handleMusteriDuzenle, handleMusteriDuzenleCallback, handleMusteriDuzenleStep } from "./musteri-duzenle";
+import { handleMusteriSil, handleMusteriSilCallback } from "./musteri-sil";
 import { handleEslestir, handleEslestirCallback } from "./eslestir";
 import { handleHatirlatma, handleHatirlatmaStep, handleHatirlatmaCallback } from "./hatirlatma";
 import { handleTakipEt, handleTakipEtStep, handleTakipEtCallback } from "./takip-et";
@@ -48,6 +49,7 @@ export const emlakCommands: TenantCommandRegistry = {
     // Supporting (hidden but working)
     musterilerim: handleMusteriler,
     musteriDuzenle: handleMusteriDuzenle,
+    musterisil: handleMusteriSil,
     hatirlatma: handleHatirlatma,
     takipEt: handleTakipEt,
     satistavsiye: handleSatisTavsiye,
@@ -84,6 +86,7 @@ export const emlakCommands: TenantCommandRegistry = {
     "mustekle:": handleMusteriEkleCallback,
     "md_select:": handleMusteriDuzenleCallback,
     "md_edit:": handleMusteriDuzenleCallback,
+    "mustsil:": handleMusteriSilCallback,
     "esles:": handleEslestirCallback,
     "htrt:": handleHatirlatmaCallback,
     "tkp:": handleTakipEtCallback,
@@ -104,6 +107,9 @@ export const emlakCommands: TenantCommandRegistry = {
     "devam et": "devam",
     "müşteriler": "musterilerim",
     "müşterilerim": "musterilerim",
+    "müşteri sil": "musterisil",
+    "musteri sil": "musterisil",
+    "müşterisil": "musterisil",
     "fiyat": "fiyatbelirle",
     "fiyatsor": "fiyatbelirle",
     "sözleşme": "sozlesme",

@@ -25,6 +25,7 @@ export async function handleMusteriDuzenle(ctx: WaContext): Promise<void> {
     .select("id, name, phone")
     .eq("user_id", ctx.userId)
     .eq("tenant_id", ctx.tenantId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(10);
 

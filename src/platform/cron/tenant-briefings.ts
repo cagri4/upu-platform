@@ -213,7 +213,7 @@ registerDailyCheck("emlak", async (userId, _tenantId, phone) => {
 
   // Customer cooldown (14 days)
   const twoWeeksAgo = new Date(); twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-  const { data: cold } = await supabase.from("emlak_customers").select("name, updated_at").eq("user_id", userId).eq("status", "aktif").lt("updated_at", twoWeeksAgo.toISOString()).limit(3);
+  const { data: cold } = await supabase.from("emlak_customers").select("name, updated_at").eq("user_id", userId).eq("status", "aktif").is("deleted_at", null).lt("updated_at", twoWeeksAgo.toISOString()).limit(3);
   for (const c of cold || []) {
     const days = Math.floor((now.getTime() - new Date(c.updated_at).getTime()) / 86400000);
     await sendText(phone, `👥 ${c.name} ile ${days} gündür iletişim yok.`);
@@ -226,7 +226,7 @@ registerWeeklyReport("emlak", async (userId) => {
   const supabase = getServiceClient();
   const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
   const { count: newProps } = await supabase.from("emlak_properties").select("*", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", weekAgo.toISOString());
-  const { count: newCust } = await supabase.from("emlak_customers").select("*", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", weekAgo.toISOString());
+  const { count: newCust } = await supabase.from("emlak_customers").select("*", { count: "exact", head: true }).eq("user_id", userId).is("deleted_at", null).gte("created_at", weekAgo.toISOString());
   const { data: props } = await supabase.from("emlak_properties").select("price").eq("user_id", userId);
   const totalValue = (props || []).reduce((s, p) => s + (typeof p.price === "number" ? p.price : 0), 0);
   const fmt = new Intl.NumberFormat("tr-TR").format(totalValue);
