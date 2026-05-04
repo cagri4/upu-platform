@@ -165,12 +165,15 @@ export default function BayiProfilPage() {
     update(patch);
   }
 
-  const countryFiltered = useMemo(() => {
-    const filterByCountry = <T extends { country?: Country[] }>(opts: T[]) =>
-      opts.filter(o => !o.country || o.country.includes(firma.country));
-    return {
-      accounting: filterByCountry(ACCOUNTING_OPTIONS),
-    };
+  // Muhasebe yazılımı dropdown — country FİLTRESİ YOK. Hollanda'daki Türk
+  // dağıtıcının Logo İşbaşı kullanması yaygın senaryo; tersi de geçerli.
+  // Sıralama: kullanıcının ülkesi önce, sonra diğer bölge, sonra "Manuel".
+  const accountingOrdered = useMemo(() => {
+    const userCountry = firma.country;
+    const matches = ACCOUNTING_OPTIONS.filter(o => o.country?.includes(userCountry));
+    const others = ACCOUNTING_OPTIONS.filter(o => o.country && !o.country.includes(userCountry));
+    const generic = ACCOUNTING_OPTIONS.filter(o => !o.country);
+    return [...matches, ...others, ...generic];
   }, [firma.country]);
 
   async function save() {
@@ -318,7 +321,7 @@ export default function BayiProfilPage() {
             <select value={firma.accounting} onChange={e => update({ accounting: e.target.value })}
               className={inputCls}>
               <option value="">Seçin...</option>
-              {countryFiltered.accounting.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              {accountingOrdered.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
             <p className="text-[11px] text-slate-500 mt-1">
               Kargo, ödeme tahsilatı ve e-fatura için kendi sisteminizi kullanmaya devam edebilirsiniz — bu katmanlara karışmıyoruz.
