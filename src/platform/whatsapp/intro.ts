@@ -21,7 +21,7 @@ import {
 } from "./onboarding";
 import { getServiceClient } from "@/platform/auth/supabase";
 
-const INTRO_TENANTS = new Set(["emlak", "bayi"]);
+const INTRO_TENANTS = new Set(["emlak", "bayi", "restoran"]);
 
 /**
  * Start the intro — value-first demo.
@@ -42,6 +42,9 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
 
   if (ctx.tenantKey === "bayi") {
     return await startBayiIntro(ctx);
+  }
+  if (ctx.tenantKey === "restoran") {
+    return await startRestoranIntro(ctx);
   }
 
   const supabase = getServiceClient();
@@ -135,6 +138,47 @@ async function startBayiIntro(ctx: WaContext): Promise<boolean> {
     `• Brifing tercihi (sabah günlük özet)\n` +
     `• (Opsiyonel) Vergi, IBAN, kısa tanıtım\n\n` +
     `⏱ Tahmini 5 dk — tek formda hızlıca dolduracağız.`;
+  await sendUrlButton(ctx.phone, formMsg, "📝 Form'u Aç", url, { skipNav: true });
+
+  return true;
+}
+
+/**
+ * Restoran intro — koridor akışı: tek-tıklama Form'u Aç.
+ *
+ * Bayi pattern aynısı: 2 mesaj (tanıtım + form CTA). Form save sonrası
+ * sektör bazlı demo seed otomatik tetiklenir, kullanıcı bizim "örnek
+ * restoran" verisi içinde tour'a başlar.
+ */
+async function startRestoranIntro(ctx: WaContext): Promise<boolean> {
+  // Blok 1 — tanıtım
+  const introMsg =
+    `👋 Merhaba! Ben UPU, restoran asistanınız. Müdavim takibi, rezervasyon yönetimi ve sabah raporu için cep arkadaşınız.\n\n` +
+    `*Yapabileceklerimden bazıları:*\n\n` +
+    `• Her sabah günlük brifing — dünkü satış, bugün rezervasyonlar, doğum günü olan müdavimler, kritik stok\n` +
+    `• Telefonla gelen rezervasyonları WA'dan tek akışta sisteme kaydederim — masa atama, özel istek, doğum günü notu\n` +
+    `• Müdavim panosu — kim hangi sıklıkla geliyor, kim 2+ haftadır yok, kimin doğum günü\n` +
+    `• Müşterilerinizi sadakat club'a davet ederim, doğum günlerinde sürpriz mesaj taslağı hazırlarım\n` +
+    `• Mevcut kasanıza, mutfak sisteminize, muhasebecinize *dokunmuyorum* — sadece üzerine akıllı katman koyuyorum`;
+  await sendText(ctx.phone, introMsg);
+
+  // Blok 2 — magic link Form'u Aç
+  const { randomBytes } = await import("crypto");
+  const { sendUrlButton } = await import("./send");
+  const sb = getServiceClient();
+  const token = randomBytes(16).toString("hex");
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  await sb.from("magic_link_tokens").insert({
+    user_id: ctx.userId, token, expires_at: expiresAt,
+  });
+  const url = `https://restoranai.upudev.nl/tr/restoran-profil?t=${token}`;
+  const formMsg =
+    `📋 *Şimdi sizi tanıyalım, lütfen formu doldurun.*\n\n` +
+    `• Restoran adı, sektör (kebap/cafe/catering), lokasyon\n` +
+    `• Yetkili adı, brifing tercihi\n` +
+    `• (Opsiyonel) muhasebe yazılımı, kapasite\n\n` +
+    `⏱ Tahmini 2-3 dk. Form bitince size örnek bir restoran (Sultan Ahmet Kebabevi) yükleyeceğim — ` +
+    `gerçek bağlantı kurulana kadar üzerinde çalışırsınız.`;
   await sendUrlButton(ctx.phone, formMsg, "📝 Form'u Aç", url, { skipNav: true });
 
   return true;
