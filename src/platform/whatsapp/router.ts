@@ -329,6 +329,10 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       } else if (action === "demo_seed_yukle" && ctx.tenantKey === "bayi") {
         const { runBayiDemoSeedFromCallback } = await import("@/tenants/bayi/onboarding/demo-seed-flow");
         await runBayiDemoSeedFromCallback(ctx.userId, ctx.phone);
+      } else if (action === "tour_atla" && ctx.tenantKey === "bayi") {
+        // Tour'u atla → step direkt 9 (completed) → kapanış mesajı.
+        const { skipBayiTour } = await import("@/tenants/bayi/onboarding/tour-progression");
+        await skipBayiTour(ctx.userId, ctx.phone);
       }
       return;
     }
@@ -483,6 +487,16 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     try {
       await handler(ctx);
       logCommand(ctx, resolved, true, Date.now() - start);
+      // Bayi AI-led tour ilerleme — komut tour beklenen komutla eşleşiyorsa
+      // bir sonraki step prompt'u tetiklenir. Diğer tenant'lar etkilenmez.
+      if (ctx.tenantKey === "bayi") {
+        try {
+          const { advanceBayiTourIfMatched } = await import("@/tenants/bayi/onboarding/tour-progression");
+          await advanceBayiTourIfMatched(ctx, resolved);
+        } catch (err) {
+          console.error("[router] tour progression error:", err);
+        }
+      }
     } catch (err) {
       logCommand(ctx, resolved, false, Date.now() - start, err instanceof Error ? err.message : String(err));
       throw err;
