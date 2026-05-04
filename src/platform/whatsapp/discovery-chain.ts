@@ -235,12 +235,21 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
     case 3: {
       // Task 2 — web liste'de kritik bayiye tıkla.
       // Plain text — kullanıcı zaten liste sayfasında, reply button gereksiz.
+      // Vade kaydı varsa "X gün geçmiş", yoksa balance ile borçtan bahset.
       const critic = ctx?.kritikBayi || "Demir Ticaret";
-      const days = ctx?.kritikGun || 12;
+      let detail: string;
+      if (ctx?.kritikGun && ctx.kritikGun > 0) {
+        detail = `vadesi *${ctx.kritikGun} gün geçmiş*`;
+      } else if (ctx?.kritikBalance) {
+        const fmt = new Intl.NumberFormat("tr-TR").format(ctx.kritikBalance);
+        detail = `bakiyesi *${fmt} ₺* — borçlu`;
+      } else {
+        detail = `*kritik durumda*`;
+      }
       await sendText(phone,
         `✅ *Bayi listen açıldı!* (2/7)\n\n` +
         `*Adım 2 — Kritik bayini tanı*\n\n` +
-        `Listede *${critic}* satırı *kırmızı* görünüyor — vadesi *${days} gün geçmiş*. ` +
+        `Listede *${critic}* öne çıkıyor — ${detail}. ` +
         `Üstüne dokunup detay sayfasına geç. Orada bakiyesini, son siparişlerini ve timeline'ı göreceksin.\n\n` +
         `_Detay sayfasında üst banner'da hatırlatma butonu hazır olacak._`,
       );
@@ -350,6 +359,7 @@ interface BayiTourContext {
   firstName?: string;
   kritikBayi?: string;
   kritikGun?: number;
+  kritikBalance?: number;       // Vade kaydı yoksa borçtan bahset
   ornekUrun?: string;
 }
 
@@ -412,10 +422,11 @@ async function loadBayiTourContext(userId: string): Promise<BayiTourContext> {
     }
 
     // 2. Vade kaydı yok ama balance > 0 — en yüksek borçlu fallback
+    let kritikBalance: number | undefined;
     if (!kritikBayi) {
       const { data: topDebtor } = await sb
         .from("bayi_dealers")
-        .select("name, company_name")
+        .select("name, company_name, balance")
         .eq("tenant_id", profile.tenant_id)
         .gt("balance", 0)
         .order("balance", { ascending: false })
@@ -423,6 +434,7 @@ async function loadBayiTourContext(userId: string): Promise<BayiTourContext> {
         .maybeSingle();
       if (topDebtor) {
         kritikBayi = (topDebtor.name as string) || (topDebtor.company_name as string);
+        kritikBalance = Number(topDebtor.balance) || undefined;
       }
     }
 
@@ -457,7 +469,7 @@ async function loadBayiTourContext(userId: string): Promise<BayiTourContext> {
       ornekUrun = getSectorDataset(sektor).products[0]?.name;
     }
 
-    return { firstName, kritikBayi, kritikGun, ornekUrun };
+    return { firstName, kritikBayi, kritikGun, kritikBalance, ornekUrun };
   } catch (err) {
     console.error("[discovery-chain] tour ctx error:", err);
     return {};

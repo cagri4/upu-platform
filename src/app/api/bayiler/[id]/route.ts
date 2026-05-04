@@ -205,7 +205,15 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
       openTotal,
       paidTotal,
       mostOverdueDays,
-      isCritical: mostOverdueDays !== null && mostOverdueDays >= 7,
+      // isCritical: vade kaydı yoksa (mostOverdueDays null) ama balance > 0 ise
+      // borçlu say. risk_status 'watch'/'blacklist' de kritik. Bu fallback
+      // tour Task 2'nin invoice tablosu kullanılmayan tenantlarda çalışmasını
+      // sağlıyor.
+      isCritical:
+        (mostOverdueDays !== null && mostOverdueDays >= 7) ||
+        (Number(dealer.balance) || 0) > 0 ||
+        (dealer.risk_status as string) === "watch" ||
+        (dealer.risk_status as string) === "blacklist",
     },
     invoices: (invoices || []).slice(0, 10).map(inv => ({
       id: inv.id,
