@@ -216,8 +216,16 @@ function buildLabels(items: { id: string; label: string }[]): Record<string, str
 // ── Menu: choose add method ─────────────────────────────────────────────
 
 export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
-  // Generate a 2h magic link for the web form
-  const { getServiceClient } = await import("@/platform/auth/supabase");
+  await sendButtons(ctx.phone,
+    `🏠 *Mülk Ekle*\n\nHangi yöntemle eklemek istersin?\n\n📝 *Form* — web formundan tüm alanları (fotoğraf dahil) tek seferde doldur.\n⚡ *Hızlı* — WhatsApp'tan adım adım kısa giriş.`,
+    [
+      { id: "mulkekle_method:form", title: "📝 Form" },
+      { id: "mulkekle_method:hizli", title: "⚡ Hızlı" },
+    ],
+  );
+}
+
+export async function handleMulkEkleForm(ctx: WaContext): Promise<void> {
   const supabase = getServiceClient();
   const { randomBytes } = await import("crypto");
   const token = randomBytes(32).toString("hex");
@@ -231,19 +239,19 @@ export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
 
   const { sendUrlButton } = await import("@/platform/whatsapp/send");
   await sendUrlButton(ctx.phone,
-    `🏠 *Mülk Ekle*\n\nMülk bilgilerini doldurman için sana özel bir form hazırladım. Formu aç, kolayca doldur, kaydet butonuyla WhatsApp'a dön.\n\n_Link 1 hafta geçerlidir._`,
+    `🏠 *Mülk Ekle — Form*\n\nMülk bilgilerini doldurman için sana özel bir form hazırladım. Formu aç, kolayca doldur, kaydet butonuyla WhatsApp'a dön.\n\n_Link 1 hafta geçerlidir._`,
     "📝 Formu Aç",
     formUrl,
     { skipNav: true },
   );
 }
 
-// ── Start detaylı flow ─────────────────────────────────────────────────
+// ── Start WA-side step flow ────────────────────────────────────────────
 
 export async function handleMulkEkle(ctx: WaContext): Promise<void> {
   await startSession(ctx.userId, ctx.tenantId, "mulkekle", "title");
   await sendText(ctx.phone,
-    "🏠 *Detaylı Mülk Ekleme*\n\n" +
+    "🏠 *Mülk Ekleme*\n\n" +
     "📋 Aşama 1/3 — Temel Bilgiler\n\n" +
     "_Hata yaparsanız sorun değil, devam edin — daha sonra düzeltebilirsiniz._\n\n" +
     "İlan başlığını yazın:\n\nÖrnek: \"Yalıkavak Kiralık 2+1 Daire\""

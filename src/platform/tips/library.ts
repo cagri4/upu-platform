@@ -154,16 +154,6 @@ export const EMLAK_TIPS: Tip[] = [
     eligible: (c) => c.propertyCount >= 2 || c.customerCount >= 2,
   },
   {
-    key: "discover_tara",
-    text:
-      "💡 *İpucu*\n\n" +
-      "Sahibinden veya Hepsiemlak'ta ilan mı beğendin? Linki gönder, sistemime çekeyim — elle yazmana gerek yok.\n\n" +
-      "*tara* komutu + link, hazır.",
-    cta: { id: "cmd:tara", title: "🔗 Linkten Çek" },
-    priority: 65,
-    eligible: (c) => c.uniqueCommandsUsed <= 3,
-  },
-  {
     key: "discover_fotograf",
     text:
       "💡 *İpucu*\n\n" +

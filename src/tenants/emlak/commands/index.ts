@@ -6,12 +6,11 @@
 
 import type { TenantCommandRegistry } from "@/platform/whatsapp/types";
 
-import { handleMulkEkle, handleMulkEkleMenu, handleMulkEkleStep, handleMulkEkleCallback, handleDevam } from "./mulk-ekle";
+import { handleMulkEkle, handleMulkEkleMenu, handleMulkEkleForm, handleMulkEkleStep, handleMulkEkleCallback, handleDevam } from "./mulk-ekle";
 import { handleTamamlaCallback, handleTamamlaStep, handleTamamlaRooms } from "./tamamla";
 import { handleFiyatBelirle, handleFiyatBelirleCallback } from "./fiyat-belirle";
 import { handleMusteriler } from "./musteriler";
 import { handleSozlesmelerim, handleWebpanel, handleSozlesme, handleSozlesmeStep, handleSozlesmeCallback } from "./sozlesme";
-import { handleTara, handleTaraStep, handleEkle } from "./portfolio";
 import { handleMusteriEkle, handleMusteriEkleStep, handleMusteriEkleCallback } from "./musteri-ekle";
 import { handleMusteriDuzenle, handleMusteriDuzenleCallback, handleMusteriDuzenleStep } from "./musteri-duzenle";
 import { handleEslestir, handleEslestirCallback } from "./eslestir";
@@ -58,14 +57,11 @@ export const emlakCommands: TenantCommandRegistry = {
     sozlesme: handleSozlesme,
     sozlesmelerim: handleSozlesmelerim,
     webpanel: handleWebpanel,
-    tara: handleTara,
-    ekle: handleEkle,
     ipucu: handleIpucu,
   },
   stepHandlers: {
     mulkekle: handleMulkEkleStep,
     tamamla: handleTamamlaStep,
-    tara: handleTaraStep,
     musteriEkle: handleMusteriEkleStep,
     musteriDuzenle: handleMusteriDuzenleStep,
     hatirlatma: handleHatirlatmaStep,
@@ -76,15 +72,10 @@ export const emlakCommands: TenantCommandRegistry = {
   callbackPrefixes: {
     "mulkekle_method:": async (ctx, callbackData) => {
       const method = callbackData.replace("mulkekle_method:", "");
-      if (method === "link") {
-        await handleTara(ctx);
-      } else if (method === "detayli") {
-        await handleMulkEkle(ctx);
+      if (method === "form") {
+        await handleMulkEkleForm(ctx);
       } else if (method === "hizli") {
-        const { startSession } = await import("@/platform/whatsapp/session");
-        const { sendText } = await import("@/platform/whatsapp/send");
-        await startSession(ctx.userId, ctx.tenantId, "mulkekle", "title");
-        await sendText(ctx.phone, "⚡ Hızlı ekleme — ilan başlığını yazın:\n\nÖrnek: Kadıköy 3+1 2.5M satılık");
+        await handleMulkEkle(ctx);
       }
     },
     "mulkekle:": handleMulkEkleCallback,
