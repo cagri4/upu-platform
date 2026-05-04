@@ -11,15 +11,16 @@ Pipeline mode plan — koridor mantığında AI-led tour + web-first detay panel
 
 **Commit**: `86e4d0c` — fix(tour): demo seed mesajı + Tour'u Atla kaldır + nav koridor suppression
 
-## Faz 2 — Bayi Liste Web Panel (~3-4 sa)
-- [ ] 2.1 /bayilerim WA cevabı: kısa mesaj + CTA URL `[📋 Bayi Listesini Aç]`
-- [ ] 2.2 /api/bayiler/list: magic-link auth + paginated query (page/q/filter)
-- [ ] 2.3 src/app/[locale]/bayiler/page.tsx — server fetch + URL params
-- [ ] 2.4 Liste row tasarımı: avatar, isim+telefon, etiketler, bakiye, vade rozet, son sipariş, 3 hızlı aksiyon ikonu
-- [ ] 2.5 Arama (debounced) + filtre dropdown (durum/vade/bölge)
-- [ ] 2.6 Pagination component + sayfa boyutu seçici
+## Faz 2 — Bayi Liste Web Panel (~3-4 sa) ✅
+- [x] 2.1 /bayilerim WA cevabı: kısa mesaj + CTA URL `[📋 Bayi Listesini Aç]`
+- [x] 2.2 /api/bayiler/list: magic-link auth + paginated query (page/q/filter)
+- [x] 2.3 /api/bayiler/init: token doğrulama + tenant context
+- [x] 2.4 src/app/[locale]/bayiler/page.tsx — client component, URL state'li
+- [x] 2.5 Liste row tasarımı: avatar (baş harfli renk-kodlu), isim+badge, şehir+telefon+yetkili, bakiye+son sipariş, 3 hızlı aksiyon (WA/Ara/detay)
+- [x] 2.6 Arama (debounced 350ms) + status/vade filtre dropdown
+- [x] 2.7 Pagination + sayfa boyutu (10/20/50)
 
-**Commit**: `feat(panel): bayi listesi web panel + paginated + filtre`
+**Commit**: `babe2d1` — feat(panel): bayi listesi web panel + paginated + filtre
 
 ## Faz 3 — Bayi Detay Sayfası (~6-8 sa)
 - [ ] 3.1 /bayiler/[id]/page.tsx — magic-link auth + 3-sütun layout
