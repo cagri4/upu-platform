@@ -151,8 +151,20 @@ export async function GET(req: NextRequest) {
   }
 
   const rows = workingDealers.map((d: Record<string, unknown>) => {
-    const criticalDays = dealerVade.get(d.id as string) ?? null;
+    let criticalDays = dealerVade.get(d.id as string) ?? null;
     const lastO = dealerLastOrder.get(d.id as string);
+    const balance = Number(d.balance) || 0;
+
+    // Fallback: invoice tablosu boş AMA balance > 0 ise bayi en azından
+    // "borçlu" durumunda. criticalDays null ise risk_status alanına bak;
+    // 'watch' veya 'blacklist' ise kritik say (7 gün eşdeğeri).
+    const riskStatus = (d.risk_status as string) || "clean";
+    if (criticalDays === null && balance > 0) {
+      // Borçlu ama vade kaydı yok → en az "0 gün bekleyen" göster.
+      criticalDays = 0;
+    }
+    const isCritical = (criticalDays !== null && criticalDays >= 7) || riskStatus === "watch" || riskStatus === "blacklist";
+
     return {
       id: d.id as string,
       name: (d.name as string) || (d.company_name as string) || "—",
@@ -162,12 +174,13 @@ export async function GET(req: NextRequest) {
       city: (d.city as string) || null,
       country: (d.country as string) || null,
       isActive: d.is_active !== false,
-      balance: Number(d.balance) || 0,
+      balance,
       lastOrderId: lastO?.id || null,
       lastOrderDate: lastO?.date || null,
       lastOrderTotal: lastO?.total || 0,
       criticalDays,
-      isCritical: criticalDays !== null && criticalDays >= 7,
+      isCritical,
+      riskStatus,
       createdAt: (d.created_at as string) || null,
     };
   });

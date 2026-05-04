@@ -141,18 +141,29 @@ export async function seedTenantDemoData(
     return { ok: false, reason: `Sipariş insert hatası: ${oErr.message}`, sector: dataset.slug };
   }
 
-  // 4) Vade hareketleri (faturalar)
+  // 4) Vade hareketleri (faturalar) — defensive insert.
+  // bayi_dealer_invoices schema'sında paid_at kolonu farklı ortamlarda
+  // var/yok olabilir (mark-paid endpoint'i de fallback yapıyor). Önce
+  // paid_at'li dene; "column ... does not exist" hatasında retry.
   const today = new Date();
-  const invoicesPayload = dataset.invoices.map((inv, idx) => ({
+  const baseInvoicePayload = dataset.invoices.map((inv, idx) => ({
     tenant_id: tenantId,
     dealer_id: dealers[inv.dealer_index]?.id,
     invoice_no: `DEMO-${dataset.slug.toUpperCase()}-${String(idx + 1).padStart(4, "0")}`,
     amount: inv.amount,
     is_paid: inv.is_paid,
     due_date: new Date(today.getTime() + inv.due_days_offset * 86400000).toISOString().slice(0, 10),
-    paid_at: inv.is_paid ? new Date(Date.now() - 86400000).toISOString() : null,
   }));
-  const { error: iErr } = await supabase.from("bayi_dealer_invoices").insert(invoicesPayload);
+  const withPaidAt = baseInvoicePayload.map((p, i) => ({
+    ...p,
+    paid_at: dataset.invoices[i].is_paid ? new Date(Date.now() - 86400000).toISOString() : null,
+  }));
+
+  let iErr = (await supabase.from("bayi_dealer_invoices").insert(withPaidAt)).error;
+  if (iErr && /paid_at|column/i.test(iErr.message || "")) {
+    console.warn("[seed] paid_at kolonu yok — retry without paid_at");
+    iErr = (await supabase.from("bayi_dealer_invoices").insert(baseInvoicePayload)).error;
+  }
   if (iErr) {
     return { ok: false, reason: `Vade insert hatası: ${iErr.message}`, sector: dataset.slug };
   }
@@ -164,7 +175,7 @@ export async function seedTenantDemoData(
       products: products.length,
       dealers: dealers.length,
       orders: ordersPayload.length,
-      invoices: invoicesPayload.length,
+      invoices: baseInvoicePayload.length,
     },
   };
 }

@@ -354,40 +354,108 @@ interface BayiTourContext {
 }
 
 /**
- * Sektör + bayi/ürün isimlerini profile.metadata + sectors registry'den
- * çekerek tour mesajlarına dinamik somutluk katar. Hata durumunda boş
- * dönüp default fallback'lere izin verir.
+ * Tour mesajları için somut isimleri ÖNCELİKLE gerçek tenant DB'sinden,
+ * sonra sektör seed dataset'inden çeker. Tutarsızlığı önler — kullanıcı
+ * eski/farklı veri yüklü tenant'ta tour'a girerse tour mesajı tabloda
+ * olmayan bayiden değil, GERÇEK kritik bayiden bahsetmeli.
+ *
+ * Fallback hiyerarşisi (kritik bayi):
+ *   1. bayi_dealer_invoices'ta is_paid=false + due_date geçmiş en eski vade
+ *   2. bayi_dealers.balance > 0 en yüksek borçlu (vade kaydı yoksa)
+ *   3. Sektör seed dataset'inden marker (boş tenant senaryosu)
+ *   4. Hard-coded "Demir Ticaret" (en son fallback)
  */
 async function loadBayiTourContext(userId: string): Promise<BayiTourContext> {
   try {
     const sb = getServiceClient();
     const { data: profile } = await sb
       .from("profiles")
-      .select("display_name, metadata")
+      .select("display_name, tenant_id, metadata")
       .eq("id", userId)
       .maybeSingle();
-    if (!profile) return {};
+    if (!profile?.tenant_id) return {};
+
     const meta = (profile.metadata || {}) as Record<string, unknown>;
     const firmaProfili = (meta.firma_profili as { sektor?: string; yetkili_adi?: string } | undefined);
     const sektor = firmaProfili?.sektor || "boya";
     const fullName = firmaProfili?.yetkili_adi || profile.display_name || "";
     const firstName = fullName ? fullName.split(/\s+/)[0] : undefined;
 
-    // Sektör dataset'ten kritik bayi + örnek ürün al
-    const { getSectorDataset } = await import("@/tenants/bayi/demo-import/sectors");
-    const ds = getSectorDataset(sektor);
-    // Kritik bayi: en yüksek vadeli — invoices içinde en negatif due_days_offset
-    let kritikIdx = 0;
-    let mostOverdue = 0;
-    ds.invoices.forEach(inv => {
-      if (!inv.is_paid && inv.due_days_offset < mostOverdue) {
-        mostOverdue = inv.due_days_offset;
-        kritikIdx = inv.dealer_index;
+    let kritikBayi: string | undefined;
+    let kritikGun: number | undefined;
+    let ornekUrun: string | undefined;
+
+    // 1. Gerçek tenant'tan kritik bayi — en eski vadesi geçmiş invoice
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const { data: overdueInvoice } = await sb
+      .from("bayi_dealer_invoices")
+      .select("dealer_id, due_date")
+      .eq("tenant_id", profile.tenant_id)
+      .eq("is_paid", false)
+      .lt("due_date", todayIso)
+      .order("due_date", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (overdueInvoice?.dealer_id) {
+      const { data: dealer } = await sb
+        .from("bayi_dealers")
+        .select("name, company_name")
+        .eq("id", overdueInvoice.dealer_id)
+        .maybeSingle();
+      if (dealer) {
+        kritikBayi = (dealer.name as string) || (dealer.company_name as string);
+        const due = new Date(overdueInvoice.due_date as string);
+        const diffDays = Math.floor((Date.now() - due.getTime()) / 86400000);
+        if (diffDays > 0) kritikGun = diffDays;
       }
-    });
-    const kritikBayi = ds.dealers[kritikIdx]?.name;
-    const kritikGun = mostOverdue ? Math.abs(mostOverdue) : undefined;
-    const ornekUrun = ds.products[0]?.name;
+    }
+
+    // 2. Vade kaydı yok ama balance > 0 — en yüksek borçlu fallback
+    if (!kritikBayi) {
+      const { data: topDebtor } = await sb
+        .from("bayi_dealers")
+        .select("name, company_name")
+        .eq("tenant_id", profile.tenant_id)
+        .gt("balance", 0)
+        .order("balance", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (topDebtor) {
+        kritikBayi = (topDebtor.name as string) || (topDebtor.company_name as string);
+      }
+    }
+
+    // 3. Tenant'ta hiç bayi yoksa — sektör seed dataset marker (boş demo)
+    if (!kritikBayi) {
+      const { getSectorDataset } = await import("@/tenants/bayi/demo-import/sectors");
+      const ds = getSectorDataset(sektor);
+      let kritikIdx = 0;
+      let mostOverdue = 0;
+      ds.invoices.forEach(inv => {
+        if (!inv.is_paid && inv.due_days_offset < mostOverdue) {
+          mostOverdue = inv.due_days_offset;
+          kritikIdx = inv.dealer_index;
+        }
+      });
+      kritikBayi = ds.dealers[kritikIdx]?.name;
+      if (!kritikGun && mostOverdue) kritikGun = Math.abs(mostOverdue);
+    }
+
+    // Örnek ürün: tenant'ta varsa ilk ürün, yoksa seed dataset'ten ilk
+    const { data: firstProduct } = await sb
+      .from("bayi_products")
+      .select("name")
+      .eq("tenant_id", profile.tenant_id)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (firstProduct?.name) {
+      ornekUrun = firstProduct.name as string;
+    } else {
+      const { getSectorDataset } = await import("@/tenants/bayi/demo-import/sectors");
+      ornekUrun = getSectorDataset(sektor).products[0]?.name;
+    }
 
     return { firstName, kritikBayi, kritikGun, ornekUrun };
   } catch (err) {

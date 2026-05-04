@@ -34,6 +34,7 @@ interface BayiRow {
   lastOrderTotal: number;
   criticalDays: number | null;
   isCritical: boolean;
+  riskStatus: string;
 }
 
 interface ListResp {
@@ -79,10 +80,12 @@ function initials(name: string): string {
 
 function vadeBadge(row: BayiRow): { text: string; cls: string } {
   if (!row.isActive) return { text: "Pasif", cls: "bg-slate-100 text-slate-500" };
-  if (row.criticalDays === null) return { text: "Temiz", cls: "bg-emerald-50 text-emerald-700" };
-  if (row.criticalDays >= 7) return { text: `${row.criticalDays} gün geçmiş`, cls: "bg-rose-50 text-rose-700 font-semibold" };
-  if (row.criticalDays >= 0) return { text: "Bekleyen", cls: "bg-amber-50 text-amber-700" };
-  return { text: "Vade öncesi", cls: "bg-sky-50 text-sky-700" };
+  if (row.riskStatus === "blacklist") return { text: "Kara liste", cls: "bg-rose-50 text-rose-700 font-semibold" };
+  if (row.criticalDays !== null && row.criticalDays >= 7) return { text: `${row.criticalDays} gün geçmiş`, cls: "bg-rose-50 text-rose-700 font-semibold" };
+  if (row.riskStatus === "watch") return { text: "İzlemede", cls: "bg-amber-50 text-amber-700 font-semibold" };
+  if (row.criticalDays !== null && row.criticalDays >= 0) return { text: row.balance > 0 ? "Bekleyen" : "Vade öncesi", cls: "bg-amber-50 text-amber-700" };
+  if (row.balance > 0) return { text: "Borçlu", cls: "bg-amber-50 text-amber-700" };
+  return { text: "Temiz", cls: "bg-emerald-50 text-emerald-700" };
 }
 
 function formatTry(n: number): string {
