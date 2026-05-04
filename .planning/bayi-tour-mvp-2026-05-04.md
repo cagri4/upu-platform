@@ -2,13 +2,14 @@
 
 Pipeline mode plan — koridor mantığında AI-led tour + web-first detay panel.
 
-## Faz 1 — Bug Fix (~30 dk)
-- [ ] 1.1 Demo seed "veri mevcut" mesajı sadeleştir → "✅ Veriler yüklendi. Şimdi devam edelim."
-- [ ] 1.2 "Tour'u Atla" butonu kaldır + skipBayiTour dead code temizle
-- [ ] 1.3 Tour push'larında skipNav kontrol (intro mesaj + 7 task)
-- [ ] 1.4 Komut handler cevap sonrası tour aktifken nav kalabalığı kaldır
+## Faz 1 — Bug Fix (~30 dk) ✅
+- [x] 1.1 Demo seed "veri mevcut" mesajı sadeleştir → "✅ Veriler yüklendi. Şimdi devam edelim."
+- [x] 1.2 "Tour'u Atla" butonu kaldır + skipBayiTour dead code temizle
+- [x] 1.3 Tour push'larında skipNav kontrol (intro mesaj + 7 task)
+- [x] 1.4 Komut handler cevap sonrası tour aktifken nav kalabalığı kaldır
+       (AsyncLocalStorage withNavSuppressed wrapper)
 
-**Commit**: `fix(tour): demo seed mesajı + Tour'u Atla kaldır + nav kalabalığı`
+**Commit**: `86e4d0c` — fix(tour): demo seed mesajı + Tour'u Atla kaldır + nav koridor suppression
 
 ## Faz 2 — Bayi Liste Web Panel (~3-4 sa)
 - [ ] 2.1 /bayilerim WA cevabı: kısa mesaj + CTA URL `[📋 Bayi Listesini Aç]`

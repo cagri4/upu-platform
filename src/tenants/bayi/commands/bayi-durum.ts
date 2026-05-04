@@ -1,106 +1,77 @@
 /**
- * /bayidurum — Bayi listesi veya tek bayi detayı
+ * /bayidurum (alias: /bayilerim) — bayi listesi web paneline yönlendir.
  * /ziyaretler — Planlı ziyaret listesi
  * /ziyaretnotu — Web panel yönlendirme
+ *
+ * 2026-05-04: text-tabanlı liste/detay kaldırıldı; bayi yönetimi tamamen
+ * web panel'e taşındı (/[locale]/bayiler + /[locale]/bayiler/[id]).
+ * WA cevabı: kısa mesaj + magic-link CTA URL butonu.
  */
 
 import type { WaContext } from "@/platform/whatsapp/types";
-import { sendText, sendButtons } from "@/platform/whatsapp/send";
+import { sendText, sendButtons, sendUrlButton } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { formatCurrency, formatDate, webPanelRedirect } from "./helpers";
+import { webPanelRedirect } from "./helpers";
+import { randomBytes } from "crypto";
+
+const BAYI_APP_URL = "https://retailai.upudev.nl";
+
+async function mintBayiLinkToken(userId: string): Promise<string> {
+  const sb = getServiceClient();
+  const token = randomBytes(16).toString("hex");
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  await sb.from("magic_link_tokens").insert({ user_id: userId, token, expires_at: expiresAt });
+  return token;
+}
 
 export async function handleBayiDurum(ctx: WaContext): Promise<void> {
   try {
-    const supabase = getServiceClient();
-    const args = ctx.text.replace(/^\/?\s*bayidurum\s*/i, "").trim();
+    const args = ctx.text.replace(/^\/?\s*(bayidurum|bayilerim|bayiler|bayi)\s*/i, "").trim();
+    const token = await mintBayiLinkToken(ctx.userId);
 
-    // No args or "list" → show all dealers
-    if (!args || args.toLowerCase() === "list") {
+    if (args && args.length > 1) {
+      // İsim parametresi var → arama yap, bulunduysa detay sayfasına yönlendir
+      const supabase = getServiceClient();
       const { data: dealers } = await supabase
         .from("bayi_dealers")
-        .select("id, company_name, email, phone, is_active")
+        .select("id, name")
         .eq("tenant_id", ctx.tenantId)
-        .eq("is_active", true)
-        .order("company_name")
-        .limit(15);
+        .ilike("name", `%${args}%`)
+        .limit(1);
 
-      if (!dealers?.length) {
-        await sendButtons(ctx.phone, "👤 *Bayi Listesi*\n\nAktif bayi bulunmuyor.", [
-          { id: "cmd:menu", title: "Ana Menu" },
-        ]);
+      if (dealers?.length) {
+        const dealer = dealers[0];
+        const url = `${BAYI_APP_URL}/tr/bayiler/${dealer.id}?t=${token}`;
+        await sendUrlButton(ctx.phone,
+          `🏪 *${dealer.name}* — detay sayfası web panelde açılıyor.`,
+          "📋 Bayi Detayını Aç",
+          url,
+          { skipNav: true },
+        );
         return;
       }
-
-      const lines = dealers.map((d: any, i: number) =>
-        `${i + 1}. *${d.company_name}*\n   📞 ${d.phone || "Yok"} | ${d.email || "Yok"}`,
+      // Bulunamadı → liste'ye gönder + uyarı
+      const url = `${BAYI_APP_URL}/tr/bayiler?t=${token}&q=${encodeURIComponent(args)}`;
+      await sendUrlButton(ctx.phone,
+        `🔍 "*${args}*" ile eşleşen bayi bulunamadı. Liste sayfasında arama formu açacağım.`,
+        "📋 Bayi Listesini Aç",
+        url,
+        { skipNav: true },
       );
-      await sendButtons(ctx.phone, `👤 *Aktif Bayiler*\n\n${lines.join("\n")}\n\n_Detay icin /bayidurum [isim] yazin._`, [
-        { id: "cmd:menu", title: "Ana Menu" },
-      ]);
       return;
     }
 
-    // Search for specific dealer
-    const { data: dealers } = await supabase
-      .from("bayi_dealers")
-      .select("id, company_name, email, phone, is_active")
-      .eq("tenant_id", ctx.tenantId)
-      .ilike("company_name", `%${args}%`)
-      .limit(1);
-
-    if (!dealers?.length) {
-      await sendText(ctx.phone, `👤 "${args}" isimli bayi bulunamadi.\n\nTum bayiler icin /bayidurum list yazin.`);
-      return;
-    }
-
-    const dealer = dealers[0];
-
-    const [ordersRes, txRes, visitsRes] = await Promise.all([
-      supabase
-        .from("bayi_orders")
-        .select("order_number, total_amount, created_at, bayi_order_statuses!inner(name)")
-        .eq("dealer_id", dealer.id)
-        .order("created_at", { ascending: false })
-        .limit(3),
-      supabase
-        .from("bayi_dealer_transactions")
-        .select("amount, transaction_type_id, bayi_transaction_types!inner(balance_effect)")
-        .eq("dealer_id", dealer.id),
-      supabase
-        .from("bayi_dealer_visits")
-        .select("planned_date, visit_type, outcome")
-        .eq("dealer_id", dealer.id)
-        .order("planned_date", { ascending: false })
-        .limit(3),
-    ]);
-
-    const recentOrders = ordersRes.data || [];
-    const transactions = txRes.data || [];
-    const visits = visitsRes.data || [];
-
-    let balance = 0;
-    transactions.forEach((t: any) => {
-      const effect = t.bayi_transaction_types?.balance_effect;
-      if (effect === "debit") balance -= (t.amount || 0);
-      else if (effect === "credit") balance += (t.amount || 0);
-    });
-
-    const orderLines = recentOrders.length
-      ? recentOrders.map((o: any) => `#${o.order_number} — ${formatCurrency(o.total_amount || 0)} — ${o.bayi_order_statuses?.name || ""}`).join("\n")
-      : "Siparis yok";
-
-    const visitLines = visits.length
-      ? visits.map((v: any) => `${formatDate(v.planned_date)} — ${v.visit_type || "Ziyaret"} ${v.outcome ? "(" + v.outcome + ")" : ""}`).join("\n")
-      : "Ziyaret kaydi yok";
-
-    await sendButtons(
-      ctx.phone,
-      `👤 *Bayi Durum — ${dealer.company_name}*\n\n📞 ${dealer.phone || "Yok"}\n📧 ${dealer.email || "Yok"}\n💳 Bakiye: ${formatCurrency(balance)}\n\n*Son Siparisler:*\n${orderLines}\n\n*Son Ziyaretler:*\n${visitLines}`,
-      [{ id: "cmd:menu", title: "Ana Menu" }],
+    // Args yok → liste sayfası
+    const url = `${BAYI_APP_URL}/tr/bayiler?t=${token}`;
+    await sendUrlButton(ctx.phone,
+      `📋 *Bayilerinizi web panelde gösterdim.*\n\nArama, filtreleme ve detay görüntüleme için aşağıdaki linke tıklayın.`,
+      "📋 Bayi Listesini Aç",
+      url,
+      { skipNav: true },
     );
   } catch (err) {
     console.error("[bayi:bayidurum] error:", err);
-    await sendText(ctx.phone, "Bayi durumu yuklenirken bir hata olustu.");
+    await sendText(ctx.phone, "Bayi listesi yüklenirken bir hata oluştu.");
   }
 }
 
