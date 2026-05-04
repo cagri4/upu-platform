@@ -41,25 +41,17 @@ export async function runBayiDemoSeedFromCallback(userId: string, phone: string)
 
   const result = await seedTenantDemoData(sb, profile.tenant_id, profile.id, sector);
 
-  if (!result.ok) {
-    if (result.skipped) {
-      await sendText(phone,
-        `ℹ️ Sisteminizde zaten veri mevcut — örnek veri yüklenmedi.\n` +
-        `Mevcut verinizle devam edebilirsiniz.`,
-      );
-    } else {
-      await sendText(phone,
-        `⚠️ Örnek veri yüklenirken hata oluştu: ${result.reason || "bilinmiyor"}\n\n` +
-        `Lütfen birazdan tekrar deneyin.`,
-      );
-      return;
-    }
-  } else if (result.summary) {
+  if (!result.ok && !result.skipped) {
     await sendText(phone,
-      `✅ ${result.summary.products} ürün, ${result.summary.dealers} bayi, ` +
-      `${result.summary.orders} sipariş, ${result.summary.invoices} vade hareketi yüklendi.`,
+      `⚠️ Örnek veri yüklenirken hata oluştu: ${result.reason || "bilinmiyor"}\n\n` +
+      `Lütfen birazdan tekrar deneyin.`,
     );
+    return;
   }
+  // result.ok || result.skipped — her iki durumda kullanıcıya tek "tamam"
+  // mesajı veriyoruz; idempotent skip durumu kullanıcıya hatırlatma değil,
+  // koridor akışında doğal devam.
+  await sendText(phone, `✅ Veriler yüklendi. Şimdi devam edelim.`);
 
   // Step 2 prompt'u tetikle — kapanış mesajı + WA komut listesi.
   await advanceDiscovery(userId, "bayi", phone, "demo_seed_yuklendi");

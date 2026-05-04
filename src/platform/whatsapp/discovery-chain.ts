@@ -224,7 +224,6 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
         `   👉 *bayilerim*`,
         [
           { id: "cmd:bayidurum", title: "📋 bayilerim" },
-          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
         ],
         { skipNav: true },
       );
@@ -243,7 +242,6 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
         `   👉 *${critic.toLowerCase().split(" ")[0]}* yaz veya *bayidurum* komutunu kullan`,
         [
           { id: "cmd:bayidurum", title: "🏪 Bayi Detay" },
-          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
         ],
         { skipNav: true },
       );
@@ -259,7 +257,6 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
         `   👉 *urunler*`,
         [
           { id: "cmd:urunler", title: "📦 urunler" },
-          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
         ],
         { skipNav: true },
       );
@@ -276,7 +273,6 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
         `   👉 *fiyatliste*`,
         [
           { id: "cmd:fiyatliste", title: "💰 fiyatliste" },
-          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
         ],
         { skipNav: true },
       );
@@ -293,7 +289,6 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
         `   👉 *siparis* yaz, akışı tamamla.`,
         [
           { id: "cmd:siparisolustur", title: "🛒 siparis" },
-          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
         ],
         { skipNav: true },
       );
@@ -310,7 +305,6 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
         `   👉 *sabah* yaz (özet de çalışır)`,
         [
           { id: "cmd:ozet", title: "🌅 sabah" },
-          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
         ],
         { skipNav: true },
       );
@@ -327,7 +321,6 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
         `   👉 *tahsilat* yaz`,
         [
           { id: "cmd:tahsilat", title: "💵 tahsilat" },
-          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
         ],
         { skipNav: true },
       );
@@ -498,7 +491,6 @@ async function sendSiteyonetimStepPrompt(userId: string, phone: string, step: nu
         `   👉 *rapor*`,
         [
           { id: "cmd:rapor", title: "📊 rapor" },
-          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
         ],
         { skipNav: true },
       );
@@ -513,7 +505,6 @@ async function sendSiteyonetimStepPrompt(userId: string, phone: string, step: nu
         `   👉 *aidat*`,
         [
           { id: "cmd:aidat", title: "💰 aidat" },
-          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
         ],
         { skipNav: true },
       );
@@ -528,7 +519,6 @@ async function sendSiteyonetimStepPrompt(userId: string, phone: string, step: nu
         `   👉 *borc*`,
         [
           { id: "cmd:borcum", title: "🏠 borc" },
-          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
         ],
         { skipNav: true },
       );
@@ -543,7 +533,6 @@ async function sendSiteyonetimStepPrompt(userId: string, phone: string, step: nu
         `   👉 *bakim*`,
         [
           { id: "cmd:bakim", title: "🔧 bakim" },
-          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
         ],
         { skipNav: true },
       );
@@ -558,7 +547,6 @@ async function sendSiteyonetimStepPrompt(userId: string, phone: string, step: nu
         `   👉 *ariza*`,
         [
           { id: "cmd:ariza", title: "🆕 ariza" },
-          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
         ],
         { skipNav: true },
       );
@@ -573,7 +561,6 @@ async function sendSiteyonetimStepPrompt(userId: string, phone: string, step: nu
         `   👉 *gelir_gider*`,
         [
           { id: "cmd:gelir_gider", title: "💵 gelir_gider" },
-          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
         ],
         { skipNav: true },
       );
@@ -588,7 +575,6 @@ async function sendSiteyonetimStepPrompt(userId: string, phone: string, step: nu
         `   👉 *binakodu*`,
         [
           { id: "cmd:binakodu", title: "🔑 binakodu" },
-          { id: "disc:tour_atla", title: "⏭ Tour'u Atla" },
         ],
         { skipNav: true },
       );

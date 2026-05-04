@@ -329,10 +329,6 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       } else if (action === "demo_seed_yukle" && ctx.tenantKey === "bayi") {
         const { runBayiDemoSeedFromCallback } = await import("@/tenants/bayi/onboarding/demo-seed-flow");
         await runBayiDemoSeedFromCallback(ctx.userId, ctx.phone);
-      } else if (action === "tour_atla" && ctx.tenantKey === "bayi") {
-        // Tour'u atla → step direkt 9 (completed) → kapanış mesajı.
-        const { skipBayiTour } = await import("@/tenants/bayi/onboarding/tour-progression");
-        await skipBayiTour(ctx.userId, ctx.phone);
       } else if (action === "tour_atla" && ctx.tenantKey === "siteyonetim") {
         const { skipSiteyonetimTour } = await import("@/tenants/siteyonetim/onboarding/tour-progression");
         await skipSiteyonetimTour(ctx.userId, ctx.phone);
@@ -488,7 +484,22 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     }
     const start = Date.now();
     try {
-      await handler(ctx);
+      // Bayi tour aktif (step 1..8) iken handler'ın kendi sendButtons/
+      // sendList çağrılarındaki nav footer'ı suppress et — koridorda
+      // "Göreve Devam / Ana Menü" mesajı kullanıcıyı saptırmasın.
+      let tourActive = false;
+      if (ctx.tenantKey === "bayi") {
+        try {
+          const { isBayiTourActive } = await import("@/tenants/bayi/onboarding/tour-progression");
+          tourActive = await isBayiTourActive(ctx.userId);
+        } catch { /* ignore */ }
+      }
+      if (tourActive) {
+        const { withNavSuppressed } = await import("./send");
+        await withNavSuppressed(async () => { await handler(ctx); });
+      } else {
+        await handler(ctx);
+      }
       logCommand(ctx, resolved, true, Date.now() - start);
       // AI-led tour ilerleme — komut tour beklenen komutla eşleşiyorsa
       // bir sonraki step prompt'u tetiklenir. Tenant'a göre dispatch.

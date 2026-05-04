@@ -20,8 +20,7 @@
  */
 
 import type { WaContext } from "@/platform/whatsapp/types";
-import { getDiscoveryStep, advanceDiscovery, setDiscoveryStep } from "@/platform/whatsapp/discovery-chain";
-import { sendButtons } from "@/platform/whatsapp/send";
+import { getDiscoveryStep, advanceDiscovery } from "@/platform/whatsapp/discovery-chain";
 
 // step → komut → event eşleştirmesi.
 // Bir step'te birden fazla command kabul edilebilir (alias karşılığı).
@@ -48,18 +47,11 @@ export async function advanceBayiTourIfMatched(ctx: WaContext, resolvedCommand: 
 }
 
 /**
- * Kullanıcı "Tour'u Atla" butonuna tıkladığında çağrılır. discovery_step
- * direkt 9'a (completed) atılır ve kapanış mesajı gönderilir. Free-ride
- * mode etkinleşir.
+ * Tour aktif mi? Komut handler'ları bu fonksiyonla nav suppression
+ * (skipNav) kararı alır — koridorda kullanıcıyı ana menü'ye yönlendiren
+ * Navigasyon mesajı atılmamalı.
  */
-export async function skipBayiTour(userId: string, phone: string): Promise<void> {
-  await setDiscoveryStep(userId, "bayi", 9);
-  await sendButtons(phone,
-    `⏭ *Tour atlandı.*\n\n` +
-    `Sistemi kendi başınıza keşfedin. Yardım için *yardim*, tüm komutlar için *menu* yazın.`,
-    [
-      { id: "cmd:menu", title: "📋 Ana Menü" },
-      { id: "cmd:webpanel", title: "🖥 Web Panel" },
-    ],
-  );
+export async function isBayiTourActive(userId: string): Promise<boolean> {
+  const step = await getDiscoveryStep(userId, "bayi");
+  return step >= 1 && step < 9;
 }

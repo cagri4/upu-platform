@@ -53,6 +53,20 @@ export async function sendText(phone: string, text: string) {
 // even if the primary message already has an Ana Menü button. This yields a bit of
 // redundancy but matches the UX requirement: "every screen needs both nav actions".
 
+// ── Tour koridor nav suppression ────────────────────────────────────
+// Tour aktif iken (örn. bayi tour step 1..8), komut handler'larının
+// sendButtons/sendList çağrıları otomatik nav footer eklememeli — koridor
+// içinde "Göreve Devam / Ana Menü" mesajı kullanıcıyı tour'dan saptırır.
+// AsyncLocalStorage ile request-scoped flag; concurrent request'ler izole.
+import { AsyncLocalStorage } from "async_hooks";
+const navSuppressStore = new AsyncLocalStorage<{ suppress: boolean }>();
+export function withNavSuppressed<T>(fn: () => Promise<T>): Promise<T> {
+  return navSuppressStore.run({ suppress: true }, fn);
+}
+function isNavSuppressedByContext(): boolean {
+  return navSuppressStore.getStore()?.suppress === true;
+}
+
 // Send a separate follow-up message with nav buttons (Görevlere Devam + Ana Menü)
 export async function sendNavFooter(phone: string) {
   const { token, phoneId } = getConfig();
@@ -93,7 +107,7 @@ export async function sendButtons(
   // Detect if this call IS itself a nav footer (to avoid infinite chain)
   const isNavFooter = validButtons.length === 2 &&
     validButtons.every(b => b.id === "cmd:menu" || b.id === "cmd:devam");
-  const shouldAddNav = !isNavFooter && !opts?.skipNav;
+  const shouldAddNav = !isNavFooter && !opts?.skipNav && !isNavSuppressedByContext();
 
   try {
     const resp = await fetch(`${WA_API}/${phoneId}/messages`, {
@@ -134,7 +148,7 @@ export async function sendList(
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
 
-  const shouldAddNav = !opts?.skipNav;
+  const shouldAddNav = !opts?.skipNav && !isNavSuppressedByContext();
 
   try {
     const resp = await fetch(`${WA_API}/${phoneId}/messages`, {
@@ -199,7 +213,7 @@ export async function sendUrlButton(
       console.error("[wa:send] cta_url API error:", resp.status, err);
       // Fallback: send text with URL inline
       await sendText(phone, `${text}\n\n🔗 ${url}`);
-    } else if (!opts?.skipNav) {
+    } else if (!opts?.skipNav && !isNavSuppressedByContext()) {
       await sendNavFooter(phone);
     }
   } catch (err) {
