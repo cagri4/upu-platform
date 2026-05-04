@@ -163,7 +163,7 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
       id: dealer.id,
       name: dealer.name || dealer.company_name || "—",
       contactName: dealer.contact_name || null,
-      contactPhone: dealer.contact_phone || dealer.phone || null,
+      contactPhone: dealer.phone || dealer.contact_phone || null,
       email: dealer.email || null,
       city: dealer.city || null,
       country: dealer.country || null,

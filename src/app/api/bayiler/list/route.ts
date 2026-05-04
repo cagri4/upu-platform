@@ -73,10 +73,13 @@ export async function GET(req: NextRequest) {
   // status === "tum" → filtre yok
 
   if (q) {
-    // Sadece "name" + "contact_phone" kolonları seed dataset'inde kesin var.
-    // company_name / phone / city legacy şemada olabilir, .or() PostgREST
-    // kolon yoksa hata fırlatır → defensive olarak iki güvenli kolon.
-    query = query.or(`name.ilike.%${q}%,contact_phone.ilike.%${q}%`);
+    // Sadece "name" kolonu — gerçek bayi_dealers schema'sında
+    // contact_phone YOK (seed-demo-bayi.mjs eski schema'dan kalma).
+    // Mevcut kolonlar: id, name, company_name, city, district, phone,
+    // status, balance, created_at, contact_name. PostgREST .or() filter
+    // bilinmeyen kolon → 42703. En güvenli yol: sadece name. Telefon/şehir
+    // arama gerekirse ileride şema doğrulandıktan sonra eklenir.
+    query = query.ilike("name", `%${q}%`);
   }
 
   const from = (page - 1) * pageSize;
@@ -136,7 +139,7 @@ export async function GET(req: NextRequest) {
       id: d.id as string,
       name: (d.name as string) || (d.company_name as string) || "—",
       contactName: (d.contact_name as string) || null,
-      contactPhone: (d.contact_phone as string) || (d.phone as string) || null,
+      contactPhone: (d.phone as string) || (d.contact_phone as string) || null,
       email: (d.email as string) || null,
       city: (d.city as string) || null,
       country: (d.country as string) || null,
