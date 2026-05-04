@@ -55,14 +55,20 @@ export async function GET(req: NextRequest) {
   const page = clampInt(sp.get("page"), 1, 10000, 1);
   const pageSize = clampInt(sp.get("pageSize"), 5, 100, 20);
   const qRaw = (sp.get("q") || "").trim();
-  // PostgREST .or() filter'da virgül / parantez / tırnak özel; escape edilmesi
-  // zor — güvenli yaklaşım strip + 50 char clamp.
-  const q = qRaw.replace(/[,'"()]/g, "").slice(0, 50);
+  const q = qRaw.slice(0, 100);
   const status = sp.get("status") || "aktif";
   const vade = sp.get("vade") || "tum";
 
-  // Base query — schema kolon farkları (name/company_name + phone/contact_phone)
-  // mevcut. select("*") ile her iki şemayı da destekliyoruz.
+  // Base query — select("*") tüm kolonlar (schema farkı agnostic).
+  // Arama (q): server-side .or() filter kullanmıyoruz çünkü bayi_dealers
+  // schema'sındaki name kolonu bazı bayiler için boş; başlık görünüm
+  // company_name'den geliyor. PostgREST .or() filter'a verilen kolon
+  // tabloda yoksa veya null ise iş kırılır → JS-side multi-kolon filter
+  // (name + company_name + city + district + phone + contact_name)
+  // ile schema-agnostic + eksiksiz arama. Tek dezavantaj: pagination
+  // post-filter yapılır, server-side range yok. 5-1000 bayi range için
+  // sorun değil; büyük tenantlarda Postgres FTS / GIN tsvector ile
+  // değiştirilir.
   let query = supabase
     .from("bayi_dealers")
     .select("*", { count: "exact" })
@@ -70,21 +76,17 @@ export async function GET(req: NextRequest) {
 
   if (status === "aktif") query = query.eq("is_active", true);
   else if (status === "pasif") query = query.eq("is_active", false);
-  // status === "tum" → filtre yok
 
-  if (q) {
-    // Sadece "name" kolonu — gerçek bayi_dealers schema'sında
-    // contact_phone YOK (seed-demo-bayi.mjs eski schema'dan kalma).
-    // Mevcut kolonlar: id, name, company_name, city, district, phone,
-    // status, balance, created_at, contact_name. PostgREST .or() filter
-    // bilinmeyen kolon → 42703. En güvenli yol: sadece name. Telefon/şehir
-    // arama gerekirse ileride şema doğrulandıktan sonra eklenir.
-    query = query.ilike("name", `%${q}%`);
+  // Aramada server-side range YOK — JS post-filter'dan sonra slice.
+  // Aramasız durumda mevcut paginated davranış korunuyor (limit/range).
+  if (!q) {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    query = query.order("name", { ascending: true, nullsFirst: false }).range(from, to);
+  } else {
+    // Arama varsa max 1000 bayi çek (üst sınır), JS-side filtrele.
+    query = query.order("name", { ascending: true, nullsFirst: false }).limit(1000);
   }
-
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
-  query = query.order("name", { ascending: true, nullsFirst: false }).range(from, to);
 
   const { data: dealers, count, error } = await query;
   if (error) {
@@ -97,7 +99,23 @@ export async function GET(req: NextRequest) {
     }, { status: 500 });
   }
 
-  const dealerIds = (dealers || []).map((d: { id: string }) => d.id);
+  // q varsa JS-side multi-kolon filter (case-insensitive substring).
+  // Aranacak alanlar: name, company_name, city, district, phone,
+  // contact_name. Hangisi null/undefined ise atlar.
+  let workingDealers = dealers || [];
+  if (q) {
+    const ql = q.toLocaleLowerCase("tr");
+    workingDealers = workingDealers.filter((d: Record<string, unknown>) => {
+      const fields = ["name", "company_name", "city", "district", "phone", "contact_name", "email"];
+      return fields.some(f => {
+        const v = d[f];
+        if (typeof v !== "string") return false;
+        return v.toLocaleLowerCase("tr").includes(ql);
+      });
+    });
+  }
+
+  const dealerIds = workingDealers.map((d: { id: string }) => d.id);
   const safeIds = dealerIds.length ? dealerIds : ["00000000-0000-0000-0000-000000000000"];
 
   // Vade durumu — bayi_dealer_invoices'tan en geç vade
@@ -132,7 +150,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const rows = (dealers || []).map((d: Record<string, unknown>) => {
+  const rows = workingDealers.map((d: Record<string, unknown>) => {
     const criticalDays = dealerVade.get(d.id as string) ?? null;
     const lastO = dealerLastOrder.get(d.id as string);
     return {
@@ -164,11 +182,25 @@ export async function GET(req: NextRequest) {
     filteredRows = rows.filter(r => r.criticalDays === null || r.criticalDays < 0);
   }
 
+  // Pagination — q varsa filteredRows üzerinde JS-side; q yoksa server
+  // zaten range yapmış. Total da q durumuna göre değişir.
+  let pageRows = filteredRows;
+  let totalForPaging: number;
+  if (q || vade !== "tum") {
+    // Post-filter sonrası gerçek toplam = filteredRows.length
+    totalForPaging = filteredRows.length;
+    const from = (page - 1) * pageSize;
+    pageRows = filteredRows.slice(from, from + pageSize);
+  } else {
+    // Server-side range zaten sayfayı kestik; count = tablo toplamı
+    totalForPaging = count || 0;
+  }
+
   return NextResponse.json({
-    rows: filteredRows,
-    total: count || 0,
+    rows: pageRows,
+    total: totalForPaging,
     page,
     pageSize,
-    pages: Math.max(1, Math.ceil((count || 0) / pageSize)),
+    pages: Math.max(1, Math.ceil(totalForPaging / pageSize)),
   });
 }
