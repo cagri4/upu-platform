@@ -59,26 +59,15 @@ interface Firma {
   tanitim: string;
 }
 
+// 6 ana sektör — sektör bazlı demo seed setlerine birebir eşleşiyor.
+// "diger" seçilirse default boya seti yüklenir + inline help mesajı.
 const SEKTORLER: Array<{ id: string; label: string }> = [
-  { id: "boya", label: "Boya & Vernik" },
-  { id: "insaat", label: "İnşaat Malzemesi" },
-  { id: "elektrik", label: "Elektrik & Aydınlatma" },
-  { id: "tesisat", label: "Tesisat & Sıhhi" },
-  { id: "hirdavat", label: "Hırdavat" },
-  { id: "klima", label: "Klima & Isıtma" },
-  { id: "mobilya", label: "Mobilya" },
-  { id: "gida", label: "Gıda Toptan" },
-  { id: "horeca", label: "Horeca Tedarik" },
-  { id: "helal_et", label: "Helal Et & Şarküteri" },
-  { id: "kuruyemis", label: "Kuruyemiş & Kuru Gıda" },
-  { id: "baharat", label: "Baharat & Sos" },
-  { id: "icecek", label: "İçecek" },
-  { id: "kozmetik", label: "Kozmetik" },
-  { id: "otomotiv", label: "Otomotiv & Yedek Parça" },
-  { id: "tekstil", label: "Tekstil" },
-  { id: "endustriyel", label: "Endüstriyel Ürün & Kimyasal" },
-  { id: "tarim", label: "Tarım Girdileri" },
-  { id: "diger", label: "Diğer" },
+  { id: "boya",     label: "Boya & Yapı Kimyasalı" },
+  { id: "gida",     label: "Gıda & Bakliyat" },
+  { id: "hirdavat", label: "Hırdavat & İnşaat" },
+  { id: "tekstil",  label: "Tekstil & Konfeksiyon" },
+  { id: "temizlik", label: "Kişisel Bakım & Temizlik" },
+  { id: "diger",    label: "Diğer (sektörünüze yakın olan seçilebilir)" },
 ];
 
 const BAYI_SAYISI_OPTIONS: Array<{ id: string; label: string }> = [
@@ -109,12 +98,24 @@ const LOCALE_OPTIONS: Array<{ id: LocaleUI; label: string }> = [
   { id: "en", label: "🇬🇧 English" },
 ];
 
+// Muhasebe yazılımı listesi — 10 popüler seçenek, country'ye göre filtreli.
+// Türkiye: Logo (Tiger/GO) + Logo İşbaşı + Mikro + Paraşüt + Netsis
+// Hollanda: Exact Online + Yuki + SnelStart + Twinfield + Moneybird
 const ACCOUNTING_OPTIONS: Array<{ id: string; label: string; country?: Country[] }> = [
-  { id: "yuki", label: "Yuki", country: ["NL", "BE"] },
-  { id: "exact", label: "Exact Online", country: ["NL", "BE"] },
-  { id: "snelstart", label: "SnelStart", country: ["NL"] },
-  { id: "logo", label: "Logo (Türkiye)", country: ["TR"] },
-  { id: "none", label: "Henüz yok / Manuel" },
+  // 🇹🇷 Türkiye
+  { id: "logo",        label: "Logo (Tiger / GO)", country: ["TR"] },
+  { id: "logo_isbasi", label: "Logo İşbaşı",       country: ["TR"] },
+  { id: "mikro",       label: "Mikro",             country: ["TR"] },
+  { id: "parasut",     label: "Paraşüt",           country: ["TR"] },
+  { id: "netsis",      label: "Netsis",            country: ["TR"] },
+  // 🇳🇱 Hollanda / Belçika
+  { id: "exact",       label: "Exact Online",      country: ["NL", "BE"] },
+  { id: "yuki",        label: "Yuki",              country: ["NL", "BE"] },
+  { id: "snelstart",   label: "SnelStart",         country: ["NL"] },
+  { id: "twinfield",   label: "Twinfield",         country: ["NL", "BE"] },
+  { id: "moneybird",   label: "Moneybird",         country: ["NL"] },
+  // ⚪ Ortak
+  { id: "none",        label: "Henüz yok / Manuel" },
 ];
 
 const empty: Firma = {
@@ -275,6 +276,11 @@ export default function BayiProfilPage() {
               <option value="">Seçin...</option>
               {SEKTORLER.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
+            {firma.sektor === "diger" && (
+              <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 mt-1">
+                ℹ️ Sektörünüz listede yok. Demo için en yakın sektörü seçmenizi öneririz — sistem yapısı aynı, sadece örnek ürün/bayi listesi farklılaşır. Yayınlanma sonrası sektörünüze özel uyarlama yaparız.
+              </p>
+            )}
           </Field>
           <Field label="Bayi Sayısı">
             <select value={firma.bayi_sayisi} onChange={e => update({ bayi_sayisi: e.target.value })}

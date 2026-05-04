@@ -27,11 +27,9 @@ const REQUIRED = [
   "bayi_sayisi", "brifing_enabled",
 ] as const;
 
+// 2026-05-04: 6 ana sektör (sektör bazlı seed setleriyle 1:1 eşleşir)
 const SEKTOR_VALUES = new Set([
-  "boya", "insaat", "elektrik", "tesisat", "hirdavat",
-  "klima", "mobilya", "gida", "horeca", "helal_et", "kuruyemis",
-  "baharat", "icecek", "kozmetik", "otomotiv", "tekstil",
-  "endustriyel", "tarim", "diger",
+  "boya", "gida", "hirdavat", "tekstil", "temizlik", "diger",
 ]);
 
 const BAYI_SAYISI_VALUES = new Set(["1-10", "11-50", "50+"]);
@@ -40,9 +38,16 @@ const COUNTRY_VALUES = new Set(["NL", "TR", "BE", "DE"]);
 const CURRENCY_VALUES = new Set(["EUR", "TRY", "USD", "GBP"]);
 const LOCALE_VALUES = new Set(["tr-NL", "tr-TR", "nl-NL", "en-US", "en-GB"]);
 
-// 2026-05-02: distribütör kendi tedarikçilerini kullanıyor — sadece
-// muhasebe yazılımı seçimi var (kargo/ödeme/e-fatura katmanları kaldırıldı).
-const ACCOUNTING_VALUES = new Set(["yuki", "exact", "snelstart", "logo", "none", ""]);
+// 2026-05-04: muhasebe yazılımı 10 seçenek (TR + NL gruplu).
+// kargo/ödeme/e-fatura katmanları distribütörün kendi sisteminde kalır.
+const ACCOUNTING_VALUES = new Set([
+  // TR
+  "logo", "logo_isbasi", "mikro", "parasut", "netsis",
+  // NL
+  "exact", "yuki", "snelstart", "twinfield", "moneybird",
+  // Ortak
+  "none", "",
+]);
 
 function s(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
