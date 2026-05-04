@@ -25,7 +25,7 @@ export async function handleHatirlatma(ctx: WaContext): Promise<void> {
     { id: "htrt:topic:ev_gezdirme", title: "Ev Gezdirme" },
     { id: "htrt:topic:telefon", title: "Telefon" },
     { id: "htrt:topic:custom", title: "Kendi Yazın" },
-  ]);
+  ], { skipNav: true });
 }
 
 export async function handleHatirlatmaStep(ctx: WaContext, session: CommandSession): Promise<void> {
@@ -50,7 +50,7 @@ export async function handleHatirlatmaStep(ctx: WaContext, session: CommandSessi
       { id: "htrt:date:today", title: "Bugün" },
       { id: "htrt:date:tomorrow", title: "Yarın" },
       { id: "htrt:date:next_monday", title: "Haftaya Pzt" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -126,7 +126,7 @@ export async function handleHatirlatmaCallback(ctx: WaContext, data: string): Pr
       { id: "htrt:time:09:00", title: "09:00" },
       { id: "htrt:time:14:00", title: "14:00" },
       { id: "htrt:time:custom", title: "Saat Yazın" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 

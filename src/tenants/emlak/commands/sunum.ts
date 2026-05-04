@@ -50,7 +50,7 @@ export async function handleSunum(ctx: WaContext): Promise<void> {
 
   await sendList(ctx.phone, "📊 Sunum Hazırla\n\nHangi müşteriniz için sunum hazırlayalım?", "Müşteri Seç", [
     { title: "Müşteriler", rows },
-  ]);
+  ], { skipNav: true });
 }
 
 // ── Step handler ─────────────────────────────────────────────────────
@@ -366,7 +366,7 @@ async function showPropertySelection(ctx: WaContext): Promise<void> {
 
   await sendList(ctx.phone, "🏠 Sunuma eklenecek mülkleri seçin.\n\nBirden fazla seçebilirsiniz.", "Mülk Seç", [
     { title: "Portföy", rows },
-  ]);
+  ], { skipNav: true });
 }
 
 async function showPreview(ctx: WaContext): Promise<void> {
@@ -395,7 +395,7 @@ async function showPreview(ctx: WaContext): Promise<void> {
   await sendButtons(ctx.phone, preview, [
     { id: "snm:generate", title: "✅ Oluştur" },
     { id: "snm:cancel", title: "❌ İptal" },
-  ]);
+  ], { skipNav: true });
 }
 
 async function generatePresentation(ctx: WaContext): Promise<void> {
@@ -589,7 +589,7 @@ export async function handleSunumlarim(ctx: WaContext): Promise<void> {
     await sendButtons(ctx.phone, "📊 Henüz sunum hazırlamadınız.", [
       { id: "cmd:sunumolustur", title: "🎨 Sunum Oluştur" },
       { id: "cmd:menu", title: "Ana Menü" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 

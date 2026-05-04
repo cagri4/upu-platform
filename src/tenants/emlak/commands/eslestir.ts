@@ -54,7 +54,7 @@ export async function handleEslestir(ctx: WaContext): Promise<void> {
     await sendButtons(ctx.phone, "Henüz müşteriniz yok. Müşteri ekleyin!", [
       { id: "cmd:musteriEkle", title: "Müşteri Ekle" },
       { id: "cmd:menu", title: "Ana Menü" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -66,7 +66,7 @@ export async function handleEslestir(ctx: WaContext): Promise<void> {
 
   await sendList(ctx.phone, "👤 Hangi müşteri için eşleştirme yapayım?", "Müşteri Seç", [
     { title: "Müşteriler", rows },
-  ]);
+  ], { skipNav: true });
   } catch (err) {
     await handleError(ctx, "emlak:eslestir", err, "db");
   }

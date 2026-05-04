@@ -138,6 +138,7 @@ async function sendEmlakStepPrompt(_userId: string, phone: string, step: number)
         `Şimdi bu mülk için müşterine gönderebileceğin etkileyici bir satış sunumu hazırlayalım.\n\n` +
         `Sunum hazır olduğunda sana özel bir link vereceğim — müşterine direkt gönder.`,
         [{ id: "cmd:sunum", title: "🎯 Sunum Hazırla" }],
+        { skipNav: true },
       );
       return true;
     case 2:
@@ -146,6 +147,7 @@ async function sendEmlakStepPrompt(_userId: string, phone: string, step: number)
         `Magic linki müşterine gönderebilirsin.\n\n` +
         `Şimdi piyasa taraması kuralım — senin vereceğin kriterlere göre her sabah bölgendeki yeni ilanları sana raporlayacağım. Bir fırsat kaçırma!`,
         [{ id: "cmd:takipEt", title: "📡 Tarama Kur" }],
+        { skipNav: true },
       );
       return true;
     case 3:
@@ -155,6 +157,7 @@ async function sendEmlakStepPrompt(_userId: string, phone: string, step: number)
         `*Ve dahası:* sabah raporunda *sahibinden olan ilanların sahiplerini* de göstereceğim. Bir ilana ilgilendiğini söylersen, sahibini bulup sana hazır bir AI mesaj taslağıyla tek tık iletişim fırsatı sunacağım.\n\n` +
         `Portföyünü büyütmek artık günde 5 dakikalık bir iş.`,
         [{ id: "disc:portfoy_ok", title: "🚀 Anladım" }],
+        { skipNav: true },
       );
       return true;
     case 4:

@@ -33,7 +33,7 @@ export async function handleMusteriDuzenle(ctx: WaContext): Promise<void> {
     await sendButtons(ctx.phone, "Henüz müşteriniz yok.", [
       { id: "cmd:musteriEkle", title: "Müşteri Ekle" },
       { id: "cmd:menu", title: "Ana Menü" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -45,7 +45,7 @@ export async function handleMusteriDuzenle(ctx: WaContext): Promise<void> {
 
   await sendList(ctx.phone, "Düzenlemek istediğiniz müşteriyi seçin:", "Müşteri Seç", [
     { title: "Müşteriler", rows },
-  ]);
+  ], { skipNav: true });
 }
 
 export async function handleMusteriDuzenleCallback(ctx: WaContext, data: string): Promise<void> {
@@ -77,7 +77,7 @@ export async function handleMusteriDuzenleCallback(ctx: WaContext, data: string)
 
     await sendList(ctx.phone, `"${customer.name}" — Hangi alanı düzenlemek istiyorsunuz?`, "Alan Seç", [
       { title: "Alanlar", rows },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -143,5 +143,5 @@ export async function handleMusteriDuzenleStep(ctx: WaContext, session: CommandS
   await sendButtons(ctx.phone, `✅ ${fieldLabel} güncellendi.`, [
     { id: "cmd:musterilerim", title: "Müşterilerim" },
     { id: "cmd:menu", title: "Ana Menü" },
-  ]);
+  ], { skipNav: true });
 }

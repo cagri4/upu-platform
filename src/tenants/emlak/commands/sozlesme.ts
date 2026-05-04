@@ -134,7 +134,7 @@ export async function handleSozlesme(ctx: WaContext): Promise<void> {
 
   await sendList(ctx.phone, "📋 Hangi mülk için sözleşme hazırlayalım?", "Mülk Seç", [
     { title: "Mulkler", rows },
-  ]);
+  ], { skipNav: true });
 }
 
 export async function handleSozlesmeStep(ctx: WaContext, session: CommandSession): Promise<void> {
@@ -188,7 +188,7 @@ export async function handleSozlesmeStep(ctx: WaContext, session: CommandSession
       await sendButtons(ctx.phone, "🔒 Münhasır (exclusive) yetkilendirme mi?", [
         { id: "szl:excl:yes", title: "Evet (Münhasır)" },
         { id: "szl:excl:no", title: "Hayır" },
-      ]);
+      ], { skipNav: true });
       return;
     }
 
@@ -338,7 +338,7 @@ async function showSozlesmePreview(ctx: WaContext): Promise<void> {
   await sendButtons(ctx.phone, preview + "\n\nOnaylıyor musunuz?", [
     { id: "szl:confirm", title: "Onayla" },
     { id: "szl:cancel", title: "İptal" },
-  ]);
+  ], { skipNav: true });
 }
 
 async function createSozlesme(ctx: WaContext): Promise<void> {

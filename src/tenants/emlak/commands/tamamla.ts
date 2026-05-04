@@ -79,7 +79,7 @@ async function promptStep(ctx: WaContext, step: TamamlaStep, propertyId: string)
         { id: `tmm:rooms:${propertyId}:2+1`, title: "2+1" },
         { id: `tmm:rooms:${propertyId}:3+1`, title: "3+1" },
         { id: `tmm:rooms:${propertyId}:4+1`, title: "4+1" },
-      ]);
+      ], { skipNav: true });
       return; // sendButtons auto-nav; skip extra nav
     case "neighborhood":
       await sendText(ctx.phone, "📍 *Mahalle eksik*\n\nMahalleyi yaz:\n\nÖrnek: Yalıkavak, Bitez");

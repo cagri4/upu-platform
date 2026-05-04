@@ -59,12 +59,12 @@ export async function handleTakipEt(ctx: WaContext): Promise<void> {
 
     await sendButtons(ctx.phone, text, [
       { id: "tkp:new", title: "➕ Yeni Takip Ekle" },
-    ]);
+    ], { skipNav: true });
 
     if (rows.length > 0) {
       await sendList(ctx.phone, "Bir takibi silmek isterseniz:", "Takip Sil", [
         { title: "Aktif Takipler", rows },
-      ]);
+      ], { skipNav: true });
     }
     return;
   }
@@ -80,7 +80,7 @@ async function startNewTracking(ctx: WaContext): Promise<void> {
   await sendButtons(ctx.phone, "📡 *Yeni İlan Takibi*\n\nSatılık mı kiralık mı?", [
     { id: "tkp:lt:satilik", title: "Satılık" },
     { id: "tkp:lt:kiralik", title: "Kiralık" },
-  ]);
+  ], { skipNav: true });
 }
 
 // ── Callback handler ───────────────────────────────────────────────
@@ -137,11 +137,11 @@ export async function handleTakipEtCallback(ctx: WaContext, data: string): Promi
       { id: "tkp:pt:daire", title: "Daire" },
       { id: "tkp:pt:villa", title: "Villa" },
       { id: "tkp:pt:mustakil", title: "Müstakil" },
-    ]);
+    ], { skipNav: true });
     await sendButtons(ctx.phone, "veya:", [
       { id: "tkp:pt:arsa", title: "Arsa" },
       { id: "tkp:pt:hepsi", title: "Hepsi" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -168,7 +168,7 @@ export async function handleTakipEtCallback(ctx: WaContext, data: string): Promi
       { id: "tkp:lb:sahibi", title: "Sahibinden" },
       { id: "tkp:lb:emlakci", title: "Emlak Ofisinden" },
       { id: "tkp:lb:hepsi", title: "Farketmez" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -223,7 +223,7 @@ export async function handleTakipEtStep(ctx: WaContext, session: CommandSession)
 
     await sendList(ctx.phone, "📐 m² aralığı seçin:", "m² Seçin", [
       { title: "m² Aralığı", rows },
-    ]);
+    ], { skipNav: true });
     return;
   }
 }
@@ -290,7 +290,7 @@ async function runSearchAndShowResults(ctx: WaContext): Promise<void> {
     await sendButtons(ctx.phone, "Bu aramayı takibe almak ister misiniz?\nYeni ilan eklendiğinde bildirim gelir.", [
       { id: "tkp:save", title: "✅ Takibe Al" },
       { id: "tkp:nosave", title: "Hayır" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -314,7 +314,7 @@ async function runSearchAndShowResults(ctx: WaContext): Promise<void> {
   await sendButtons(ctx.phone, "Bu aramayı her sabah otomatik almak ister misiniz?", [
     { id: "tkp:save", title: "✅ Evet, Takip Et" },
     { id: "tkp:nosave", title: "Hayır" },
-  ]);
+  ], { skipNav: true });
 }
 
 // ── Save tracking criteria ─────────────────────────────────────────
@@ -597,7 +597,7 @@ async function sendContactDetails(ctx: WaContext, propertyId: string): Promise<v
   await sendButtons(ctx.phone, "Aradın/mesaj attın mı? 3 gün sonra hatırlatayım.", [
     { id: `tkp:done:${propertyId}`, title: "✅ Aradım/yazdım" },
     { id: "cmd:menu", title: "Vazgeç" },
-  ]);
+  ], { skipNav: true });
 
   // Log the contact attempt
   try {

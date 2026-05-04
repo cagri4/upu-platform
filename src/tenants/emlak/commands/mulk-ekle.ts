@@ -352,7 +352,7 @@ export async function handleMulkEkleStep(ctx: WaContext, session: CommandSession
           { id: "mulkekle:rooms:5+1", title: "5+1" },
           { id: "mulkekle:rooms:6+", title: "6+" },
         ]},
-      ]);
+      ], { skipNav: true });
       return;
     }
 
@@ -389,7 +389,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
     await sendButtons(ctx.phone, "📋 İlan türünü seçin:", [
       { id: "mulkekle:lt:satilik", title: "🏷 Satılık" },
       { id: "mulkekle:lt:kiralik", title: "🔑 Kiralık" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -479,7 +479,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
         { id: "mulkekle:totalfloors:21+", title: "21+" },
         { id: "mulkekle:totalfloors:yok", title: "Belirtme" },
       ]},
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -500,7 +500,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
         { id: "mulkekle:buildingage:21+", title: "21+" },
         { id: "mulkekle:buildingage:yok", title: "Belirtme" },
       ]},
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -518,7 +518,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
         { id: "mulkekle:heating:yok_isinma", title: "Yok" },
         { id: "mulkekle:heating:bitmis", title: "✅ Seçimi Bitir" },
       ]},
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -538,7 +538,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
           { id: "mulkekle:heating:yok_isinma", title: "Yok" },
           { id: "mulkekle:heating:bitmis", title: "✅ Seçimi Bitir" },
         ]},
-      ]);
+      ], { skipNav: true });
       return;
     }
     if (value === "bitmis") {
@@ -552,7 +552,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
           { id: "mulkekle:parking:yok", title: "Yok" },
           { id: "mulkekle:parking:belirtme", title: "Belirtme" },
         ]},
-      ]);
+      ], { skipNav: true });
       return;
     }
     // Add a heating option to the comma-separated list
@@ -564,7 +564,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
     await sendButtons(ctx.phone, `✅ ${label} eklendi. Başka ısınma tipi var mı?`, [
       { id: "mulkekle:heating:bitmis", title: "Bitir" },
       { id: "mulkekle:heating:menu", title: "Başka Ekle" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -583,7 +583,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
         { id: "mulkekle:facade:bati", title: "Batı" },
         { id: "mulkekle:facade:bitmis", title: "✅ Seçimi Bitir" },
       ]},
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -600,7 +600,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
           { id: "mulkekle:facade:bati", title: "Batı" },
           { id: "mulkekle:facade:bitmis", title: "✅ Seçimi Bitir" },
         ]},
-      ]);
+      ], { skipNav: true });
       return;
     }
     if (value === "bitmis") {
@@ -614,7 +614,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
           { id: "mulkekle:deed:kooperatif", title: "Kooperatif" },
           { id: "mulkekle:deed:yok", title: "Belirtme" },
         ]},
-      ]);
+      ], { skipNav: true });
       return;
     }
     const label = facadeLabels[value] || value;
@@ -625,7 +625,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
     await sendButtons(ctx.phone, `✅ ${label} eklendi. Başka cephe var mı?`, [
       { id: "mulkekle:facade:bitmis", title: "Bitir" },
       { id: "mulkekle:facade:menu", title: "Başka Ekle" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -650,7 +650,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
         { id: "mulkekle:housing:tripleks", title: "Tripleks" },
         { id: "mulkekle:housing:belirtme", title: "Belirtme" },
       ]},
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -666,7 +666,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       { id: "mulkekle:usage:bos", title: "Boş" },
       { id: "mulkekle:usage:kiracili", title: "Kiracılı" },
       { id: "mulkekle:usage:mulk_sahibi", title: "Mülk Sahibi" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -678,7 +678,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       { id: "mulkekle:swap:evet", title: "Evet" },
       { id: "mulkekle:swap:hayir", title: "Hayır" },
       { id: "mulkekle:swap:belirtme", title: "Belirtme" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -694,7 +694,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
         { id: "mulkekle:bathroom:4+", title: "4+" },
         { id: "mulkekle:bathroom:yok", title: "Belirtme" },
       ]},
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -708,7 +708,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
     await sendButtons(ctx.phone, "🍳 Mutfak tipi:", [
       { id: "mulkekle:kitchen:acik_amerikan", title: "Açık (Amerikan)" },
       { id: "mulkekle:kitchen:kapali", title: "Kapalı" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -718,7 +718,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
     await sendButtons(ctx.phone, "🛗 Asansör var mı?", [
       { id: "mulkekle:elevator:evet", title: "Evet" },
       { id: "mulkekle:elevator:hayir", title: "Hayır" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -727,7 +727,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
     await sendButtons(ctx.phone, "🏠 Balkon var mı?", [
       { id: "mulkekle:balcony:evet", title: "Evet" },
       { id: "mulkekle:balcony:hayir", title: "Hayır" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -762,7 +762,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi.\n\nBaşka özellik eklemek ister misiniz?`, [
         { id: "mulkekle:intfeat:bitmis", title: "Bitir" },
         { id: `mulkekle:intfeat:menu:${pageArg}`, title: "Başka Ekle" },
-      ]);
+      ], { skipNav: true });
     }
     return;
   }
@@ -789,7 +789,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi. Başka?`, [
         { id: "mulkekle:extfeat:bitmis", title: "Bitir" },
         { id: `mulkekle:extfeat:menu:${pageArg}`, title: "Başka Ekle" },
-      ]);
+      ], { skipNav: true });
     }
     return;
   }
@@ -816,7 +816,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi. Başka?`, [
         { id: "mulkekle:viewfeat:bitmis", title: "Bitir" },
         { id: `mulkekle:viewfeat:menu:${pageArg}`, title: "Başka Ekle" },
-      ]);
+      ], { skipNav: true });
     }
     return;
   }
@@ -843,7 +843,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi. Başka?`, [
         { id: "mulkekle:muhit:bitmis", title: "Bitir" },
         { id: `mulkekle:muhit:menu:${pageArg}`, title: "Başka Ekle" },
-      ]);
+      ], { skipNav: true });
     }
     return;
   }
@@ -870,7 +870,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi. Başka?`, [
         { id: "mulkekle:engelli:bitmis", title: "Bitir" },
         { id: `mulkekle:engelli:menu:${pageArg}`, title: "Başka Ekle" },
-      ]);
+      ], { skipNav: true });
     }
     return;
   }
@@ -903,7 +903,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
       await sendButtons(ctx.phone, `✅ ${labels[value] || value} eklendi. Başka?`, [
         { id: "mulkekle:transport:bitmis", title: "Bitir" },
         { id: `mulkekle:transport:menu:${pageArg}`, title: "Başka Ekle" },
-      ]);
+      ], { skipNav: true });
     }
     return;
   }
@@ -928,7 +928,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
         await sendButtons(ctx.phone, "Bu açıklamayı kullanmak ister misiniz?", [
           { id: "mulkekle:finalize:ok", title: "✅ Kullan ve Kaydet" },
           { id: "mulkekle:desc_revise:menu", title: "🔄 Değiştir" },
-        ]);
+        ], { skipNav: true });
       } catch (err) {
         console.error("[mulkekle:ai_desc]", err);
         await sendText(ctx.phone, "AI açıklama oluşturulamadı. Kendiniz yazın veya geçin.");
@@ -965,7 +965,7 @@ export async function handleMulkEkleCallback(ctx: WaContext, data: string): Prom
           { id: "mulkekle:desc_choice:ai", title: "🔄 Sıfırdan yeniden yaz" },
           { id: "mulkekle:desc_choice:manual", title: "✍️ Kendim yazayım" },
         ]},
-      ]);
+      ], { skipNav: true });
     }
     return;
   }
@@ -1024,7 +1024,7 @@ async function showSummaryAndConfirm(ctx: WaContext): Promise<void> {
   await sendButtons(ctx.phone, s, [
     { id: "mulkekle:finalize:ok", title: "✅ Kaydet" },
     { id: "cmd:mulkekle", title: "🔄 Baştan Başla" },
-  ]);
+  ], { skipNav: true });
 }
 
 // ── Finalize ───────────────────────────────────────────────────────────
@@ -1066,7 +1066,7 @@ async function finalizeProperty(ctx: WaContext): Promise<void> {
     console.error("[mulkekle:finalize] DB error:", error.message, error.details, error.hint);
     await sendButtons(ctx.phone, `❌ Mülk eklenirken hata oluştu.\n\n${error.message?.substring(0, 100) || ""}`, [
       { id: "cmd:mulkekle", title: "Tekrar Dene" }, { id: "cmd:menu", title: "Ana Menü" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -1122,7 +1122,7 @@ export async function handleDevam(ctx: WaContext): Promise<void> {
   if (!sess) {
     await sendButtons(ctx.phone, "📭 Devam edebilecek aktif bir görev yok.\n\nAna menüden bir komut seçebilirsin.", [
       { id: "cmd:menu", title: "🏠 Ana Menü" },
-    ]);
+    ], { skipNav: true });
     return;
   }
 
@@ -1168,13 +1168,13 @@ export async function handleDevam(ctx: WaContext): Promise<void> {
           { id: "mulkekle:rooms:5+1", title: "5+1" },
           { id: "mulkekle:rooms:6+", title: "6+" },
         ]},
-      ]);
+      ], { skipNav: true });
       return;
     case "listing_type":
       await sendButtons(ctx.phone, "📋 İlan türünü seçin:", [
         { id: "mulkekle:lt:satilik", title: "🏷 Satılık" },
         { id: "mulkekle:lt:kiralik", title: "🔑 Kiralık" },
-      ]);
+      ], { skipNav: true });
       return;
     case "city":
       await sendText(ctx.phone, "📍 Şehir yazın:\n\nÖrnek: Muğla");
@@ -1205,7 +1205,7 @@ export async function handleDevam(ctx: WaContext): Promise<void> {
           { id: "mulkekle:totalfloors:21+", title: "21+" },
           { id: "mulkekle:totalfloors:yok", title: "Belirtme" },
         ]},
-      ]);
+      ], { skipNav: true });
       return;
     case "buildingage_select":
       await sendList(ctx.phone, "🏗 Bina yaşı:", "Bina Yaşı", [
@@ -1221,7 +1221,7 @@ export async function handleDevam(ctx: WaContext): Promise<void> {
           { id: "mulkekle:buildingage:21+", title: "21+" },
           { id: "mulkekle:buildingage:yok", title: "Belirtme" },
         ]},
-      ]);
+      ], { skipNav: true });
       return;
     case "heating_select": {
       const prev = d.heating ? `\n\n_Seçtiklerin: ${d.heating}_` : "";
@@ -1235,7 +1235,7 @@ export async function handleDevam(ctx: WaContext): Promise<void> {
           { id: "mulkekle:heating:yok_isinma", title: "Yok" },
           { id: "mulkekle:heating:bitmis", title: "✅ Seçimi Bitir" },
         ]},
-      ]);
+      ], { skipNav: true });
       return;
     }
     case "parking_select":
@@ -1247,7 +1247,7 @@ export async function handleDevam(ctx: WaContext): Promise<void> {
           { id: "mulkekle:parking:yok", title: "Yok" },
           { id: "mulkekle:parking:belirtme", title: "Belirtme" },
         ]},
-      ]);
+      ], { skipNav: true });
       return;
     case "facade_select":
       await sendList(ctx.phone, "🧭 Cephe yönü:", "Cephe", [
@@ -1258,7 +1258,7 @@ export async function handleDevam(ctx: WaContext): Promise<void> {
           { id: "mulkekle:facade:bati", title: "Batı" },
           { id: "mulkekle:facade:yok", title: "Belirtme" },
         ]},
-      ]);
+      ], { skipNav: true });
       return;
     case "deed_select":
       await sendList(ctx.phone, "📜 Tapu durumu:", "Tapu", [
@@ -1270,7 +1270,7 @@ export async function handleDevam(ctx: WaContext): Promise<void> {
           { id: "mulkekle:deed:kooperatif", title: "Kooperatif" },
           { id: "mulkekle:deed:yok", title: "Belirtme" },
         ]},
-      ]);
+      ], { skipNav: true });
       return;
     case "housing_select":
       await sendList(ctx.phone, "🏗 Konut Tipi:", "Konut Tipi", [
@@ -1283,21 +1283,21 @@ export async function handleDevam(ctx: WaContext): Promise<void> {
           { id: "mulkekle:housing:tripleks", title: "Tripleks" },
           { id: "mulkekle:housing:belirtme", title: "Belirtme" },
         ]},
-      ]);
+      ], { skipNav: true });
       return;
     case "usage_select":
       await sendButtons(ctx.phone, "🔑 Kullanım durumu:", [
         { id: "mulkekle:usage:bos", title: "Boş" },
         { id: "mulkekle:usage:kiracili", title: "Kiracılı" },
         { id: "mulkekle:usage:mulk_sahibi", title: "Mülk Sahibi" },
-      ]);
+      ], { skipNav: true });
       return;
     case "swap_select":
       await sendButtons(ctx.phone, "🔄 Takas kabul edilir mi?", [
         { id: "mulkekle:swap:evet", title: "Evet" },
         { id: "mulkekle:swap:hayir", title: "Hayır" },
         { id: "mulkekle:swap:belirtme", title: "Belirtme" },
-      ]);
+      ], { skipNav: true });
       return;
     case "bathroom_select":
       await sendList(ctx.phone, "🚿 Banyo sayısı:", "Banyo", [
@@ -1308,25 +1308,25 @@ export async function handleDevam(ctx: WaContext): Promise<void> {
           { id: "mulkekle:bathroom:4+", title: "4+" },
           { id: "mulkekle:bathroom:yok", title: "Belirtme" },
         ]},
-      ]);
+      ], { skipNav: true });
       return;
     case "kitchen_select":
       await sendButtons(ctx.phone, "🍳 Mutfak tipi:", [
         { id: "mulkekle:kitchen:acik_amerikan", title: "Açık (Amerikan)" },
         { id: "mulkekle:kitchen:kapali", title: "Kapalı" },
-      ]);
+      ], { skipNav: true });
       return;
     case "elevator_select":
       await sendButtons(ctx.phone, "🛗 Asansör var mı?", [
         { id: "mulkekle:elevator:evet", title: "Evet" },
         { id: "mulkekle:elevator:hayir", title: "Hayır" },
-      ]);
+      ], { skipNav: true });
       return;
     case "balcony_select":
       await sendButtons(ctx.phone, "🏠 Balkon var mı?", [
         { id: "mulkekle:balcony:evet", title: "Evet" },
         { id: "mulkekle:balcony:hayir", title: "Hayır" },
-      ]);
+      ], { skipNav: true });
       return;
     case "int_features_select": {
       const prev = d.interior_features ? `\n\n_Seçtiklerin: ${d.interior_features}_` : "";
@@ -1381,7 +1381,7 @@ export async function handleDevam(ctx: WaContext): Promise<void> {
     case "finalize_ready":
       await sendButtons(ctx.phone, "Devam etmek için /mulkekle yazabilir veya bitir.", [
         { id: "mulkekle:finalize:ok", title: "✅ Bitir & Kaydet" },
-      ]);
+      ], { skipNav: true });
       return;
     default:
       await sendText(ctx.phone, `⚠️ Bu adımdan devam edilemiyor (${step}). /mulkekle yazıp baştan başla.`);
@@ -1416,7 +1416,7 @@ async function resumeIntro(ctx: WaContext, step: string): Promise<void> {
       { id: "vf:listing:satilik", title: "Satılık" },
       { id: "vf:listing:kiralik", title: "Kiralık" },
       { id: "vf:listing:hepsi", title: "Hepsi" },
-    ]);
+    ], { skipNav: true });
     return;
   }
   if (step === "listed") {
@@ -1424,12 +1424,12 @@ async function resumeIntro(ctx: WaContext, step: string): Promise<void> {
       { id: "vf:listed:sahibi", title: "Sahibinden" },
       { id: "vf:listed:emlakci", title: "Emlak Ofisinden" },
       { id: "vf:listed:hepsi", title: "Hepsi" },
-    ]);
+    ], { skipNav: true });
     return;
   }
   await sendButtons(ctx.phone, "Tanışma akışındasın ama bu adım tanınmadı. Ana menüden devam edebilirsin.", [
     { id: "cmd:menu", title: "🏠 Ana Menü" },
-  ]);
+  ], { skipNav: true });
 }
 
 function toArr(v: unknown): string[] | null {
