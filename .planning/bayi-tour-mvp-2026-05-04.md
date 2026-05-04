@@ -22,37 +22,37 @@ Pipeline mode plan — koridor mantığında AI-led tour + web-first detay panel
 
 **Commit**: `babe2d1` — feat(panel): bayi listesi web panel + paginated + filtre
 
-## Faz 3 — Bayi Detay Sayfası (~6-8 sa)
-- [ ] 3.1 /bayiler/[id]/page.tsx — magic-link auth + 3-sütun layout
-- [ ] 3.2 Üst özet kartı (avatar/logo, isim, kontak, etiket, durum dropdown)
-- [ ] 3.3 Sol panel — Finansal (bakiye, kredi limiti, vade, son ödeme, mini grafik)
-- [ ] 3.4 Orta panel — Sipariş geçmişi tablosu + filtre + "Yeni Sipariş"
-- [ ] 3.5 Sağ panel — Timeline (WA, AI, notlar)
-- [ ] 3.6 Sticky aksiyon butonları
-- [ ] 3.7 Aksiyon modalleri:
-  - WA Mesaj Gönder (şablon + AI assist)
-  - Vade Hatırlatma (hazır şablon)
-  - Not Ekle
-  - Özel Kampanya (form + WA bildirim)
-  - Yeni Sipariş (multi-step)
-  - Düzenle (form)
-  - Durum Değiştir (dropdown)
-  - Sil (soft, onaylı)
-- [ ] 3.8 Belgeler tab
-- [ ] 3.9 Kampanyalar tab
+## Faz 3 — Bayi Detay Sayfası (~6-8 sa) ✅
+- [x] 3.1 /bayiler/[id]/page.tsx — magic-link auth + 3-sütun layout
+- [x] 3.2 Üst özet kartı (avatar baş harf, isim, kontak, etiket, kayıt tarihi)
+- [x] 3.3 Sol panel — Finansal (bakiye, kredi limiti progress, vade, son ödeme)
+- [x] 3.4 Orta panel — Sipariş geçmişi tablosu + status badge + "Yeni Sipariş"
+- [x] 3.5 Sağ panel — Timeline (notlar + WA + ödemeler + siparişler birleşik)
+- [x] 3.6 Sticky aksiyon butonları (8 buton + Ara)
+- [x] 3.7 Aksiyon modalleri (8 modal mock-first):
+  - WA Mesaj Gönder (5 şablon + textarea + {AD}/{TUTAR}/{GUN} substitusyon)
+  - Vade Hatırlatma (auto-doldurulan AI şablon)
+  - Not Ekle (textarea + timeline'a kayıt)
+  - Özel Kampanya (ad + tip + tutar + tarih + WA bildirim checkbox)
+  - Yeni Sipariş (multi-kalem + canlı toplam)
+  - Düzenle (firma bilgileri formu)
+  - Durum Değiştir (radio: aktif/dondurulmuş/pasif)
+  - Sil (soft delete, "SIL" onay yazımı)
+- [ ] 3.8 Belgeler tab — sonraki tur
+- [ ] 3.9 Kampanyalar tab — sonraki tur
 
 **Commits**:
-- `feat(panel): bayi detay sayfası + finansal/timeline/aksiyonlar`
-- `feat(panel): bayi detay aksiyon modalleri (WA/vade/not/kampanya/sipariş/düzenle/durum/sil)`
-- `feat(panel): bayi detay belgeler + kampanyalar tab`
+- `95c86d3` — feat(panel): bayi detay sayfası iskelet
+- `982f077` — feat(panel): bayi detay aksiyon modalleri (8 modal — mock-first)
 
-## Faz 4 — Tour Flow Web-First Revize (~1-2 sa)
-- [ ] 4.1 Task 1 — bayilerim → CTA URL liste sayfası
-- [ ] 4.2 Task 2 — kullanıcı kritik bayiye tıklar → detay açılır + tour banner
-- [ ] 4.3 Task 3 — Vade Hatırlatma butonu highlighted → modal → mock send → Task 4 trigger
-- [ ] 4.4 Task 4-7 basitleştirilmiş (sonraki tur için tam web-first)
+## Faz 4 — Tour Flow Web-First Revize (~1-2 sa) ✅
+- [x] 4.1 Task 1 — liste sayfası açılışında tour_bayilerim_done advance
+- [x] 4.2 Task 2 — detay sayfasında kritik bayi ise tour_kritik_bayi_done advance + tour banner
+- [x] 4.3 Task 3 — Vade Hatırlatma submit'inde tour_urunler_done advance
+- [x] 4.4 /api/tour/advance endpoint (magic-link auth + advanceDiscovery)
+- [ ] 4.5 Task 4-7 web-first (sonraki tur) — şu an WA komut tabanlı
 
-**Commit**: `feat(tour): web-first revize (Task 1-3 detay akışı)`
+**Commit**: `10740e4` — feat(tour): web-first revize (Task 1-3 detay akışı)
 
 ## Faz 5 — Polish + Deploy (~30 dk)
 - [ ] 5.1 Build (tsc + eslint)
@@ -68,13 +68,13 @@ Her commit hash'i hemen buraya:
 
 | Faz | Commit | Konu |
 |-----|--------|------|
-| 1   | TBD    | Bug fix bundle |
-| 2   | TBD    | Bayi liste panel |
-| 3a  | TBD    | Bayi detay sayfası |
-| 3b  | TBD    | Aksiyon modalleri |
-| 3c  | TBD    | Belgeler + kampanyalar tab |
-| 4   | TBD    | Tour web-first revize |
-| 5   | TBD    | Polish |
+| 1   | `86e4d0c` | Bug fix bundle (demo seed + Tour Atla + nav suppression) |
+| 2   | `babe2d1` | Bayi liste panel (paginated + filtre) |
+| 3a  | `95c86d3` | Bayi detay sayfası iskelet |
+| 3b  | `982f077` | Aksiyon modalleri (8 mock-first modal) |
+| 3c  | sonraki tur | Belgeler + kampanyalar tab |
+| 4   | `10740e4` | Tour web-first revize (Task 1-3) |
+| 5   | (bu commit) | Polish — plan güncelleme |
 
 ## Kararlar / Kısıtlar
 - **Koridor**: çıkış yok, atla yok, geri dön yok
