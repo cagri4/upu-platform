@@ -144,8 +144,12 @@ export default function BayilerPage() {
     fetch(apiUrl)
       .then(async r => {
         const d = await r.json();
-        if (!r.ok) throw new Error(d.error || "Liste alınamadı");
+        if (!r.ok) {
+          const detail = d.details || d.hint || d.code || "";
+          throw new Error(`${d.error || "Liste alınamadı"}${detail ? ` (${detail})` : ""}`);
+        }
         setData(d);
+        setError("");
       })
       .catch(e => setError(e.message || "Bağlantı hatası"))
       .finally(() => setLoading(false));

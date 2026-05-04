@@ -47,14 +47,19 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
     .eq("id", id)
     .eq("tenant_id", profile.tenant_id)
     .maybeSingle();
-  if (dErr || !dealer) return NextResponse.json({ error: "Bayi bulunamadı veya yetki yok." }, { status: 404 });
+  if (dErr) {
+    console.error("[bayiler:detail] dealer query failed:", dErr);
+    return NextResponse.json({ error: "Bayi sorgusu başarısız", details: dErr.message, code: dErr.code }, { status: 500 });
+  }
+  if (!dealer) return NextResponse.json({ error: "Bayi bulunamadı veya yetki yok." }, { status: 404 });
 
-  // Vade / faturalar
-  const { data: invoices } = await supabase
+  // Vade / faturalar — schema kolon farkları için *
+  const { data: invoices, error: invErr } = await supabase
     .from("bayi_dealer_invoices")
-    .select("id, invoice_no, amount, is_paid, due_date, paid_at, created_at")
+    .select("*")
     .eq("dealer_id", id)
     .order("due_date", { ascending: false });
+  if (invErr) console.error("[bayiler:detail] invoices query failed (devam):", invErr);
 
   const today = new Date();
   let mostOverdueDays: number | null = null;
@@ -72,33 +77,33 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
   }
 
   // Siparişler (son 20)
-  const { data: orders } = await supabase
+  const { data: orders, error: ordErr } = await supabase
     .from("bayi_orders")
-    .select("id, total_amount, status, created_at, quantity, unit_price")
+    .select("*")
     .eq("dealer_id", id)
     .order("created_at", { ascending: false })
     .limit(20);
+  if (ordErr) console.error("[bayiler:detail] orders query failed (devam):", ordErr);
 
-  // Notlar — bayi_dealer_notes tablosu varsa (yoksa boş döner)
+  // Notlar / mesajlar / kampanyalar — opsiyonel tablolar; yoksa null/boş.
   const { data: notes } = await supabase
     .from("bayi_dealer_notes")
-    .select("id, content, created_at, author_id")
+    .select("*")
     .eq("dealer_id", id)
     .order("created_at", { ascending: false })
     .limit(20);
 
-  // Mesaj geçmişi — bayi_dealer_messages varsa (yoksa boş)
   const { data: messages } = await supabase
     .from("bayi_dealer_messages")
-    .select("id, message_type, content, created_at, direction")
+    .select("*")
     .eq("dealer_id", id)
     .order("created_at", { ascending: false })
     .limit(20);
 
-  // Bayi-özel kampanyalar — bayi_dealer_campaigns varsa
+  // Bayi-özel kampanyalar
   const { data: campaigns } = await supabase
     .from("bayi_dealer_campaigns")
-    .select("id, name, discount_type, discount_value, starts_at, ends_at, is_active")
+    .select("*")
     .eq("dealer_id", id)
     .order("starts_at", { ascending: false })
     .limit(10);

@@ -54,14 +54,18 @@ export async function GET(req: NextRequest) {
   const tenantId = profile.tenant_id;
   const page = clampInt(sp.get("page"), 1, 10000, 1);
   const pageSize = clampInt(sp.get("pageSize"), 5, 100, 20);
-  const q = (sp.get("q") || "").trim();
+  const qRaw = (sp.get("q") || "").trim();
+  // PostgREST .or() filter'da virgül / parantez / tırnak özel; escape edilmesi
+  // zor — güvenli yaklaşım strip + 50 char clamp.
+  const q = qRaw.replace(/[,'"()]/g, "").slice(0, 50);
   const status = sp.get("status") || "aktif";
   const vade = sp.get("vade") || "tum";
 
-  // Base query — name + company_name iki kolon da select (legacy + yeni seed)
+  // Base query — schema kolon farkları (name/company_name + phone/contact_phone)
+  // mevcut. select("*") ile her iki şemayı da destekliyoruz.
   let query = supabase
     .from("bayi_dealers")
-    .select("id, name, company_name, contact_name, contact_phone, phone, email, city, country, is_active, balance, created_at", { count: "exact" })
+    .select("*", { count: "exact" })
     .eq("tenant_id", tenantId);
 
   if (status === "aktif") query = query.eq("is_active", true);
@@ -69,10 +73,10 @@ export async function GET(req: NextRequest) {
   // status === "tum" → filtre yok
 
   if (q) {
-    // ilike OR — name veya company_name veya contact_phone'a sığar
-    query = query.or(
-      `name.ilike.%${q}%,company_name.ilike.%${q}%,contact_phone.ilike.%${q}%,phone.ilike.%${q}%,city.ilike.%${q}%`,
-    );
+    // Sadece "name" + "contact_phone" kolonları seed dataset'inde kesin var.
+    // company_name / phone / city legacy şemada olabilir, .or() PostgREST
+    // kolon yoksa hata fırlatır → defensive olarak iki güvenli kolon.
+    query = query.or(`name.ilike.%${q}%,contact_phone.ilike.%${q}%`);
   }
 
   const from = (page - 1) * pageSize;
@@ -81,62 +85,69 @@ export async function GET(req: NextRequest) {
 
   const { data: dealers, count, error } = await query;
   if (error) {
-    console.error("[bayiler:list]", error);
-    return NextResponse.json({ error: "Liste alınamadı" }, { status: 500 });
+    console.error("[bayiler:list] dealers query failed:", error);
+    return NextResponse.json({
+      error: "Liste alınamadı",
+      details: error.message,
+      code: error.code,
+      hint: error.hint,
+    }, { status: 500 });
   }
 
-  const dealerIds = (dealers || []).map(d => d.id);
+  const dealerIds = (dealers || []).map((d: { id: string }) => d.id);
+  const safeIds = dealerIds.length ? dealerIds : ["00000000-0000-0000-0000-000000000000"];
 
   // Vade durumu — bayi_dealer_invoices'tan en geç vade
-  const { data: invoices } = await supabase
+  const { data: invoices, error: invErr } = await supabase
     .from("bayi_dealer_invoices")
-    .select("dealer_id, due_date, is_paid, amount")
-    .in("dealer_id", dealerIds.length ? dealerIds : ["00000000-0000-0000-0000-000000000000"]);
+    .select("*")
+    .in("dealer_id", safeIds);
+  if (invErr) console.error("[bayiler:list] invoices query failed (devam):", invErr);
 
-  // Son sipariş — bayi_orders
-  const { data: lastOrders } = await supabase
+  // Son sipariş — bayi_orders (status kolon farklı şemalarda olabilir → *)
+  const { data: lastOrders, error: ordErr } = await supabase
     .from("bayi_orders")
-    .select("id, dealer_id, total_amount, status, created_at")
-    .in("dealer_id", dealerIds.length ? dealerIds : ["00000000-0000-0000-0000-000000000000"])
+    .select("*")
+    .in("dealer_id", safeIds)
     .order("created_at", { ascending: false });
+  if (ordErr) console.error("[bayiler:list] orders query failed (devam):", ordErr);
 
   const today = new Date();
-  const dealerVade = new Map<string, number | null>(); // dealer_id → criticalDays (null=temiz)
-  for (const inv of invoices || []) {
-    if (inv.is_paid) continue;
+  const dealerVade = new Map<string, number | null>();
+  for (const inv of (invoices || []) as Array<{ dealer_id: string; due_date: string; is_paid: boolean }>) {
+    if (inv.is_paid || !inv.due_date) continue;
     const due = new Date(inv.due_date);
     const diff = Math.floor((today.getTime() - due.getTime()) / 86400000);
-    // pozitif = geç kalmış
     const prev = dealerVade.get(inv.dealer_id) ?? null;
     if (prev === null || diff > prev) dealerVade.set(inv.dealer_id, diff);
   }
 
   const dealerLastOrder = new Map<string, { id: string; date: string; total: number }>();
-  for (const o of lastOrders || []) {
+  for (const o of (lastOrders || []) as Array<{ id: string; dealer_id: string; total_amount: number; created_at: string }>) {
     if (!dealerLastOrder.has(o.dealer_id)) {
-      dealerLastOrder.set(o.dealer_id, { id: o.id, date: o.created_at, total: o.total_amount || 0 });
+      dealerLastOrder.set(o.dealer_id, { id: o.id, date: o.created_at, total: Number(o.total_amount) || 0 });
     }
   }
 
-  const rows = (dealers || []).map(d => {
-    const criticalDays = dealerVade.get(d.id) ?? null;
-    const lastO = dealerLastOrder.get(d.id);
+  const rows = (dealers || []).map((d: Record<string, unknown>) => {
+    const criticalDays = dealerVade.get(d.id as string) ?? null;
+    const lastO = dealerLastOrder.get(d.id as string);
     return {
-      id: d.id,
-      name: d.name || d.company_name || "—",
-      contactName: d.contact_name || null,
-      contactPhone: d.contact_phone || d.phone || null,
-      email: d.email || null,
-      city: d.city || null,
-      country: d.country || null,
+      id: d.id as string,
+      name: (d.name as string) || (d.company_name as string) || "—",
+      contactName: (d.contact_name as string) || null,
+      contactPhone: (d.contact_phone as string) || (d.phone as string) || null,
+      email: (d.email as string) || null,
+      city: (d.city as string) || null,
+      country: (d.country as string) || null,
       isActive: d.is_active !== false,
-      balance: d.balance || 0,
+      balance: Number(d.balance) || 0,
       lastOrderId: lastO?.id || null,
       lastOrderDate: lastO?.date || null,
       lastOrderTotal: lastO?.total || 0,
-      criticalDays,                 // pozitif = geç kalmış gün
+      criticalDays,
       isCritical: criticalDays !== null && criticalDays >= 7,
-      createdAt: d.created_at,
+      createdAt: (d.created_at as string) || null,
     };
   });
 
