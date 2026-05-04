@@ -60,7 +60,8 @@ export const siteyonetimOnboardingFlow: OnboardingFlow = {
       },
     }).eq("id", ctx.userId);
 
-    // If user is already manager of a building, update its name
+    // If user is already manager of a building, update its name; otherwise
+    // create one. Capture buildingId so the demo seed can populate it below.
     const { data: existing } = await supabase
       .from("sy_buildings")
       .select("id")
@@ -68,21 +69,47 @@ export const siteyonetimOnboardingFlow: OnboardingFlow = {
       .eq("tenant_id", TENANT_ID)
       .maybeSingle();
 
+    let buildingId: string | null = null;
+
     if (existing) {
+      buildingId = existing.id as string;
       if (data.building_name) {
         await supabase.from("sy_buildings")
           .update({ name: data.building_name as string })
           .eq("id", existing.id);
       }
     } else {
-      // Create building with user as manager
       const { generateAccessCode } = await import("./commands/helpers");
-      await supabase.from("sy_buildings").insert({
-        tenant_id: TENANT_ID,
-        name: (data.building_name as string) || "Binam",
-        manager_id: ctx.userId,
-        access_code: generateAccessCode(),
-      });
+      const { data: created } = await supabase
+        .from("sy_buildings")
+        .insert({
+          tenant_id: TENANT_ID,
+          name: (data.building_name as string) || "Binam",
+          manager_id: ctx.userId,
+          access_code: generateAccessCode(),
+        })
+        .select("id")
+        .single();
+      buildingId = (created?.id as string | undefined) ?? null;
+    }
+
+    // Demo seed — bayi pattern'i. Yeni binaya 18 sakin + 3 ay aidat +
+    // 3 açık arıza + gelir-gider hareketleri yazar. Idempotent: bina'da
+    // zaten daire varsa skip eder, hata çıkarsa onboarding'i bozmaz.
+    let seedSummary = "";
+    if (buildingId) {
+      try {
+        const { seedSiteyonetimDemoData } = await import("./demo/seed");
+        const r = await seedSiteyonetimDemoData(supabase, TENANT_ID, ctx.userId, buildingId);
+        if (r.ok && r.summary) {
+          seedSummary = `\n\n📊 *Örnek veriyle başladık*\n` +
+            `${r.summary.residents} sakin, ${r.summary.dues} aidat kaydı, ` +
+            `${r.summary.tickets} açık arıza yüklendi.\n` +
+            `_Komutları gerçekçi veriyle deneyebilirsiniz._`;
+        }
+      } catch (err) {
+        console.error("[siteyonetim:onboarding] demo seed err:", err);
+      }
     }
 
     // Build completion message
@@ -91,10 +118,11 @@ export const siteyonetimOnboardingFlow: OnboardingFlow = {
     if (data.unit_count) msg += `🏠 Daire sayısı: ${data.unit_count}\n`;
     if (data.aidat_amount) msg += `💰 Aylık aidat: ₺${data.aidat_amount}\n`;
     msg += `📋 Günlük brifing: ${data.briefing === "evet" ? "Aktif" : "Pasif"}\n`;
-    msg += "\n💡 *Şunları deneyin:*\n";
-    msg += `• "borcum" — borç durumu özeti\n`;
-    msg += `• "ariza" — arıza bildirimi\n`;
-    msg += `• "rapor" — bina raporu`;
+    msg += seedSummary;
+    msg += "\n\n💡 *Şunları deneyin:*\n";
+    msg += `• "rapor" — bina özeti (KPI)\n`;
+    msg += `• "aidat" — ödenmemiş aidat listesi\n`;
+    msg += `• "bakim" — açık arıza listesi`;
 
     await sendButtons(ctx.phone, msg, [
       { id: "cmd:menu", title: "Ana Menü" },
