@@ -214,17 +214,19 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
     }
 
     case 2: {
-      // Demo seed tamamlandı → AI-led tour intro + Task 1 (bayi listesi web).
+      // Demo seed tamamlandı → Task 1 (bayi listesi web).
+      // Tek mesaj: doğrudan magic-link CTA URL → ara reply button + 2'inci
+      // mesaj (handleBayiDurum) eskisi anti-pattern.
       const greeting = ctx?.firstName ? `${ctx.firstName} Bey, ` : "";
-      await sendButtons(phone,
+      const token = await mintMagicToken(userId);
+      const url = `${APP_URL_BY_TENANT.bayi}/tr/bayiler?t=${token}`;
+      await sendUrlButton(phone,
         `🎉 *Sistem hazır!* (1/7)\n\n` +
         `${greeting}sektör örnek veriniz yüklendi. Birkaç dakikada sistemi tanıyalım.\n\n` +
         `*Adım 1 — Bayilerini gör*\n` +
-        `Sisteme 5 örnek bayi yükledim. Listeyi açmak için aşağıdaki komutu yaz veya butona dokun:\n\n` +
-        `   👉 *bayilerim*`,
-        [
-          { id: "cmd:bayidurum", title: "📋 Bayilerimi Aç" },
-        ],
+        `Sisteme 5 örnek bayi yükledim. Aşağıdaki butona dokun → web panelde liste açılacak.`,
+        "📋 Bayi Listesini Aç",
+        url,
         { skipNav: true },
       );
       return true;
@@ -232,34 +234,28 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
 
     case 3: {
       // Task 2 — web liste'de kritik bayiye tıkla.
+      // Plain text — kullanıcı zaten liste sayfasında, reply button gereksiz.
       const critic = ctx?.kritikBayi || "Demir Ticaret";
       const days = ctx?.kritikGun || 12;
-      await sendButtons(phone,
+      await sendText(phone,
         `✅ *Bayi listen açıldı!* (2/7)\n\n` +
         `*Adım 2 — Kritik bayini tanı*\n\n` +
         `Listede *${critic}* satırı *kırmızı* görünüyor — vadesi *${days} gün geçmiş*. ` +
         `Üstüne dokunup detay sayfasına geç. Orada bakiyesini, son siparişlerini ve timeline'ı göreceksin.\n\n` +
         `_Detay sayfasında üst banner'da hatırlatma butonu hazır olacak._`,
-        [
-          { id: "cmd:bayidurum", title: "📋 Listeye Dön" },
-        ],
-        { skipNav: true },
       );
       return true;
     }
 
     case 4: {
       // Task 3 — web detayda vade hatırlatma yolla.
+      // Plain text — kullanıcı zaten detay sayfasında, reply button gereksiz.
       const critic = ctx?.kritikBayi || "Demir Ticaret";
-      await sendButtons(phone,
+      await sendText(phone,
         `✅ *${critic} detayını açtın!* (3/7)\n\n` +
         `*Adım 3 — Vade hatırlatma yolla*\n\n` +
         `Detay sayfasının üst banner'ında 💰 *Vade Hatırlatma Yolla* butonu var. Tıkla → AI hazır şablon dolar → "Hatırlatmayı Gönder".\n\n` +
         `Sonraki adımda ürün kataloğunu inceleyeceğiz.`,
-        [
-          { id: "cmd:urunler", title: "📦 Sonraki: urunler" },
-        ],
-        { skipNav: true },
       );
       return true;
     }
