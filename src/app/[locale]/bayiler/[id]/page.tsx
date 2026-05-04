@@ -161,6 +161,15 @@ export default function BayiDetayPage() {
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Detay alınamadı");
         setData(d);
+        // Tour koridor — kritik bayi detayı açıldı (Task 2). Tour step
+        // 3'teyse step 4'e ilerler; değilse server no-op.
+        if (d.finance?.isCritical) {
+          fetch(`/api/tour/advance`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token, event: "tour_kritik_bayi_done" }),
+          }).catch(() => { /* sessiz */ });
+        }
       })
       .catch(e => setError(e.message || "Bağlantı hatası"))
       .finally(() => setLoading(false));
@@ -590,6 +599,8 @@ function WaMessageForm({ dealer, onClose, onSuccess }: { dealer: Dealer; onClose
 
 // ── Vade Hatırlatma ──────────────────────────────────────────────────
 function VadeHatirlatmaForm({ dealer, finance, onClose, onSuccess }: { dealer: Dealer; finance: Finance; onClose: () => void; onSuccess: ActionModalProps["onSuccess"] }) {
+  const sp = useSearchParams();
+  const token = sp.get("t") || sp.get("token") || "";
   const days = finance.mostOverdueDays || 0;
   const tutar = finance.openTotal;
   const defaultMsg = `Sayın ${dealer.contactName || dealer.name}, ${formatTry(tutar)} vadeniz ${days > 0 ? `${days} gün geçmiş` : "yaklaşıyor"}. Ödeme için sorularınızı yazabilirsiniz.`;
@@ -599,6 +610,15 @@ function VadeHatirlatmaForm({ dealer, finance, onClose, onSuccess }: { dealer: D
   async function handleSend() {
     setSending(true);
     await new Promise(r => setTimeout(r, 600));
+    // Tour koridor — vade hatırlatma yollandı (Task 3). Tour step 4'teyse
+    // step 5'e ilerler; değilse server no-op.
+    if (token) {
+      fetch(`/api/tour/advance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, event: "tour_urunler_done" }),
+      }).catch(() => { /* sessiz */ });
+    }
     onSuccess({
       type: "message",
       icon: "💰",

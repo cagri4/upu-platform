@@ -214,16 +214,16 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
     }
 
     case 2: {
-      // Demo seed tamamlandı → AI-led tour intro + Task 1 (bayilerim).
+      // Demo seed tamamlandı → AI-led tour intro + Task 1 (bayi listesi web).
       const greeting = ctx?.firstName ? `${ctx.firstName} Bey, ` : "";
       await sendButtons(phone,
         `🎉 *Sistem hazır!* (1/7)\n\n` +
         `${greeting}sektör örnek veriniz yüklendi. Birkaç dakikada sistemi tanıyalım.\n\n` +
         `*Adım 1 — Bayilerini gör*\n` +
-        `Sisteme 5 örnek bayi yükledim. Listeyi görmek için aşağıdaki komutu yaz:\n\n` +
+        `Sisteme 5 örnek bayi yükledim. Listeyi açmak için aşağıdaki komutu yaz veya butona dokun:\n\n` +
         `   👉 *bayilerim*`,
         [
-          { id: "cmd:bayidurum", title: "📋 bayilerim" },
+          { id: "cmd:bayidurum", title: "📋 Bayilerimi Aç" },
         ],
         { skipNav: true },
       );
@@ -231,17 +231,17 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
     }
 
     case 3: {
-      // Task 2 — kritik bayiyi tanı.
+      // Task 2 — web liste'de kritik bayiye tıkla.
       const critic = ctx?.kritikBayi || "Demir Ticaret";
       const days = ctx?.kritikGun || 12;
       await sendButtons(phone,
-        `✅ *Bayi listeni gördün!* (2/7)\n\n` +
+        `✅ *Bayi listen açıldı!* (2/7)\n\n` +
         `*Adım 2 — Kritik bayini tanı*\n\n` +
-        `Listedeki *${critic}* (kırmızı uyarılı) kritik durumda — vadesi *${days} gün geçmiş*. ` +
-        `Detayını görmek için:\n\n` +
-        `   👉 *${critic.toLowerCase().split(" ")[0]}* yaz veya *bayidurum* komutunu kullan`,
+        `Listede *${critic}* satırı *kırmızı* görünüyor — vadesi *${days} gün geçmiş*. ` +
+        `Üstüne dokunup detay sayfasına geç. Orada bakiyesini, son siparişlerini ve timeline'ı göreceksin.\n\n` +
+        `_Detay sayfasında üst banner'da hatırlatma butonu hazır olacak._`,
         [
-          { id: "cmd:bayidurum", title: "🏪 Bayi Detay" },
+          { id: "cmd:bayidurum", title: "📋 Listeye Dön" },
         ],
         { skipNav: true },
       );
@@ -249,14 +249,15 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
     }
 
     case 4: {
-      // Task 3 — ürün katalog.
+      // Task 3 — web detayda vade hatırlatma yolla.
+      const critic = ctx?.kritikBayi || "Demir Ticaret";
       await sendButtons(phone,
-        `✅ *Bayi detaylarını gördün!* (3/7)\n\n` +
-        `*Adım 3 — Ürün kataloğun*\n` +
-        `Şimdi ürün kataloğunu inceleyelim. Aşağıdaki komutu yaz:\n\n` +
-        `   👉 *urunler*`,
+        `✅ *${critic} detayını açtın!* (3/7)\n\n` +
+        `*Adım 3 — Vade hatırlatma yolla*\n\n` +
+        `Detay sayfasının üst banner'ında 💰 *Vade Hatırlatma Yolla* butonu var. Tıkla → AI hazır şablon dolar → "Hatırlatmayı Gönder".\n\n` +
+        `Sonraki adımda ürün kataloğunu inceleyeceğiz.`,
         [
-          { id: "cmd:urunler", title: "📦 urunler" },
+          { id: "cmd:urunler", title: "📦 Sonraki: urunler" },
         ],
         { skipNav: true },
       );

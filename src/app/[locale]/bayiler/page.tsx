@@ -119,7 +119,7 @@ export default function BayilerPage() {
     return `/api/bayiler/list?${sp.toString()}`;
   }, [token, page, pageSize, q, status, vade]);
 
-  // Init
+  // Init + tour Task 1 (bayilerim) advance fire-once
   useEffect(() => {
     if (!token) { setError("Geçersiz link — token bulunamadı."); return; }
     fetch(`/api/bayiler/init?t=${encodeURIComponent(token)}`)
@@ -127,6 +127,12 @@ export default function BayilerPage() {
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Init hatası");
         setInit(d.user);
+        // Tour koridor — liste sayfası açıldıkça "bayilerim" tamam.
+        fetch(`/api/tour/advance`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, event: "tour_bayilerim_done" }),
+        }).catch(() => { /* sessiz */ });
       })
       .catch(e => setError(e.message || "Bağlantı hatası"));
   }, [token]);
