@@ -141,6 +141,18 @@ export default function BayiDetayPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeModal, setActiveModal] = useState<ModalKey>(null);
+  const [toast, setToast] = useState<string>("");
+
+  // Toast helper — 3sn sonra otomatik kaybolur
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(""), 3000);
+  }
+
+  // Local timeline'a yeni item ekle (mock submit sonrası UX feedback)
+  function pushTimelineItem(item: TimelineItem) {
+    setData(prev => prev ? { ...prev, timeline: [item, ...prev.timeline] } : prev);
+  }
 
   useEffect(() => {
     if (!token || !id) { setError("Geçersiz link."); setLoading(false); return; }
@@ -436,42 +448,517 @@ export default function BayiDetayPage() {
         </div>
       </div>
 
-      {/* Modal placeholder — Faz 3b: gerçek modaller */}
+      {/* Aksiyon Modalleri */}
       {activeModal && (
-        <div className="fixed inset-0 bg-black/30 z-40 flex items-center justify-center p-4" onClick={() => setActiveModal(null)}>
-          <div className="bg-white rounded-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-base font-semibold text-slate-900 mb-2">
-              {modalTitle(activeModal)}
-            </h3>
-            <p className="text-sm text-slate-600 mb-4">
-              Bu aksiyon yakında — entegrasyon Faz 3b'de tamamlanacak. Şimdilik bayinin detay sayfasını
-              gezebilir ve mevcut bilgileri inceleyebilirsiniz.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setActiveModal(null)}
-                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50"
-              >
-                Kapat
-              </button>
-            </div>
-          </div>
+        <ActionModal
+          modalKey={activeModal}
+          dealer={dealer}
+          finance={finance}
+          onClose={() => setActiveModal(null)}
+          onSuccess={(timelineItem, toastMsg) => {
+            if (timelineItem) pushTimelineItem(timelineItem);
+            if (toastMsg) showToast(toastMsg);
+            setActiveModal(null);
+          }}
+        />
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 bg-slate-900 text-white text-sm px-4 py-2 rounded-lg shadow-lg animate-in fade-in">
+          {toast}
         </div>
       )}
     </div>
   );
 }
 
-function modalTitle(key: ModalKey): string {
-  switch (key) {
-    case "wa": return "📩 WA Mesaj Gönder";
-    case "vade": return "💰 Vade Hatırlatma";
-    case "not": return "📝 Not Ekle";
-    case "kampanya": return "🎁 Özel Kampanya";
-    case "siparis": return "➕ Yeni Sipariş";
-    case "duzenle": return "✏️ Bayi Düzenle";
-    case "durum": return "⏸ Durum Değiştir";
-    case "sil": return "🗑 Bayi Sil";
-    default: return "";
+// ─────────────────────────────────────────────────────────────────────
+// ActionModal — 8 aksiyon için tek modal componenti
+// ─────────────────────────────────────────────────────────────────────
+
+interface ActionModalProps {
+  modalKey: NonNullable<ModalKey>;
+  dealer: Dealer;
+  finance: Finance;
+  onClose: () => void;
+  onSuccess: (timelineItem: TimelineItem | null, toast: string) => void;
+}
+
+function ActionModal({ modalKey, dealer, finance, onClose, onSuccess }: ActionModalProps) {
+  return (
+    <div className="fixed inset-0 bg-black/40 z-40 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-t-2xl sm:rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
+        {modalKey === "wa" && <WaMessageForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
+        {modalKey === "vade" && <VadeHatirlatmaForm dealer={dealer} finance={finance} onClose={onClose} onSuccess={onSuccess} />}
+        {modalKey === "not" && <NotEkleForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
+        {modalKey === "kampanya" && <KampanyaForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
+        {modalKey === "siparis" && <YeniSiparisForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
+        {modalKey === "duzenle" && <DuzenleForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
+        {modalKey === "durum" && <DurumForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
+        {modalKey === "sil" && <SilForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
+      </div>
+    </div>
+  );
+}
+
+function ModalShell({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+  return (
+    <>
+      <div className="flex items-center justify-between p-4 border-b border-slate-200 sticky top-0 bg-white">
+        <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
+      </div>
+      <div className="p-4">{children}</div>
+    </>
+  );
+}
+
+// ── WA Mesaj Gönder ──────────────────────────────────────────────────
+const WA_TEMPLATES: Record<string, string> = {
+  custom:    "",
+  greeting:  "Merhaba {AD}, umarız işleriniz iyi gidiyor. Yeni ürünlerimizi incelemek ister misiniz?",
+  yeni_urun: "Yeni gelen ürünler hakkında bilgi vermek için arıyoruz. Detay için kataloğumuza bakabilirsiniz: ...",
+  kampanya:  "🎁 Özel kampanya: %15 indirim 30 Mayıs'a kadar geçerli. Sipariş için cevap yazın.",
+  vade:      "Sayın {AD}, {TUTAR} ₺ vadeniz {GUN} gün geçmiş. Ödeme için detay: /borç",
+};
+
+function WaMessageForm({ dealer, onClose, onSuccess }: { dealer: Dealer; onClose: () => void; onSuccess: ActionModalProps["onSuccess"] }) {
+  const [tmpl, setTmpl] = useState("custom");
+  const [content, setContent] = useState("");
+  const [sending, setSending] = useState(false);
+
+  function applyTemplate(key: string) {
+    setTmpl(key);
+    const text = (WA_TEMPLATES[key] || "")
+      .replace("{AD}", dealer.contactName || dealer.name)
+      .replace("{TUTAR}", "0")
+      .replace("{GUN}", "0");
+    setContent(text);
   }
+
+  async function handleSend() {
+    if (!content.trim()) return;
+    setSending(true);
+    // Mock — gerçek WA API hit etmiyoruz (demo modu)
+    await new Promise(r => setTimeout(r, 500));
+    onSuccess({
+      type: "message",
+      icon: "📤",
+      title: "WhatsApp gönderildi",
+      detail: content.slice(0, 80) + (content.length > 80 ? "…" : ""),
+      timestamp: new Date().toISOString(),
+    }, "✅ Mesaj gönderildi");
+    setSending(false);
+  }
+
+  return (
+    <ModalShell title="📩 WA Mesaj Gönder" onClose={onClose}>
+      <p className="text-xs text-slate-500 mb-3">Alıcı: <strong>{dealer.name}</strong> {dealer.contactPhone && `(${dealer.contactPhone})`}</p>
+      <label className="text-xs font-medium text-slate-700 block mb-1">Şablon seç</label>
+      <select value={tmpl} onChange={e => applyTemplate(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-3">
+        <option value="custom">Özel mesaj</option>
+        <option value="greeting">Selamlama</option>
+        <option value="yeni_urun">Yeni ürün bildirimi</option>
+        <option value="kampanya">Kampanya duyurusu</option>
+        <option value="vade">Vade hatırlatma</option>
+      </select>
+      <label className="text-xs font-medium text-slate-700 block mb-1">Mesaj</label>
+      <textarea
+        value={content}
+        onChange={e => setContent(e.target.value)}
+        rows={5}
+        placeholder="Mesajınızı yazın…"
+        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+      />
+      <div className="flex gap-2 mt-4 justify-end">
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button
+          onClick={handleSend}
+          disabled={sending || !content.trim()}
+          className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {sending ? "Gönderiliyor…" : "Gönder"}
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+// ── Vade Hatırlatma ──────────────────────────────────────────────────
+function VadeHatirlatmaForm({ dealer, finance, onClose, onSuccess }: { dealer: Dealer; finance: Finance; onClose: () => void; onSuccess: ActionModalProps["onSuccess"] }) {
+  const days = finance.mostOverdueDays || 0;
+  const tutar = finance.openTotal;
+  const defaultMsg = `Sayın ${dealer.contactName || dealer.name}, ${formatTry(tutar)} vadeniz ${days > 0 ? `${days} gün geçmiş` : "yaklaşıyor"}. Ödeme için sorularınızı yazabilirsiniz.`;
+  const [msg, setMsg] = useState(defaultMsg);
+  const [sending, setSending] = useState(false);
+
+  async function handleSend() {
+    setSending(true);
+    await new Promise(r => setTimeout(r, 600));
+    onSuccess({
+      type: "message",
+      icon: "💰",
+      title: "Vade hatırlatma gönderildi",
+      detail: `${formatTry(tutar)} — ${days > 0 ? `${days} gün geçmiş` : "yaklaşıyor"}`,
+      timestamp: new Date().toISOString(),
+    }, "✅ Hatırlatma gönderildi");
+    setSending(false);
+  }
+
+  return (
+    <ModalShell title="💰 Vade Hatırlatma" onClose={onClose}>
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3 text-xs text-amber-800">
+        <div><strong>{dealer.name}</strong></div>
+        <div>Açık vade: <strong>{formatTry(tutar)}</strong></div>
+        {days > 0 && <div className="text-rose-700 font-semibold">⏰ {days} gün geçmiş</div>}
+      </div>
+      <label className="text-xs font-medium text-slate-700 block mb-1">Hatırlatma metni (AI hazır şablon)</label>
+      <textarea
+        value={msg}
+        onChange={e => setMsg(e.target.value)}
+        rows={5}
+        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+      />
+      <div className="flex gap-2 mt-4 justify-end">
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button
+          onClick={handleSend}
+          disabled={sending || !msg.trim()}
+          className="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 disabled:opacity-50"
+        >
+          {sending ? "Gönderiliyor…" : "Hatırlatmayı Gönder"}
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+// ── Not Ekle ─────────────────────────────────────────────────────────
+function NotEkleForm({ onClose, onSuccess }: { dealer: Dealer; onClose: () => void; onSuccess: ActionModalProps["onSuccess"] }) {
+  const [content, setContent] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (!content.trim()) return;
+    setSaving(true);
+    await new Promise(r => setTimeout(r, 300));
+    onSuccess({
+      type: "note",
+      icon: "📝",
+      title: "Not eklendi",
+      detail: content,
+      timestamp: new Date().toISOString(),
+    }, "✅ Not kaydedildi");
+    setSaving(false);
+  }
+
+  return (
+    <ModalShell title="📝 Not Ekle" onClose={onClose}>
+      <textarea
+        value={content}
+        onChange={e => setContent(e.target.value)}
+        rows={5}
+        placeholder="Bu bayi hakkında not… (örn. ziyaret özeti, müzakere notu, ödeme uzlaşması)"
+        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+      />
+      <div className="flex gap-2 mt-4 justify-end">
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button onClick={handleSave} disabled={saving || !content.trim()} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+          {saving ? "Kaydediliyor…" : "Kaydet"}
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+// ── Kampanya ─────────────────────────────────────────────────────────
+function KampanyaForm({ onClose, onSuccess }: { dealer: Dealer; onClose: () => void; onSuccess: ActionModalProps["onSuccess"] }) {
+  const [name, setName] = useState("");
+  const [type, setType] = useState<"percent" | "fixed">("percent");
+  const [value, setValue] = useState(10);
+  const [start, setStart] = useState(new Date().toISOString().slice(0, 10));
+  const [end, setEnd] = useState(new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10));
+  const [notify, setNotify] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (!name.trim()) return;
+    setSaving(true);
+    await new Promise(r => setTimeout(r, 400));
+    onSuccess({
+      type: "note",
+      icon: "🎁",
+      title: `Bayi-özel kampanya: ${name}`,
+      detail: `${type === "percent" ? `%${value}` : formatTry(value)} indirim · ${start} → ${end}${notify ? " · WA bildirim ✓" : ""}`,
+      timestamp: new Date().toISOString(),
+    }, "✅ Kampanya tanımlandı");
+    setSaving(false);
+  }
+
+  return (
+    <ModalShell title="🎁 Özel Kampanya" onClose={onClose}>
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs font-medium text-slate-700 block mb-1">Kampanya adı</label>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="örn: Bahar İndirimi" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs font-medium text-slate-700 block mb-1">İndirim tipi</label>
+            <select value={type} onChange={e => setType(e.target.value as "percent" | "fixed")} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+              <option value="percent">%</option>
+              <option value="fixed">Sabit ₺</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-700 block mb-1">Tutar</label>
+            <input type="number" value={value} onChange={e => setValue(Number(e.target.value))} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs font-medium text-slate-700 block mb-1">Başlangıç</label>
+            <input type="date" value={start} onChange={e => setStart(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-700 block mb-1">Bitiş</label>
+            <input type="date" value={end} onChange={e => setEnd(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+          </div>
+        </div>
+        <label className="flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={notify} onChange={e => setNotify(e.target.checked)} className="accent-indigo-600" />
+          Bayiye WA bildirimi gönder
+        </label>
+      </div>
+      <div className="flex gap-2 mt-4 justify-end">
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button onClick={handleSave} disabled={saving || !name.trim()} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+          {saving ? "Tanımlanıyor…" : "Kampanyayı Tanımla"}
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+// ── Yeni Sipariş ─────────────────────────────────────────────────────
+function YeniSiparisForm({ dealer, onClose, onSuccess }: { dealer: Dealer; onClose: () => void; onSuccess: ActionModalProps["onSuccess"] }) {
+  const [items, setItems] = useState<Array<{ name: string; qty: number; price: number }>>([
+    { name: "", qty: 1, price: 0 },
+  ]);
+  const [saving, setSaving] = useState(false);
+  const total = items.reduce((s, it) => s + it.qty * it.price, 0);
+
+  function updateItem(idx: number, patch: Partial<{ name: string; qty: number; price: number }>) {
+    setItems(prev => prev.map((it, i) => i === idx ? { ...it, ...patch } : it));
+  }
+  function addItem() { setItems([...items, { name: "", qty: 1, price: 0 }]); }
+  function removeItem(idx: number) { setItems(items.filter((_, i) => i !== idx)); }
+
+  async function handleSave() {
+    const valid = items.filter(it => it.name.trim() && it.qty > 0 && it.price > 0);
+    if (valid.length === 0) return;
+    setSaving(true);
+    await new Promise(r => setTimeout(r, 400));
+    onSuccess({
+      type: "order",
+      icon: "🛒",
+      title: `Sipariş — ${valid.length} kalem`,
+      detail: `${formatTry(total)} · ${dealer.name}`,
+      timestamp: new Date().toISOString(),
+    }, "✅ Sipariş oluşturuldu");
+    setSaving(false);
+  }
+
+  return (
+    <ModalShell title="➕ Yeni Sipariş" onClose={onClose}>
+      <p className="text-xs text-slate-500 mb-3">Bayi: <strong>{dealer.name}</strong></p>
+      <div className="space-y-2">
+        {items.map((it, idx) => (
+          <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+            <input
+              value={it.name}
+              onChange={e => updateItem(idx, { name: e.target.value })}
+              placeholder="Ürün adı"
+              className="col-span-6 border border-slate-200 rounded-lg px-2 py-1.5 text-sm"
+            />
+            <input
+              type="number"
+              value={it.qty}
+              onChange={e => updateItem(idx, { qty: Number(e.target.value) })}
+              min={1}
+              className="col-span-2 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-center"
+            />
+            <input
+              type="number"
+              value={it.price}
+              onChange={e => updateItem(idx, { price: Number(e.target.value) })}
+              placeholder="₺"
+              className="col-span-3 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-right"
+            />
+            <button onClick={() => removeItem(idx)} className="col-span-1 text-rose-500 text-xl leading-none">×</button>
+          </div>
+        ))}
+        <button onClick={addItem} className="text-xs text-indigo-600 hover:underline">+ Kalem ekle</button>
+      </div>
+      <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
+        <span className="text-sm text-slate-600">Toplam</span>
+        <span className="text-lg font-bold">{formatTry(total)}</span>
+      </div>
+      <div className="flex gap-2 mt-4 justify-end">
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button onClick={handleSave} disabled={saving || total === 0} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+          {saving ? "Kaydediliyor…" : "Siparişi Oluştur"}
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+// ── Düzenle ──────────────────────────────────────────────────────────
+function DuzenleForm({ dealer, onClose, onSuccess }: { dealer: Dealer; onClose: () => void; onSuccess: ActionModalProps["onSuccess"] }) {
+  const [name, setName] = useState(dealer.name);
+  const [contactName, setContactName] = useState(dealer.contactName || "");
+  const [phone, setPhone] = useState(dealer.contactPhone || "");
+  const [email, setEmail] = useState(dealer.email || "");
+  const [city, setCity] = useState(dealer.city || "");
+  const [address, setAddress] = useState(dealer.address || "");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    await new Promise(r => setTimeout(r, 400));
+    onSuccess({
+      type: "note",
+      icon: "✏️",
+      title: "Bayi bilgileri güncellendi",
+      detail: `${name} — ${city || "—"}`,
+      timestamp: new Date().toISOString(),
+    }, "✅ Güncellendi");
+    setSaving(false);
+  }
+
+  return (
+    <ModalShell title="✏️ Bayi Düzenle" onClose={onClose}>
+      <div className="space-y-3">
+        <FieldInput label="Firma adı" value={name} onChange={setName} />
+        <FieldInput label="Yetkili" value={contactName} onChange={setContactName} />
+        <FieldInput label="Telefon" value={phone} onChange={setPhone} />
+        <FieldInput label="E-posta" value={email} onChange={setEmail} />
+        <FieldInput label="Şehir" value={city} onChange={setCity} />
+        <div>
+          <label className="text-xs font-medium text-slate-700 block mb-1">Adres</label>
+          <textarea value={address} onChange={e => setAddress(e.target.value)} rows={2} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+        </div>
+      </div>
+      <div className="flex gap-2 mt-4 justify-end">
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+          {saving ? "Kaydediliyor…" : "Kaydet"}
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+function FieldInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <label className="text-xs font-medium text-slate-700 block mb-1">{label}</label>
+      <input value={value} onChange={e => onChange(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+    </div>
+  );
+}
+
+// ── Durum Değiştir ───────────────────────────────────────────────────
+function DurumForm({ dealer, onClose, onSuccess }: { dealer: Dealer; onClose: () => void; onSuccess: ActionModalProps["onSuccess"] }) {
+  const [status, setStatus] = useState(dealer.isActive ? "aktif" : "pasif");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    await new Promise(r => setTimeout(r, 300));
+    const labels: Record<string, string> = { aktif: "Aktif", pasif: "Pasif", dondurulmus: "Dondurulmuş" };
+    onSuccess({
+      type: "note",
+      icon: "⏸",
+      title: `Durum değişti: ${labels[status]}`,
+      timestamp: new Date().toISOString(),
+    }, "✅ Durum güncellendi");
+    setSaving(false);
+  }
+
+  return (
+    <ModalShell title="⏸ Durum Değiştir" onClose={onClose}>
+      <div className="space-y-2">
+        {[
+          { id: "aktif",        label: "✅ Aktif — sipariş, kampanya, mesaj gönderim açık" },
+          { id: "dondurulmus",  label: "⏸ Dondurulmuş — sadece okuma, yeni sipariş kapalı" },
+          { id: "pasif",        label: "❌ Pasif — listeden gizlenir, etkileşim kapalı" },
+        ].map(opt => (
+          <label key={opt.id} className="flex items-start gap-2 p-2 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+            <input type="radio" name="status" value={opt.id} checked={status === opt.id} onChange={() => setStatus(opt.id)} className="mt-0.5 accent-indigo-600" />
+            <span className="text-sm">{opt.label}</span>
+          </label>
+        ))}
+      </div>
+      <div className="flex gap-2 mt-4 justify-end">
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+          {saving ? "Güncelleniyor…" : "Onayla"}
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+// ── Sil ──────────────────────────────────────────────────────────────
+function SilForm({ dealer, onClose, onSuccess }: { dealer: Dealer; onClose: () => void; onSuccess: ActionModalProps["onSuccess"] }) {
+  const [confirmText, setConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (confirmText !== "SIL") return;
+    setDeleting(true);
+    await new Promise(r => setTimeout(r, 400));
+    onSuccess({
+      type: "note",
+      icon: "🗑",
+      title: "Bayi silindi (soft delete)",
+      timestamp: new Date().toISOString(),
+    }, "🗑 Silindi");
+    setDeleting(false);
+  }
+
+  return (
+    <ModalShell title="🗑 Bayi Sil" onClose={onClose}>
+      <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 mb-3">
+        <p className="text-sm text-rose-800">
+          <strong>{dealer.name}</strong> arşivlenecek. Sipariş geçmişi ve faturalar korunur, ancak bayi listede görünmez.
+          İstediğinizde geri alabilirsiniz.
+        </p>
+      </div>
+      <label className="text-xs font-medium text-slate-700 block mb-1">
+        Onaylamak için &quot;<strong>SIL</strong>&quot; yazın
+      </label>
+      <input
+        value={confirmText}
+        onChange={e => setConfirmText(e.target.value)}
+        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono"
+      />
+      <div className="flex gap-2 mt-4 justify-end">
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button
+          onClick={handleDelete}
+          disabled={deleting || confirmText !== "SIL"}
+          className="px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-lg hover:bg-rose-700 disabled:opacity-50"
+        >
+          {deleting ? "Siliniyor…" : "Sil (geri alınabilir)"}
+        </button>
+      </div>
+    </ModalShell>
+  );
 }
