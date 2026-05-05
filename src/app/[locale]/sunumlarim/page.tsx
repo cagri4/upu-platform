@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+import { ReturnButtons } from "@/components/return-buttons";
+
 const BOT_WA_NUMBER = "31644967207";
 
 interface PresItem {
@@ -98,12 +100,7 @@ export default function SunumlarimPage() {
           </div>
         )}
 
-        <a
-          href={`https://wa.me/${BOT_WA_NUMBER}`}
-          className="block mt-6 bg-green-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg text-center active:scale-95"
-        >
-          💬 WhatsApp&apos;a Dön
-        </a>
+        <ReturnButtons token={token} botPhone={BOT_WA_NUMBER} />
       </div>
     </div>
   );

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useWhatsappDeeplink } from "@/lib/whatsapp-deeplink";
 
+import { ReturnButtons } from "@/components/return-buttons";
+
 const BOT_WA_NUMBER = "31644967207";
 
 const PROPERTY_TYPES = [
@@ -106,8 +108,7 @@ export default function MusteriEkleFormPage() {
     <div className="text-5xl mb-3">🎉</div>
     <h1 className="text-xl font-bold mb-2">Müşteri kaydedildi!</h1>
     <p className="text-slate-600 text-sm mb-6">WhatsApp&apos;a dönerek devam edebilirsiniz.</p>
-    <a href={waReturnHref}
-      className="block bg-green-600 text-white px-6 py-4 rounded-xl font-semibold text-lg">💬 WhatsApp&apos;a Dön</a>
+    <ReturnButtons token={token} botPhone={BOT_WA_NUMBER} />
   </Center>;
 
   return (

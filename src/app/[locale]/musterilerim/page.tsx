@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { whatsappDeeplink } from "@/lib/whatsapp-deeplink";
+import { ReturnButtons } from "@/components/return-buttons";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -152,12 +153,7 @@ export default function MusterilerimPage() {
           </div>
         )}
 
-        <a
-          href={whatsappDeeplink(BOT_WA_NUMBER)}
-          className="block w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-semibold text-base shadow-lg text-center active:scale-95"
-        >
-          💬 WhatsApp&apos;a Dön
-        </a>
+        <ReturnButtons token={token} botPhone={BOT_WA_NUMBER} />
       </div>
     </div>
   );

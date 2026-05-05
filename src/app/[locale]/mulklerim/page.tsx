@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { whatsappDeeplink } from "@/lib/whatsapp-deeplink";
+import { ReturnButtons } from "@/components/return-buttons";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -163,13 +164,19 @@ export default function MulklerimPage() {
           </div>
         )}
 
-        <button
-          onClick={() => void handleFinish()}
-          disabled={finishing}
-          className="block w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-semibold text-base shadow-lg text-center active:scale-95 disabled:opacity-60"
-        >
-          {finishing ? "⏳ Yönlendiriliyor..." : "💬 WhatsApp'a Dön"}
-        </button>
+        <ReturnButtons
+          token={token}
+          botPhone={BOT_WA_NUMBER}
+          onWaReturn={async () => {
+            try {
+              await fetch("/api/mulklerim/finish", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token }),
+              });
+            } catch { /* devam mesajı server'dan after() ile gider */ }
+          }}
+        />
         <p className="text-xs text-slate-500 text-center mt-2 px-4">
           WhatsApp&apos;a döndüğünüzde sıradaki adım için yeni bir mesaj sizi bekliyor olacak.
         </p>

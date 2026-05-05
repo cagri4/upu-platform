@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SahibindenLink } from "@/components/sahibinden-link";
 
+import { ReturnButtons } from "@/components/return-buttons";
+
 const BOT_WA_NUMBER = "31644967207";
 
 const PROPERTY_TYPES = [
@@ -213,12 +215,7 @@ export default function AraPage() {
               ))
             )}
 
-            <a
-              href={`https://wa.me/${BOT_WA_NUMBER}`}
-              className="block bg-green-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg text-center active:scale-95 mt-4"
-            >
-              💬 WhatsApp'a Dön
-            </a>
+            <ReturnButtons token={token} botPhone={BOT_WA_NUMBER} />
             <p className="text-slate-400 text-xs text-center">WhatsApp'ta kalıcı takip için yeni mesaj bekliyor.</p>
           </div>
         )}
