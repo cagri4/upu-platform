@@ -4,25 +4,27 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { whatsappDeeplink } from "@/lib/whatsapp-deeplink";
 import { YARDIM_ENTRIES, type YardimEntry } from "@/lib/yardim-content";
+import { ReturnButtons } from "@/components/return-buttons";
 
 type Status = "loading" | "ready" | "error";
 
+/**
+ * Wow → öğrenme sırası: kullanıcı 1. Profilim ile sistemi tanır,
+ * 2. Portföy Ara ile sahibinden son 24h ilanlarını görüp WOW yaşar,
+ * sonra mülk/sunum/müşteri/sözleşme/web-sayfa öğrenme akışı.
+ * 8'den itibaren ek komutlar (devamı).
+ */
 const PANEL_COMMAND_ORDER = [
-  "mulkekle",
-  "musterilerim",
-  "sunumolustur",
-  "sozlesme",
-  "portfoyara",
-  "ilantakip",
-  "profilduzenle",
-];
-
-const SECTION_ORDER = [
-  "🏠 Mülk Yönetimi",
-  "👥 Müşteri Yönetimi",
-  "🎯 Müşteriye Sunum",
-  "📡 Pazar Tarama",
-  "🪪 Profil",
+  "profilduzenle",   // 1 — sistemi tanı, eksik bilgi tamamla
+  "portfoyara",      // 2 — wow factor, sahibinden son 24h
+  "mulkekle",        // 3
+  "sunumolustur",    // 4
+  "musteriEkle",     // 5
+  "sozlesme",        // 6
+  "websayfam",       // 7
+  "ilantakip",       // 8 — devamı
+  "musterilerim",    // 9
+  "mulklerim",       // 10
 ];
 
 export default function YonetimPaneli() {
@@ -58,15 +60,10 @@ export default function YonetimPaneli() {
     <a href={`https://wa.me/${botPhone}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
 
-  // Panel kartlarını seç + section'a göre grupla
+  // Panel kartları — sıralama: PANEL_COMMAND_ORDER. Section yok, tek liste.
   const cards = PANEL_COMMAND_ORDER
     .map((c) => YARDIM_ENTRIES.find((e) => e.command === c))
     .filter((e): e is YardimEntry => !!e);
-
-  const sections = SECTION_ORDER.map((s) => ({
-    title: s,
-    items: cards.filter((c) => c.panelSection === s),
-  })).filter((s) => s.items.length > 0);
 
   const firstName = (displayName || "").split(/\s+/)[0] || "";
 
@@ -97,53 +94,50 @@ export default function YonetimPaneli() {
           </h1>
           {officeName && <p className="text-emerald-100 text-sm mt-1">🏢 {officeName}</p>}
           <p className="text-emerald-100 text-sm mt-3 leading-relaxed">
-            Sistemini buradan yönet. Her komutun yanındaki <span className="font-mono bg-white/15 px-1.5 py-0.5 rounded">❓</span> ikonuna tıklayarak ne işe yaradığını öğren — &quot;Başlat&quot; butonuna tıklayarak hemen kullanmaya başla.
+            Sırasıyla &quot;Başlat&quot;ı tıklayarak sistemi keşfet. Her komutun <span className="font-mono bg-white/15 px-1.5 py-0.5 rounded">❓</span> ikonuyla ne yapacağını öğren.
           </p>
         </div>
 
-        {/* SECTION'lı KART GRİDİ */}
-        {sections.map((sec) => (
-          <section key={sec.title} className="mb-5">
-            <h2 className="text-sm font-semibold text-slate-700 mb-2 px-1">{sec.title}</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {sec.items.map((entry) => (
-                <div key={entry.command} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <h3 className="font-semibold text-slate-900 text-base leading-tight flex-1">
+        {/* WOW → ÖĞRENME SIRALI KART GRİDİ — section yok, tek akış */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          {cards.map((entry, idx) => (
+            <div key={entry.command} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <h3 className="font-semibold text-slate-900 text-base leading-tight">
                         {entry.title}
                       </h3>
-                      <button
-                        onClick={() => setHelpEntry(entry)}
-                        className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 active:bg-emerald-200 transition flex items-center justify-center text-sm font-bold"
-                        aria-label="Bu komut nedir?"
-                      >
-                        ❓
-                      </button>
                     </div>
-                    <p className="text-xs text-slate-500 leading-relaxed mb-3">{entry.summary}</p>
-                    <a
-                      href={startUrlMobile(entry)}
-                      target={entry.startAction?.type === "wa" ? undefined : "_blank"}
-                      rel={entry.startAction?.type === "wa" ? undefined : "noopener noreferrer"}
-                      className="block text-center bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition active:scale-95"
-                    >
-                      ▶ Başlat
-                    </a>
                   </div>
+                  <button
+                    onClick={() => setHelpEntry(entry)}
+                    className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 active:bg-emerald-200 transition flex items-center justify-center text-sm font-bold"
+                    aria-label="Bu komut nedir?"
+                  >
+                    ❓
+                  </button>
                 </div>
-              ))}
+                <p className="text-xs text-slate-500 leading-relaxed mb-3 ml-8">{entry.summary}</p>
+                <a
+                  href={startUrlMobile(entry)}
+                  target={entry.startAction?.type === "wa" ? undefined : "_blank"}
+                  rel={entry.startAction?.type === "wa" ? undefined : "noopener noreferrer"}
+                  className="block text-center bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition active:scale-95"
+                >
+                  ▶ Başlat
+                </a>
+              </div>
             </div>
-          </section>
-        ))}
+          ))}
+        </div>
 
-        {/* WA'ya dön footer */}
-        <a
-          href={whatsappDeeplink(botPhone)}
-          className="block w-full mt-8 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-semibold text-base shadow-lg text-center active:scale-95"
-        >
-          💬 WhatsApp&apos;a Dön
-        </a>
+        {/* WA'ya dön footer — WebView aware */}
+        <ReturnButtons token={token} botPhone={botPhone} showPanel={false} />
         <p className="text-xs text-slate-500 text-center mt-3 px-4">
           WhatsApp&apos;tan hızlı kullanım için: komut adını yaz (örn. <span className="font-mono">mulkekle</span>).
         </p>

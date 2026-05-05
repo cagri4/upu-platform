@@ -239,6 +239,31 @@ export const YARDIM_ENTRIES: YardimEntry[] = [
     ],
   },
   {
+    command: "websayfam",
+    title: "🌐 Web Sayfam",
+    summary: "Müşterilerine paylaştığın kişisel landing sayfası.",
+    panelSection: "🪪 Profil",
+    startAction: { type: "wa", text: "websayfam" },
+    marketing:
+      "Müşterilerinize WhatsApp'tan paylaşacağınız kişisel landing sayfası — fotoğraf, ofis bilgisi, hizmetlerin, referanslar ve aktif portföy listesi tek URL'de. " +
+      "Yeni tanıştığınız müşteri linki açtığında profesyonel görünür, güven çağrıştırır, doğrudan iletişim butonuyla seninle bağlantı kurar. " +
+      "*Sorunu çözer*: \"Kartınız var mı, kim olduğunuzu nereden bileyim\". *Kazandırır*: Kişisel marka + 7/24 çalışan dijital görünüm.",
+    waCommand: "websayfam",
+    what: "Kişisel landing sayfanızı düzenleme akışı. Foto, hizmetler, referanslar, aktif mülk listesi public URL'de gösterilir (/u/<slug>).",
+    how: [
+      "WhatsApp'ta *websayfam* yaz veya menüden Web Sayfam'ı seç.",
+      "Düzenleme magic linki gelir — aç.",
+      "Hero foto, başlık, alt başlık, hizmetler, referans bölümlerini doldur.",
+      "Kaydet → public URL anında güncellenir.",
+      "Public URL'yi (örn. estateai.upudev.nl/u/ahmet-yilmaz) müşterilerine paylaşabilirsin.",
+    ],
+    example: "Müşterin seninle yeni tanıştı, \"Kartını verir misin?\" diye sordu. Web sayfamı yolla — fotoğraf, ofis, son 5 mülk, referanslar tek tıkla. Ertesi gün senin adın aklında.",
+    faq: [
+      { q: "Slug'ı nasıl değiştiririm?", a: "Şu an slug otomatik (display_name'den). Manuel değişim için destek." },
+      { q: "Hangi mülkler gösterilir?", a: "Status='aktif' olan tüm mülkler otomatik. Gizlemek için mülk kartında \"gizle\" yapılabilir (yol haritasında)." },
+    ],
+  },
+  {
     command: "profilduzenle",
     title: "🪪 Profilim",
     summary: "Adın, ofis adın, foto, contact info — public landing'i besler.",
