@@ -28,6 +28,7 @@ import { handleSunumOlustur } from "./sunum-olustur";
 import { handleMulklerim } from "./mulklerim";
 import { handleProfilDuzenle } from "./profil-duzenle";
 import { handleWebSayfam } from "./web-sayfam";
+import { handleYardim } from "./yardim";
 
 export const emlakCommands: TenantCommandRegistry = {
   commands: {
@@ -60,6 +61,7 @@ export const emlakCommands: TenantCommandRegistry = {
     sozlesmelerim: handleSozlesmelerim,
     webpanel: handleWebpanel,
     ipucu: handleIpucu,
+    yardim: handleYardim,
   },
   stepHandlers: {
     mulkekle: handleMulkEkleStep,
@@ -146,5 +148,9 @@ export const emlakCommands: TenantCommandRegistry = {
     "ipuçları": "ipucu",
     "tip": "ipucu",
     "tipler": "ipucu",
+    "yardım": "yardim",
+    "help": "yardim",
+    "rehber": "yardim",
+    "kılavuz": "yardim",
   },
 };

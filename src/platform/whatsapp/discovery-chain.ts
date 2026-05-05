@@ -2,21 +2,16 @@
  * Discovery Chain — guided first-use flow through killer features.
  *
  * After onboarding, each completed feature naturally suggests the next,
- * creating a chain of real product usage. The state machine is per-tenant
- * because each SaaS has a different killer feature sequence:
+ * creating a chain of real product usage. State machine per-tenant.
  *
- *   emlak: mulk_eklendi → sunum_hazir → tarama_kuruldu → portfoy_tanitildi
- *   bayi:  firma_kaydedildi → demo_seed_yuklendi
+ *   bayi:        firma_kaydedildi → demo_seed_yuklendi → 7 tur adımı
+ *   siteyonetim: setup_complete → 7 tur adımı
+ *   emlak:       KALDIRILDI 2026-05-05 — free-ride pattern (tour yok)
  *
  * Bayi 2026-05-04 sonrası demo akış: profil kaydedildikten sonra sektör
  * bazlı örnek veri yüklenir ("Devam Et" butonu), ardından kapanış mesajı.
- * Eski 4-adım manuel akış (urun_eklendi → bayi_davet → kampanya) demo
- * mode'da yerini tek-tıkla seed'e bıraktı; manuel ürün ekleme artık
- * "Ürünler" sayfasındaki "Yeni Ürün" butonuyla erişilir.
  *
  * State is stored in profiles.metadata.discovery_steps[tenantKey] (number).
- * The legacy emlak-only key profiles.metadata.discovery_step is still read
- * as a fallback so existing in-flight users don't lose their progress.
  *
  * Unlike gamification:
  *   - No XP, no streaks, no tiers
@@ -61,7 +56,8 @@ const MAX_STEP_BY_TENANT: Record<string, number> = {
 };
 
 const APP_URL_BY_TENANT: Record<string, string> = {
-  emlak: "https://estateai.upudev.nl",
+  // emlak free-ride — tour-bağımlı magic link yok; emlak/menu.ts kendi
+  // NEXT_PUBLIC_APP_URL fallback'iyle çalışır.
   bayi: "https://retailai.upudev.nl",
   siteyonetim: "https://residenceai.upudev.nl",
 };
@@ -74,10 +70,6 @@ export async function getDiscoveryStep(userId: string, tenantKey: string): Promi
   const meta = (data?.metadata || {}) as Record<string, unknown>;
   const steps = (meta.discovery_steps || {}) as Record<string, number>;
   if (typeof steps[tenantKey] === "number") return steps[tenantKey];
-  // Backward-compat: emlak's old metadata.discovery_step
-  if (tenantKey === "emlak" && typeof meta.discovery_step === "number") {
-    return meta.discovery_step as number;
-  }
   return 0;
 }
 
@@ -86,9 +78,7 @@ export async function setDiscoveryStep(userId: string, tenantKey: string, step: 
   const { data } = await sb.from("profiles").select("metadata").eq("id", userId).maybeSingle();
   const meta = (data?.metadata || {}) as Record<string, unknown>;
   const steps = { ...((meta.discovery_steps || {}) as Record<string, number>), [tenantKey]: step };
-  // Mirror to legacy emlak field while emlak callers still expect it.
   const newMeta: Record<string, unknown> = { ...meta, discovery_steps: steps };
-  if (tenantKey === "emlak") newMeta.discovery_step = step;
   await sb.from("profiles").update({ metadata: newMeta }).eq("id", userId);
 }
 

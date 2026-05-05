@@ -63,40 +63,25 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   // Mark onboarding completed
   const { data: profile } = await supabase
     .from("profiles")
-    .select("metadata")
+    .select("metadata, display_name")
     .eq("id", ctx.userId)
     .single();
   const newMeta = {
     ...(profile?.metadata as Record<string, unknown> || {}),
     onboarding_completed: true,
-    // Free-ride pattern: emlak chain kaldırıldı; intro sonrası kullanıcı
-    // serbest mod'da. Tour tetikleyicileri (mulk_eklendi/sunum_hazir/...) artık
-    // advanceDiscovery'ye gitmiyor.
+    // Free-ride pattern (2026-05-05): emlak'ta tour kaldırıldı; intro
+    // sonrası kullanıcı doğrudan komut menüsünü görür ve istediği yere gider.
     discovery_step: "completed",
   };
   await supabase.from("profiles").update({ metadata: newMeta }).eq("id", ctx.userId);
 
-  // Flow 1: DEMO ARAMA — "Bak sana uyan yeni ilanları birlikte görelim"
-  // /tr/ara form açılır, kullanıcı kriter seçer → sonuçlar alta döker.
-  // Demo araması tamamlanınca /api/ara/save takip kurma mesajını tetikler.
-  const { randomBytes } = await import("crypto");
-  const araToken = randomBytes(16).toString("hex");
-  // Discovery chain — kullanıcı sabah 06:03 mesajını alıyor; 2sa TTL gün içinde
-  // dolup "Linkin süresi dolmuş" hatasıyla kapatıyordu. 7 güne uzatıldı.
-  const araExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  await supabase.from("magic_link_tokens").insert({
-    user_id: ctx.userId,
-    token: araToken,
-    expires_at: araExpires,
-  });
-  const araUrl = `https://estateai.upudev.nl/tr/ara?t=${araToken}`;
-
-  const { sendUrlButton } = await import("./send");
-  await sendUrlButton(ctx.phone,
-    `🔍 *Şimdi arama kriterlerinize uygun olarak en yeni ilanları birlikte görelim.*\n\nAşağıdaki formdan ilan tipi, mülk tipi ve fiyat aralığını seçin — son 24 saatte yayınlanan uyan sahibi ilanlar altta dökülecek.\n\n💡 Aynı sayfada mülk tipini değiştirerek farklı sonuçlara da ulaşabilirsiniz.\n\n_(Bu sayfaya istediğiniz zaman ana menü > 🔍 Portföy Ara komutu ile geri dönebilirsiniz.)_`,
-    "🔍 Hızlı Arama",
-    araUrl,
-    { skipNav: true },
+  // Free-ride pattern: tek otomatik push = ana komut menüsü.
+  // Eski "Hızlı Arama" yönlendirmesi kaldırıldı (kullanıcı zorla göreve
+  // sokulmuyor). Menü greet=false — selamlama zaten introMsg'da var.
+  const { sendEmlakMenu } = await import("@/tenants/emlak/menu");
+  await sendEmlakMenu(
+    { userId: ctx.userId, phone: ctx.phone, userName: (profile?.display_name as string) || ctx.userName || "" },
+    false,
   );
 
   return true;
