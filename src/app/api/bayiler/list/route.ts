@@ -118,14 +118,21 @@ export async function GET(req: NextRequest) {
   const dealerIds = workingDealers.map((d: { id: string }) => d.id);
   const safeIds = dealerIds.length ? dealerIds : ["00000000-0000-0000-0000-000000000000"];
 
-  // Vade durumu — bayi_dealer_invoices'tan en geç vade
-  const { data: invoices, error: invErr } = await supabase
-    .from("bayi_dealer_invoices")
-    .select("*")
-    .in("dealer_id", safeIds);
-  if (invErr) console.error("[bayiler:list] invoices query failed (devam):", invErr);
+  // Vade durumu — bayi_dealer_transactions'tan (sale type, due_date geçmiş).
+  // bayi_dealer_invoices'ta due_date kolonu yok; vade tracking transactions'da.
+  // Sale type ('debit' balance_effect) bayi'nin borcunu temsil eder.
+  const { data: txTypes } = await supabase
+    .from("bayi_transaction_types")
+    .select("id, code");
+  const saleTypeId = (txTypes || []).find(t => t.code === "sale")?.id;
 
-  // Son sipariş — bayi_orders (status kolon farklı şemalarda olabilir → *)
+  const { data: transactions, error: txErr } = await supabase
+    .from("bayi_dealer_transactions")
+    .select("dealer_id, due_date, transaction_type_id, amount")
+    .in("dealer_id", safeIds);
+  if (txErr) console.error("[bayiler:list] transactions query failed (devam):", txErr);
+
+  // Son sipariş — bayi_orders
   const { data: lastOrders, error: ordErr } = await supabase
     .from("bayi_orders")
     .select("*")
@@ -135,12 +142,13 @@ export async function GET(req: NextRequest) {
 
   const today = new Date();
   const dealerVade = new Map<string, number | null>();
-  for (const inv of (invoices || []) as Array<{ dealer_id: string; due_date: string; is_paid: boolean }>) {
-    if (inv.is_paid || !inv.due_date) continue;
-    const due = new Date(inv.due_date);
+  for (const tx of (transactions || []) as Array<{ dealer_id: string; due_date: string | null; transaction_type_id: string }>) {
+    if (!tx.due_date) continue;
+    if (saleTypeId && tx.transaction_type_id !== saleTypeId) continue;
+    const due = new Date(tx.due_date);
     const diff = Math.floor((today.getTime() - due.getTime()) / 86400000);
-    const prev = dealerVade.get(inv.dealer_id) ?? null;
-    if (prev === null || diff > prev) dealerVade.set(inv.dealer_id, diff);
+    const prev = dealerVade.get(tx.dealer_id) ?? null;
+    if (prev === null || diff > prev) dealerVade.set(tx.dealer_id, diff);
   }
 
   const dealerLastOrder = new Map<string, { id: string; date: string; total: number }>();

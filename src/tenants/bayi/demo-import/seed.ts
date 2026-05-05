@@ -138,53 +138,111 @@ export async function seedTenantDemoData(
     return { ok: false, reason: `Bayi insert hatası: ${dErr?.message || "unknown"}`, sector: dataset.slug };
   }
 
-  // 3) Siparişler
-  const ordersPayload = dataset.orders.map(o => {
+  // 3) Siparişler — gerçek schema (probe-schema-deep.mjs):
+  // bayi_orders: id, tenant_id, order_number, dealer_id, status_id (UUID FK),
+  //   subtotal, discount_amount, total_amount, notes, vehicle_plate,
+  //   driver_name, driver_phone, cargo_notes
+  // bayi_order_items: id, tenant_id, order_id, product_id, product_code,
+  //   product_name, quantity, unit_price, total_price
+  // status_id lookup: bayi_order_statuses tablosundan code → id map.
+  const { data: statuses } = await supabase
+    .from("bayi_order_statuses")
+    .select("id, code");
+  const statusMap = new Map<string, string>();
+  for (const s of statuses || []) statusMap.set(s.code as string, s.id as string);
+
+  const today = new Date();
+  // Önce orders insert et (id alacağız), sonra order_items
+  const ordersPayload = dataset.orders.map((o, idx) => {
     const productData = dataset.products[o.product_index];
     const total = productData.unit_price * o.quantity;
-    const createdAt = new Date(Date.now() - o.days_ago * 86400000).toISOString();
     return {
       tenant_id: tenantId,
-      user_id: ownerId,
+      order_number: `DEMO-${dataset.slug.toUpperCase()}-O${String(idx + 1).padStart(4, "0")}`,
       dealer_id: dealers[o.dealer_index]?.id,
-      product_id: products[o.product_index]?.id,
-      quantity: o.quantity,
-      unit_price: productData.unit_price,
+      status_id: statusMap.get(o.status) || null,
+      subtotal: total,
+      discount_amount: 0,
       total_amount: total,
-      status: o.status,
-      created_at: createdAt,
+      created_at: new Date(today.getTime() - o.days_ago * 86400000).toISOString(),
     };
   });
-  const { error: oErr } = await supabase.from("bayi_orders").insert(ordersPayload);
+  const { data: insertedOrders, error: oErr } = await supabase
+    .from("bayi_orders")
+    .insert(ordersPayload)
+    .select("id");
   if (oErr) {
-    return { ok: false, reason: `Sipariş insert hatası: ${oErr.message}`, sector: dataset.slug };
+    console.warn(`[seed] orders insert hata: ${oErr.message}`);
+  } else if (insertedOrders) {
+    const itemsPayload = dataset.orders.map((o, idx) => {
+      const productData = dataset.products[o.product_index];
+      const total = productData.unit_price * o.quantity;
+      return {
+        tenant_id: tenantId,
+        order_id: insertedOrders[idx]?.id,
+        product_id: products[o.product_index]?.id,
+        product_code: productData.code,
+        product_name: productData.name,
+        quantity: o.quantity,
+        unit_price: productData.unit_price,
+        total_price: total,
+      };
+    });
+    const { error: itemsErr } = await supabase.from("bayi_order_items").insert(itemsPayload);
+    if (itemsErr) console.warn(`[seed] order_items insert hata: ${itemsErr.message}`);
   }
 
-  // 4) Vade hareketleri (faturalar) — defensive insert.
-  // bayi_dealer_invoices schema'sında paid_at kolonu farklı ortamlarda
-  // var/yok olabilir (mark-paid endpoint'i de fallback yapıyor). Önce
-  // paid_at'li dene; "column ... does not exist" hatasında retry.
-  const today = new Date();
+  // 4a) Faturalar — minimal schema (id, tenant_id, dealer_id, invoice_number,
+  // invoice_date, total_amount, created_at). due_date YOK; vade hareketi
+  // bayi_dealer_transactions tablosunda tutuluyor.
   const baseInvoicePayload = dataset.invoices.map((inv, idx) => ({
     tenant_id: tenantId,
     dealer_id: dealers[inv.dealer_index]?.id,
-    invoice_no: `DEMO-${dataset.slug.toUpperCase()}-${String(idx + 1).padStart(4, "0")}`,
-    amount: inv.amount,
-    is_paid: inv.is_paid,
-    due_date: new Date(today.getTime() + inv.due_days_offset * 86400000).toISOString().slice(0, 10),
-  }));
-  const withPaidAt = baseInvoicePayload.map((p, i) => ({
-    ...p,
-    paid_at: dataset.invoices[i].is_paid ? new Date(Date.now() - 86400000).toISOString() : null,
+    invoice_number: `DEMO-${dataset.slug.toUpperCase()}-${String(idx + 1).padStart(4, "0")}`,
+    invoice_date: new Date(today.getTime() + inv.due_days_offset * 86400000).toISOString().slice(0, 10),
+    total_amount: inv.amount,
   }));
 
-  let iErr = (await supabase.from("bayi_dealer_invoices").insert(withPaidAt)).error;
-  if (iErr && /paid_at|column/i.test(iErr.message || "")) {
-    console.warn("[seed] paid_at kolonu yok — retry without paid_at");
-    iErr = (await supabase.from("bayi_dealer_invoices").insert(baseInvoicePayload)).error;
+  let iErr = (await supabase.from("bayi_dealer_invoices").insert(baseInvoicePayload)).error;
+  if (iErr && /invoice_no\b|amount\b|paid_at|column/i.test(iErr.message || "")) {
+    console.warn("[seed] invoice schema farkı — atlandı:", iErr.message);
+    iErr = null;
   }
   if (iErr) {
-    return { ok: false, reason: `Vade insert hatası: ${iErr.message}`, sector: dataset.slug };
+    console.warn(`[seed] invoice insert hata (devam): ${iErr.message}`);
+  }
+
+  // 4b) Vade hareketleri — bayi_dealer_transactions (gerçek vade DB).
+  // Schema: tenant_id, dealer_id, transaction_type_id (UUID FK), amount,
+  //   description (NOT NULL), transaction_date (NOT NULL), due_date,
+  //   reference_number, order_id, notes, created_at
+  // bayi_transaction_types lookup: 'sale' = debit (bayi borçlanır).
+  // Sale transaction.due_date = vade tarihi → list endpoint en eski overdue.
+  const { data: txTypes } = await supabase
+    .from("bayi_transaction_types")
+    .select("id, code");
+  const saleTypeId = (txTypes || []).find(t => t.code === "sale")?.id;
+
+  if (saleTypeId) {
+    const txPayload = dataset.invoices.map((inv, idx) => {
+      const dueDate = new Date(today.getTime() + inv.due_days_offset * 86400000);
+      // Satış tarihi vadenin önce olsun (örn 30 gün önce sale, 12 gün geçmiş due)
+      const txDate = new Date(dueDate.getTime() - 30 * 86400000);
+      return {
+        tenant_id: tenantId,
+        dealer_id: dealers[inv.dealer_index]?.id,
+        transaction_type_id: saleTypeId,
+        amount: inv.amount,
+        description: `DEMO satış #${idx + 1} — ${dataset.slug}`,
+        transaction_date: txDate.toISOString(),
+        due_date: dueDate.toISOString().slice(0, 10),
+        reference_number: `DEMO-${dataset.slug.toUpperCase()}-T${String(idx + 1).padStart(4, "0")}`,
+      };
+    });
+    const { error: txErr } = await supabase.from("bayi_dealer_transactions").insert(txPayload);
+    if (txErr) console.warn(`[seed] transactions insert hata (devam): ${txErr.message}`);
+  } else {
+    console.warn(`[seed] sale transaction_type bulunamadı — vade hareketleri atlandı`);
   }
 
   return {

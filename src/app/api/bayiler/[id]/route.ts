@@ -53,30 +53,55 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
   }
   if (!dealer) return NextResponse.json({ error: "Bayi bulunamadı veya yetki yok." }, { status: 404 });
 
-  // Vade / faturalar — schema kolon farkları için *
+  // Faturalar — minimal schema (id, tenant_id, dealer_id, invoice_number,
+  // invoice_date, total_amount, created_at). due_date YOK; vade tracking
+  // bayi_dealer_transactions'da.
   const { data: invoices, error: invErr } = await supabase
     .from("bayi_dealer_invoices")
     .select("*")
     .eq("dealer_id", id)
-    .order("due_date", { ascending: false });
+    .order("invoice_date", { ascending: false });
   if (invErr) console.error("[bayiler:detail] invoices query failed (devam):", invErr);
+
+  // Vade hareketleri — bayi_dealer_transactions (sale type, due_date)
+  const { data: txTypes } = await supabase
+    .from("bayi_transaction_types")
+    .select("id, code");
+  const saleTypeId = (txTypes || []).find(t => t.code === "sale")?.id;
+  const paymentTypeId = (txTypes || []).find(t => t.code === "payment")?.id;
+
+  const { data: transactions } = await supabase
+    .from("bayi_dealer_transactions")
+    .select("id, dealer_id, transaction_type_id, amount, due_date, transaction_date, description, reference_number, created_at")
+    .eq("dealer_id", id)
+    .order("transaction_date", { ascending: false });
 
   const today = new Date();
   let mostOverdueDays: number | null = null;
   let openTotal = 0;
   let paidTotal = 0;
-  for (const inv of invoices || []) {
-    if (inv.is_paid) {
-      paidTotal += Number(inv.amount) || 0;
-    } else {
-      openTotal += Number(inv.amount) || 0;
-      const due = new Date(inv.due_date);
-      const diff = Math.floor((today.getTime() - due.getTime()) / 86400000);
-      if (mostOverdueDays === null || diff > mostOverdueDays) mostOverdueDays = diff;
+  for (const tx of (transactions || []) as Array<{
+    transaction_type_id: string; amount: number; due_date: string | null;
+  }>) {
+    const amt = Number(tx.amount) || 0;
+    if (saleTypeId && tx.transaction_type_id === saleTypeId) {
+      openTotal += amt;
+      if (tx.due_date) {
+        const due = new Date(tx.due_date);
+        const diff = Math.floor((today.getTime() - due.getTime()) / 86400000);
+        if (mostOverdueDays === null || diff > mostOverdueDays) mostOverdueDays = diff;
+      }
+    } else if (paymentTypeId && tx.transaction_type_id === paymentTypeId) {
+      paidTotal += amt;
     }
   }
 
-  // Siparişler (son 20)
+  // Siparişler (son 20) + status code lookup
+  const { data: statuses } = await supabase
+    .from("bayi_order_statuses")
+    .select("id, code, name");
+  const statusCodeMap = new Map((statuses || []).map(s => [s.id, s.code as string]));
+
   const { data: orders, error: ordErr } = await supabase
     .from("bayi_orders")
     .select("*")
@@ -84,6 +109,23 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
     .order("created_at", { ascending: false })
     .limit(20);
   if (ordErr) console.error("[bayiler:detail] orders query failed (devam):", ordErr);
+
+  // Order items (her sipariş için kalemler)
+  const orderIds = (orders || []).map((o: { id: string }) => o.id);
+  const { data: orderItems } = await supabase
+    .from("bayi_order_items")
+    .select("order_id, product_name, quantity, unit_price, total_price")
+    .in("order_id", orderIds.length ? orderIds : ["00000000-0000-0000-0000-000000000000"]);
+  const itemsByOrder = new Map<string, Array<{ product_name: string; quantity: number; unit_price: number; total_price: number }>>();
+  for (const it of (orderItems || []) as Array<{ order_id: string; product_name: string; quantity: number; unit_price: number; total_price: number }>) {
+    if (!itemsByOrder.has(it.order_id)) itemsByOrder.set(it.order_id, []);
+    itemsByOrder.get(it.order_id)!.push({
+      product_name: it.product_name,
+      quantity: Number(it.quantity) || 0,
+      unit_price: Number(it.unit_price) || 0,
+      total_price: Number(it.total_price) || 0,
+    });
+  }
 
   // Notlar / mesajlar / kampanyalar — opsiyonel tablolar; yoksa null/boş.
   const { data: notes } = await supabase
@@ -136,22 +178,32 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
       timestamp: m.created_at,
     });
   }
-  for (const inv of invoices || []) {
-    if (inv.is_paid && inv.paid_at) {
-      timeline.push({
-        type: "invoice_paid",
-        icon: "✅",
-        title: `Fatura ödendi: ${inv.invoice_no}`,
-        detail: `${Number(inv.amount).toLocaleString("tr-TR")} ₺`,
-        timestamp: inv.paid_at,
-      });
-    }
+  for (const inv of (invoices || []) as Array<{ invoice_number: string; total_amount: number; invoice_date: string; created_at: string }>) {
+    timeline.push({
+      type: "invoice_paid",
+      icon: "📄",
+      title: `Fatura kesildi: ${inv.invoice_number}`,
+      detail: `${Number(inv.total_amount).toLocaleString("tr-TR")} ₺`,
+      timestamp: inv.created_at || inv.invoice_date,
+    });
   }
-  for (const o of orders || []) {
+  for (const tx of (transactions || []) as Array<{ transaction_type_id: string; amount: number; description: string; transaction_date: string; due_date: string | null; reference_number: string | null }>) {
+    const isSale = saleTypeId && tx.transaction_type_id === saleTypeId;
+    const isPayment = paymentTypeId && tx.transaction_type_id === paymentTypeId;
+    timeline.push({
+      type: isPayment ? "invoice_paid" : "invoice_due",
+      icon: isPayment ? "✅" : isSale ? "💰" : "📊",
+      title: isPayment ? "Ödeme alındı" : isSale ? `Satış işlemi${tx.due_date ? ` — vade ${tx.due_date}` : ""}` : (tx.description || "İşlem"),
+      detail: `${Number(tx.amount).toLocaleString("tr-TR")} ₺${tx.reference_number ? ` · ${tx.reference_number}` : ""}`,
+      timestamp: tx.transaction_date,
+    });
+  }
+  for (const o of (orders || []) as Array<{ status_id: string; total_amount: number; created_at: string; order_number: string }>) {
+    const code = statusCodeMap.get(o.status_id) || "unknown";
     timeline.push({
       type: "order",
       icon: "🛒",
-      title: `Sipariş — ${o.status}`,
+      title: `Sipariş ${o.order_number} — ${code}`,
       detail: `${Number(o.total_amount).toLocaleString("tr-TR")} ₺`,
       timestamp: o.created_at,
     });
@@ -217,21 +269,42 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
     },
     invoices: (invoices || []).slice(0, 10).map(inv => ({
       id: inv.id,
-      invoiceNo: inv.invoice_no,
-      amount: Number(inv.amount) || 0,
-      isPaid: inv.is_paid,
-      dueDate: inv.due_date,
-      paidAt: inv.paid_at,
-      overdueDays: inv.is_paid ? null : Math.floor((today.getTime() - new Date(inv.due_date).getTime()) / 86400000),
+      invoiceNo: inv.invoice_number,
+      amount: Number(inv.total_amount) || 0,
+      isPaid: false,                       // bu tablo paid bilgisi tutmaz
+      dueDate: inv.invoice_date,
+      paidAt: null,
+      overdueDays: null,
     })),
-    orders: (orders || []).map(o => ({
+    transactions: (transactions || []).slice(0, 15).map(tx => {
+      const isSale = saleTypeId && tx.transaction_type_id === saleTypeId;
+      const isPayment = paymentTypeId && tx.transaction_type_id === paymentTypeId;
+      const overdueDays = tx.due_date ? Math.floor((today.getTime() - new Date(tx.due_date).getTime()) / 86400000) : null;
+      return {
+        id: tx.id,
+        type: isSale ? "sale" : isPayment ? "payment" : "other",
+        amount: Number(tx.amount) || 0,
+        description: tx.description,
+        transactionDate: tx.transaction_date,
+        dueDate: tx.due_date,
+        overdueDays,
+        referenceNumber: tx.reference_number,
+      };
+    }),
+    orders: (orders || []).map(o => {
+      const items = itemsByOrder.get(o.id) || [];
+      const totalQty = items.reduce((s, it) => s + it.quantity, 0);
+      return {
       id: o.id,
+      orderNumber: o.order_number,
       total: Number(o.total_amount) || 0,
-      status: o.status,
-      quantity: o.quantity || 0,
-      unitPrice: Number(o.unit_price) || 0,
+      status: statusCodeMap.get(o.status_id) || "pending",
+      quantity: totalQty,
+      unitPrice: items[0]?.unit_price || 0,
+      items: items.map(it => ({ name: it.product_name, qty: it.quantity, price: it.unit_price, total: it.total_price })),
       createdAt: o.created_at,
-    })),
+      };
+    }),
     timeline: timeline.slice(0, 30),
     campaigns: (campaigns || []).map(c => ({
       id: c.id,

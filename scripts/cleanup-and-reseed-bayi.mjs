@@ -74,21 +74,27 @@ if (dryRun) {
 }
 
 // ── 2. DELETE eski veri ────────────────────────────────────────────
+// SIRA FK constraint'lere göre: child tablolar önce, parent sonra.
+//   bayi_dealer_transactions → dealers'a FK
+//   bayi_dealer_invoices → dealers'a FK
+//   bayi_order_items → orders + products'a FK
+//   bayi_orders → dealers'a FK
+//   bayi_dealers ↓ tüm yukarıdakiler bağımlı
+//   bayi_products ↑ order_items bağımlı
 const tables = [
+  "bayi_dealer_transactions",
   "bayi_dealer_invoices",
+  "bayi_dealer_notes",
+  "bayi_dealer_messages",
+  "bayi_dealer_campaigns",
+  "bayi_order_items",
   "bayi_orders",
   "bayi_dealers",
   "bayi_products",
 ];
-const optionalTables = [
-  "bayi_dealer_notes",
-  "bayi_dealer_messages",
-  "bayi_dealer_campaigns",
-  "bayi_dealer_transactions",
-];
 
 console.log(`\n🗑  DELETE eski veri (tenant ${tenantId}):\n`);
-for (const t of [...tables, ...optionalTables]) {
+for (const t of tables) {
   const { count: before } = await sb.from(t).select("id", { count: "exact", head: true }).eq("tenant_id", tenantId);
   if (before === null) {
     console.log(`  ${t.padEnd(28)} (tablo yok / erişim yok, atla)`);
@@ -240,65 +246,88 @@ for (let i = 0; i < dealers.length; i++) {
   }
 }
 
-// 3c) Siparişler
-const ordersPayload = dataset.orders.map(o => {
+// 3c) Siparişler — gerçek schema (probe-schema-deep.mjs):
+// bayi_orders: tenant_id, order_number, dealer_id, status_id (UUID FK),
+//   subtotal, discount_amount, total_amount, ...
+// bayi_order_items: tenant_id, order_id, product_id, product_code,
+//   product_name, quantity, unit_price, total_price
+const { data: statuses } = await sb.from("bayi_order_statuses").select("id, code");
+const statusMap = new Map((statuses || []).map(s => [s.code, s.id]));
+
+const today = new Date();
+const ordersPayload = dataset.orders.map((o, idx) => {
   const productData = dataset.products[o.product_index];
+  const total = productData.unit_price * o.quantity;
   return {
-    tenant_id: tenantId, user_id: profileId,
+    tenant_id: tenantId,
+    order_number: `DEMO-${dataset.slug.toUpperCase()}-O${String(idx + 1).padStart(4, "0")}`,
     dealer_id: dealers[o.dealer_index]?.id,
-    product_id: products[o.product_index]?.id,
-    quantity: o.quantity,
-    unit_price: productData.unit_price,
-    total_amount: productData.unit_price * o.quantity,
-    status: o.status,
-    created_at: new Date(Date.now() - o.days_ago * 86400000).toISOString(),
+    status_id: statusMap.get(o.status) || null,
+    subtotal: total,
+    discount_amount: 0,
+    total_amount: total,
+    created_at: new Date(today.getTime() - o.days_ago * 86400000).toISOString(),
   };
 });
-const { error: oErr } = await sb.from("bayi_orders").insert(ordersPayload);
-if (oErr) console.warn(`  ⚠️  Sipariş insert hata (devam): ${oErr.message}`);
-else console.log(`  📋 ${ordersPayload.length} sipariş insert`);
+const { data: insertedOrders, error: oErr } = await sb.from("bayi_orders").insert(ordersPayload).select("id");
+if (oErr) {
+  console.warn(`  ⚠️  Sipariş insert hata: ${oErr.message}`);
+} else {
+  console.log(`  📋 ${insertedOrders.length} sipariş insert`);
+  const itemsPayload = dataset.orders.map((o, idx) => {
+    const productData = dataset.products[o.product_index];
+    return {
+      tenant_id: tenantId,
+      order_id: insertedOrders[idx]?.id,
+      product_id: products[o.product_index]?.id,
+      product_code: productData.code,
+      product_name: productData.name,
+      quantity: o.quantity,
+      unit_price: productData.unit_price,
+      total_price: productData.unit_price * o.quantity,
+    };
+  });
+  const { error: itemsErr } = await sb.from("bayi_order_items").insert(itemsPayload);
+  if (itemsErr) console.warn(`  ⚠️  order_items insert hata: ${itemsErr.message}`);
+  else console.log(`  📦 ${itemsPayload.length} sipariş kalemi insert`);
+}
 
-// 3d) Vade hareketleri — bayi_dealer_invoices schema'sı tam belirsiz
-// (probe boş tablo, kolon listesi yok). Önce invoice'a dene, hata olursa
-// transactions'a düş. Hiçbiri çalışmazsa balance üzerinden dolaylı vade
-// (bayi.balance>0 → list endpoint "Borçlu" badge gösteriyor).
-const today = new Date();
-const tryInvoicePayload = dataset.invoices.map((inv, idx) => ({
+// 3d) Faturalar — minimal schema (no due_date, no is_paid)
+const invoicePayload = dataset.invoices.map((inv, idx) => ({
   tenant_id: tenantId,
   dealer_id: dealers[inv.dealer_index]?.id,
-  invoice_no: `DEMO-${dataset.slug.toUpperCase()}-${String(idx + 1).padStart(4, "0")}`,
-  amount: inv.amount,
-  is_paid: inv.is_paid,
-  due_date: new Date(today.getTime() + inv.due_days_offset * 86400000).toISOString().slice(0, 10),
+  invoice_number: `DEMO-${dataset.slug.toUpperCase()}-${String(idx + 1).padStart(4, "0")}`,
+  invoice_date: new Date(today.getTime() + inv.due_days_offset * 86400000).toISOString().slice(0, 10),
+  total_amount: inv.amount,
 }));
-let invoiceOk = false;
-let { error: invErr } = await sb.from("bayi_dealer_invoices").insert(tryInvoicePayload);
-if (!invErr) {
-  invoiceOk = true;
-  console.log(`  💳 ${tryInvoicePayload.length} vade hareketi (bayi_dealer_invoices) insert`);
+const { error: invErr } = await sb.from("bayi_dealer_invoices").insert(invoicePayload);
+if (invErr) console.warn(`  ⚠️  Fatura insert hata (devam): ${invErr.message}`);
+else console.log(`  📄 ${invoicePayload.length} fatura insert`);
+
+// 3e) Vade hareketleri — bayi_dealer_transactions (vade DB).
+// Sale type 'debit' → bayi borçlanır. due_date geçmişse "X gün geçmiş".
+const { data: txTypes } = await sb.from("bayi_transaction_types").select("id, code");
+const saleTypeId = (txTypes || []).find(t => t.code === "sale")?.id;
+if (!saleTypeId) {
+  console.warn(`  ⚠️  sale transaction_type bulunamadı, vade atlandı`);
 } else {
-  console.warn(`  ⚠️  bayi_dealer_invoices başarısız: ${invErr.message}`);
-  // Transactions tablosunu dene
-  const txPayload = dataset.invoices.map((inv) => ({
-    tenant_id: tenantId,
-    dealer_id: dealers[inv.dealer_index]?.id,
-    type: "fatura",
-    amount: inv.amount,
-    note: `Vade: ${new Date(today.getTime() + inv.due_days_offset * 86400000).toISOString().slice(0, 10)}${inv.is_paid ? " (ödendi)" : ""}`,
-    due_date: new Date(today.getTime() + inv.due_days_offset * 86400000).toISOString().slice(0, 10),
-    created_at: new Date(today.getTime() + inv.due_days_offset * 86400000).toISOString(),
-  }));
+  const txPayload = dataset.invoices.map((inv, idx) => {
+    const dueDate = new Date(today.getTime() + inv.due_days_offset * 86400000);
+    const txDate = new Date(dueDate.getTime() - 30 * 86400000);
+    return {
+      tenant_id: tenantId,
+      dealer_id: dealers[inv.dealer_index]?.id,
+      transaction_type_id: saleTypeId,
+      amount: inv.amount,
+      description: `DEMO satış #${idx + 1} — ${dataset.slug}`,
+      transaction_date: txDate.toISOString(),
+      due_date: dueDate.toISOString().slice(0, 10),
+      reference_number: `DEMO-${dataset.slug.toUpperCase()}-T${String(idx + 1).padStart(4, "0")}`,
+    };
+  });
   const { error: txErr } = await sb.from("bayi_dealer_transactions").insert(txPayload);
-  if (!txErr) {
-    invoiceOk = true;
-    console.log(`  💳 ${txPayload.length} vade hareketi (bayi_dealer_transactions) insert`);
-  } else {
-    console.warn(`  ⚠️  bayi_dealer_transactions de başarısız: ${txErr.message}`);
-    console.warn(`  ℹ️  Vade hareketi atlandı; bayi balance>0 üzerinden "Borçlu" badge gelir.`);
-  }
-}
-if (!invoiceOk) {
-  console.warn(`  ℹ️  Tour Task 2 için detail endpoint isCritical balance>0'a duyarlı (a0644da sonrası deploy ile).`);
+  if (txErr) console.warn(`  ⚠️  Vade insert hata: ${txErr.message}`);
+  else console.log(`  💳 ${txPayload.length} vade hareketi (transactions) insert`);
 }
 
 // ── 5. Discovery step reset ────────────────────────────────────────
@@ -318,20 +347,26 @@ if (stepErr) {
 console.log(`\n✅ Doğrulama:\n`);
 const { data: verifyDealers } = await sb
   .from("bayi_dealers")
-  .select("name, balance, risk_status")
+  .select("name, balance, status")
   .eq("tenant_id", tenantId)
   .order("name");
 for (const d of verifyDealers || []) {
-  console.log(`  • ${(d.name || "—").padEnd(30)} balance=${d.balance} risk=${d.risk_status || "—"}`);
+  console.log(`  • ${(d.name || "—").padEnd(30)} balance=${d.balance} status=${d.status || "—"}`);
 }
-const { data: verifyInvoices } = await sb
-  .from("bayi_dealer_invoices")
-  .select("dealer_id, amount, due_date, is_paid")
-  .eq("tenant_id", tenantId);
-console.log(`\n  Vade hareketleri: ${verifyInvoices?.length || 0} satır`);
-for (const inv of verifyInvoices || []) {
-  const overdueDays = inv.due_date ? Math.floor((Date.now() - new Date(inv.due_date).getTime()) / 86400000) : "?";
-  console.log(`    amount=${inv.amount} due=${inv.due_date} paid=${inv.is_paid} overdue=${overdueDays} gün`);
+const { count: orderCount } = await sb.from("bayi_orders").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId);
+const { count: itemCount } = await sb.from("bayi_order_items").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId);
+const { count: invCount } = await sb.from("bayi_dealer_invoices").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId);
+console.log(`\n  Sipariş: ${orderCount} (${itemCount} kalem) · Fatura: ${invCount}`);
+
+const { data: verifyTx } = await sb
+  .from("bayi_dealer_transactions")
+  .select("dealer_id, amount, due_date, transaction_type_id, description")
+  .eq("tenant_id", tenantId)
+  .order("due_date");
+console.log(`\n  Vade hareketleri: ${verifyTx?.length || 0} satır`);
+for (const tx of verifyTx || []) {
+  const overdueDays = tx.due_date ? Math.floor((Date.now() - new Date(tx.due_date).getTime()) / 86400000) : "?";
+  console.log(`    amount=${tx.amount} due=${tx.due_date} overdue=${overdueDays} gün — ${tx.description}`);
 }
 
 console.log(`\n🚀 Tamam. /tr/bayiler aç, Demir Ticaret KRİTİK görünmeli.\n`);
