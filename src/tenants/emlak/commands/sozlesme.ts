@@ -135,6 +135,8 @@ export async function handleSozlesme(ctx: WaContext): Promise<void> {
   await sendList(ctx.phone, "📋 Hangi mülk için sözleşme hazırlayalım?", "Mülk Seç", [
     { title: "Mulkler", rows },
   ], { skipNav: true });
+  const { sendCommandHelp } = await import("@/tenants/emlak/menu");
+  await sendCommandHelp(ctx, "sozlesme");
 }
 
 export async function handleSozlesmeStep(ctx: WaContext, session: CommandSession): Promise<void> {

@@ -78,6 +78,8 @@ export async function handleMusteriEkle(ctx: WaContext): Promise<void> {
     url,
     { skipNav: true },
   );
+  const { sendCommandHelp } = await import("@/tenants/emlak/menu");
+  await sendCommandHelp(ctx, "musteriEkle");
 }
 
 // ── Step handler ─────────────────────────────────────────────────────

@@ -44,4 +44,6 @@ export async function handleMulklerim(ctx: WaContext): Promise<void> {
     url,
     { skipNav: true },
   );
+  const { sendCommandHelp } = await import("@/tenants/emlak/menu");
+  await sendCommandHelp(ctx, "mulklerim");
 }

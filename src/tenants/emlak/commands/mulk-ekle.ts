@@ -222,7 +222,10 @@ export async function handleMulkEkleMenu(ctx: WaContext): Promise<void> {
       { id: "mulkekle_method:form", title: "📝 Form" },
       { id: "mulkekle_method:hizli", title: "⚡ Hızlı" },
     ],
+    { skipNav: true },
   );
+  const { sendCommandHelp } = await import("@/tenants/emlak/menu");
+  await sendCommandHelp(ctx, "mulkekle");
 }
 
 export async function handleMulkEkleForm(ctx: WaContext): Promise<void> {
