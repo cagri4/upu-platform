@@ -676,6 +676,14 @@ async function showMenu(
     return;
   }
 
+  // Emlak free-ride menü — kategorize liste + Yardım Merkezi URL button.
+  // Diğer tenantlar standart user-favorites pattern'ine düşer.
+  if (ctx.tenantKey === "emlak") {
+    const { sendEmlakMenu } = await import("@/tenants/emlak/menu");
+    await sendEmlakMenu(ctx, false);
+    return;
+  }
+
   // Flat command list — all killer commands directly accessible, no corridor.
   const userFavs = await getUserFavorites(ctx.userId);
   let favCmds = userFavs.length > 0 ? userFavs : (tenant.defaultFavorites || []);

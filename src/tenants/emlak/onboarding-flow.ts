@@ -11,8 +11,9 @@
  */
 
 import type { OnboardingFlow } from "@/platform/whatsapp/onboarding";
-import { sendButtons } from "@/platform/whatsapp/send";
+import { sendText } from "@/platform/whatsapp/send";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { sendEmlakMenu } from "@/tenants/emlak/menu";
 
 export const emlakOnboardingFlow: OnboardingFlow = {
   tenantKey: "emlak",
@@ -56,6 +57,9 @@ export const emlakOnboardingFlow: OnboardingFlow = {
   onFinish: async (ctx, data) => {
     const supabase = getServiceClient();
 
+    // Free-ride pattern: discovery chain kaldırıldı. Profil bilgisi flush
+    // edilir, discovery_step "completed" işaretlenir, kullanıcıya
+    // selamlama + ana komut menüsü gönderilir. Tour yok.
     await supabase.from("profiles").update({
       metadata: {
         office_name: data.office_name || null,
@@ -64,12 +68,19 @@ export const emlakOnboardingFlow: OnboardingFlow = {
         experience_years: data.experience_years || null,
         briefing_enabled: data.briefing === "evet",
         onboarding_completed: true,
-        discovery_step: 0,
+        discovery_step: "completed",
       },
     }).eq("id", ctx.userId);
 
-    // Start discovery chain — guided flow through killer features
-    const { startDiscoveryChain } = await import("@/platform/whatsapp/discovery-chain");
-    await startDiscoveryChain(ctx.userId, ctx.phone, data.display_name as string, data.office_name as string, data.location as string, data.email as string, data.experience_years as string);
+    const summary =
+      `✅ *Profilin tamamlandı!*\n\n` +
+      `👤 ${data.display_name || "—"}\n` +
+      (data.office_name ? `🏢 ${data.office_name}\n` : "") +
+      (data.location ? `📍 ${data.location}\n` : "") +
+      (data.experience_years ? `📅 ${data.experience_years} yıl tecrübe\n` : "") +
+      `\nBu bilgileri sonra *profil* komutuyla değiştirebilirsin.`;
+    await sendText(ctx.phone, summary);
+
+    await sendEmlakMenu({ userId: ctx.userId, phone: ctx.phone, userName: (data.display_name as string) || "" }, true);
   },
 };
