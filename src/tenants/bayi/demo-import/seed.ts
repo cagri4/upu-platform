@@ -61,8 +61,15 @@ export async function seedTenantDemoData(
     };
   }
 
-  // 1) Ürünler
-  const productsPayload = dataset.products.map(p => ({
+  // 1) Ürünler — gerçek bayi_products schema (probe-schema.mjs):
+  //   id, tenant_id, code, name, description, base_price, stock_quantity,
+  //   low_stock_threshold, image_url, is_active, user_id, category_id, sku,
+  //   unit, unit_price, min_order, barcode, specs (jsonb), images, weight,
+  //   brand, category
+  // 'metadata' kolonu YOK; ean → 'barcode', vat_rate → 'specs.vat_rate'.
+  // Eski 'metadata' field'ı defansif fallback için tutuluyor (yeni şema'lı
+  // ortamlarda bozulmasın).
+  const productsBase = dataset.products.map(p => ({
     tenant_id: tenantId,
     user_id: ownerId,
     name: p.name,
@@ -74,12 +81,24 @@ export async function seedTenantDemoData(
     stock_quantity: p.stock_quantity,
     brand: p.brand,
     is_active: true,
-    metadata: { vat_rate: p.vat_rate, ean: p.ean },
+    barcode: p.ean,
+    specs: { vat_rate: p.vat_rate },
   }));
-  const { data: products, error: pErr } = await supabase
-    .from("bayi_products")
-    .insert(productsPayload)
-    .select("id");
+  // Önce yeni şema (specs + barcode) ile dene; PostgREST schema cache'inde
+  // bir kolon yoksa minimal payload'a düş.
+  const COL_ERR = /column|schema cache|could not find/i;
+  let productsResp = await supabase.from("bayi_products").insert(productsBase).select("id");
+  if (productsResp.error && COL_ERR.test(productsResp.error.message || "")) {
+    console.warn("[seed] product schema farklılığı, minimal retry:", productsResp.error.message);
+    const minimal = dataset.products.map(p => ({
+      tenant_id: tenantId, user_id: ownerId,
+      name: p.name, code: p.code, category: p.category, unit: p.unit,
+      unit_price: p.unit_price, base_price: p.unit_price,
+      stock_quantity: p.stock_quantity, brand: p.brand, is_active: true,
+    }));
+    productsResp = await supabase.from("bayi_products").insert(minimal).select("id");
+  }
+  const { data: products, error: pErr } = productsResp;
   if (pErr || !products) {
     return { ok: false, reason: `Ürün insert hatası: ${pErr?.message || "unknown"}`, sector: dataset.slug };
   }

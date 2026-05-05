@@ -124,22 +124,26 @@ const DEALER_ENRICH = {
   ],
 }[dataset.slug] || [];
 
-// 3a) Ürünler — metadata kolonu farklı şemalarda olmayabilir; defensive
+// 3a) Ürünler — gerçek schema: barcode + specs (jsonb), metadata YOK.
 const productsBase = dataset.products.map(p => ({
   tenant_id: tenantId,
   user_id: profileId,
   name: p.name, code: p.code, category: p.category, unit: p.unit,
   unit_price: p.unit_price, base_price: p.unit_price,
   stock_quantity: p.stock_quantity, brand: p.brand, is_active: true,
+  barcode: p.ean,
+  specs: { vat_rate: p.vat_rate },
 }));
-const productsWithMeta = productsBase.map((b, i) => ({
-  ...b,
-  metadata: { vat_rate: dataset.products[i].vat_rate, ean: dataset.products[i].ean },
-}));
-let productsResp = await sb.from("bayi_products").insert(productsWithMeta).select("id");
-if (productsResp.error && /metadata|column/i.test(productsResp.error.message || "")) {
-  console.warn(`  ⚠️  metadata kolonu yok — retry without`);
-  productsResp = await sb.from("bayi_products").insert(productsBase).select("id");
+let productsResp = await sb.from("bayi_products").insert(productsBase).select("id");
+if (productsResp.error && /column|schema cache|could not find/i.test(productsResp.error.message || "")) {
+  console.warn(`  ⚠️  Ürün şema farkı — minimal retry: ${productsResp.error.message}`);
+  const minimal = dataset.products.map(p => ({
+    tenant_id: tenantId, user_id: profileId,
+    name: p.name, code: p.code, category: p.category, unit: p.unit,
+    unit_price: p.unit_price, base_price: p.unit_price,
+    stock_quantity: p.stock_quantity, brand: p.brand, is_active: true,
+  }));
+  productsResp = await sb.from("bayi_products").insert(minimal).select("id");
 }
 if (productsResp.error) {
   console.error("❌ Ürün insert:", productsResp.error.message);
