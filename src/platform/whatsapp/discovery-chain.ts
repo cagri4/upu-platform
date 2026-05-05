@@ -257,30 +257,29 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
     }
 
     case 4: {
-      // Task 3 — web detayda vade hatırlatma yolla.
-      // Plain text — kullanıcı zaten detay sayfasında, reply button gereksiz.
-      const critic = ctx?.kritikBayi || "Demir Ticaret";
-      await sendText(phone,
-        `✅ *${critic} detayını açtın!* (3/7)\n\n` +
-        `*Adım 3 — Vade hatırlatma yolla*\n\n` +
-        `Detay sayfasının üst banner'ında 💰 *Vade Hatırlatma Yolla* butonu var. Tıkla → AI hazır şablon dolar → "Hatırlatmayı Gönder".\n\n` +
-        `Sonraki adımda ürün kataloğunu inceleyeceğiz.`,
+      // Task 3 sonrası — Adım 4: ürün katalog (CTA URL).
+      // bayilerim pattern'i — magic link mint + sendUrlButton.
+      const token = await mintMagicToken(userId);
+      const url = `${APP_URL_BY_TENANT.bayi}/tr/urunler?t=${token}`;
+      await sendUrlButton(phone,
+        `✅ *Hatırlatma yollandı!* (3/7)\n\n` +
+        `*Adım 4 — Ürün kataloğun*\n` +
+        `Sistemi keşfetmeye devam — sektörünüze yüklediğim 20 ürünü görelim. Aşağıdaki butona dokun → web panelde katalog açılacak.`,
+        "📦 Ürün Kataloğunu Aç",
+        url,
+        { skipNav: true },
       );
       return true;
     }
 
     case 5: {
-      // Task 4 — ürün detayı.
+      // Adım 5 — ürün detayı. Plain text, kullanıcı zaten katalog sayfasında.
       const ornekUrun = ctx?.ornekUrun || "ilk ürün";
-      await sendButtons(phone,
-        `✅ *Kataloğunu gördün!* (4/7)\n\n` +
-        `*Adım 4 — Ürün detayı*\n` +
-        `Listenin başındaki ürüne (örn. *${ornekUrun}*) bakalım. *fiyatliste* komutu fiyat ve stok özetini gösterir:\n\n` +
-        `   👉 *fiyatliste*`,
-        [
-          { id: "cmd:fiyatliste", title: "💰 fiyatliste" },
-        ],
-        { skipNav: true },
+      await sendText(phone,
+        `✅ *Katalogunu gördün!* (4/7)\n\n` +
+        `*Adım 5 — Ürün detayı*\n\n` +
+        `Listenin başındaki ürüne (örn. *${ornekUrun}*) dokun → fiyat, stok, açıklama, son siparişler tek sayfada.\n\n` +
+        `_Detay açıldıktan sonra otomatik bir sonraki adıma geçeceğim._`,
       );
       return true;
     }
