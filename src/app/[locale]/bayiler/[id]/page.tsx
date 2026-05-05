@@ -600,7 +600,7 @@ function ActionModal({ modalKey, dealer, finance, onClose, onSuccess }: ActionMo
         {modalKey === "vade" && <VadeHatirlatmaForm dealer={dealer} finance={finance} onClose={onClose} onSuccess={onSuccess} />}
         {modalKey === "not" && <NotEkleForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
         {modalKey === "kampanya" && <KampanyaForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
-        {modalKey === "duzenle" && <DuzenleForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
+        {modalKey === "duzenle" && <DuzenleForm dealer={dealer} finance={finance} onClose={onClose} onSuccess={onSuccess} />}
         {modalKey === "durum" && <DurumForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
         {modalKey === "sil" && <SilForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
       </div>
@@ -859,23 +859,56 @@ function KampanyaForm({ onClose, onSuccess }: { dealer: Dealer; onClose: () => v
 }
 
 // ── Düzenle ──────────────────────────────────────────────────────────
-function DuzenleForm({ dealer, onClose, onSuccess }: { dealer: Dealer; onClose: () => void; onSuccess: ActionModalProps["onSuccess"] }) {
-  const [name, setName] = useState(dealer.name);
+// 2 grup: 🔒 Logo'dan gelen (read-only/disabled in production) +
+// ✏️ UPU'ya özel (editable). Demo modunda her iki grup da editable;
+// üstte yeşil banner. Production'da Logo grubu disabled, üstte amber
+// banner. Demo flag: NEXT_PUBLIC_DEMO_MODE=true.
+
+const TAG_OPTIONS = ["VIP", "KRİTİK", "yeni", "dondurulmuş", "kurumsal"];
+const RISK_OPTIONS: Array<{ id: "clean" | "watch" | "blacklist"; label: string }> = [
+  { id: "clean",     label: "🟢 Temiz" },
+  { id: "watch",     label: "🟡 İzlemede" },
+  { id: "blacklist", label: "🔴 Kara liste" },
+];
+
+function DuzenleForm({ dealer, finance, onClose, onSuccess }: { dealer: Dealer; finance: Finance; onClose: () => void; onSuccess: ActionModalProps["onSuccess"] }) {
+  const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+  const logoLocked = !isDemoMode; // production'da Logo grubu kilitli
+
+  // 🔒 Logo grubu
+  const [companyName, setCompanyName] = useState(dealer.name);
+  const [taxNumber, setTaxNumber] = useState(dealer.taxNumber || "");
+  const [taxOffice, setTaxOffice] = useState(dealer.taxOffice || "");
+  const [iban, setIban] = useState(dealer.iban || "");
+  const [code, setCode] = useState(dealer.code || "");
+
+  // ✏️ UPU grubu
   const [contactName, setContactName] = useState(dealer.contactName || "");
   const [phone, setPhone] = useState(dealer.contactPhone || "");
   const [email, setEmail] = useState(dealer.email || "");
   const [city, setCity] = useState(dealer.city || "");
   const [address, setAddress] = useState(dealer.addressLine || "");
+  const [tags, setTags] = useState<string[]>(dealer.tags || []);
+  const [riskStatus, setRiskStatus] = useState<"clean" | "watch" | "blacklist">(finance.riskStatus);
   const [saving, setSaving] = useState(false);
+
+  function toggleTag(t: string) {
+    setTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+  }
 
   async function handleSave() {
     setSaving(true);
     await new Promise(r => setTimeout(r, 400));
+    // Production'da Logo alanları payload'a gönderilmez (read-only).
+    // Demo modunda gönderilir (mock — gerçek persist yok).
+    const detail = logoLocked
+      ? `UPU: ${contactName || dealer.name} · ${city || "—"} · ${tags.length} etiket`
+      : `${companyName} · ${city || "—"}`;
     onSuccess({
       type: "note",
       icon: "✏️",
-      title: "Bayi bilgileri güncellendi",
-      detail: `${name} — ${city || "—"}`,
+      title: logoLocked ? "UPU bilgileri güncellendi" : "Bayi bilgileri güncellendi (demo)",
+      detail,
       timestamp: new Date().toISOString(),
     }, "✅ Güncellendi");
     setSaving(false);
@@ -883,24 +916,98 @@ function DuzenleForm({ dealer, onClose, onSuccess }: { dealer: Dealer; onClose: 
 
   return (
     <ModalShell title="✏️ Bayi Düzenle" onClose={onClose}>
-      <div className="space-y-3">
-        <FieldInput label="Firma adı" value={name} onChange={setName} />
-        <FieldInput label="Yetkili" value={contactName} onChange={setContactName} />
-        <FieldInput label="Telefon" value={phone} onChange={setPhone} />
-        <FieldInput label="E-posta" value={email} onChange={setEmail} />
-        <FieldInput label="Şehir" value={city} onChange={setCity} />
-        <div>
-          <label className="text-xs font-medium text-slate-700 block mb-1">Adres</label>
-          <textarea value={address} onChange={e => setAddress(e.target.value)} rows={2} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+      {/* Mod banner */}
+      {isDemoMode ? (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 mb-3 text-xs text-emerald-800">
+          🎓 <strong>Demo modu aktif</strong> — Tüm alanlar düzenlenebilir. Production'da Logo entegrasyonu açıldığında bazı alanlar read-only olur.
+        </div>
+      ) : (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 mb-3 text-xs text-amber-800">
+          🔒 <strong>Logo entegrasyonu aktif</strong> — bazı alanlar muhasebe sisteminizden senkron, buradan değiştirilemez. Değişiklik için Logo'dan güncelleyin.
+        </div>
+      )}
+
+      {/* 🔒 Logo grubu */}
+      <div className={`rounded-xl p-3 mb-3 ${logoLocked ? "bg-slate-50 border border-slate-200" : "bg-white border border-slate-200"}`}>
+        <h4 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+          🔒 Logo'dan Gelen
+          {logoLocked && <span className="text-[10px] font-normal normal-case text-slate-400">(read-only)</span>}
+        </h4>
+        <div className="space-y-2">
+          <LogoField label="Firma adı" value={companyName} onChange={setCompanyName} disabled={logoLocked} />
+          <LogoField label="Vergi numarası" value={taxNumber} onChange={setTaxNumber} disabled={logoLocked} mono />
+          <LogoField label="Vergi dairesi" value={taxOffice} onChange={setTaxOffice} disabled={logoLocked} />
+          <LogoField label="IBAN" value={iban} onChange={setIban} disabled={logoLocked} mono />
+          <LogoField label="Cari kod" value={code} onChange={setCode} disabled={logoLocked} mono />
         </div>
       </div>
-      <div className="flex gap-2 mt-4 justify-end">
+
+      {/* ✏️ UPU grubu */}
+      <div className="rounded-xl p-3 mb-3 bg-white border border-indigo-100">
+        <h4 className="text-[11px] font-semibold text-indigo-600 uppercase tracking-wide mb-2">
+          ✏️ UPU'ya Özel <span className="text-[10px] font-normal normal-case text-slate-400">(her zaman editlenebilir)</span>
+        </h4>
+        <div className="space-y-2">
+          <FieldInput label="Yetkili kişi" value={contactName} onChange={setContactName} />
+          <FieldInput label="Telefon (UPU CRM)" value={phone} onChange={setPhone} />
+          <FieldInput label="E-posta" value={email} onChange={setEmail} />
+          <FieldInput label="Şehir" value={city} onChange={setCity} />
+          <div>
+            <label className="text-xs font-medium text-slate-700 block mb-1">Adres</label>
+            <textarea value={address} onChange={e => setAddress(e.target.value)} rows={2} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-700 block mb-1">Etiketler</label>
+            <div className="flex flex-wrap gap-2">
+              {TAG_OPTIONS.map(t => (
+                <label key={t} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border cursor-pointer ${tags.includes(t) ? "bg-indigo-50 border-indigo-300 text-indigo-700" : "bg-white border-slate-200 text-slate-600"}`}>
+                  <input type="checkbox" checked={tags.includes(t)} onChange={() => toggleTag(t)} className="accent-indigo-600 w-3 h-3" />
+                  {t}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-700 block mb-1">Risk durumu (UPU hesaplı)</label>
+            <div className="flex gap-2 flex-wrap">
+              {RISK_OPTIONS.map(opt => (
+                <label key={opt.id} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg border cursor-pointer ${riskStatus === opt.id ? "bg-indigo-50 border-indigo-300" : "bg-white border-slate-200"}`}>
+                  <input type="radio" name="risk" checked={riskStatus === opt.id} onChange={() => setRiskStatus(opt.id)} className="accent-indigo-600" />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-2 justify-end">
         <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
         <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
           {saving ? "Kaydediliyor…" : "Kaydet"}
         </button>
       </div>
     </ModalShell>
+  );
+}
+
+function LogoField({ label, value, onChange, disabled, mono }: { label: string; value: string; onChange: (v: string) => void; disabled: boolean; mono?: boolean }) {
+  return (
+    <div>
+      <label className="text-xs font-medium text-slate-700 mb-1 flex items-center gap-1">
+        {label}
+        <span
+          title="Muhasebe sisteminizden senkron — değiştirmek için oradan güncelleyin"
+          className="text-slate-400 cursor-help text-[10px]"
+        >ℹ️</span>
+      </label>
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        disabled={disabled}
+        className={`w-full border border-slate-200 rounded-lg px-3 py-2 text-sm ${mono ? "font-mono" : ""} ${disabled ? "bg-slate-100 text-slate-500 cursor-not-allowed" : ""}`}
+      />
+    </div>
   );
 }
 
