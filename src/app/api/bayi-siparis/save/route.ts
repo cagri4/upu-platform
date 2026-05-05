@@ -88,12 +88,13 @@ export async function POST(req: NextRequest) {
     const productIds = items.map((i) => i.product_id);
     const { data: products } = await supabase
       .from("bayi_products")
-      .select("id, name, unit_price, base_price, stock_quantity")
+      .select("id, name, code, sku, unit_price, base_price, stock_quantity")
       .in("id", productIds);
-    const prodMap = new Map<string, { name: string; unit_price: number; stock: number }>();
+    const prodMap = new Map<string, { name: string; code: string; unit_price: number; stock: number }>();
     for (const p of products || []) {
       prodMap.set(p.id as string, {
         name: p.name as string,
+        code: (p.code || p.sku || "") as string,
         unit_price: Number(p.unit_price || p.base_price || 0),
         stock: Number(p.stock_quantity || 0),
       });
@@ -116,13 +117,26 @@ export async function POST(req: NextRequest) {
       notes,
       deliveryDate ? `Teslimat: ${new Date(deliveryDate).toLocaleDateString("tr-TR")}` : null,
     ].filter(Boolean).join(" | ") || null;
+    // Schema (probe): bayi_orders id, tenant_id, order_number (NOT NULL),
+    // dealer_id, status_id (UUID FK → bayi_order_statuses), subtotal,
+    // discount_amount, total_amount, notes, ...
+    // NO 'created_by', NO 'user_id', NO text 'status' — eski payload
+    // PostgREST 42703 verir.
+    const { data: pendingStatus } = await supabase
+      .from("bayi_order_statuses")
+      .select("id")
+      .eq("code", "pending")
+      .maybeSingle();
+    const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
     const orderRow: Record<string, unknown> = {
       tenant_id: profile.tenant_id,
+      order_number: orderNumber,
       dealer_id: dealer.id,
-      status: "pending",
+      status_id: pendingStatus?.id || null,
+      subtotal: total,
+      discount_amount: 0,
       total_amount: total,
       notes: fullNotes,
-      created_by: profile.id,
     };
 
     const { data: order, error: orderErr } = await supabase
@@ -135,13 +149,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: orderErr?.message || "Sipariş kaydedilemedi." }, { status: 500 });
     }
 
-    // Insert items (no tenant_id — table doesn't have one per existing schema)
-    const itemRows = insertItems.map((i) => ({
-      order_id: order.id,
-      product_id: i.product_id,
-      quantity: i.quantity,
-      unit_price: i.unit_price,
-    }));
+    // bayi_order_items schema (probe): tenant_id, order_id, product_id,
+    // product_code, product_name (NOT NULL), quantity, unit_price, total_price.
+    const itemRows = insertItems.map((i) => {
+      const p = prodMap.get(i.product_id)!;
+      return {
+        tenant_id: profile.tenant_id,
+        order_id: order.id,
+        product_id: i.product_id,
+        product_code: p.code,
+        product_name: p.name,
+        quantity: i.quantity,
+        unit_price: i.unit_price,
+        total_price: i.unit_price * i.quantity,
+      };
+    });
     const { error: itemErr } = await supabase.from("bayi_order_items").insert(itemRows);
     if (itemErr) {
       console.error("[bayi-siparis:save] items err", itemErr);

@@ -265,7 +265,7 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
         `✅ *Hatırlatma yollandı!* (3/7)\n\n` +
         `*Adım 4 — Ürün kataloğun*\n` +
         `Sistemi keşfetmeye devam — sektörünüze yüklediğim 20 ürünü görelim. Aşağıdaki butona dokun → web panelde katalog açılacak.`,
-        "📦 Ürün Kataloğunu Aç",
+        "📦 Katalogu Aç",
         url,
         { skipNav: true },
       );
@@ -285,16 +285,17 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
     }
 
     case 6: {
-      // Task 5 — mock sipariş.
+      // Task 5 — sipariş (CTA URL, bayilerim/urunler pattern).
       const critic = ctx?.kritikBayi || "Demir Ticaret";
-      await sendButtons(phone,
+      const token = await mintMagicToken(userId);
+      const url = `${APP_URL_BY_TENANT.bayi}/tr/bayi-siparis?t=${token}`;
+      await sendUrlButton(phone,
         `✅ *Ürün detayını gördün!* (5/7)\n\n` +
         `*Adım 5 — İlk siparişin*\n` +
-        `Pratik yapalım. *${critic}* için 2 ürünlük örnek bir sipariş oluşturalım:\n\n` +
-        `   👉 *siparis* yaz, akışı tamamla.`,
-        [
-          { id: "cmd:siparisolustur", title: "🛒 siparis" },
-        ],
+        `Pratik yapalım — *${critic}* için 2 ürünlük örnek bir sipariş oluşturalım. ` +
+        `Aşağıdaki butona dokun → web panelde sipariş formu açılacak.`,
+        "📝 Sipariş Formunu Aç",
+        url,
         { skipNav: true },
       );
       return true;
