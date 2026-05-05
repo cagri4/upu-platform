@@ -362,12 +362,6 @@ async function saveTracking(ctx: WaContext): Promise<void> {
   );
   await logEvent(ctx.tenantId, ctx.userId, "takip_et", "yeni takip oluşturuldu");
 
-  // Discovery chain: advance after tarama kuruldu
-  try {
-    const { advanceDiscovery } = await import("@/platform/whatsapp/discovery-chain");
-    await advanceDiscovery(ctx.userId, ctx.tenantKey, ctx.phone, "tarama_kuruldu");
-  } catch { /* don't break flow */ }
-
 }
 
 // ── Morning notification (called by cron after scrape) ─────────────

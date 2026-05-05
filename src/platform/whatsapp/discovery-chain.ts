@@ -28,14 +28,9 @@ import { getServiceClient } from "@/platform/auth/supabase";
 import { sendButtons, sendText, sendUrlButton } from "./send";
 import { randomBytes } from "crypto";
 
-// Per-tenant event → step number map
+// Per-tenant event → step number map.
+// Emlak: 2026-05-05 itibarıyla free-ride pattern — chain kaldırıldı.
 const STEP_TRIGGERS_BY_TENANT: Record<string, Record<string, number>> = {
-  emlak: {
-    mulk_eklendi: 1,
-    sunum_hazir: 2,
-    tarama_kuruldu: 3,
-    portfoy_tanitildi: 4,
-  },
   bayi: {
     firma_kaydedildi: 1,
     demo_seed_yuklendi: 2,
@@ -60,7 +55,7 @@ const STEP_TRIGGERS_BY_TENANT: Record<string, Record<string, number>> = {
 };
 
 const MAX_STEP_BY_TENANT: Record<string, number> = {
-  emlak: 4,
+  // emlak removed — free-ride pattern (2026-05-05)
   bayi: 9,
   siteyonetim: 8,
 };
@@ -135,55 +130,12 @@ export async function advanceDiscovery(
 
   await setDiscoveryStep(userId, tenantKey, targetStep);
 
-  if (tenantKey === "emlak") return sendEmlakStepPrompt(userId, phone, targetStep);
   if (tenantKey === "bayi") return sendBayiStepPrompt(userId, phone, targetStep);
   if (tenantKey === "siteyonetim") return sendSiteyonetimStepPrompt(userId, phone, targetStep);
   return false;
 }
 
-// ── Emlak prompts (preserved verbatim) ───────────────────────────────
-
-async function sendEmlakStepPrompt(_userId: string, phone: string, step: number): Promise<boolean> {
-  switch (step) {
-    case 1:
-      await sendButtons(phone,
-        `🎉 *İlk mülkün eklendi!*\n\n` +
-        `Şimdi bu mülk için müşterine gönderebileceğin etkileyici bir satış sunumu hazırlayalım.\n\n` +
-        `Sunum hazır olduğunda sana özel bir link vereceğim — müşterine direkt gönder.`,
-        [{ id: "cmd:sunum", title: "🎯 Sunum Hazırla" }],
-        { skipNav: true },
-      );
-      return true;
-    case 2:
-      await sendButtons(phone,
-        `✨ *Sunumun hazır!*\n\n` +
-        `Magic linki müşterine gönderebilirsin.\n\n` +
-        `Şimdi piyasa taraması kuralım — senin vereceğin kriterlere göre her sabah bölgendeki yeni ilanları sana raporlayacağım. Bir fırsat kaçırma!`,
-        [{ id: "cmd:takipEt", title: "📡 Tarama Kur" }],
-        { skipNav: true },
-      );
-      return true;
-    case 3:
-      await sendButtons(phone,
-        `📡 *Taraman hazır!*\n\n` +
-        `Her sabah bölgendeki yeni ilanları raporlayacağım.\n\n` +
-        `*Ve dahası:* sabah raporunda *sahibinden olan ilanların sahiplerini* de göstereceğim. Bir ilana ilgilendiğini söylersen, sahibini bulup sana hazır bir AI mesaj taslağıyla tek tık iletişim fırsatı sunacağım.\n\n` +
-        `Portföyünü büyütmek artık günde 5 dakikalık bir iş.`,
-        [{ id: "disc:portfoy_ok", title: "🚀 Anladım" }],
-        { skipNav: true },
-      );
-      return true;
-    case 4:
-      await sendText(phone,
-        `🚀 *Harikasın!*\n\n` +
-        `İlk mülkünü ekledin, sunum hazırladın, piyasa taramanı kurdun ve portföy büyütme özelliğini öğrendin.\n\n` +
-        `Artık her sabah sana yeni fırsatlar gelecek. İstediğin zaman *"menü"* yazarak tüm komutlara ulaşabilirsin.\n\n` +
-        `💡 Yeni ipuçları için *"ipucu"* yaz.`,
-      );
-      return true;
-  }
-  return false;
-}
+// ── Emlak prompts kaldırıldı (2026-05-05) — free-ride pattern. ──────
 
 // ── Bayi prompts ─────────────────────────────────────────────────────
 
@@ -476,33 +428,8 @@ async function loadBayiTourContext(userId: string): Promise<BayiTourContext> {
   }
 }
 
-// ── Chain start (emlak — preserved API) ──────────────────────────────
-
-/**
- * Start the emlak discovery chain — called from emlak's onboarding finish.
- * Sets step to 0 and sends the first prompt with mülk ekle CTA.
- *
- * Bayi has its own start path inlined in bayi/onboarding-flow.ts; it
- * doesn't need a wrapper because the first prompt is a magic-link form.
- */
-export async function startDiscoveryChain(userId: string, phone: string, displayName?: string, officeName?: string, location?: string, email?: string, experienceYears?: string): Promise<void> {
-  await setDiscoveryStep(userId, "emlak", 0);
-
-  let msg = "✅ *Kurulum tamamlandı!*\n\n";
-  if (displayName) msg += `👤 ${displayName}\n`;
-  if (officeName) msg += `🏢 ${officeName}\n`;
-  if (location) msg += `📍 ${location}\n`;
-  if (email) msg += `📧 ${email}\n`;
-  if (experienceYears) msg += `📅 ${experienceYears} yıl tecrübe\n`;
-  msg += `📱 ${phone}\n`;
-  msg += `\nBu bilgileri daha sonra *"menü"* → *Sistem Komutları* → *Profilim* kısmından düzenleyebilirsiniz.\n`;
-  msg += `\n━━━━━━━━━━━━━━━━━━━\n\n`;
-  msg += `Şimdi devam ediyoruz! Hadi müşterine gönderebileceğin etkileyici bir sunum hazırlayalım — bunun için önce bir mülk ekleyelim.`;
-
-  await sendButtons(phone, msg, [
-    { id: "cmd:mulkekle", title: "🏠 Mülk Ekle" },
-  ], { skipNav: true });
-}
+// startDiscoveryChain (emlak) kaldırıldı (2026-05-05) — free-ride pattern.
+// Onboarding finish artık emlak/menu.ts:sendEmlakMenu çağırır.
 
 /**
  * Start the bayi discovery chain — called from bayi's onboarding finish.

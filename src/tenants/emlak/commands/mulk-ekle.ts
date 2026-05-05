@@ -1082,12 +1082,6 @@ async function finalizeProperty(ctx: WaContext): Promise<void> {
     `\n\n✨ Kısa süre içinde bu mülk için bir sunum hazır olacak. İstediğiniz zaman inceleyip tek linkle müşterinize gönderebilirsiniz.`,
   );
 
-  // Discovery chain: advance if user is in guided first-use flow
-  try {
-    const { advanceDiscovery } = await import("@/platform/whatsapp/discovery-chain");
-    await advanceDiscovery(ctx.userId, ctx.tenantKey, ctx.phone, "mulk_eklendi");
-  } catch { /* don't break main flow */ }
-
   // Check for customer matches
   try {
     const { data: customers } = await supabase

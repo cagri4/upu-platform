@@ -69,7 +69,10 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   const newMeta = {
     ...(profile?.metadata as Record<string, unknown> || {}),
     onboarding_completed: true,
-    discovery_step: 0,
+    // Free-ride pattern: emlak chain kaldırıldı; intro sonrası kullanıcı
+    // serbest mod'da. Tour tetikleyicileri (mulk_eklendi/sunum_hazir/...) artık
+    // advanceDiscovery'ye gitmiyor.
+    discovery_step: "completed",
   };
   await supabase.from("profiles").update({ metadata: newMeta }).eq("id", ctx.userId);
 
