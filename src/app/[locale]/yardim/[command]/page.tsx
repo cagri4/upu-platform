@@ -2,8 +2,8 @@
 
 import { use } from "react";
 import { useSearchParams } from "next/navigation";
-import { whatsappDeeplink } from "@/lib/whatsapp-deeplink";
 import { getYardimEntry } from "@/lib/yardim-content";
+import { ReturnButtons } from "@/components/return-buttons";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -30,8 +30,6 @@ export default function YardimCommandPage({ params }: { params: Promise<{ comman
       </div>
     );
   }
-
-  const waHref = whatsappDeeplink(BOT_WA_NUMBER);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
@@ -81,12 +79,10 @@ export default function YardimCommandPage({ params }: { params: Promise<{ comman
           </Section>
         )}
 
-        <a
-          href={waHref}
-          className="block w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-semibold text-base shadow-lg text-center active:scale-95"
-        >
-          💬 WhatsApp&apos;a Dön — &quot;{entry.waCommand}&quot; yaz
-        </a>
+        <ReturnButtons token={token} botPhone={BOT_WA_NUMBER} />
+        <p className="text-xs text-slate-500 text-center mt-3 px-4">
+          WhatsApp&apos;a dönerek <span className="font-mono">{entry.waCommand}</span> yazabilir veya panelden Başlat butonunu kullanabilirsiniz.
+        </p>
       </div>
     </div>
   );
