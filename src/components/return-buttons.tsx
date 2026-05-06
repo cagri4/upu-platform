@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { whatsappDeeplink } from "@/lib/whatsapp-deeplink";
-
-const WEBVIEW_RE = /(WhatsApp|FBAN|FBAV|Instagram|Twitter|Line|wv\)|; wv\b)/i;
+import React from "react";
 
 /**
  * Form/sayfa altında 2 buton: Panele Dön + WhatsApp'a Dön.
  *
- * WhatsApp WebView içinden açılan sayfalarda, intent:// scheme'i
- * "başka uygulama açılıyor" uyarısı gösteriyor. Detection: UA paterni
- * WebView'i imzalarsa, WA butonuna tıklandığında window.history.back()
- * ile aynı sekmede geri git (uyarı yok, kullanıcı zaten WA içinde).
+ * WhatsApp WebView içinden açılan sayfalarda, intent:// veya wa.me
+ * scheme'i "başka uygulama açılıyor" uyarısı gösteriyor. Bu sayfalar
+ * her zaman WhatsApp gateway'inden geldiği için (kullanıcı WA chat'te
+ * bot mesajındaki linke tıklıyor) "her zaman WebView içinde" kabul
+ * edilir — tıklandığında history.back() / window.close() ile aynı
+ * sekmede WA chat'e döner. Android intent fallback kaldırıldı.
  *
- * Standart Chrome/Safari'de eski davranış (Android intent veya wa.me
- * deeplink) korunur.
+ * Edge-case: kullanıcı linki kopyalayıp Chrome'a yapıştırırsa back-stack
+ * boş olur, fallback window.close() denenir; o da fail ederse en son
+ * çare wa.me redirect.
  */
 export function ReturnButtons({
   token,
@@ -29,34 +29,28 @@ export function ReturnButtons({
   /** Panel sayfasında ikinci buton gereksiz — false yap. */
   showPanel?: boolean;
 }) {
-  const [isInWebView, setIsInWebView] = useState(false);
-
-  useEffect(() => {
-    if (typeof navigator === "undefined") return;
-    setIsInWebView(WEBVIEW_RE.test(navigator.userAgent || ""));
-  }, []);
-
   async function handleWaClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    e.preventDefault();
     if (onWaReturn) {
       try { await onWaReturn(); } catch { /* swallow */ }
     }
-    if (isInWebView) {
-      // WhatsApp WebView içinde — yeni uygulama açma uyarısı yerine geri git.
-      e.preventDefault();
-      try {
-        if (window.history.length > 1) {
-          window.history.back();
-        } else {
-          window.close();
-        }
-      } catch {
-        window.close();
+    try {
+      if (typeof window !== "undefined" && window.history.length > 1) {
+        window.history.back();
+        return;
       }
+      if (typeof window !== "undefined") {
+        window.close();
+        // close başarısız olursa en son çare:
+        setTimeout(() => {
+          if (!document.hidden) window.location.href = `https://wa.me/${botPhone}`;
+        }, 200);
+      }
+    } catch {
+      window.location.href = `https://wa.me/${botPhone}`;
     }
-    // Standart tarayıcı: link normal davranır (whatsappDeeplink).
   }
 
-  const waHref = whatsappDeeplink(botPhone);
   const panelHref = `/tr/panel${token ? `?t=${encodeURIComponent(token)}` : ""}`;
 
   return (
@@ -70,7 +64,7 @@ export function ReturnButtons({
         </a>
       )}
       <a
-        href={waHref}
+        href={`https://wa.me/${botPhone}`}
         onClick={handleWaClick}
         className="block w-full bg-green-600 hover:bg-green-700 active:bg-green-800 text-white py-4 rounded-xl font-semibold text-base shadow-lg text-center active:scale-95 transition"
       >
