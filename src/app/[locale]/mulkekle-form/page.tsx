@@ -276,8 +276,6 @@ export default function MulkEkleFormPage() {
           </p>
         </div>
 
-        <ChromeSuggest />
-
         <form onSubmit={handleSubmit} className="space-y-5">
           <Section title="📋 Temel Bilgiler">
             <Field label="Başlık *">
@@ -350,9 +348,10 @@ export default function MulkEkleFormPage() {
               <p className="text-xs text-slate-500">Sunumda otomatik kullanılacak. İlk fotoğraf kapak olur.</p>
               {isInAppBrowser && (
                 <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  💡 <strong>Bu tarayıcıda ipucu:</strong> WhatsApp / in-app tarayıcılar 5+ foto seçimini sessizce kaybedebiliyor. <strong>Tek seferde 4 foto</strong> seçip yüklemenizi, sonra tekrar &quot;Fotoğraf Ekle&quot;ye basıp yenisini eklemenizi öneririm. (Toplam 15&apos;e kadar.)
+                  💡 <strong>Bu tarayıcıda ipucu:</strong> WhatsApp / in-app tarayıcılar 5+ foto seçimini uyarı vermeden başarısız olabiliyor. <strong>Tek seferde 4 foto</strong> seçip yüklemenizi, sonra tekrar &quot;Fotoğraf Ekle&quot;ye basıp yenisini eklemenizi öneririm.
                 </p>
               )}
+              <ChromeSuggest />
 
               {photoError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">

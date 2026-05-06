@@ -174,7 +174,14 @@ export default function ProfilDuzenlePage() {
               <input type="number" min="0" value={yearsExperience} onChange={e => setYearsExperience(e.target.value)} placeholder="örn. 8" className={inputCls} />
             </Field>
             <Field label="Kısa Biyografi (opsiyonel)">
-              <textarea rows={3} value={bio} onChange={e => setBio(e.target.value)} placeholder="Uzmanlık alanlarınız, çalışma tarzınız..." className={inputCls} />
+              <textarea
+                rows={4}
+                value={bio}
+                onChange={e => setBio(e.target.value)}
+                placeholder="Ör: 15 yıllık emlak deneyimim var. Kuzey Bodrum bölgesinde uzmanım. Müşteri odaklı, şeffaf çalışma prensibim..."
+                className={inputCls}
+              />
+              <p className="text-xs text-slate-500 mt-1">Kısa öz geçmiş + tecrübeleriniz + çalışma prensipleriniz.</p>
             </Field>
           </Section>
 

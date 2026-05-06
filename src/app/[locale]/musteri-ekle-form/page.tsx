@@ -36,7 +36,7 @@ export default function MusteriEkleFormPage() {
   const [email, setEmail] = useState("");
   const [lookingFor, setLookingFor] = useState<string[]>([]);
   const [propertyTypes, setPropertyTypes] = useState<string[]>([]);
-  const [rooms, setRooms] = useState("");
+  const [rooms, setRooms] = useState<string[]>([]);
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
   const [location, setLocation] = useState("");
@@ -63,6 +63,11 @@ export default function MusteriEkleFormPage() {
     setLookingFor(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
   }
 
+  function toggleRoom(r: string) {
+    setError("");
+    setRooms(prev => prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r]);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (name.trim().length < 2) { setError("İsim en az 2 karakter."); return; }
@@ -81,7 +86,7 @@ export default function MusteriEkleFormPage() {
           email: email.trim() || null,
           looking_for: lookingFor,
           property_type: propertyTypes,
-          rooms: rooms || null,
+          rooms: rooms.length > 0 ? rooms.join(", ") : null,
           budget_min: budgetMin ? Number(budgetMin) : null,
           budget_max: budgetMax ? Number(budgetMax) : null,
           location: location.trim() || null,
@@ -160,7 +165,19 @@ export default function MusteriEkleFormPage() {
                 ))}
               </div>
             </div>
-            <Pills label="Oda" value={rooms} options={ROOMS.map(r => ({id:r,label:r}))} onPick={setRooms} cols={3} />
+            <div>
+              <label className="block text-sm font-medium text-slate-900 mb-2">
+                Oda <span className="text-slate-400 text-xs">({rooms.length} seçili)</span>
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {ROOMS.map(r => (
+                  <button type="button" key={r} onClick={() => toggleRoom(r)}
+                    className={`py-2 rounded-lg text-sm font-medium border-2 ${rooms.includes(r) ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
             <Field label="Bölge / Mahalle">
               <input value={location} onChange={e => setLocation(e.target.value)} placeholder="Örn. Bitez, Yalıkavak" className={inputCls} />
             </Field>

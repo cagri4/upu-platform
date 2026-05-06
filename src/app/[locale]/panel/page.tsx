@@ -68,15 +68,17 @@ export default function YonetimPaneli() {
   const firstName = (displayName || "").split(/\s+/)[0] || "";
 
   function startUrl(entry: YardimEntry): string {
-    if (!entry.startAction) return `https://wa.me/${botPhone}?text=${encodeURIComponent(entry.waCommand)}`;
-    if (entry.startAction.type === "web") {
-      return `${entry.startAction.path}?t=${token || ""}`;
+    // Token reuse fix (2026-05-06): her Başlat tıklamasında /api/panel/start
+    // server-side endpoint'i yeni magic_link_token mint eder + redirect.
+    // Panel token'ı tekrar kullanılabilir kalır.
+    if (!entry.startAction || !token) {
+      return `https://wa.me/${botPhone}?text=${encodeURIComponent(entry.waCommand)}`;
     }
-    return `https://wa.me/${botPhone}?text=${encodeURIComponent(entry.startAction.text)}`;
+    return `/api/panel/start?cmd=${encodeURIComponent(entry.command)}&t=${encodeURIComponent(token)}`;
   }
 
   function startUrlMobile(entry: YardimEntry): string {
-    // WA-only komutlar için Android intent kullan
+    // WA-only komutlar için Android intent (helper kendi içinde fallback yapar)
     if (entry.startAction?.type === "wa") {
       return whatsappDeeplink(botPhone) + `?text=${encodeURIComponent(entry.startAction.text)}`;
     }
@@ -151,9 +153,14 @@ export default function YonetimPaneli() {
 
 function HelpModal({ entry, onClose, botPhone, token }: { entry: YardimEntry; onClose: () => void; botPhone: string; token: string | null }) {
   function startHref(): string {
-    if (!entry.startAction) return `https://wa.me/${botPhone}?text=${encodeURIComponent(entry.waCommand)}`;
-    if (entry.startAction.type === "web") return `${entry.startAction.path}?t=${token || ""}`;
-    return whatsappDeeplink(botPhone) + `?text=${encodeURIComponent(entry.startAction.text)}`;
+    if (!entry.startAction || !token) {
+      return `https://wa.me/${botPhone}?text=${encodeURIComponent(entry.waCommand)}`;
+    }
+    if (entry.startAction.type === "wa") {
+      return whatsappDeeplink(botPhone) + `?text=${encodeURIComponent(entry.startAction.text)}`;
+    }
+    // Web komutlar — server-side fresh token endpoint
+    return `/api/panel/start?cmd=${encodeURIComponent(entry.command)}&t=${encodeURIComponent(token)}`;
   }
 
   return (

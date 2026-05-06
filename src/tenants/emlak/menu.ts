@@ -67,16 +67,21 @@ export async function sendCommandHelp(
   command: string,
 ): Promise<void> {
   const sb = getServiceClient();
-  const token = randomBytes(16).toString("hex");
+  const panelToken = randomBytes(16).toString("hex");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  await sb.from("magic_link_tokens").insert({ user_id: ctx.userId, token, expires_at: expiresAt });
+  await sb.from("magic_link_tokens").insert({ user_id: ctx.userId, token: panelToken, expires_at: expiresAt });
 
-  const url = `${APP_URL}/tr/yardim/${command}?t=${token}`;
+  // 2026-05-06: "❓ Yardım" button yerine "🖥 Panele Git" — kullanıcı her
+  // komut sonrası kontrol noktasına dönebilir, başka komut başlatabilir.
+  // Tutorial linki text içinde clickable URL olarak verilir.
+  const panelUrl = `${APP_URL}/tr/panel?t=${panelToken}`;
+  const tutorialUrl = `${APP_URL}/tr/yardim/${command}`;
+
   await sendUrlButton(
     ctx.phone,
-    "❓ Bu komutu nasıl kullanırım?",
-    "❓ Yardım",
-    url,
+    `🖥 Tüm komutları görmek için panele dönebilirsin.\n\n_Bu komutun nasıl kullanıldığı:_ ${tutorialUrl}`,
+    "🖥 Panele Git",
+    panelUrl,
     { skipNav: true },
   );
 }

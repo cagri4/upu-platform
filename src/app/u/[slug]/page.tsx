@@ -33,7 +33,7 @@ interface PropCard {
   sunum_token: string | null;
 }
 
-type PageProps = { params: Promise<{ slug: string }> };
+type PageProps = { params: Promise<{ slug: string }>; searchParams?: Promise<{ t?: string; token?: string }> };
 
 async function getAgentBySlug(slug: string) {
   const supabase = getServiceClient();
@@ -170,8 +170,10 @@ const TYPE_LABELS: Record<string, string> = {
   rezidans: "Rezidans", yazlik: "Yazlık", buro_ofis: "Ofis", dukkan: "Dükkan",
 };
 
-export default async function AgentLandingPage({ params }: PageProps) {
+export default async function AgentLandingPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const sp = searchParams ? await searchParams : {};
+  const ownerToken = sp?.t || sp?.token || null;
   const data = await getAgentBySlug(slug);
   if (!data) notFound();
 
@@ -340,7 +342,7 @@ export default async function AgentLandingPage({ params }: PageProps) {
               <div className="relative p-8 md:p-12 flex flex-col justify-center">
                 <div className="absolute top-8 left-8 w-20 h-1.5 bg-[#B89B89]"></div>
                 <div className="absolute bottom-8 right-8 w-16 h-1.5 bg-[#B89B89]"></div>
-                <p className="text-xs uppercase tracking-[0.25em] text-[#B89B89] mb-3 font-bold">İletişim</p>
+                <p className="text-xs uppercase tracking-[0.15em] text-stone-700 mb-3 font-bold">İletişim</p>
                 <h2 className="text-4xl md:text-6xl font-black text-stone-900 leading-[0.9] mb-6 uppercase tracking-tight">
                   Sizinle<br/>Çalışmak<br/>İsterim
                 </h2>
@@ -379,6 +381,17 @@ export default async function AgentLandingPage({ params }: PageProps) {
               </div>
             </div>
           </section>
+
+          {ownerToken && (
+            <div className="text-center py-2">
+              <a
+                href={`/tr/panel?t=${encodeURIComponent(ownerToken)}`}
+                className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-6 py-3 rounded-full shadow"
+              >
+                🖥 Panele Git
+              </a>
+            </div>
+          )}
 
           <div className="text-center py-4">
             <a href="https://upudev.nl" target="_blank" rel="noopener noreferrer" className="text-xs text-stone-400 hover:text-stone-600">
