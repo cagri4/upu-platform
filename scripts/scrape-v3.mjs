@@ -306,6 +306,8 @@ async function scrape() {
         console.error(`  ⚠️ Sayfa yuklenemedi: ${err.message}`);
         break;
       }
+      // Listings ajax/lazy-load için selector wait (8 sn cap, sessiz fail).
+      await page.waitForSelector('.searchResultsItem', { timeout: 8000 }).catch(() => {});
       await sleep(2500, 4000);
 
       // Block/login check
@@ -326,6 +328,20 @@ async function scrape() {
 
       if (rawListings.length === 0) {
         console.log('  Sayfada ilan yok — bitis.');
+        // DEBUG: env DEBUG_EMPTY_DUMP=1 ile boş sayfanın HTML'i dump edilir.
+        // Kullanıcı manuel inceleyip selector mu / anti-bot mu diagnose eder.
+        if (process.env.DEBUG_EMPTY_DUMP === '1') {
+          try {
+            const html = await page.content();
+            const safe = `${listing_type}-${property_type}`.replace(/[^a-z0-9-]/g, '_');
+            const dumpPath = `/tmp/scrape-empty-${safe}-p${pageNum}.html`;
+            fs.writeFileSync(dumpPath, html);
+            console.log(`  📝 HTML dump: ${dumpPath} (${html.length} bytes)`);
+            console.log(`  Final URL: ${pageUrl}`);
+          } catch (dumpErr) {
+            console.error(`  HTML dump fail: ${dumpErr.message}`);
+          }
+        }
         break;
       }
 
