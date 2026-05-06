@@ -124,7 +124,7 @@ export default function ProfilDuzenlePage() {
           <div className="text-3xl mb-1">🪪</div>
           <h1 className="text-xl font-bold">Profil Düzenle</h1>
           <p className="text-violet-100 text-sm mt-1">
-            ℹ️ Verdiğiniz bilgiler birazdan oluşturacağımız <strong>kişisel web sayfanızda</strong> kullanılacak.
+            ℹ️ Vereceğiniz bilgiler, oluşturacağım <strong>web sayfanızda</strong> kullanılacak.
           </p>
         </div>
 
@@ -179,21 +179,32 @@ export default function ProfilDuzenlePage() {
           </Section>
 
           <Section title="🌐 Web Sayfası Adresi">
-            <Field label="Kullanıcı adı (URL'de görünecek)">
+            <Field label="Sayfa kısa adı (URL'de görünecek)">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-500 whitespace-nowrap">estateai.upudev.nl/u/</span>
                 <input value={webSlug} onChange={e => setWebSlug(e.target.value)} placeholder="ahmet-yilmaz" className={inputCls} />
               </div>
             </Field>
-            <p className="text-xs text-slate-500">Boş bırakırsan adınızdan otomatik üretirim.</p>
+            <p className="text-xs text-slate-500">
+              Boş bırakırsan adınızdan otomatik üretirim. Kendinize ait domain kullanmak için daha sonra bizimle iletişime geçebilirsiniz.
+            </p>
           </Section>
 
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
-          <button type="submit" disabled={status === "saving"}
-            className="w-full bg-violet-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95">
-            {status === "saving" ? "Kaydediliyor..." : "✅ Profili Kaydet"}
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href={`/tr/panel${token ? `?t=${encodeURIComponent(token)}` : ""}`}
+              className="flex-shrink-0 w-14 h-14 flex items-center justify-center bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-800 rounded-xl text-xl font-bold shadow active:scale-95 transition"
+              aria-label="Panele dön"
+            >
+              ←
+            </a>
+            <button type="submit" disabled={status === "saving"}
+              className="flex-1 bg-violet-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95">
+              {status === "saving" ? "Kaydediliyor..." : "Kaydet"}
+            </button>
+          </div>
         </form>
       </div>
     </div>

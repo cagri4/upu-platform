@@ -266,25 +266,25 @@ export const YARDIM_ENTRIES: YardimEntry[] = [
   {
     command: "profilduzenle",
     title: "🪪 Profilim",
-    summary: "Adın, ofis adın, foto, contact info — public landing'i besler.",
+    summary: "Adın, ofis adın, foto, iletişim bilgilerin — web sayfanı besler.",
     panelSection: "🪪 Profil",
     startAction: { type: "web", path: "/tr/profil-duzenle" },
     marketing:
-      "Firma kimliğinizi ve tercihlerinizi tek noktada yönetin. Profil fotoğrafı, ofis bilgileri, sektör tecrübesi, kısa bio — sunumlarınızdaki imza, müşteriye gönderilen public landing sayfası, sözleşme şablonu hepsi buradan beslenir. " +
+      "Firma kimliğinizi ve tercihlerinizi tek noktada yönetin. Profil fotoğrafı, ofis bilgileri, sektör tecrübesi, kısa bio — sunumlarınızdaki bilgiler, müşteriye gönderilen web sayfanız, sözleşme şablonu hepsi buradan beslenir. " +
       "Bir kez güncelleyin, her dokunduğunuz yerde tutarlı görünüm — markalaşma efektif, hatasız, otomatik. " +
-      "*Sorunu çözer*: Her sunumda imza güncellemenin angarya hâli. *Kazandırır*: Tutarlı profesyonel kimlik + public web sayfası.",
+      "*Sorunu çözer*: Her sunumda bilgilerinizi tekrar yazmanız gerekmez. *Kazandırır*: Tutarlı profesyonel kimlik + web sayfası.",
     waCommand: "profilduzenle",
-    what: "Public landing sayfanı (web sayfam) ve sunum imzalarını besleyen profil bilgilerin. Foto, ofis adı, lokasyon, deneyim yılı buradan güncellenir.",
+    what: "Web sayfanızı ve sunumlardaki bilgilerinizi besleyen profil verileriniz. Foto, ofis adı, lokasyon, deneyim yılı buradan güncellenir.",
     how: [
-      "*profilduzenle* yaz veya menüden Profilim'i seç.",
-      "Web form linki gelir.",
+      "Menüden *Profilim* > Başlat butonuna tıkla.",
+      "Web form açılır.",
       "Profil fotoğrafı yükle, ofis adı, telefon, lokasyon, deneyim yılı, kısa bio gir.",
-      "Kaydet → public landing (`upudev.nl/u/<slug>`) güncellenir.",
+      "Kaydet → web sayfanız (`upudev.nl/u/<sayfa-adı>`) güncellenir.",
     ],
-    example: "Müşteriye sunum gönderdin; sunum altında \"Hakkında\" bölümünde profil bilgilerin görünüyor. Foto eksikti — *profilduzenle* → foto yükle → kaydet. Sunum yenilenmesi gerekmez, otomatik yansır.",
+    example: "Müşteriye sunum gönderdin; sunum altında \"Hakkında\" bölümünde profil bilgilerin görünüyor. Foto eksikti — *Profilim* → Başlat → foto yükle → kaydet. Sunum yenilenmesi gerekmez, otomatik yansır.",
     faq: [
-      { q: "Slug'ımı değiştirebilir miyim?", a: "Şu an slug otomatik (display_name'den). Manuel değişim için destek." },
-      { q: "Web sayfam'da farklı şeyler göstermek istiyorum", a: "*websayfam* komutuyla landing'i ayrı düzenleyebilirsin — referanslar, mülkler, hakkında bölümü." },
+      { q: "Web sayfası adımı değiştirebilir miyim?", a: "Şu an web sayfası adı otomatik (display_name'den). Manuel değişim için destek." },
+      { q: "Web sayfamda farklı şeyler göstermek istiyorum", a: "*websayfam* komutuyla web sayfanızı ayrı düzenleyebilirsin — referanslar, mülkler, hakkında bölümü." },
     ],
   },
 ];

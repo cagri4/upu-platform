@@ -41,16 +41,16 @@ export async function sendEmlakMenu(ctx: Pick<WaContext, "userId" | "phone" | "u
     ? (
         `🎉 *Sistemimiz hazır!*\n\n` +
         (firstName ? `Hoş geldin ${firstName}. ` : "") +
-        `Yönetim panelinizden tüm komutları görsel kartlarla keşfedin — her komutun ne işe yaradığını ❓ butonuyla öğrenin, "Başlat" ile hemen kullanmaya başlayın.\n\n` +
+        `Tüm komutları görüntülemek için panele gidin — her komutun ❓ butonuyla ne yapacağını öğrenin, "Başlat" ile hemen kullanmaya başlayın.\n\n` +
         `_Hızlı erişim: WhatsApp'tan komut adını yazabilirsiniz (örn. *mulkekle*, *musterilerim*, *yardim*)._`
       )
     : (
         `🖥 *Yönetim Paneliniz*\n\n` +
-        `Tüm komutları kart layout'unda görüntülemek için panele girin.\n\n` +
+        `Tüm komutları görüntülemek için panele gidin.\n\n` +
         `_Hızlı erişim için WhatsApp'tan komut adını da yazabilirsiniz._`
       );
 
-  await sendUrlButton(ctx.phone, text, "🖥 Paneli Aç", url, { skipNav: true });
+  await sendUrlButton(ctx.phone, text, "🖥 Panele Git", url, { skipNav: true });
 }
 
 /**

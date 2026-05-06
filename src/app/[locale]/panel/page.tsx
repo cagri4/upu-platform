@@ -94,7 +94,7 @@ export default function YonetimPaneli() {
           </h1>
           {officeName && <p className="text-emerald-100 text-sm mt-1">🏢 {officeName}</p>}
           <p className="text-emerald-100 text-sm mt-3 leading-relaxed">
-            Sırasıyla &quot;Başlat&quot;ı tıklayarak sistemi keşfet. Her komutun <span className="font-mono bg-white/15 px-1.5 py-0.5 rounded">❓</span> ikonuyla ne yapacağını öğren.
+            Sırasıyla &quot;Başlat&quot; butonlarını tıklayarak sistemi keşfet, her komutun <span className="font-mono bg-white/15 px-1.5 py-0.5 rounded">❓</span> ikonuyla ne yapacağını öğren.
           </p>
         </div>
 
