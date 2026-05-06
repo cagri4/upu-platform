@@ -111,6 +111,13 @@ if [ "$PART" = "part3" ] || [ "$PART" = "full" ]; then
   DEPLOY_URL="${DEPLOY_URL:-https://upu-platform.vercel.app}"
   NOTIFY_OUT=$(curl -s "${DEPLOY_URL}/api/cron/tracking-notify" 2>&1)
   echo "$(date '+%Y-%m-%d %H:%M') — 🔔 Takip bildirimi: $NOTIFY_OUT" >> "$LOG_FILE"
+
+  # 7. Sabah özet rapor — admin'e WA bildirimi
+  if [ -f "$PROJECT_DIR/.env.production.local" ] && [ -z "$CRON_SECRET" ]; then
+    CRON_SECRET=$(grep ^CRON_SECRET "$PROJECT_DIR/.env.production.local" | cut -d= -f2 | tr -d '"')
+  fi
+  REPORT_OUT=$(curl -s -H "Authorization: Bearer ${CRON_SECRET}" "${DEPLOY_URL}/api/cron/scrape-report" 2>&1)
+  echo "$(date '+%Y-%m-%d %H:%M') — 📤 Sabah raporu: $REPORT_OUT" >> "$LOG_FILE"
 fi
 
 # 7. 5-imza monitoring — bug sinyali tetiklenirse WA admin'e alert
