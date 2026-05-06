@@ -51,33 +51,8 @@ export async function POST(req: NextRequest) {
     const newMeta = { ...meta, mulklerim_finished_at: new Date().toISOString() };
     await supabase.from("profiles").update({ metadata: newMeta }).eq("id", magicToken.user_id);
 
-    after(async () => {
-      try {
-        const phone = profile?.whatsapp_phone as string | undefined;
-        if (!phone) return;
-
-        const sb = getServiceClient();
-        const musteriToken = randomBytes(16).toString("hex");
-        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-        await sb.from("magic_link_tokens").insert({
-          user_id: magicToken.user_id,
-          token: musteriToken,
-          expires_at: expires,
-        });
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
-        const musteriUrl = `${appUrl}/tr/musteri-ekle-form?t=${musteriToken}`;
-
-        await sendUrlButton(
-          phone,
-          `🤝 *Sıradaki: Müşteri Ekle*\n\nBir müşteri profili ekleyin — ileride mülklerinizle eşleştirip otomatik sunum hazırlamanıza yardım ederim. Aşağıdaki formdan müşterinin bilgilerini ve aradığı kriterleri paylaşın.`,
-          "🤝 Müşteri Ekle",
-          musteriUrl,
-          { skipNav: true },
-        );
-      } catch (err) {
-        console.error("[mulklerim:finish]", err);
-      }
-    });
+    // Free-ride pattern (2026-05-06): "Sıradaki: Müşteri Ekle" chain
+    // transition kaldırıldı. Kullanıcı Panel'den kendi seçimi yapar.
 
     return NextResponse.json({ success: true, wa_url: waUrl });
   } catch (err) {

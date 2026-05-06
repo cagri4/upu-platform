@@ -74,24 +74,8 @@ export async function POST(req: NextRequest) {
           phone,
           `✅ *Takibin kaydedildi!*\n\nKriter: ${summary}\n\nYarın sabah 06:45'te bu kriterlere uyan yeni sahibi ilanlar WhatsApp'ınıza düşecek.\n\n💡 İleride menüden *📬 Günlük İlan Takibi*'ne dönerek kriterini güncelleyebilir ya da yeni aramalar yapabilirsiniz.`,
         );
-
-        // Auto-chain: mülk ekle butonu (intro flow)
-        const mulkToken = randomBytes(32).toString("hex");
-        const mulkExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-        await sb.from("magic_link_tokens").insert({
-          user_id: magicToken.user_id,
-          token: mulkToken,
-          expires_at: mulkExpires,
-        });
-        const mulkUrl = `https://estateai.upudev.nl/tr/mulkekle-form?t=${mulkToken}`;
-
-        await sendUrlButton(
-          phone,
-          `🏠 *Şimdi bir mülkünüzü birlikte ekleyelim ve size 3 dakikada profesyonel bir sunum hazırlayayım.*\n\nBu, yapay zekamın satış hedefli metin yazma gücünü göreceğiniz yer. Aşağıdaki formdan portföyünüzden bir mülkü tanıtın — gerisini ben halledeceğim.`,
-          "🏠 Mülk Ekle",
-          mulkUrl,
-          { skipNav: true },
-        );
+        // Free-ride pattern (2026-05-06): "Mülk Ekle" auto-chain push'u
+        // kaldırıldı. Kullanıcı Panel'den kendi seçimi yapar.
       } catch (waErr) {
         console.error("[takip:save] WA notify failed:", waErr);
       }

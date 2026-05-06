@@ -96,21 +96,16 @@ export async function POST(req: NextRequest) {
 
     const userPhone = profile?.whatsapp_phone as string | undefined;
 
-    // WA bildirimi + 2 yollu seçim (Sözleşme veya Sonra-Profil) — after() içinde
-    // WA Cloud API kısıtı: tek mesajda reply + URL button mix yok. İki reply
-    // button kullanıyoruz; "Sonra" → cmd:profilduzenle → handleProfilDuzenle
-    // kendi magic link URL button'unu zaten gönderiyor.
+    // Free-ride pattern (2026-05-06): "Sözleşme Yap / Sonra Profil" 2-button
+    // chain transition kaldırıldı. Sadece sade onay mesajı — kullanıcı
+    // sonraki adımı kendi inisiyatifiyle Panel'den seçer.
     after(async () => {
       try {
         if (!userPhone) return;
-        await sendButtons(
+        const { sendText } = await import("@/platform/whatsapp/send");
+        await sendText(
           userPhone,
-          `✅ *Müşteri kaydedildi!*\n\n👤 ${name}\n📞 ${phone}\n\nİsterseniz şimdi bu müşteri için *Yetkilendirme Sözleşmesi* oluşturalım. Veya 'Sonra' ile profil adımına geçin.`,
-          [
-            { id: "cmd:sozlesme", title: "📋 Sözleşme Yap" },
-            { id: "cmd:profilduzenle", title: "🪪 Sonra (Profil)" },
-          ],
-          { skipNav: true },
+          `✅ *Müşteri kaydedildi!*\n\n👤 ${name}\n📞 ${phone}`,
         );
       } catch (err) {
         console.error("[musteri:save] WA notify failed:", err);

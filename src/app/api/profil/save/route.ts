@@ -67,24 +67,14 @@ export async function POST(req: NextRequest) {
 
     await supabase.from("magic_link_tokens").update({ used_at: new Date().toISOString() }).eq("id", magicToken.id);
 
+    // Free-ride pattern (2026-05-06): "ilk mülkünü ekle" chain transition
+    // kaldırıldı. Profil kurulum sonrası kullanıcıya selamlama + Panele Git
+    // CTA gönderilir (sendEmlakMenu greet=true).
     try {
-      const firstName = body.display_name.trim().split(/\s+/)[0];
-
-      // Generate form magic link (2h) so welcome message directly opens property form
-      const formToken = randomBytes(32).toString("hex");
-      const formExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-      await supabase.from("magic_link_tokens").insert({
-        user_id: magicToken.user_id,
-        token: formToken,
-        expires_at: formExpires,
-      });
-      const formUrl = `https://estateai.upudev.nl/tr/mulkekle-form?t=${formToken}`;
-
-      await sendUrlButton(userPhone,
-        `🎉 Hoşgeldin ${firstName}!\n\nProfilin hazır. Şimdi ilk mülkünü ekleyip satışları artıralım.\n\nMülk bilgilerini doldurman için sana özel bir form hazırladım. Formu aç, kolayca doldur, kaydet butonuyla WhatsApp'a dön.\n\n_Link 1 hafta geçerlidir._`,
-        "📝 Formu Aç",
-        formUrl,
-        { skipNav: true },
+      const { sendEmlakMenu } = await import("@/tenants/emlak/menu");
+      await sendEmlakMenu(
+        { userId: magicToken.user_id, phone: userPhone, userName: body.display_name },
+        true,
       );
     } catch (err) {
       console.error("[profil:save] WA notify failed:", err);

@@ -54,40 +54,8 @@ export async function POST(req: NextRequest) {
       .update({ content: newContent })
       .eq("id", pres.id);
 
-    after(async () => {
-      try {
-        const sb = getServiceClient();
-        const { data: profile } = await sb
-          .from("profiles")
-          .select("whatsapp_phone")
-          .eq("id", pres.user_id)
-          .single();
-
-        const phone = profile?.whatsapp_phone as string | undefined;
-        if (!phone) return;
-
-        const mulkleriToken = randomBytes(16).toString("hex");
-        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-        await sb.from("magic_link_tokens").insert({
-          user_id: pres.user_id,
-          token: mulkleriToken,
-          expires_at: expires,
-        });
-
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
-        const mulkleriUrl = `${appUrl}/tr/mulklerim?t=${mulkleriToken}`;
-
-        await sendUrlButton(
-          phone,
-          `📁 *Şimdi daha önce eklediğiniz mülkleri yönetelim.*\n\nPortföyünüzdeki tüm mülkleri kart olarak görüntüleyebilir, düzenleyebilir ya da silebilirsiniz.`,
-          "📁 Mülkleri Yönet",
-          mulkleriUrl,
-          { skipNav: true },
-        );
-      } catch (err) {
-        console.error("[sunum:finish]", err);
-      }
-    });
+    // Free-ride pattern (2026-05-06): "Mülkleri Yönet" chain transition
+    // kaldırıldı. Kullanıcı Panel'den kendi seçimi yapar.
 
     return NextResponse.json({ success: true, wa_url: waUrl });
   } catch (err) {

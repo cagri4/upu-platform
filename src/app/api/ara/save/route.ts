@@ -69,38 +69,9 @@ export async function POST(req: NextRequest) {
 
     const { data: results } = await query.order("created_at", { ascending: false }).limit(50);
 
-    // Trigger followup WA button for takip setup (only first time)
-    const metadata = (profile?.metadata as Record<string, unknown>) || {};
-    const alreadyShown = metadata.demo_shown === true;
-
-    if (!alreadyShown && userPhone) {
-      try {
-        // Mark demo as shown
-        await supabase.from("profiles").update({
-          metadata: { ...metadata, demo_shown: true },
-        }).eq("id", magicToken.user_id);
-
-        // Generate magic token for takip page
-        const takipToken = randomBytes(16).toString("hex");
-        const takipExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-        await supabase.from("magic_link_tokens").insert({
-          user_id: magicToken.user_id,
-          token: takipToken,
-          expires_at: takipExpires,
-        });
-        const takipUrl = `https://estateai.upudev.nl/tr/takip?t=${takipToken}`;
-
-        await sendUrlButton(
-          userPhone,
-          `🎯 *Şimdi her sabah düzenli gelecek takibini kuralım.* Hangi kriterlere uyan ilanlar günlük brifinginizde olsun?`,
-          "🎯 Takip Kur",
-          takipUrl,
-          { skipNav: true },
-        );
-      } catch (waErr) {
-        console.error("[ara:save] takip WA failed:", waErr);
-      }
-    }
+    // Free-ride pattern (2026-05-06): tour transition kaldırıldı.
+    // Eski "Takip Kur" otomatik push'u silindi — kullanıcı arama sonucunu
+    // görür, kendi inisiyatifiyle Panel'den İlan Takip'e geçer.
 
     return NextResponse.json({
       success: true,
