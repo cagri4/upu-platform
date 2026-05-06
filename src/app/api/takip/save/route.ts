@@ -74,8 +74,8 @@ export async function POST(req: NextRequest) {
           phone,
           `✅ *Takibin kaydedildi!*\n\nKriter: ${summary}\n\nYarın sabah 06:45'te bu kriterlere uyan yeni sahibi ilanlar WhatsApp'ınıza düşecek.\n\n💡 İleride menüden *📬 Günlük İlan Takibi*'ne dönerek kriterini güncelleyebilir ya da yeni aramalar yapabilirsiniz.`,
         );
-        // Free-ride pattern (2026-05-06): "Mülk Ekle" auto-chain push'u
-        // kaldırıldı. Kullanıcı Panel'den kendi seçimi yapar.
+        const { sendBackToPanel } = await import("@/tenants/emlak/menu");
+        await sendBackToPanel(magicToken.user_id, phone);
       } catch (waErr) {
         console.error("[takip:save] WA notify failed:", waErr);
       }

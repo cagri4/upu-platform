@@ -144,6 +144,9 @@ export async function POST(req: NextRequest) {
           webPanelUrl,
           { skipNav: true },
         );
+
+        const { sendBackToPanel } = await import("@/tenants/emlak/menu");
+        await sendBackToPanel(magicToken.user_id, userPhone);
       } catch (err) {
         console.error("[profilduzenle:save] WA notify failed:", err);
       }

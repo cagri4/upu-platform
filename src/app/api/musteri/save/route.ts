@@ -107,6 +107,8 @@ export async function POST(req: NextRequest) {
           userPhone,
           `✅ *Müşteri kaydedildi!*\n\n👤 ${name}\n📞 ${phone}`,
         );
+        const { sendBackToPanel } = await import("@/tenants/emlak/menu");
+        await sendBackToPanel(magicToken.user_id, userPhone);
       } catch (err) {
         console.error("[musteri:save] WA notify failed:", err);
       }

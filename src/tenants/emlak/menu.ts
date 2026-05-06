@@ -85,3 +85,30 @@ export async function sendCommandHelp(
     { skipNav: true },
   );
 }
+
+/**
+ * Save endpoint'lerinde ana CTA mesajından (örn. "Web Sayfamı Aç",
+ * "Sunumu Gör") sonra ikinci mesaj olarak gönderilen kısa "Panele Git"
+ * URL button. Token 1 saat TTL — panele dönüş hızlı kullanım içindir.
+ *
+ * WA Cloud API'da reply + URL button mix yok; bu yüzden ana CTA + Panele
+ * Git ayrı 2 mesaj olarak gönderilir.
+ */
+export async function sendBackToPanel(
+  userId: string,
+  phone: string,
+): Promise<void> {
+  const sb = getServiceClient();
+  const panelToken = randomBytes(16).toString("hex");
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 saat
+  await sb.from("magic_link_tokens").insert({ user_id: userId, token: panelToken, expires_at: expiresAt });
+
+  const panelUrl = `${APP_URL}/tr/panel?t=${panelToken}`;
+  await sendUrlButton(
+    phone,
+    "Diğer komutlar için panele dönebilirsiniz.",
+    "🖥 Panele Git",
+    panelUrl,
+    { skipNav: true },
+  );
+}

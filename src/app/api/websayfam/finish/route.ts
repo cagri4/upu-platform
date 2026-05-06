@@ -85,7 +85,9 @@ export async function POST(req: NextRequest) {
 
         await sendButtons(phone, text, [
           { id: "cmd:menu", title: "📋 Ana Menü" },
-        ]);
+        ], { skipNav: true });
+        const { sendBackToPanel } = await import("@/tenants/emlak/menu");
+        await sendBackToPanel(magicToken.user_id, phone);
       } catch (err) {
         console.error("[websayfam:finish]", err);
       }
