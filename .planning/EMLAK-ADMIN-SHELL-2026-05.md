@@ -323,3 +323,78 @@ receipt kapsamında, ekstra iş gerekmiyor.)
 3. Mesaj 3'te magic link mint + sendUrlButton "🖥 Paneli Aç"
 4. Eski tenant menu helper (sendEmlakMenu vb.) çağrısını kaldır — Mesaj 3 onu kapsar
 5. profile metadata `onboarding_completed: true` set et
+
+---
+
+## 11. Panelim Yeniden Tasarım (2026-05-07)
+
+Kullanıcı testi sonucu /tr/panel sayfası + sidebar baştan elden geçirildi.
+
+### KRİTİK BUG FIX
+- **Sorun:** Sidebar "Sözleşmeler" item'ı `/api/panel/start?cmd=sozlesme&...` URL'ine gidiyordu; o endpoint `yardim-content` startAction'a göre `wa.me/<bot>?text=sozlesme`'ye 302'liyordu. Kullanıcı sidebar'da bir item'a tıklayınca WhatsApp'a fırlatılmış oluyordu.
+- **Fix:** Sözleşmeler href'i `/tr/sozlesmelerim?t=<TOKEN>` (yeni placeholder sayfa) ile değiştirildi. **Replikasyon kuralı:** sidebar item href'leri ASLA `/api/panel/start` veya `wa.me`'ye gitmemeli — yalnız panel-içi `/tr/<page>` URL'leri (Web Sitem hariç, o `/api/panel/web-sitem` redirect endpoint'ine gider — slug → /u/<slug> çevirisi server-side).
+
+### Hero + KPI değişiklikleri
+- "Dashboard" → **"Panelim"**
+- Hero metni: "Sisteminizi buradan yönetin" + italic alt satır "_Paneldeki kartlara sol menüden de ulaşabilirsiniz._"
+- KPI rename: "Aktif Takip" → **Takiplerim**, "Toplam Sunum" → **Sunumlarım**
+- Kaldırıldı: "Bu Hafta Sunum" (presentations_this_week count endpoint'ten silindi)
+- Eklenenler (8 kart toplam): **Takvim** (Yakında badge), **Profilim** ("Düzenle"), **Web Sitem** ("Aktif"/"Kur" — slug varlığına göre)
+
+### Yeni Sidebar (13 item + 1 logout)
+
+```
+1.  🏠 Panelim          → /tr/panel
+2.  🏢 Mülklerim        → /tr/mulklerim
+3.  👥 Müşterilerim     → /tr/musterilerim
+4.  📋 Sözleşmelerim    → /tr/sozlesmelerim       (placeholder)
+5.  📊 Sunumlarım       → /tr/sunumlarim
+6.  🎯 Takiplerim       → /tr/takip
+7.  🔍 Portföy Tara     → /tr/ara
+8.  📅 Takvim           → /tr/takvim              (placeholder, "Yakında")
+9.  👤 Profilim         → /tr/profil-duzenle      (form, shell DIŞI)
+10. 🌐 Web Sitem        → /api/panel/web-sitem    (server-side redirect)
+─────────────────────── separatorBefore: true
+11. ℹ️  UPUDev Hakkında → /tr/hakkinda
+12. 💬 Öneri / Şikayet  → /tr/oneri               (placeholder)
+13. 🛟 Destek Talebi    → /tr/destek              (placeholder)
+─────────────────────── (logout button — separate section)
+14. 💬 WhatsApp'a Dön   → handleLogout (history.back / wa.me)
+```
+
+`SidebarItem.separatorBefore?: boolean` flag'i eklendi — true olan item'dan
+önce `<hr>` render edilir.
+
+### Topbar Değişiklikleri
+- Search input **kaldırıldı** (kullanıcı istemiyor; Faz 3'te wire-up'lı arama planlanmıyor şu an)
+- 🔔 bildirim + 🤖 AI placeholder ikonlar **kaldı** (Faz 3 backlog)
+
+### Sidebar Layout Refactor
+- `<aside>` → `flex flex-col` yapıldı
+- Header `flex-shrink-0`, nav `flex-1 overflow-y-auto`, footer `flex-shrink-0`
+- 13 item + logout footer küçük ekranda taşmaz, scroll devreye girer
+- Eski `absolute bottom-0` footer kaldırıldı (taşma + overlap riski vardı)
+
+### Yeni Placeholder Sayfalar (Tümü `(panel)` route group içinde)
+- `/tr/takvim` — TODO + randevu, "Yakında"
+- `/tr/sozlesmelerim` — Aktif sözleşmeler, "Yakında" + WA komut hatırlatması
+- `/tr/hakkinda` — UPUDev firma metni + iletişim
+- `/tr/oneri` — Öneri/şikayet, "Yakında"
+- `/tr/destek` — Destek talebi, "Yakında"
+
+### Yeni API Endpoint
+- `/api/panel/web-sitem?t=<TOKEN>` — token validate → profile.metadata.agent_profile.web_slug bak → varsa /u/<slug> 302, yoksa /tr/profil-duzenle?t=<freshToken> 302
+
+### Faz 3 Backlog (bu turda yapılmayan)
+- Takvim kart İÇERİĞİ — TODO listesi, tarih+saat, WA bildirim entegrasyonu
+- Bildirim zili wire-up
+- AI robot drawer
+- /tr/oneri /tr/destek formları (gerçek submit)
+- CRUD pattern: Mülklerim/Müşterilerim sayfalarına "+ Yeni Ekle" + tablo aksiyon (Düzenle/Sil/Sunum yap) — şu an sayfalar liste-only
+
+### Replikasyon Notu
+Bu sidebar yapısı 6 SaaS'a kopyalanırken:
+- Item 1-7 sektörel (her tenant kendi listesi — Bölüm 4 tablosu)
+- Item 8-13 ortak (Takvim, Profilim, Web Sitem, Hakkında, Öneri, Destek)
+- Item 14 logout (tüm tenant'larda aynı handleLogout fonksiyonu)
+- Web Sitem her tenant için /api/<saas>/web-sitem redirect endpoint'i gerekir (otel için /u/<otel-slug>, market için /u/<market-slug> vb.)

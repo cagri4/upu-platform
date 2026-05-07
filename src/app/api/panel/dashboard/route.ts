@@ -25,15 +25,19 @@ export async function GET(req: NextRequest) {
 
   const userId = pt.user_id;
 
-  // Paralel count sorguları
-  const [propsRes, custRes, contractsRes, presRes, trackingRes, weekPresRes] = await Promise.all([
+  // Paralel count sorguları + profile (web_slug için)
+  const [propsRes, custRes, contractsRes, presRes, trackingRes, profileRes] = await Promise.all([
     sb.from("emlak_properties").select("*", { count: "exact", head: true }).eq("user_id", userId).neq("status", "deleted"),
     sb.from("emlak_customers").select("*", { count: "exact", head: true }).eq("user_id", userId).is("deleted_at", null),
     sb.from("contracts").select("*", { count: "exact", head: true }).eq("user_id", userId).neq("status", "cancelled"),
     sb.from("emlak_presentations").select("*", { count: "exact", head: true }).eq("user_id", userId).neq("status", "deleted"),
     sb.from("emlak_tracking_criteria").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("active", true),
-    sb.from("emlak_presentations").select("*", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+    sb.from("profiles").select("metadata").eq("id", userId).single(),
   ]);
+
+  const meta = (profileRes.data?.metadata as Record<string, unknown> | null) || {};
+  const agent = (meta.agent_profile as { web_slug?: string } | undefined);
+  const webSlug = agent?.web_slug || null;
 
   return NextResponse.json({
     success: true,
@@ -43,7 +47,7 @@ export async function GET(req: NextRequest) {
       contracts: contractsRes.count || 0,
       presentations: presRes.count || 0,
       tracking: trackingRes.count || 0,
-      presentations_this_week: weekPresRes.count || 0,
     },
+    webSlug,
   });
 }

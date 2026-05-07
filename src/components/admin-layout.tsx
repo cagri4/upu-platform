@@ -12,22 +12,33 @@ export interface SidebarItem {
   href: (token: string) => string;
   /** Aktif highlight için path eşleşmesi. */
   matchPath?: string;
+  /** Bu item'dan ÖNCE bir ayraç çizgi render et (info bölümü ayırıcı). */
+  separatorBefore?: boolean;
 }
 
 /**
  * Default emlak sidebar — geriye dönük uyumluluk için. AdminLayout
  * `sidebarItems` prop'u geçilirse onu kullanır, geçilmezse bu default.
  * Yeni tenant'lar (otel, bayi vs.) kendi item listesini geçer.
+ *
+ * KRİTİK: Tüm href'ler GERÇEK panel sayfasına gider. Hiçbir item /api/panel/start
+ * veya wa.me'ye 302'lemiyor (eski "Sözleşmeler → wa.me" bug'ı 2026-05-07'de
+ * giderildi — Sözleşmelerim placeholder sayfasına yönlendirir).
  */
 const DEFAULT_SIDEBAR_ITEMS: SidebarItem[] = [
-  { id: "dashboard",  label: "Dashboard",        icon: "🏠", href: t => `/tr/panel?t=${encodeURIComponent(t)}`,             matchPath: "/tr/panel" },
-  { id: "mulkler",    label: "Mülkler",          icon: "🏢", href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}`,         matchPath: "/tr/mulklerim" },
-  { id: "musteriler", label: "Müşteriler",       icon: "👥", href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}`,      matchPath: "/tr/musterilerim" },
-  { id: "sozlesme",   label: "Sözleşmeler",      icon: "📋", href: t => `/api/panel/start?cmd=sozlesme&t=${encodeURIComponent(t)}` },
-  { id: "sunumlar",   label: "Sunumlar",         icon: "📊", href: t => `/tr/sunumlarim?t=${encodeURIComponent(t)}`,        matchPath: "/tr/sunumlarim" },
-  { id: "takip",      label: "Takip Listeleri",  icon: "🎯", href: t => `/tr/takip?t=${encodeURIComponent(t)}`,             matchPath: "/tr/takip" },
-  { id: "ara",        label: "Portföy Tara",     icon: "🔍", href: t => `/tr/ara?t=${encodeURIComponent(t)}`,               matchPath: "/tr/ara" },
-  { id: "profil",     label: "Profilim",         icon: "⚙️",  href: t => `/tr/profil-duzenle?t=${encodeURIComponent(t)}`,    matchPath: "/tr/profil-duzenle" },
+  { id: "panelim",     label: "Panelim",          icon: "🏠", href: t => `/tr/panel?t=${encodeURIComponent(t)}`,             matchPath: "/tr/panel" },
+  { id: "mulkler",     label: "Mülklerim",        icon: "🏢", href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}`,         matchPath: "/tr/mulklerim" },
+  { id: "musteriler",  label: "Müşterilerim",     icon: "👥", href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}`,      matchPath: "/tr/musterilerim" },
+  { id: "sozlesme",    label: "Sözleşmelerim",    icon: "📋", href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}`,    matchPath: "/tr/sozlesmelerim" },
+  { id: "sunumlar",    label: "Sunumlarım",       icon: "📊", href: t => `/tr/sunumlarim?t=${encodeURIComponent(t)}`,        matchPath: "/tr/sunumlarim" },
+  { id: "takip",       label: "Takiplerim",       icon: "🎯", href: t => `/tr/takip?t=${encodeURIComponent(t)}`,             matchPath: "/tr/takip" },
+  { id: "ara",         label: "Portföy Tara",     icon: "🔍", href: t => `/tr/ara?t=${encodeURIComponent(t)}`,               matchPath: "/tr/ara" },
+  { id: "takvim",      label: "Takvim",           icon: "📅", href: t => `/tr/takvim?t=${encodeURIComponent(t)}`,            matchPath: "/tr/takvim" },
+  { id: "profil",      label: "Profilim",         icon: "👤", href: t => `/tr/profil-duzenle?t=${encodeURIComponent(t)}`,    matchPath: "/tr/profil-duzenle" },
+  { id: "websitem",    label: "Web Sitem",        icon: "🌐", href: t => `/api/panel/web-sitem?t=${encodeURIComponent(t)}` },
+  { id: "hakkinda",    label: "UPUDev Hakkında",  icon: "ℹ️",  href: t => `/tr/hakkinda?t=${encodeURIComponent(t)}`,           matchPath: "/tr/hakkinda", separatorBefore: true },
+  { id: "oneri",       label: "Öneri / Şikayet",  icon: "💬", href: t => `/tr/oneri?t=${encodeURIComponent(t)}`,             matchPath: "/tr/oneri" },
+  { id: "destek",      label: "Destek Talebi",    icon: "🛟", href: t => `/tr/destek?t=${encodeURIComponent(t)}`,            matchPath: "/tr/destek" },
 ];
 
 export interface AdminLayoutProps {
@@ -146,11 +157,11 @@ export function AdminLayout({
       {/* Sidebar — mobile=drawer (w-64), tablet=icon-only (w-16), desktop=full (w-64) */}
       <aside
         id="sidebar-nav"
-        className={`fixed top-0 left-0 h-full w-64 md:w-16 lg:w-64 bg-stone-900 text-white z-40 transform transition-transform md:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full w-64 md:w-16 lg:w-64 bg-stone-900 text-white z-40 transform transition-transform md:translate-x-0 flex flex-col ${
           drawerOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        <div className="p-5 md:p-3 lg:p-5 border-b border-stone-700 md:flex md:items-center md:justify-center lg:block">
+        <div className="p-5 md:p-3 lg:p-5 border-b border-stone-700 md:flex md:items-center md:justify-center lg:block flex-shrink-0">
           <div className="text-xl font-bold">
             <span className="md:hidden lg:inline">{brandTitle}</span>
             <span className="hidden md:inline lg:hidden text-2xl" title={brandTitle}>{brandIconCollapsed}</span>
@@ -159,30 +170,34 @@ export function AdminLayout({
             <div className="text-xs text-stone-400 mt-1 truncate md:hidden lg:block">{officeName}</div>
           )}
         </div>
-        <nav className="p-3 md:p-2 lg:p-3 space-y-1" aria-label="Ana menü">
+        <nav className="p-3 md:p-2 lg:p-3 space-y-1 flex-1 overflow-y-auto" aria-label="Ana menü">
           {items.map((item) => {
             const isActive = item.id === activeId;
             const href = token ? item.href(token) : "#";
             return (
-              <a
-                key={item.id}
-                href={href}
-                onClick={() => setDrawerOpen(false)}
-                title={item.label}
-                aria-current={isActive ? "page" : undefined}
-                className={`flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm transition focus:outline-none focus:ring-2 ${accent.focusRing} ${
-                  isActive
-                    ? `${accent.active} text-white font-semibold lg:border-l-4 ${accent.border} lg:-ml-1 lg:pl-4`
-                    : "text-stone-300 hover:bg-stone-800 hover:text-white"
-                }`}
-              >
-                <span className="text-base">{item.icon}</span>
-                <span className="md:hidden lg:inline">{item.label}</span>
-              </a>
+              <div key={item.id}>
+                {item.separatorBefore && (
+                  <hr className="my-2 border-stone-700" aria-hidden="true" />
+                )}
+                <a
+                  href={href}
+                  onClick={() => setDrawerOpen(false)}
+                  title={item.label}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm transition focus:outline-none focus:ring-2 ${accent.focusRing} ${
+                    isActive
+                      ? `${accent.active} text-white font-semibold lg:border-l-4 ${accent.border} lg:-ml-1 lg:pl-4`
+                      : "text-stone-300 hover:bg-stone-800 hover:text-white"
+                  }`}
+                >
+                  <span className="text-base">{item.icon}</span>
+                  <span className="md:hidden lg:inline">{item.label}</span>
+                </a>
+              </div>
             );
           })}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-3 md:p-2 lg:p-3 border-t border-stone-700">
+        <div className="p-3 md:p-2 lg:p-3 border-t border-stone-700 flex-shrink-0">
           <button
             onClick={handleLogout}
             title="WhatsApp'a Dön"
@@ -208,16 +223,7 @@ export function AdminLayout({
             >
               ☰
             </button>
-            <div className="flex-1 max-w-md hidden sm:block">
-              <input
-                type="search"
-                placeholder="🔍 Genel arama..."
-                className={`w-full bg-slate-100 text-slate-700 placeholder:text-slate-400 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 ${accent.focusRing}`}
-                disabled
-                aria-label="Arama (yakında)"
-              />
-            </div>
-            <div className="flex-1 sm:flex-none" />
+            <div className="flex-1" />
             <div className="flex items-center gap-2 text-slate-500">
               <button
                 className={`p-2 hover:bg-slate-100 rounded-lg focus:outline-none focus:ring-2 ${accent.focusRing} min-w-[44px] min-h-[44px] flex items-center justify-center`}
