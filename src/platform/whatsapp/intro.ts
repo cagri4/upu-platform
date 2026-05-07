@@ -91,16 +91,10 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
 
   await sleep(1800);
 
-  // Mesaj 3 — Paneli Aç CTA (magic link mint inline; sendEmlakMenu yerine geçer)
-  const { randomBytes } = await import("crypto");
+  // Mesaj 3 — Paneli Aç CTA (evergreen URL — eski mesajlardan tıklansa da çalışır)
   const { sendUrlButton } = await import("./send");
   const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
-  const panelToken = randomBytes(16).toString("hex");
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  await supabase.from("magic_link_tokens").insert({
-    user_id: ctx.userId, token: panelToken, expires_at: expiresAt,
-  });
-  const panelUrl = `${APP_URL}/tr/panel?t=${panelToken}`;
+  const panelUrl = `${APP_URL}/api/panel/evergreen?phone=${encodeURIComponent(ctx.phone)}`;
   const ctaMsg =
     `🖥 *Yönetim paneliniz hazır.*\n\n` +
     `Tüm sisteminizi yönetmek için panele gidin.\n\n` +

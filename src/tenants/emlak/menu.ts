@@ -30,12 +30,8 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
 export async function sendEmlakMenu(ctx: Pick<WaContext, "userId" | "phone" | "userName">, greet = false): Promise<void> {
   const firstName = (ctx.userName || "").split(/\s+/)[0] || "";
 
-  const supabase = getServiceClient();
-  const token = randomBytes(16).toString("hex");
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  await supabase.from("magic_link_tokens").insert({ user_id: ctx.userId, token, expires_at: expiresAt });
-
-  const url = `${APP_URL}/tr/panel?t=${token}`;
+  // Evergreen URL — pre-mint token KULLANMIYORUZ; eski mesajlardan tıklansa da çalışır
+  const url = `${APP_URL}/api/panel/evergreen?phone=${encodeURIComponent(ctx.phone)}`;
 
   const text = greet
     ? (
@@ -98,12 +94,11 @@ export async function sendBackToPanel(
   userId: string,
   phone: string,
 ): Promise<void> {
-  const sb = getServiceClient();
-  const panelToken = randomBytes(16).toString("hex");
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 saat
-  await sb.from("magic_link_tokens").insert({ user_id: userId, token: panelToken, expires_at: expiresAt });
-
-  const panelUrl = `${APP_URL}/tr/panel?t=${panelToken}`;
+  // Evergreen pattern (2026-05-07): pre-mint token YERİNE /api/panel/evergreen
+  // URL'i kullanılır. Tıklandığında server fresh token mint eder, eski mesajlardan
+  // bile süresi dolmuş hatası vermez.
+  void userId; // referans için tutuldu — endpoint phone'dan user'ı çözer
+  const panelUrl = `${APP_URL}/api/panel/evergreen?phone=${encodeURIComponent(phone)}`;
   await sendUrlButton(
     phone,
     "Diğer komutlar için panele dönebilirsiniz.",
