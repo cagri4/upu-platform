@@ -1,5 +1,6 @@
 /**
- * /api/takip/init — validate magic token + return user's existing criteria (if any)
+ * /api/takip/init?t=<token>
+ * Multi-row (2026-05-08): kullanıcının tüm takiplerini liste olarak döner.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
@@ -23,19 +24,12 @@ export async function GET(req: NextRequest) {
 
   const { data: criteria } = await supabase
     .from("emlak_tracking_criteria")
-    .select("neighborhoods, property_types, listing_type, price_min, price_max, active")
+    .select("id, name, neighborhoods, property_types, listing_type, price_min, price_max, active, created_at")
     .eq("user_id", magicToken.user_id)
-    .maybeSingle();
+    .order("created_at", { ascending: false });
 
   return NextResponse.json({
     success: true,
-    criteria: criteria || {
-      neighborhoods: [],
-      property_types: [],
-      listing_type: null,
-      price_min: null,
-      price_max: null,
-      active: true,
-    },
+    trackings: criteria || [],
   });
 }

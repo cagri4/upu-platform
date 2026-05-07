@@ -643,14 +643,122 @@ Her SaaS'ın "yetkilendirme" sözleşmesi farklı (otel: rezervasyon onay, marke
 
 ---
 
-## 19. FAZ B (Takiplerim Yönet) — Ertelendi
+## 19. FAZ B — Takiplerim Multi-Row + Yönet (2026-05-08)
 
-Brief Takiplerim sayfası için liste + Durdur/Düzenle/Sil yönetim menüsü istemişti.
+Onay (a): schema migration ile çok-takip yönetimi açıldı.
 
-**Engel:** `emlak_tracking_criteria` tablosu **user başına UPSERT** (single row). Yani bir kullanıcının tek takip kriteri var; brief'in çok-takip-yönet modeli schema değişikliği gerektirir.
+### Migration SQL
+`supabase/migrations/20260508120000_tracking_multirow.sql`:
+```sql
+ALTER TABLE emlak_tracking_criteria DROP CONSTRAINT IF EXISTS uq_tracking_user;
+ALTER TABLE emlak_tracking_criteria ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT 'İlk takibim';
+UPDATE emlak_tracking_criteria SET name = ... (lokasyon+listing_type'tan üret);
+CREATE INDEX idx_tracking_user_created ON emlak_tracking_criteria(user_id, created_at DESC);
+```
+- `uq_tracking_user` UNIQUE constraint kaldırıldı → multiple rows per user
+- `name` kolonu eklendi (kullanıcı etiketi: "Yalıkavak villa kiralık")
+- Mevcut `active` boolean Durdur/Aktif toggle için kullanılır
+- Per-user 5 takip max — uygulama-seviyesi limit
 
-**Sonraki tura ertelendi.** Karar gerekli:
-- (a) Schema migration: `user_id` PK kaldır, `id` PK kullan, çok-row aç → çok takip listesi
-- (b) Single-row mevcut model devam: /tr/takip sayfası mevcut criteria'yı kart olarak göster + Düzenle/Durdur (active toggle)/Sıfırla butonları
+### API Endpoints (multi-row)
+- `/api/takip/init` — `.maybeSingle()` → list array
+- `/api/takip/save` — `id` varsa UPDATE, yoksa INSERT (5 limit kontrolü)
+- `/api/takip/delete` — DB'den row siler
+- `/api/takip/toggle` — active boolean flip
 
-Karar (a) ise: scrape pipeline (cron) bu çoklu kriterleri ayrı işlemek zorunda; daha kapsamlı bir refactor.
+### UI — /tr/takip Sayfası Yeniden
+İki view mode:
+- **List view (default)**: hero "Takiplerim" + "+ Takip Ekle" butonu + her takip kart (name + summary + status badge + 3-buton aksiyon: ⏸ Durdur / ▶️ Aktif, ✏️ Düzenle, 🗑 Sil) + ReturnButtons
+- **Form view**: "Takip Ekle" / "Takibi Düzenle" hero + `name *` zorunlu alan + bölge/tip/listing/fiyat seçimleri + ✅ Kaydet/Güncelle + ← Geri
+
+Kart aksiyon UI:
+```
+[Header: name + status badge]
+[Body: bölge · tip · listing summary + price range]
+[Footer 3-col: ⏸ Durdur | ✏️ Düzenle | 🗑 Sil]
+```
+
+### Cron Refactor (`tenant-briefings.ts`)
+Eski: tek `.maybeSingle()` criteria → tüm leads filtre
+Yeni: tüm aktif criteria fetch → her takibe ayrı match → per-takip sections
+
+Mesaj formatı (multi-takip):
+```
+🌅 Günaydın {ad}!
+
+3 takipten toplam 12 yeni sahibi ilan var. ...
+
+📍 Yalıkavak villa kiralık (5)
+1. ...
+2. ...
+
+📍 Bitez daire satılık (4)
+...
+
+📍 Turgutreis 2+1 (3)
+...
+```
+Tek takip için section header gösterilmez (önceki davranışla uyum).
+
+`allMatchingIds` Set → "uyan ama hepsini gördün" mesajını koruyor.
+
+### Replikasyon
+Sektörel takip pattern her SaaS için aynı:
+- bayi: tahsilat takibi (vade hatırlatma kriterleri)
+- otel: doluluk takibi (uyarı eşik kriterleri)
+- market: stok takibi (kritik seviye kriterleri)
+- restoran: müdavim takibi (X+ haftadır gelmedi alarmı)
+
+Pattern aynı: multi-row tablo + name + active toggle + per-criteria cron loop + per-section message.
+
+---
+
+## 20. AI Sözleşme Generation (FAZ A genişletme, 2026-05-08)
+
+Sözleşme oluşturma akışına Claude Haiku ile metin üretimi eklendi.
+
+### Endpoint: `/api/sozlesme/generate`
+- POST: token, property_id, customer_id, commission, duration, exclusive
+- Claude Haiku 4.5 model
+- System prompt: TBK + KVKK uyumlu Türkçe sözleşme, 8-bölüm format
+  (BAŞLIK, TARAFLAR, KONU, BEDEL, KOMİSYON/SÜRE/MÜNHASIRLIK, CAYMA, UYUŞMAZLIK, İMZA)
+- User prompt: mülk + müşteri + ofis bilgileri + parametreler
+- Output: 1-2 sayfa formal sözleşme + KVKK disclaimer
+
+### Disclaimer (otomatik append)
+```
+*Bu sözleşme yapay zeka tarafından oluşturulmuş bir taslaktır.
+Hukuki bağlayıcılık ve özel durumlarınız için bir avukatla görüşmeniz önerilir.
+UPU Dev sözleşmenin hukuki uygunluğundan sorumlu değildir.*
+```
+
+### UI Flow Güncellendi
+`/tr/sozlesme-yap` artık 5 state:
+1. **loading** → init fetch
+2. **select** → mülk + müşteri + parametre seç → "🤖 AI ile Sözleşme Üret"
+3. **generating** → spinner (5-10s)
+4. **preview** → metni göster + ✏️ Düzenle (textarea toggle) / 👁 Önizleme + ✅ Kaydet + ← Geri
+5. **done** → imza linki + 📋 Kopyala + 💬 WA Paylaş
+
+### contract_data JSONB Genişletildi
+- `generated_text`: Claude'un ürettiği metin (+disclaimer)
+- `edited`: kullanıcı manuel edit ettiyse true
+
+### Hata Durumu
+- ANTHROPIC_API_KEY yoksa → askClaude boş döner → 503 "AI üretim mevcut değil"
+- Generic hata → 500 "lütfen tekrar deneyin"
+- Kullanıcı state="select"e döner; parametreleri korur
+
+### Maliyet
+~2000 input + ~2000 output × Haiku rate ≈ cents-altı/sözleşme. Kullanıcı başına dakika başına 3 üretim limiti şu an UI tarafında implicit (state machine) — explicit rate limit gerekirse Redis sayaç eklenir.
+
+### Replikasyon
+6 SaaS doc-yap pattern'inde AI generation **standart**:
+- Her SaaS'ın kendi system prompt'u (sektörel hukuki çerçeve)
+- otel: rezervasyon onay sözleşmesi → KVKK + Tüketici Hakları
+- market: tedarikçi sözleşmesi → TTK
+- bayi: bayilik sözleşmesi → Rekabet Kurulu uyumlu
+- restoran: catering anlaşması → Hijyen + KVKK
+- doga: bağışçı/gönüllü sözleşmesi → Vakıf hukuku
+
+Her tenant için aynı endpoint pattern (`/api/<saas>/sozlesme/generate`), aynı disclaimer pattern, aynı 5-state UI.

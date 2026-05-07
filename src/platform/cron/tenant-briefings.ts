@@ -92,21 +92,28 @@ registerBriefing("emlak", async (userId) => {
   const phone = profile.whatsapp_phone as string;
   const firstName = ((profile.display_name as string | null) || "").split(/\s+/)[0] || "Merhaba";
 
-  // User criteria (or default)
-  const { data: crit } = await supabase
+  // Multi-row (2026-05-08): kullanıcının TÜM aktif takiplerini al.
+  // Her bir takibe göre ayrı match çalıştır, mesajda hangi takibin
+  // kaç ilan getirdiği belirtilir.
+  const { data: critList } = await supabase
     .from("emlak_tracking_criteria")
-    .select("neighborhoods, property_types, listing_type, price_min, price_max, active")
+    .select("id, name, neighborhoods, property_types, listing_type, price_min, price_max")
     .eq("user_id", userId)
-    .eq("active", true)
-    .maybeSingle();
+    .eq("active", true);
 
-  const criteria: TrackingCriteria = crit ? {
-    neighborhoods: (crit.neighborhoods as string[]) || [],
-    property_types: (crit.property_types as string[]) || [],
-    listing_type: (crit.listing_type as string | null) || null,
-    price_min: (crit.price_min as number | null) || null,
-    price_max: (crit.price_max as number | null) || null,
-  } : DEFAULT_CRITERIA;
+  const criteriaList: Array<{ name: string; criteria: TrackingCriteria }> =
+    (critList && critList.length > 0)
+      ? critList.map(c => ({
+          name: (c.name as string) || "Takibim",
+          criteria: {
+            neighborhoods: (c.neighborhoods as string[]) || [],
+            property_types: (c.property_types as string[]) || [],
+            listing_type: (c.listing_type as string | null) || null,
+            price_min: (c.price_min as number | null) || null,
+            price_max: (c.price_max as number | null) || null,
+          },
+        }))
+      : [{ name: "Genel", criteria: DEFAULT_CRITERIA }];
 
   // Today's leads (Bodrum only — daily_leads may contain cross-Turkey rows
   // from sahibinden's "similar listings" fallback when a category has few
@@ -125,16 +132,23 @@ registerBriefing("emlak", async (userId) => {
     return "";
   }
 
-  // Filter by criteria
-  const matching = leads.filter(l => matchesCriteria(l, criteria));
-
-  // Exclude already-seen (lead_calls has any action logged)
+  // Excluded already-seen (lead_calls has any action logged)
   const { data: calls } = await supabase
     .from("emlak_lead_calls")
     .select("source_id")
     .eq("user_id", userId);
   const seenIds = new Set((calls || []).map(c => c.source_id as string));
-  const fresh = matching.filter(l => !seenIds.has(l.source_id));
+
+  // Per-takip match — her takip için ayrı fresh leads listesi
+  const takipSections: Array<{ name: string; fresh: DailyLead[] }> = [];
+  const allMatchingIds = new Set<string>();
+  for (const { name: takipName, criteria } of criteriaList) {
+    const matching = leads.filter(l => matchesCriteria(l, criteria));
+    matching.forEach(l => allMatchingIds.add(l.source_id));
+    const fresh = matching.filter(l => !seenIds.has(l.source_id));
+    if (fresh.length > 0) takipSections.push({ name: takipName, fresh });
+  }
+  const totalFresh = takipSections.reduce((s, x) => s + x.fresh.length, 0);
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
 
@@ -148,36 +162,43 @@ registerBriefing("emlak", async (userId) => {
   });
   const takipUrl = `${appUrl}/tr/takip?t=${takipToken}`;
 
-  if (fresh.length === 0) {
-    const msg = matching.length === 0
-      ? `🌅 Günaydın ${firstName}!\n\nBugün ${leads.length} yeni sahibi ilan var ama senin kriterine uyanı yok. Kriterini genişletmek ister misin?`
-      : `🌅 Günaydın ${firstName}!\n\nKriterine uyan ${matching.length} ilan var ama hepsini daha önce işaretlemişsin 💪`;
+  if (totalFresh === 0) {
+    const msg = allMatchingIds.size === 0
+      ? `🌅 Günaydın ${firstName}!\n\nBugün ${leads.length} yeni sahibi ilan var ama takiplerinizin kriterlerine uyanı yok. Kriterleri genişletmek ister misiniz?`
+      : `🌅 Günaydın ${firstName}!\n\nTakiplerinize uyan ${allMatchingIds.size} ilan var ama hepsini daha önce işaretlemişsiniz 💪`;
     await sendText(phone, msg);
-    await sendUrlButton(phone, `🎯 Takip kriterini düzenle:`, "🎯 Kriterler", takipUrl, { skipNav: true });
+    await sendUrlButton(phone, `🎯 Takip kriterlerini düzenleyin:`, "🎯 Takiplerim", takipUrl, { skipNav: true });
     return "";
   }
 
-  const criteriaSummary = [
-    criteria.neighborhoods.length > 0 ? criteria.neighborhoods.join("+") : "Tüm Bodrum",
-    criteria.property_types.length > 0 ? criteria.property_types.join("+") : "Tüm tipler",
-    criteria.listing_type || "Sat+Kir",
-  ].join(" · ");
+  const takipsHeader = takipSections.length > 1
+    ? `${takipSections.length} takipten toplam *${totalFresh} yeni sahibi ilan*`
+    : `*${totalFresh} yeni sahibi ilan*`;
 
-  const header = `🌅 Günaydın ${firstName}!\n\nBugün kriterine (${criteriaSummary}) uyan *${fresh.length} yeni sahibi ilan* var. Linke tıkla, sahibinden'de telefonu gör, ara 👇\n`;
-  const footer = `\n\n─────────\n_Linke tıklayınca sahibinden'deki ilanı görürsün, kendi hesabınla telefonu reveal edebilirsin._`;
+  const header = `🌅 Günaydın ${firstName}!\n\n${takipsHeader} var. Linke tıklayın, sahibinden'de telefonu görün, arayın 👇\n`;
+  const footer = `\n\n─────────\n_Linke tıklayınca sahibinden'deki ilanı görürsünüz, kendi hesabınızla telefonu reveal edebilirsiniz._`;
 
-  // Chunk if over 3500 chars
+  // Chunk per-takip — section header'ı + leads
   const chunks: string[] = [];
   let current = header;
-  fresh.forEach((lead, i) => {
-    const block = `\n${formatLead(lead, i + 1)}\n`;
-    if (current.length + block.length > 3500) {
+  for (const section of takipSections) {
+    const sectionHeader = takipSections.length > 1 ? `\n📍 *${section.name}* (${section.fresh.length})\n` : "";
+    if (current.length + sectionHeader.length > 3500) {
       chunks.push(current);
-      current = block;
+      current = sectionHeader;
     } else {
-      current += block;
+      current += sectionHeader;
     }
-  });
+    section.fresh.forEach((lead, i) => {
+      const block = `\n${formatLead(lead, i + 1)}\n`;
+      if (current.length + block.length > 3500) {
+        chunks.push(current);
+        current = block;
+      } else {
+        current += block;
+      }
+    });
+  }
   chunks.push(current + footer);
 
   for (const chunk of chunks) {

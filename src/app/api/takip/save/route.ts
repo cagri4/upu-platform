@@ -1,13 +1,18 @@
 /**
- * /api/takip/save — upsert user's daily lead tracking criteria.
- * POST { token, neighborhoods, property_types, listing_type, price_min, price_max }
+ * /api/takip/save — kullanıcının takip kriteri ekle veya düzenle.
+ *
+ * Multi-row (2026-05-08): id verilirse UPDATE, yoksa INSERT.
+ * Kullanıcı başına max 5 aktif takip (uygulama-seviyesi limit).
+ *
+ * POST { token, id?, name, neighborhoods, property_types, listing_type, price_min, price_max }
  */
 import { NextRequest, NextResponse, after } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { sendText, sendUrlButton } from "@/platform/whatsapp/send";
-import { randomBytes } from "crypto";
+import { sendText } from "@/platform/whatsapp/send";
 
 export const dynamic = "force-dynamic";
+
+const MAX_PER_USER = 5;
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,42 +31,73 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
     }
 
+    const id = typeof body.id === "string" && body.id ? body.id : null;
+    const isEdit = !!id;
+    const name = typeof body.name === "string" && body.name.trim() ? body.name.trim().slice(0, 80) : "Takibim";
     const neighborhoods = Array.isArray(body.neighborhoods) ? body.neighborhoods : [];
     const propertyTypes = Array.isArray(body.property_types) ? body.property_types : [];
     const listingType = typeof body.listing_type === "string" && body.listing_type ? body.listing_type : null;
     const priceMin = Number.isFinite(Number(body.price_min)) && Number(body.price_min) > 0 ? Number(body.price_min) : null;
     const priceMax = Number.isFinite(Number(body.price_max)) && Number(body.price_max) > 0 ? Number(body.price_max) : null;
 
-    const { error } = await supabase.from("emlak_tracking_criteria").upsert(
-      {
+    if (isEdit) {
+      // UPDATE — sadece kullanıcının kendi row'u
+      const { error } = await supabase.from("emlak_tracking_criteria")
+        .update({
+          name,
+          neighborhoods,
+          property_types: propertyTypes,
+          listing_type: listingType,
+          price_min: priceMin,
+          price_max: priceMax,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .eq("user_id", magicToken.user_id);
+      if (error) {
+        console.error("[takip:save] update", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ success: true, id });
+    }
+
+    // INSERT — limit kontrol
+    const { count } = await supabase.from("emlak_tracking_criteria")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", magicToken.user_id);
+    if ((count ?? 0) >= MAX_PER_USER) {
+      return NextResponse.json({
+        error: `En fazla ${MAX_PER_USER} takip ekleyebilirsiniz. Mevcut takiplerinizden birini silin.`,
+      }, { status: 400 });
+    }
+
+    const { data: inserted, error } = await supabase.from("emlak_tracking_criteria")
+      .insert({
         user_id: magicToken.user_id,
+        name,
         neighborhoods,
         property_types: propertyTypes,
         listing_type: listingType,
         price_min: priceMin,
         price_max: priceMax,
         active: true,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
-    );
-
-    if (error) {
-      console.error("[takip:save]", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      })
+      .select("id")
+      .single();
+    if (error || !inserted) {
+      console.error("[takip:save] insert", error);
+      return NextResponse.json({ error: error?.message || "Kaydedilemedi." }, { status: 500 });
     }
 
-    // WA bildirimleri response döndükten SONRA çalışır — client-side
-    // setStatus("done") gecikmesin diye after() callback'inde gönderilir.
+    // WA bildirimi (yalnız ilk eklemede, edit'te değil)
     after(async () => {
       try {
         const sb = getServiceClient();
         const { data: profile } = await sb
           .from("profiles")
-          .select("whatsapp_phone, display_name")
+          .select("whatsapp_phone")
           .eq("id", magicToken.user_id)
           .single();
-
         if (!profile?.whatsapp_phone) return;
         const phone = profile.whatsapp_phone as string;
         const summary = [
@@ -69,10 +105,9 @@ export async function POST(req: NextRequest) {
           propertyTypes.length > 0 ? propertyTypes.join(", ") : "Tüm tipler",
           listingType ? (listingType === "satilik" ? "Satılık" : "Kiralık") : "Satılık+Kiralık",
         ].join(" · ");
-
         await sendText(
           phone,
-          `✅ *Takibin kaydedildi!*\n\nKriter: ${summary}\n\nYarın sabah 06:45'te bu kriterlere uyan yeni sahibi ilanlar WhatsApp'ınıza düşecek.\n\n💡 İleride menüden *📬 Günlük İlan Takibi*'ne dönerek kriterini güncelleyebilir ya da yeni aramalar yapabilirsiniz.`,
+          `✅ *Takip eklendi!*\n\n📍 *${name}*\nKriter: ${summary}\n\nYarın sabah 06:45'te bu kriterlere uyan yeni sahibi ilanlar WhatsApp'ınıza düşecek.`,
         );
         const { sendBackToPanel } = await import("@/tenants/emlak/menu");
         await sendBackToPanel(magicToken.user_id, phone);
@@ -81,7 +116,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, id: inserted.id });
   } catch (err) {
     console.error("[takip:save]", err);
     return NextResponse.json({ error: "Bir hata oluştu." }, { status: 500 });
