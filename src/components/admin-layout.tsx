@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
-const SIDEBAR_ITEMS: Array<{
+export interface SidebarItem {
   id: string;
   label: string;
   icon: string;
@@ -12,7 +12,14 @@ const SIDEBAR_ITEMS: Array<{
   href: (token: string) => string;
   /** Aktif highlight için path eşleşmesi. */
   matchPath?: string;
-}> = [
+}
+
+/**
+ * Default emlak sidebar — geriye dönük uyumluluk için. AdminLayout
+ * `sidebarItems` prop'u geçilirse onu kullanır, geçilmezse bu default.
+ * Yeni tenant'lar (otel, bayi vs.) kendi item listesini geçer.
+ */
+const DEFAULT_SIDEBAR_ITEMS: SidebarItem[] = [
   { id: "dashboard",  label: "Dashboard",        icon: "🏠", href: t => `/tr/panel?t=${encodeURIComponent(t)}`,             matchPath: "/tr/panel" },
   { id: "mulkler",    label: "Mülkler",          icon: "🏢", href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}`,         matchPath: "/tr/mulklerim" },
   { id: "musteriler", label: "Müşteriler",       icon: "👥", href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}`,      matchPath: "/tr/musterilerim" },
@@ -37,8 +44,34 @@ export interface AdminLayoutProps {
   activeItem?: string;
   /** Üst sağdaki çıkış / WhatsApp'a Dön linki. */
   botPhone?: string;
+  /**
+   * Tenant-specific sidebar items. Geçilmezse emlak default kullanılır.
+   * Replikasyon brief'i her tenant için kendi listesini geçirir.
+   */
+  sidebarItems?: SidebarItem[];
+  /** Sidebar üst başlığı — örn "🖥 UPU Emlak", "🏨 UPU Otel". */
+  brandTitle?: string;
+  /** Sidebar collapsed (tablet) modda gösterilen ikon. */
+  brandIconCollapsed?: string;
+  /** Aktif item highlight rengi (Tailwind class — örn "emerald-600"). */
+  accentColor?: "emerald" | "rose" | "indigo" | "amber" | "violet" | "cyan";
   children: ReactNode;
 }
+
+// Tailwind classes need static class names for JIT — accent map.
+const ACCENT_CLASSES: Record<NonNullable<AdminLayoutProps["accentColor"]>, {
+  active: string;
+  border: string;
+  focusRing: string;
+  avatar: string;
+}> = {
+  emerald: { active: "bg-emerald-600", border: "lg:border-emerald-300", focusRing: "focus:ring-emerald-400", avatar: "bg-emerald-100 text-emerald-700" },
+  rose:    { active: "bg-rose-600",    border: "lg:border-rose-300",    focusRing: "focus:ring-rose-400",    avatar: "bg-rose-100 text-rose-700" },
+  indigo:  { active: "bg-indigo-600",  border: "lg:border-indigo-300",  focusRing: "focus:ring-indigo-400",  avatar: "bg-indigo-100 text-indigo-700" },
+  amber:   { active: "bg-amber-600",   border: "lg:border-amber-300",   focusRing: "focus:ring-amber-400",   avatar: "bg-amber-100 text-amber-700" },
+  violet:  { active: "bg-violet-600",  border: "lg:border-violet-300",  focusRing: "focus:ring-violet-400",  avatar: "bg-violet-100 text-violet-700" },
+  cyan:    { active: "bg-cyan-600",    border: "lg:border-cyan-300",    focusRing: "focus:ring-cyan-400",    avatar: "bg-cyan-100 text-cyan-700" },
+};
 
 export function AdminLayout({
   token,
@@ -46,15 +79,21 @@ export function AdminLayout({
   officeName,
   activeItem,
   botPhone = "31644967207",
+  sidebarItems,
+  brandTitle = "🖥 UPU Emlak",
+  brandIconCollapsed = "🖥",
+  accentColor = "emerald",
   children,
 }: AdminLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const firstName = (displayName || "").split(/\s+/)[0] || "";
   const pathname = usePathname() || "";
+  const items = sidebarItems ?? DEFAULT_SIDEBAR_ITEMS;
+  const accent = ACCENT_CLASSES[accentColor];
 
   // Aktif item: explicit prop > pathname match > "dashboard" default
   const autoActive =
-    SIDEBAR_ITEMS.find((it) => it.matchPath && (pathname === it.matchPath || pathname.startsWith(it.matchPath + "/")))?.id;
+    items.find((it) => it.matchPath && (pathname === it.matchPath || pathname.startsWith(it.matchPath + "/")))?.id;
   const activeId = activeItem ?? autoActive ?? "dashboard";
 
   // ESC kapat + body scroll lock (drawer açıkken)
@@ -113,15 +152,15 @@ export function AdminLayout({
       >
         <div className="p-5 md:p-3 lg:p-5 border-b border-stone-700 md:flex md:items-center md:justify-center lg:block">
           <div className="text-xl font-bold">
-            <span className="md:hidden lg:inline">🖥 UPU Emlak</span>
-            <span className="hidden md:inline lg:hidden text-2xl" title="UPU Emlak">🖥</span>
+            <span className="md:hidden lg:inline">{brandTitle}</span>
+            <span className="hidden md:inline lg:hidden text-2xl" title={brandTitle}>{brandIconCollapsed}</span>
           </div>
           {officeName && (
             <div className="text-xs text-stone-400 mt-1 truncate md:hidden lg:block">{officeName}</div>
           )}
         </div>
         <nav className="p-3 md:p-2 lg:p-3 space-y-1" aria-label="Ana menü">
-          {SIDEBAR_ITEMS.map((item) => {
+          {items.map((item) => {
             const isActive = item.id === activeId;
             const href = token ? item.href(token) : "#";
             return (
@@ -131,9 +170,9 @@ export function AdminLayout({
                 onClick={() => setDrawerOpen(false)}
                 title={item.label}
                 aria-current={isActive ? "page" : undefined}
-                className={`flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm transition focus:outline-none focus:ring-2 focus:ring-emerald-400 ${
+                className={`flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm transition focus:outline-none focus:ring-2 ${accent.focusRing} ${
                   isActive
-                    ? "bg-emerald-600 text-white font-semibold lg:border-l-4 lg:border-emerald-300 lg:-ml-1 lg:pl-4"
+                    ? `${accent.active} text-white font-semibold lg:border-l-4 ${accent.border} lg:-ml-1 lg:pl-4`
                     : "text-stone-300 hover:bg-stone-800 hover:text-white"
                 }`}
               >
@@ -147,7 +186,7 @@ export function AdminLayout({
           <button
             onClick={handleLogout}
             title="WhatsApp'a Dön"
-            className="w-full flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm text-stone-300 hover:bg-stone-800 transition focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            className={`w-full flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm text-stone-300 hover:bg-stone-800 transition focus:outline-none focus:ring-2 ${accent.focusRing}`}
           >
             <span>💬</span>
             <span className="md:hidden lg:inline">WhatsApp&apos;a Dön</span>
@@ -161,7 +200,7 @@ export function AdminLayout({
         <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
           <div className="flex items-center gap-3 px-4 py-3">
             <button
-              className="md:hidden p-2 -ml-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 rounded-lg"
+              className={`md:hidden p-2 -ml-2 text-slate-700 focus:outline-none focus:ring-2 ${accent.focusRing} rounded-lg`}
               onClick={() => setDrawerOpen(!drawerOpen)}
               aria-label={drawerOpen ? "Menüyü kapat" : "Menüyü aç"}
               aria-expanded={drawerOpen}
@@ -173,7 +212,7 @@ export function AdminLayout({
               <input
                 type="search"
                 placeholder="🔍 Genel arama..."
-                className="w-full bg-slate-100 text-slate-700 placeholder:text-slate-400 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className={`w-full bg-slate-100 text-slate-700 placeholder:text-slate-400 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 ${accent.focusRing}`}
                 disabled
                 aria-label="Arama (yakında)"
               />
@@ -181,21 +220,21 @@ export function AdminLayout({
             <div className="flex-1 sm:flex-none" />
             <div className="flex items-center gap-2 text-slate-500">
               <button
-                className="p-2 hover:bg-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                className={`p-2 hover:bg-slate-100 rounded-lg focus:outline-none focus:ring-2 ${accent.focusRing} min-w-[44px] min-h-[44px] flex items-center justify-center`}
                 title="Bildirimler (yakında)"
                 aria-label="Bildirimler"
               >
                 🔔
               </button>
               <button
-                className="p-2 hover:bg-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                className={`p-2 hover:bg-slate-100 rounded-lg focus:outline-none focus:ring-2 ${accent.focusRing} min-w-[44px] min-h-[44px] flex items-center justify-center`}
                 title="AI yardımcı (yakında)"
                 aria-label="AI yardımcı"
               >
                 🤖
               </button>
               <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-200">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-semibold">
+                <div className={`w-8 h-8 rounded-full ${accent.avatar} flex items-center justify-center text-sm font-semibold`}>
                   {firstName.charAt(0).toUpperCase() || "?"}
                 </div>
                 <span className="text-sm text-slate-700">{firstName || "—"}</span>

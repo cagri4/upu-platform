@@ -116,32 +116,50 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Bayi intro — koridor akışı: tek-tıklama Form'u Aç.
+ * Bayi intro — warm welcome 3 mesaj (2026-05-07 emlak replikasyonu).
  *
- * 2 blok ardışık mesaj (WA gateway'in doğal sırası):
- *   1) UPU tanıtım + 5 yetenek vaadi (text)
- *   2) Form çağrısı + 📝 Form'u Aç CTA URL butonu (sendUrlButton)
+ * Sohbet havası için 3 mesaj 1.8 sn aralıklarla:
+ *   1) Selamlama + core promise (firstName ile)
+ *   2) "Yapabileceklerim" 4 madde
+ *   3) Form çağrısı + 📝 Form'u Aç CTA URL
  *
- * Eski "🚀 Başlayalım" reply button + ara onay mesajı kaldırıldı; koridor
- * mantığında ara onay yok, kullanıcı kayıt olduğu an akış başlar ve tek
- * tıklamayla web formunu açar.
+ * Tüm metinler formal "siz" + "yapay zeka" (tutarlı tone).
  */
 async function startBayiIntro(ctx: WaContext): Promise<boolean> {
-  // Blok 1 — tanıtım
-  const introMsg =
-    `👋 Merhaba! Ben UPU, bayi yönetim asistanınız. 7/24 dağıtım operasyonunuzu kolaylaştıracağım.\n\n` +
-    `*Yapabileceklerimden bazıları:*\n\n` +
-    `• Her sabah günlük brifing — açık siparişler, kritik stok, vadesi gelen ödemeler özet\n` +
-    `• Bayilerinizden gelen siparişleri telefonla çağırınca tek tıkla sisteme kaydederim\n` +
-    `• Vadesi yaklaşan tahsilatlar için otomatik hatırlatma metni hazırlarım, onayınızla bayiye gönderirim\n` +
-    `• Tüm bayilerinize tek tıkla kampanya duyurusu yaparım — %10 indirim, hızlı sipariş kampanyası gibi\n` +
-    `• Stok kritik seviyeye düşünce uyarır, tedarikçi sipariş önerisi sunarım`;
-  await sendText(ctx.phone, introMsg);
+  // firstName — profile.metadata.firma_profili.yetkili_adi öncelik,
+  // sonra display_name. Bilinmiyorsa selamlama generic kalır.
+  const sb = getServiceClient();
+  const { data: profile } = await sb
+    .from("profiles")
+    .select("display_name, metadata")
+    .eq("id", ctx.userId)
+    .maybeSingle();
+  const meta = (profile?.metadata || {}) as Record<string, unknown>;
+  const firmaProfili = (meta.firma_profili as { yetkili_adi?: string } | undefined);
+  const fullName = firmaProfili?.yetkili_adi || profile?.display_name || "";
+  const firstName = fullName ? fullName.split(/\s+/)[0] : "";
 
-  // Blok 2 — magic link Form'u Aç
+  // Mesaj 1 — selamlama + core promise
+  const greet = firstName ? `👋 Merhaba ${firstName}! ✨` : `👋 Merhaba! ✨`;
+  await sendText(ctx.phone,
+    `${greet}\n\n` +
+    `Ben kişisel asistanınız UPU. 7/24 tahsilatlarınızı ve sipariş operasyonunuzu kolaylaştıracağım.`,
+  );
+  await sleep(1800);
+
+  // Mesaj 2 — yetenekler 4 madde
+  await sendText(ctx.phone,
+    `🎯 *Yapabileceklerimden bazıları:*\n\n` +
+    `✅ Yeni bayi başvurularınızı telefonla onaylayıp sisteme eklerim\n` +
+    `✅ Vadesi gelen tahsilatlarınız için hatırlatma metni hazırlar, onayınızla bayiye gönderirim\n` +
+    `✅ Bayi siparişlerinizi WhatsApp'tan tek akışta sisteme kaydederim\n` +
+    `✅ Tüm bayilerinize tek tıkla kampanya duyurusu yaparım`,
+  );
+  await sleep(1800);
+
+  // Mesaj 3 — magic link + Form/Panel CTA
   const { randomBytes } = await import("crypto");
   const { sendUrlButton } = await import("./send");
-  const sb = getServiceClient();
   const token = randomBytes(16).toString("hex");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   await sb.from("magic_link_tokens").insert({
