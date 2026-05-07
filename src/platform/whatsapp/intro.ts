@@ -21,7 +21,7 @@ import {
 } from "./onboarding";
 import { getServiceClient } from "@/platform/auth/supabase";
 
-const INTRO_TENANTS = new Set(["emlak", "bayi", "restoran", "siteyonetim", "otel"]);
+const INTRO_TENANTS = new Set(["emlak", "bayi", "restoran", "siteyonetim", "otel", "market"]);
 
 /**
  * Start the intro — value-first demo.
@@ -51,6 +51,10 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   }
   if (ctx.tenantKey === "otel") {
     return await startOtelIntro(ctx);
+  }
+  if (ctx.tenantKey === "market") {
+    const { startMarketIntro } = await import("@/tenants/market/intro");
+    return await startMarketIntro(ctx);
   }
 
   const supabase = getServiceClient();
