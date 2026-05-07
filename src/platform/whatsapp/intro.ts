@@ -64,8 +64,8 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
 
   // Mesaj 1 — greeting
   const greeting = firstName
-    ? `👋 Merhaba ${firstName}! ✨\n\nBen UPU, kişisel AI asistanın. 7/24 satışlarını artırmak için çalışacağım.`
-    : `👋 Merhaba! ✨\n\nBen UPU, kişisel AI asistanın. 7/24 satışlarını artırmak için çalışacağım.`;
+    ? `👋 Merhaba ${firstName}! ✨\n\nBen kişisel asistanınız UPU. 7/24 satışlarınızı artırmak için çalışacağım.`
+    : `👋 Merhaba! ✨\n\nBen kişisel asistanınız UPU. 7/24 satışlarınızı artırmak için çalışacağım.`;
   await sendText(ctx.phone, greeting);
 
   await sleep(1800);
@@ -73,10 +73,10 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   // Mesaj 2 — kabiliyetler
   const capabilities =
     `🎯 *Yapabileceklerimden bazıları:*\n\n` +
-    `✅ Her sabah Bodrum'daki sahibi ilanlarını filtreleyip sana gönderirim\n` +
-    `✅ AI ile dakikalar içinde profesyonel sunum hazırlarım\n` +
-    `✅ Sahibinden ilan yüklemeni 30 dk'dan 3 dk'ya indiririm\n` +
-    `✅ Müşteri-mülk eşleştirme önerileri yaparım`;
+    `✅ Her sabah Bodrum'daki sahibi ilanlarını filtreleyip size gönderirim\n` +
+    `✅ Yapay zeka ile dakikalar içinde profesyonel sunum hazırlarım\n` +
+    `✅ Sahibinden ilan yüklemenizi 30 dk'dan 3 dk'ya indiririm\n` +
+    `✅ Sizin için web sayfası hazırlarım`;
   await sendText(ctx.phone, capabilities);
 
   await sleep(1800);
@@ -93,7 +93,7 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   const panelUrl = `${APP_URL}/tr/panel?t=${panelToken}`;
   const ctaMsg =
     `🖥 *Yönetim paneliniz hazır.*\n\n` +
-    `Tüm komutları görüntülemek için panele gidin. Hızlı erişim için WhatsApp'tan komut adını da yazabilirsin.`;
+    `Tüm komutları görüntülemek için panele gidin. Hızlı erişim için WhatsApp'tan komut adını da yazabilirsiniz.`;
   await sendUrlButton(ctx.phone, ctaMsg, "🖥 Paneli Aç", panelUrl, { skipNav: true });
 
   // Mark onboarding completed

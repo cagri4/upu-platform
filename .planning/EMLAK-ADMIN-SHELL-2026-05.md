@@ -275,12 +275,15 @@ WA selamlama tek uzun blok yerine 3 mesaja bölündü, aralarında ~1.8 sn sleep
 `startIntro` fonksiyonunun emlak path'ine uygulandı. sendEmlakMenu çağrısı
 kaldırıldı — Mesaj 3 (panel CTA) onun yerini aldı.
 
-### Pattern Sabit
-- **Mesaj 1 (greeting):** `👋 Merhaba {firstName}! ✨\n\nBen UPU, kişisel AI asistanın. 7/24 <core-promise>.`
+### Pattern Sabit (FORMAL "siz")
+Tüm mesajlar **formal "siz"** dili kullanır — "sen, sana, satışlarını" değil
+"siz, size, satışlarınızı". Tutarlı profesyonel ton.
+
+- **Mesaj 1 (greeting):** `👋 Merhaba {firstName}! ✨\n\nBen kişisel asistanınız UPU. 7/24 <core-promise (siz formu)>.`
 - **sleep 1800 ms**
-- **Mesaj 2 (kabiliyetler):** `🎯 *Yapabileceklerimden bazıları:*\n\n✅ <madde1>\n✅ <madde2>\n✅ <madde3>\n✅ <madde4>` (4 madde, fiil ile başla, 1 satır)
+- **Mesaj 2 (kabiliyetler):** `🎯 *Yapabileceklerimden bazıları:*\n\n✅ <madde1>\n✅ <madde2>\n✅ <madde3>\n✅ <madde4>` (4 madde, fiil ile başla, 1 satır, "siz" formal)
 - **sleep 1800 ms**
-- **Mesaj 3 (CTA):** `🖥 *Yönetim paneliniz hazır.*\n\nTüm komutları görüntülemek için panele gidin. Hızlı erişim için WhatsApp'tan komut adını da yazabilirsin.` + sendUrlButton "🖥 Paneli Aç" + magic link
+- **Mesaj 3 (CTA):** `🖥 *Yönetim paneliniz hazır.*\n\nTüm komutları görüntülemek için panele gidin. Hızlı erişim için WhatsApp'tan komut adını da yazabilirsiniz.` + sendUrlButton "🖥 Paneli Aç" + magic link
 
 ### WA Cloud API Typing Indicator Notu
 Cloud API typing_indicator yalnız `markAsRead` çağrısında inbound message_id'ye
@@ -293,13 +296,13 @@ receipt kapsamında, ekstra iş gerekmiyor.)
 
 | SaaS | Core promise (Mesaj 1) | 4 Kabiliyet (Mesaj 2) |
 |---|---|---|
-| **emlak** | 7/24 satışlarını artırmak için çalışacağım | (1) Her sabah Bodrum'daki sahibi ilanlarını filtreleyip sana gönderirim (2) AI ile dakikalar içinde profesyonel sunum hazırlarım (3) Sahibinden ilan yüklemeni 30 dk'dan 3 dk'ya indiririm (4) Müşteri-mülk eşleştirme önerileri yaparım |
-| **bayi** | tahsilat ve sipariş operasyonunu kolaylaştıracağım | (1) Yeni bayi başvurularını telefonla onaylayıp sisteme ekleyeyim (2) Vadesi gelen tahsilatlar için hatırlatma metni hazırlayıp onayınla bayiye göndereyim (3) Bayi siparişlerini WA'dan tek akışta sisteme kaydedeyim (4) Tüm bayilerinize tek tıkla kampanya duyurusu yapayım |
-| **doga** (caretta-xanthos) | rezervasyon ve gönüllü organizasyonunu sorunsuz yöneteceğim | (1) Günlük rezervasyon brifingi sabah hazırlayayım (2) Kaplumbağa kayıt formlarını WA'dan tek akışta sisteme alayım (3) Etkinlik duyuruları + bağışçı mesajlarını ben yazayım, onaylarsın (4) Gönüllü çağrılarına tek tıkla yanıt verebilesin |
-| **otel** | doluluğunu ve gelirini artırmak için çalışacağım | (1) Sabah doluluk + bugün çek-in/çek-out brifingi (2) Telefonla gelen rezervasyonları tek akışta sisteme kaydedeyim (3) Sürekli müşterilere doğum günü/sezon mesajı taslakları (4) Açık ödemeler + kart bilgisi olmayan rezervasyonlar uyarı |
-| **market** | kasanı her gün düzenli tutmak için çalışacağım | (1) Sabah dünkü ciro + bugün stok brifingi (2) Stok kritik seviyeye düşünce uyarayım, tedarikçi sipariş önerisi sunayım (3) Müşteri sadakat hatırlatmaları + doğum günü kupon önerileri (4) Tedarikçi siparişlerini WA'dan tek akışta sisteme alayım |
-| **restoran** | siparişlerini hızlandırıp müdavim ilişkisini güçlendireceğim | (1) Sabah dünkü satış + bugün rezervasyon brifingi (2) Telefonla gelen rezervasyonları masa atamayla sisteme kaydedeyim (3) Müdavim panosu — kim 2+ haftadır yok, kimin doğum günü uyarısı (4) Sadakat club daveti + sürpriz mesaj taslakları |
-| **site** (siteyonetim) | sakin iletişimini ve aidat takibini düzene sokacağım | (1) Açık şikayet/talep özetini her sabah getireyim (2) Aidat ödenmemiş daireler için hatırlatma metni hazırlayım (3) Etkinlik + duyuru mesajlarını ben yazayım, onaylarsın (4) Personel görev atama + tamamlanma bildirimi |
+| **emlak** | satışlarınızı artırmak için çalışacağım | (1) Her sabah Bodrum'daki sahibi ilanlarını filtreleyip size gönderirim (2) Yapay zeka ile dakikalar içinde profesyonel sunum hazırlarım (3) Sahibinden ilan yüklemenizi 30 dk'dan 3 dk'ya indiririm (4) Sizin için web sayfası hazırlarım |
+| **bayi** | tahsilatlarınızı ve sipariş operasyonunuzu kolaylaştıracağım | (1) Yeni bayi başvurularınızı telefonla onaylayıp sisteme eklerim (2) Vadesi gelen tahsilatlarınız için hatırlatma metni hazırlar, onayınızla bayiye gönderirim (3) Bayi siparişlerinizi WA'dan tek akışta sisteme kaydederim (4) Tüm bayilerinize tek tıkla kampanya duyurusu yaparım |
+| **doga** (caretta-xanthos) | rezervasyonlarınızı ve gönüllü organizasyonunuzu sorunsuz yöneteceğim | (1) Günlük rezervasyon brifinginizi sabah hazırlarım (2) Kaplumbağa kayıt formlarınızı WA'dan tek akışta sisteme alırım (3) Etkinlik duyurularınızı ve bağışçı mesajlarınızı yazar, onayınızla gönderirim (4) Gönüllü çağrılarınıza tek tıkla yanıt verebilirsiniz |
+| **otel** | doluluğunuzu ve gelirinizi artırmak için çalışacağım | (1) Sabah doluluk + bugün çek-in/çek-out brifinginizi hazırlarım (2) Telefonla gelen rezervasyonlarınızı tek akışta sisteme kaydederim (3) Sürekli müşterileriniz için doğum günü/sezon mesajı taslakları hazırlarım (4) Açık ödemeler ve kart bilgisi olmayan rezervasyonlar için uyarı veririm |
+| **market** | kasanızı her gün düzenli tutmak için çalışacağım | (1) Sabah dünkü ciro + bugün stok brifinginizi getiririm (2) Stok kritik seviyeye düşünce uyarır, tedarikçi sipariş önerisi sunarım (3) Müşteri sadakat hatırlatmaları ve doğum günü kupon önerileri hazırlarım (4) Tedarikçi siparişlerinizi WA'dan tek akışta sisteme alırım |
+| **restoran** | siparişlerinizi hızlandırıp müdavim ilişkinizi güçlendireceğim | (1) Sabah dünkü satış + bugün rezervasyon brifinginizi hazırlarım (2) Telefonla gelen rezervasyonlarınızı masa atamayla sisteme kaydederim (3) Müdavim panosu — kim 2+ haftadır yok, kimin doğum günü olduğunu size bildiririm (4) Sadakat club daveti + sürpriz mesaj taslaklarını hazırlarım |
+| **site** (siteyonetim) | sakin iletişiminizi ve aidat takibinizi düzene sokacağım | (1) Açık şikayet/talep özetinizi her sabah getiririm (2) Aidat ödenmemiş daireler için hatırlatma metni hazırlarım (3) Etkinlik + duyuru mesajlarınızı yazar, onayınızla gönderirim (4) Personel görev atama + tamamlanma bildirimleri yaparım |
 
 ### Replikasyon Adımı
 
