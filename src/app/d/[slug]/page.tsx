@@ -297,16 +297,6 @@ export default async function AgentWebsitePage({ params }: PageProps) {
         {/* ── Footer ────────────────────────────────────────────── */}
         <footer className="py-6 text-center text-sm text-gray-400 border-t border-gray-100">
           <p>&copy; 2026 {site.full_name}</p>
-          <p className="mt-1">
-            <a
-              href="https://upudev.nl"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-gray-600 transition"
-            >
-              UPU Dev ile olusturuldu
-            </a>
-          </p>
         </footer>
 
         {/* ── Floating WhatsApp Button ──────────────────────────── */}

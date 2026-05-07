@@ -6,7 +6,6 @@ import { sendUrlButton } from "@/platform/whatsapp/send";
 import type { Metadata } from "next";
 import { ShareFAB } from "./share-fab";
 import { SlideControls } from "./slide-controls";
-import { FinishCTA } from "./finish-cta";
 
 
 /* ── Types ────────────────────────────────────────────────────────── */
@@ -472,16 +471,6 @@ export default async function PresentationPage({ params }: PageProps) {
             </div>
           </div>
           )}
-
-          {/* ── Devam Et CTA — sunumun sonu ─── */}
-          <FinishCTA presToken={token} />
-
-          {/* ── Footer ──────────────────────────────────────────────── */}
-          <div className="text-center py-4">
-            <a href="https://upudev.nl" target="_blank" rel="noopener noreferrer" className="text-xs text-stone-400 hover:text-stone-600">
-              UPU Dev ile oluşturuldu
-            </a>
-          </div>
 
         </div>
 

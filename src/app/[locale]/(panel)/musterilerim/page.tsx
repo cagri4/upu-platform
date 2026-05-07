@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { whatsappDeeplink } from "@/lib/whatsapp-deeplink";
 import { ReturnButtons } from "@/components/return-buttons";
@@ -52,6 +52,17 @@ export default function MusterilerimPage() {
   const [error, setError] = useState("");
   const [items, setItems] = useState<CustomerItem[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLocaleLowerCase("tr");
+    if (!q) return items;
+    return items.filter((c) =>
+      (c.name || "").toLocaleLowerCase("tr").includes(q) ||
+      (c.phone || "").toLocaleLowerCase("tr").includes(q) ||
+      (c.location || "").toLocaleLowerCase("tr").includes(q),
+    );
+  }, [items, searchQuery]);
 
   useEffect(() => {
     if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
@@ -112,15 +123,30 @@ export default function MusterilerimPage() {
           ➕ Müşteri Ekle
         </a>
 
+        {items.length > 0 && (
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="🔍 Müşteri ara (isim, telefon, bölge)"
+            className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 mb-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            aria-label="Müşteri ara"
+          />
+        )}
+
         {items.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
             <div className="text-5xl mb-3">👥</div>
             <p className="font-semibold text-slate-900 mb-1">Henüz müşteri yok</p>
             <p className="text-slate-500 text-sm">İlk müşterinizi eklemek için yukarıdaki butonu kullanın.</p>
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
+            <p className="text-slate-500 text-sm">Eşleşen müşteri bulunamadı.</p>
+          </div>
         ) : (
           <div className="space-y-3">
-            {items.map((c) => {
+            {filtered.map((c) => {
               const lf = lookingForLabel(c.looking_for);
               const pt = (c.property_type || []).map(t => PT_LABELS[t] || t).join(", ");
               const budget = fmtBudget(c.budget_min, c.budget_max);

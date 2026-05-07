@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { whatsappDeeplink } from "@/lib/whatsapp-deeplink";
 import { ReturnButtons } from "@/components/return-buttons";
@@ -33,6 +33,18 @@ export default function MulklerimPage() {
   const [items, setItems] = useState<PropItem[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLocaleLowerCase("tr");
+    if (!q) return items;
+    return items.filter((p) =>
+      (p.title || "").toLocaleLowerCase("tr").includes(q) ||
+      (p.location || "").toLocaleLowerCase("tr").includes(q) ||
+      (p.listing_type || "").toLocaleLowerCase("tr").includes(q) ||
+      (p.type || "").toLocaleLowerCase("tr").includes(q),
+    );
+  }, [items, searchQuery]);
 
   useEffect(() => {
     if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
@@ -107,15 +119,30 @@ export default function MulklerimPage() {
           ➕ Mülk Ekle
         </a>
 
+        {items.length > 0 && (
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="🔍 Mülk ara (başlık, bölge, tip)"
+            className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 mb-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            aria-label="Mülk ara"
+          />
+        )}
+
         {items.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
             <div className="text-5xl mb-3">🏢</div>
             <p className="font-semibold text-slate-900 mb-1">Henüz mülk yok</p>
             <p className="text-slate-500 text-sm">İlk mülkünüzü eklemek için yukarıdaki butonu kullanın.</p>
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
+            <p className="text-slate-500 text-sm">Eşleşen mülk bulunamadı.</p>
+          </div>
         ) : (
           <div className="space-y-3">
-            {items.map((p) => (
+            {filtered.map((p) => (
               <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
                 <div className="flex gap-3 p-3">
                   <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-slate-200">

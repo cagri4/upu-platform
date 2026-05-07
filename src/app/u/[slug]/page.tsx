@@ -392,12 +392,6 @@ export default async function AgentLandingPage({ params, searchParams }: PagePro
               </a>
             </div>
           )}
-
-          <div className="text-center py-4">
-            <a href="https://upudev.nl" target="_blank" rel="noopener noreferrer" className="text-xs text-stone-400 hover:text-stone-600">
-              UPU Dev ile oluşturuldu
-            </a>
-          </div>
         </div>
       </body>
     </html>
