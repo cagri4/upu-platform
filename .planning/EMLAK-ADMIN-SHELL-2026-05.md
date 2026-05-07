@@ -283,7 +283,9 @@ Tüm mesajlar **formal "siz"** dili kullanır — "sen, sana, satışlarını" d
 - **sleep 1800 ms**
 - **Mesaj 2 (kabiliyetler):** `🎯 *Yapabileceklerimden bazıları:*\n\n✅ <madde1>\n✅ <madde2>\n✅ <madde3>\n✅ <madde4>` (4 madde, fiil ile başla, 1 satır, "siz" formal)
 - **sleep 1800 ms**
-- **Mesaj 3 (CTA):** `🖥 *Yönetim paneliniz hazır.*\n\nTüm komutları görüntülemek için panele gidin. Hızlı erişim için WhatsApp'tan komut adını da yazabilirsiniz.` + sendUrlButton "🖥 Paneli Aç" + magic link
+- **Mesaj 3 (CTA):** `🖥 *Yönetim paneliniz hazır.*\n\nTüm sisteminizi yönetmek için panele gidin.\n\n_Dilerseniz daha sonra komutlarla buradan da yönetebilirsiniz._` + sendUrlButton "🖥 Paneli Aç" + magic link
+  - Vurgu: panel ASIL yer, WA tamamlayıcı (WA'yı tekrar adlandırmaya gerek yok — zaten orada konuşuluyor)
+  - "yönetmek" anahtar kelime (üst-seviye fiil), "komutları görüntülemek" değil
 
 ### WA Cloud API Typing Indicator Notu
 Cloud API typing_indicator yalnız `markAsRead` çağrısında inbound message_id'ye

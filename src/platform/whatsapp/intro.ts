@@ -93,7 +93,8 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   const panelUrl = `${APP_URL}/tr/panel?t=${panelToken}`;
   const ctaMsg =
     `🖥 *Yönetim paneliniz hazır.*\n\n` +
-    `Tüm komutları görüntülemek için panele gidin. Hızlı erişim için WhatsApp'tan komut adını da yazabilirsiniz.`;
+    `Tüm sisteminizi yönetmek için panele gidin.\n\n` +
+    `_Dilerseniz daha sonra komutlarla buradan da yönetebilirsiniz._`;
   await sendUrlButton(ctx.phone, ctaMsg, "🖥 Paneli Aç", panelUrl, { skipNav: true });
 
   // Mark onboarding completed
