@@ -73,9 +73,9 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   // Mesaj 2 — kabiliyetler
   const capabilities =
     `🎯 *Yapabileceklerimden bazıları:*\n\n` +
-    `✅ Her sabah Bodrum'daki sahibi ilanlarını filtreleyip size gönderirim\n` +
+    `✅ Her sabah yeni sahibi ilanları ile portföyünüzü büyütmenize yardım ederim\n` +
     `✅ Yapay zeka ile dakikalar içinde profesyonel sunum hazırlarım\n` +
-    `✅ Sahibinden ilan yüklemenizi 30 dk'dan 3 dk'ya indiririm\n` +
+    `✅ sahibindenCom ilan yüklemenizi 30 dk'dan 3 dk'ya indiririm\n` +
     `✅ Sizin için web sayfası hazırlarım`;
   await sendText(ctx.phone, capabilities);
 

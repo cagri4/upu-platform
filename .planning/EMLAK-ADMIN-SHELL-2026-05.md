@@ -287,6 +287,15 @@ Tüm mesajlar **formal "siz"** dili kullanır — "sen, sana, satışlarını" d
   - Vurgu: panel ASIL yer, WA tamamlayıcı (WA'yı tekrar adlandırmaya gerek yok — zaten orada konuşuluyor)
   - "yönetmek" anahtar kelime (üst-seviye fiil), "komutları görüntülemek" değil
 
+### Marka Adı + Auto-Link Önleme
+WA client'ları `marka.com` veya `marka.tr` pattern'ini otomatik link yapar.
+Mesaj metninde 3. parti markaları **camelCase** yaz (nokta YOK):
+- ❌ "sahibinden.com" → tıklanabilir link olur
+- ✅ "sahibindenCom" → düz metin, marka referansı korunur
+
+Diğer örnekler: `hepsiburadaCom`, `trendyolCom`, `yemeksepetiCom`, `bookingCom`,
+`googleCom`. Replikasyon brief'lerinde bu kural sabittir.
+
 ### WA Cloud API Typing Indicator Notu
 Cloud API typing_indicator yalnız `markAsRead` çağrısında inbound message_id'ye
 attach edilebilir — outbound mesajlar arasında native typing göstergesi yok.
@@ -298,7 +307,7 @@ receipt kapsamında, ekstra iş gerekmiyor.)
 
 | SaaS | Core promise (Mesaj 1) | 4 Kabiliyet (Mesaj 2) |
 |---|---|---|
-| **emlak** | satışlarınızı artırmak için çalışacağım | (1) Her sabah Bodrum'daki sahibi ilanlarını filtreleyip size gönderirim (2) Yapay zeka ile dakikalar içinde profesyonel sunum hazırlarım (3) Sahibinden ilan yüklemenizi 30 dk'dan 3 dk'ya indiririm (4) Sizin için web sayfası hazırlarım |
+| **emlak** | satışlarınızı artırmak için çalışacağım | (1) Her sabah yeni sahibi ilanları ile portföyünüzü büyütmenize yardım ederim (2) Yapay zeka ile dakikalar içinde profesyonel sunum hazırlarım (3) sahibindenCom ilan yüklemenizi 30 dk'dan 3 dk'ya indiririm (4) Sizin için web sayfası hazırlarım |
 | **bayi** | tahsilatlarınızı ve sipariş operasyonunuzu kolaylaştıracağım | (1) Yeni bayi başvurularınızı telefonla onaylayıp sisteme eklerim (2) Vadesi gelen tahsilatlarınız için hatırlatma metni hazırlar, onayınızla bayiye gönderirim (3) Bayi siparişlerinizi WA'dan tek akışta sisteme kaydederim (4) Tüm bayilerinize tek tıkla kampanya duyurusu yaparım |
 | **doga** (caretta-xanthos) | rezervasyonlarınızı ve gönüllü organizasyonunuzu sorunsuz yöneteceğim | (1) Günlük rezervasyon brifinginizi sabah hazırlarım (2) Kaplumbağa kayıt formlarınızı WA'dan tek akışta sisteme alırım (3) Etkinlik duyurularınızı ve bağışçı mesajlarınızı yazar, onayınızla gönderirim (4) Gönüllü çağrılarınıza tek tıkla yanıt verebilirsiniz |
 | **otel** | doluluğunuzu ve gelirinizi artırmak için çalışacağım | (1) Sabah doluluk + bugün çek-in/çek-out brifinginizi hazırlarım (2) Telefonla gelen rezervasyonlarınızı tek akışta sisteme kaydederim (3) Sürekli müşterileriniz için doğum günü/sezon mesajı taslakları hazırlarım (4) Açık ödemeler ve kart bilgisi olmayan rezervasyonlar için uyarı veririm |
