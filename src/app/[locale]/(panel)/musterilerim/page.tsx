@@ -104,9 +104,19 @@ export default function MusterilerimPage() {
           <p className="text-emerald-200 text-sm mt-1">{items.length} müşteri</p>
         </div>
 
+        {/* Primary action — fresh-mint magic link via /api/panel/start */}
+        <a
+          href={`/api/panel/start?cmd=musteriEkle&t=${encodeURIComponent(token || "")}`}
+          className="block bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-center font-semibold py-4 rounded-2xl shadow-md hover:shadow-lg active:scale-95 transition mb-5"
+        >
+          ➕ Müşteri Ekle
+        </a>
+
         {items.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center text-slate-500 text-sm shadow-sm">
-            Henüz müşteri eklemediniz. WhatsApp&apos;tan &quot;Müşteri Ekle&quot; komutunu kullanın.
+          <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+            <div className="text-5xl mb-3">👥</div>
+            <p className="font-semibold text-slate-900 mb-1">Henüz müşteri yok</p>
+            <p className="text-slate-500 text-sm">İlk müşterinizi eklemek için yukarıdaki butonu kullanın.</p>
           </div>
         ) : (
           <div className="space-y-3">

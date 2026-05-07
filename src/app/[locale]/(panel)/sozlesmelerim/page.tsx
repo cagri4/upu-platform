@@ -1,16 +1,32 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
+
 export default function SozlesmelerimPage() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get("t") || searchParams.get("token") || "";
+
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl p-8 shadow-sm text-center">
-        <div className="text-6xl mb-4">📋</div>
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">Sözleşmelerim</h1>
-        <p className="text-slate-500 text-sm max-w-md mx-auto leading-relaxed">
-          Yakında: Aktif sözleşmeleriniz, imza durumları ve PDF dokümanları tek listede.
-        </p>
-        <p className="text-xs text-slate-400 mt-4">
-          Şu an WhatsApp&apos;tan <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">sozlesme</span> yazarak yeni sözleşme oluşturabilirsiniz.
+    <div className="space-y-5">
+      <div className="bg-gradient-to-br from-amber-700 to-orange-900 text-white rounded-2xl p-5">
+        <div className="text-3xl mb-1">📋</div>
+        <h1 className="text-xl font-bold">Sözleşmelerim</h1>
+        <p className="text-amber-200 text-sm mt-1">Aktif sözleşmeleriniz, imza durumları ve PDF dokümanları</p>
+      </div>
+
+      {/* Primary action — sozlesme komutu wa.me'ye redirect (mevcut WA akışı) */}
+      <a
+        href={`/api/panel/start?cmd=sozlesme&t=${encodeURIComponent(token)}`}
+        className="block bg-gradient-to-r from-amber-600 to-orange-600 text-white text-center font-semibold py-4 rounded-2xl shadow-md hover:shadow-lg active:scale-95 transition"
+      >
+        ➕ Sözleşme Yap
+      </a>
+
+      <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+        <div className="text-5xl mb-3">📋</div>
+        <p className="font-semibold text-slate-900 mb-1">Sözleşme listesi yakında</p>
+        <p className="text-slate-500 text-sm">
+          Yeni sözleşme oluşturmak için yukarıdaki butonu kullanın — WhatsApp&apos;tan akış başlar.
         </p>
       </div>
     </div>

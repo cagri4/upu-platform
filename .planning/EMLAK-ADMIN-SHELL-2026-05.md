@@ -398,3 +398,70 @@ Bu sidebar yapısı 6 SaaS'a kopyalanırken:
 - Item 8-13 ortak (Takvim, Profilim, Web Sitem, Hakkında, Öneri, Destek)
 - Item 14 logout (tüm tenant'larda aynı handleLogout fonksiyonu)
 - Web Sitem her tenant için /api/<saas>/web-sitem redirect endpoint'i gerekir (otel için /u/<otel-slug>, market için /u/<market-slug> vb.)
+
+---
+
+## 12. Kart Detay Sayfası — Primary Aksiyon Butonu (2026-05-07)
+
+Liste sayfaları (Mülklerim, Müşterilerim vs.) açıldığında kullanıcı **ne yapmak istiyorsa** onu yapacak primary CTA butonu üst kısımda görmeli — empty state olsun olmasın.
+
+### Yerleşim
+
+```
+[Hero gradient banner: ikon + başlık + count]
+─────────────────────────────────────────────
+[➕ Aksiyon Butonu] (full-width primary, gradient)
+─────────────────────────────────────────────
+[Liste tablosu]                ← varsa
+veya
+[Empty state: ikon + başlık + "yukarıdaki butonu kullanın"]
+─────────────────────────────────────────────
+[Panele Dön] [WhatsApp'a Dön]  ← ReturnButtons (mevcut)
+```
+
+### Sayfa-Aksiyon Eşleşmesi (emlak)
+
+| Sayfa | Buton | Hedef |
+|---|---|---|
+| /tr/mulklerim | ➕ Mülk Ekle | `/api/panel/start?cmd=mulkekle&t=<TOKEN>` → fresh-mint → /tr/mulkekle-form |
+| /tr/musterilerim | ➕ Müşteri Ekle | `/api/panel/start?cmd=musteriEkle&t=<TOKEN>` → /tr/musteri-ekle-form (camelCase önemli) |
+| /tr/sozlesmelerim | ➕ Sözleşme Yap | `/api/panel/start?cmd=sozlesme&t=<TOKEN>` → wa.me redirect (WA akışı) |
+| /tr/takvim | ➕ Görev Ekle (Yakında) | disabled, Faz 3 wire-up |
+| /tr/sunumlarim | _yok_ | Sunumlar AI'la mülklerim'den otomatik üretilir, manuel ekleme yok |
+| /tr/ara | _yok_ | Sayfa zaten arama formu — buton anlamsız |
+| /tr/takip | _yok_ | Sayfa zaten takip kriteri formu (form-only page, list değil) |
+
+### Buton Stili
+- **Full-width, gradient primary** (sayfa hero'su ile uyumlu palette: indigo-blue, emerald-teal, amber-orange, sky-cyan)
+- Icon (➕) + metin
+- `shadow-md hover:shadow-lg active:scale-95 transition`
+- Disabled (placeholder): `bg-slate-300 text-slate-500 cursor-not-allowed`
+
+### `/api/panel/start` Doğru Kullanımı
+- **Sidebar item href'lerinde KULLANMA** — sidebar item'ı bu endpoint'e gitmemeli (Bölüm 11 bug fix)
+- **Liste sayfası action butonlarında DOĞRU** — burada fresh-mint magic-link tam istediğimiz davranış (token reuse fix korunur)
+- yardim-content `command` adı **case-sensitive** — `musteriEkle` (camelCase) doğru, `musteriekle` çalışmaz
+
+### Empty State Polish
+Eski: tek satır metin, `WhatsApp'tan ... komutunu kullanın`
+Yeni:
+```
+🏢 (büyük ikon)
+Henüz mülk yok
+İlk mülkünüzü eklemek için yukarıdaki butonu kullanın.
+```
+Buton üst kısımda primary CTA olduğu için empty state metni "yukarıdaki butonu kullanın" diye yönlendirir, WA komutunu zorlamaz.
+
+### Sektörel Replikasyon Tablosu
+
+| SaaS | Liste Sayfası → Aksiyon Butonu |
+|---|---|
+| **emlak** | Mülklerim → ➕ Mülk Ekle / Müşterilerim → ➕ Müşteri Ekle / Sözleşmelerim → ➕ Sözleşme Yap |
+| **bayi** | Bayilerim → ➕ Bayi Ekle / Siparişler → ➕ Sipariş Kaydet / Tahsilat → ➕ Tahsilat Hatırlat / Kampanyalar → ➕ Kampanya Oluştur / Ürünler → ➕ Ürün Ekle |
+| **otel** | Rezervasyonlar → ➕ Rezervasyon Al / Konuklar → ➕ Konuk Kaydet / Çek-in → ➕ Çek-in Yap / Tahsilat → ➕ Ödeme Al |
+| **market** | Stok → ➕ Ürün Ekle / Satışlar → ➕ Satış Kaydet / Tedarikçi → ➕ Tedarikçi Ekle / Müşteriler → ➕ Müşteri Ekle |
+| **restoran** | Bugün Sipariş → ➕ Sipariş Al / Menü → ➕ Menü Ekle / Stok → ➕ Stok Girişi / Tedarikçi → ➕ Tedarikçi Ekle |
+| **site** (siteyonetim) | Sakinler → ➕ Sakin Ekle / Aidat → ➕ Tahakkuk Aç / Şikayet → ➕ Talep Ekle / Etkinlik → ➕ Etkinlik Oluştur |
+| **doga** (caretta-xanthos) | Rezervasyonlar → ➕ Rezervasyon Al / Kaplumbağa → ➕ Kayıt Aç / Mesajlar → ➕ Mesaj Gönder / Bağış → ➕ Bağışçı Ekle |
+
+Replikasyon: her tenant için liste sayfasına aynı pattern (full-width gradient button + empty state polish + /api/panel/start fresh-mint) uygulanır.
