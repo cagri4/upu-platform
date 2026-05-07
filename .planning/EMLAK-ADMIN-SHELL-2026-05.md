@@ -465,3 +465,192 @@ Buton üst kısımda primary CTA olduğu için empty state metni "yukarıdaki bu
 | **doga** (caretta-xanthos) | Rezervasyonlar → ➕ Rezervasyon Al / Kaplumbağa → ➕ Kayıt Aç / Mesajlar → ➕ Mesaj Gönder / Bağış → ➕ Bağışçı Ekle |
 
 Replikasyon: her tenant için liste sayfasına aynı pattern (full-width gradient button + empty state polish + /api/panel/start fresh-mint) uygulanır.
+
+---
+
+## 13. Form 2-Buton + Done State Pattern (2026-05-07)
+
+Form sayfaları artık tek "Kaydet ve WA'a Dön" buton yerine **2 buton + sade done state** kullanır.
+
+### Submit Row (form altı)
+```
+[✅ Kaydet] (primary, full flex-1) [🖥 Panele] (secondary, küçük link)
+```
+- Primary: tenant accent (yeşil emerald, mavi blue, mor violet…)
+- Secondary: `bg-white border-slate-300 text-slate-700` küçük link
+- Kaydet WA'a OTOMATIK dönmez — kullanıcı tercih eder
+
+### Done State (status === "done")
+```
+✨ Profil/Mülk/Müşteri kaydedildi!
+"Kısa sonuç metni"
+
+[🖥 Panele Dön] (primary CTA, tenant accent)
+[ReturnButtons] (Panele Dön + WA'a Dön ikilisi — fallback)
+```
+- Done state metni "WhatsApp'a dönerek devam edin" YERİNE pozitif "X panelde listelenir" / "hazır"
+- Eski tek-buton "Kaydet ve WA'a Dön" davranışı tamamen silindi
+
+### Hint Headers — "💡 İpucu:" Prefix
+Tüm form heroları altında ipucu metni varsa "💡 İpucu:" prefix kullanır:
+- "Ne kadar bilgi girerseniz AI o kadar iyi sunum yazar" → "💡 İpucu: Ne kadar bilgi girerseniz AI o kadar iyi sunum yazar"
+
+### Replikasyon
+6 SaaS form sayfaları: aynı 2-buton + done state + 💡 İpucu pattern'i. Tenant accent renk değişir.
+
+---
+
+## 14. /u/[slug] + Sunum + Mülk Tek-Sayfa Sadeleştirme (2026-05-07)
+
+3 sayfada gereksiz öğeler temizlendi:
+
+| Sayfa | Silinen |
+|---|---|
+| `/u/[slug]` (agent landing) | Footer "UPU Dev ile oluşturuldu" — sahip-only `🖥 Panele Git` butonu KORUNUR |
+| `/d/p/[token]` (sunum) | `<FinishCTA />` ("✅ Devam Et" + "Sunumu bitirdiğinizde tıklayın..." metni) + footer "UPU Dev ile oluşturuldu" |
+| `/d/[slug]` (mülk single page) | Footer "UPU Dev ile olusturuldu" (© 2026 + ad korundu) |
+
+**Replikasyon kuralı:** Müşteriye/ziyaretçiye gösterilen public sayfalarda "UPU Dev" markası **footer'da yok** — temiz kullanıcı deneyimi. Sahip-only "Panele Git" butonu auth token query parametresi varsa görünür.
+
+`finish-cta.tsx` dosyası diskte kaldı (yetim component) — silinmedi, sadece çağrı kaldırıldı.
+
+---
+
+## 15. Liste Sayfaları Arama Kutusu (2026-05-07)
+
+Müşterilerim ve Mülklerim listelerine canlı filtre eklendi.
+
+### Pattern
+```tsx
+const [searchQuery, setSearchQuery] = useState("");
+const filtered = useMemo(() => {
+  const q = searchQuery.trim().toLocaleLowerCase("tr");
+  if (!q) return items;
+  return items.filter((x) =>
+    (x.field1 || "").toLocaleLowerCase("tr").includes(q) ||
+    (x.field2 || "").toLocaleLowerCase("tr").includes(q),
+  );
+}, [items, searchQuery]);
+```
+
+### Yerleşim
+```
+[Hero gradient]
+[➕ Aksiyon Butonu]
+[🔍 Arama kutusu]   ← items.length > 0 ise göster
+[Liste / Empty / "Eşleşen X bulunamadı"]
+```
+
+### Sektörel Replikasyon Tablosu
+
+| SaaS | Liste | Filtre alanları |
+|---|---|---|
+| **emlak** | Müşterilerim | isim, telefon, bölge |
+| **emlak** | Mülklerim | başlık, bölge, listing_type, type |
+| **bayi** | Bayilerim | firma adı, ilçe, yetkili |
+| **otel** | Konuklar | isim, oda no, tarih |
+| **market** | Müşteriler | isim, telefon, sadakat seviyesi |
+| **restoran** | Müdavimler | isim, sıklık, doğum günü ayı |
+
+`toLocaleLowerCase("tr")` kullanılır — Türkçe i/I ayrımı için kritik.
+
+---
+
+## 16. Evergreen Panel Link Pattern (2026-05-07, Bug B fix)
+
+### Problem
+WA mesajlarındaki "🖥 Panele Git" link'leri pre-mint magic_link_token kullanıyordu. Token TTL geçince (1 saat / 7 gün) eski mesajlardan tıklanan link'ler "süresi dolmuş" hatası veriyordu.
+
+### Çözüm
+Yeni `/api/panel/evergreen?phone=<phone>` endpoint:
+1. Phone parametresinden `profiles.whatsapp_phone` üzerinden user_id bul
+2. Fresh `magic_link_tokens` mint (1 saat TTL — kullanıcı şimdi tıkladı)
+3. 302 redirect → `/tr/panel?t=<fresh_token>`
+
+### Tüm Panel CTA'ları Güncellendi
+- `sendBackToPanel` (save endpoint'leri sonrası): pre-mint silindi → evergreen URL
+- `sendEmlakMenu`: pre-mint silindi → evergreen URL
+- `intro.ts` Mesaj 3 (Paneli Aç): pre-mint silindi → evergreen URL
+
+### Güvenlik Profili
+Phone parametresi WA'da bot'la konuşan numaraya eşit; URL üçüncü tarafa sızmadıkça risk düşük. Pre-mint token leak riskiyle aynı kategoride; kazançlı taraf: eski mesajlardan tıklamada UX kırılmıyor.
+
+### Replikasyon
+6 SaaS için aynı endpoint pattern'i:
+- `/api/panel/evergreen?phone=<phone>` her tenant için tek endpoint (whatsapp_phone tüm tenant'larda profiles tablosunda standart alan)
+- Tüm tenant menu helper'ları (sendBayiMenu, sendOtelMenu vs.) bu URL'i kullanır
+- Tenant intro Mesaj 3'leri (warm welcome) bu URL'i kullanır
+
+---
+
+## 17. Bildirim + Panel CTA Standardı (2026-05-07)
+
+### Kural
+Bot'un gönderdiği **bildirim mesajları** (haber/sonuç/uyarı) sonrasında "🖥 Panele Git" CTA URL butonu eklenir — kullanıcı her an panele tek tıkla geçebilsin.
+
+### sendBackToPanel(userId, phone) Helper
+- Save endpoint'lerinden sonra çağrılır: mulkekle/save, musteri/save, profilduzenle/save, sozlesme/save vb.
+- 2-mesaj pattern: önce ana CTA mesajı (örn "Web Sayfamı Aç", "Sunumu Gör"), ardından kısa "Panele Git" URL button
+- WA Cloud API reply + URL button mix yasak olduğu için 2 ayrı mesaj zorunlu
+
+### İstisnalar (Panel CTA EKLEME)
+- Greeting/intro mesajları (Mesaj 3 zaten Panel Git içeriyor)
+- Tek-satır acknowledgement ("Kaydedildi" gibi mini mesajlar — kullanıcı 2 mesaj görmek istemez)
+- Form-link mesajları (kullanıcı zaten formdan dön akışında olacak)
+- Read-receipt + typing indicator
+
+### Replikasyon
+6 SaaS save endpoint'leri için kendi `sendBackToPanel` analogları (ya da shared helper) kullanılır. URL evergreen pattern'i ile.
+
+---
+
+## 18. Panel-İçi Sözleşme Akışı (FAZ A, 2026-05-07)
+
+Sözleşme oluşturma artık WhatsApp'a redirect ETMİYOR — tamamen panel-içi.
+
+### Eski Akış (Silindi)
+- /tr/sozlesmelerim → "+ Sözleşme Yap" → /api/panel/start?cmd=sozlesme → wa.me/...?text=sozlesme → WA'da multi-step session
+
+### Yeni Akış
+1. /tr/sozlesmelerim → "+ Sözleşme Yap" → `/tr/sozlesme-yap` (panel-içi)
+2. Sayfa 3-aşamalı:
+   - **Select**: Mülk seç (dropdown, kullanıcının mülklerinden) + Müşteri seç (dropdown)
+   - **Form**: Komisyon (%), Süre (ay), Münhasır (checkbox)
+   - **Save**: contracts tablosuna insert + sign_token mint + WA bildirim
+3. **Done state**: İmza linki preview + 📋 Linki Kopyala + 💬 WA ile Paylaş + 📋 Sözleşmelerime Git
+
+### API Endpoints
+- `/api/sozlesme/init?t=<TOKEN>` — kullanıcının mülk + müşteri listesi
+- `/api/sozlesme/save` — contracts insert + sign_token + WA bildirim (sendBackToPanel ile)
+- `/api/sozlesmelerim/list?t=<TOKEN>` — kullanıcının sözleşmeleri (status badge'lerle)
+
+### Mevcut Schema Korundu
+contracts tablosu (id, tenant_id, user_id, property_id, type, status, sign_token, contract_data JSONB) DEĞİŞMEDİ. WA tarafındaki sozlesme.ts insert pattern'i ile uyumlu. type="yetkilendirme", status="pending_signature".
+
+### AI Generation — Bu Sürümde Yok
+Brief'te Claude API ile sözleşme metni üretme istenmişti; bu sürümde **preview = form özeti**. Mevcut akış değer üretiyor (panel-içi + paylaş + listele); AI generation follow-up'ta eklenir (yeni endpoint /api/sozlesme/generate, Anthropic SDK ile sözleşme metni üretip contract_data.generated_text'e kaydet).
+
+### /tr/sozlesmelerim Liste Görünümü
+- Her sözleşme kart: status badge (✅ İmzalı / ⏳ İmza bekliyor / 📝 Taslak), mülk + müşteri ad, komisyon + süre, tarih, imza linki (pending durumda görünür)
+- Empty state: "Henüz sözleşme eklemediniz"
+
+### Replikasyon
+Her SaaS'ın "yetkilendirme" sözleşmesi farklı (otel: rezervasyon onay, market: tedarikçi anlaşma, bayi: dağıtım sözleşmesi) — generic pattern aynı kalır:
+- /tr/<doc>-yap (yeni sayfa, panel-içi)
+- /api/<doc>/init (mülk+müşteri analogu — örn. otel: oda+konuk)
+- /api/<doc>/save (insert + sign_token + WA bildirim)
+- /tr/<doclar>im (liste sayfası)
+
+---
+
+## 19. FAZ B (Takiplerim Yönet) — Ertelendi
+
+Brief Takiplerim sayfası için liste + Durdur/Düzenle/Sil yönetim menüsü istemişti.
+
+**Engel:** `emlak_tracking_criteria` tablosu **user başına UPSERT** (single row). Yani bir kullanıcının tek takip kriteri var; brief'in çok-takip-yönet modeli schema değişikliği gerektirir.
+
+**Sonraki tura ertelendi.** Karar gerekli:
+- (a) Schema migration: `user_id` PK kaldır, `id` PK kullan, çok-row aç → çok takip listesi
+- (b) Single-row mevcut model devam: /tr/takip sayfası mevcut criteria'yı kart olarak göster + Düzenle/Durdur (active toggle)/Sıfırla butonları
+
+Karar (a) ise: scrape pipeline (cron) bu çoklu kriterleri ayrı işlemek zorunda; daha kapsamlı bir refactor.
