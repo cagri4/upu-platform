@@ -1,37 +1,119 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ReturnButtons } from "@/components/return-buttons";
 
 const BOT_WA_NUMBER = "31644967207";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
+
+interface Contract {
+  id: string;
+  status: string;
+  contract_data: Record<string, unknown>;
+  sign_token: string | null;
+  signed_at: string | null;
+  created_at: string;
+}
+
+type Status = "loading" | "ready" | "error";
 
 export default function SozlesmelerimPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token") || "";
+
+  const [status, setStatus] = useState<Status>("loading");
+  const [error, setError] = useState("");
+  const [items, setItems] = useState<Contract[]>([]);
+
+  useEffect(() => {
+    if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
+    fetch(`/api/sozlesmelerim/list?t=${encodeURIComponent(token)}`)
+      .then(async r => {
+        const d = await r.json();
+        if (!r.ok) { setStatus("error"); setError(d.error || "Yüklenemedi."); return; }
+        setItems(d.contracts || []);
+        setStatus("ready");
+      })
+      .catch(() => { setStatus("error"); setError("Bağlantı hatası."); });
+  }, [token]);
+
+  if (status === "loading") {
+    return <div className="text-center py-20"><div className="text-4xl">⏳</div></div>;
+  }
+  if (status === "error") {
+    return (
+      <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
+        <div className="text-4xl mb-3">⚠️</div>
+        <p className="text-slate-600 text-sm">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
       <div className="bg-gradient-to-br from-amber-700 to-orange-900 text-white rounded-2xl p-5">
         <div className="text-3xl mb-1">📋</div>
         <h1 className="text-xl font-bold">Sözleşmelerim</h1>
-        <p className="text-amber-200 text-sm mt-1">Aktif sözleşmeleriniz, imza durumları ve PDF dokümanları</p>
+        <p className="text-amber-200 text-sm mt-1">{items.length} sözleşme</p>
       </div>
 
-      {/* Primary action — sozlesme komutu wa.me'ye redirect (mevcut WA akışı) */}
+      {/* Primary action — panel-içi sözleşme akışı */}
       <a
-        href={`/api/panel/start?cmd=sozlesme&t=${encodeURIComponent(token)}`}
+        href={`/tr/sozlesme-yap?t=${encodeURIComponent(token)}`}
         className="block bg-gradient-to-r from-amber-600 to-orange-600 text-white text-center font-semibold py-4 rounded-2xl shadow-md hover:shadow-lg active:scale-95 transition"
       >
         ➕ Sözleşme Yap
       </a>
 
-      <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
-        <div className="text-5xl mb-3">📋</div>
-        <p className="font-semibold text-slate-900 mb-1">Henüz sözleşme eklemediniz</p>
-        <p className="text-slate-500 text-sm">
-          Yeni sözleşme oluşturmak için yukarıdaki butonu kullanın.
-        </p>
-      </div>
+      {items.length === 0 ? (
+        <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+          <div className="text-5xl mb-3">📋</div>
+          <p className="font-semibold text-slate-900 mb-1">Henüz sözleşme eklemediniz</p>
+          <p className="text-slate-500 text-sm">İlk sözleşmenizi oluşturmak için yukarıdaki butonu kullanın.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {items.map((c) => {
+            const cd = c.contract_data || {};
+            const ownerName = (cd.owner_name as string) || "İsimsiz";
+            const propTitle = (cd.property_title as string) || (cd.property_address as string) || "Mülk";
+            const statusLabel = c.status === "signed" ? "✅ İmzalı" : c.status === "pending_signature" ? "⏳ İmza bekliyor" : "📝 Taslak";
+            const statusBg = c.status === "signed" ? "bg-emerald-100 text-emerald-700" : c.status === "pending_signature" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600";
+            const date = new Date(c.created_at).toLocaleDateString("tr-TR");
+            const commission = cd.commission as number | undefined;
+            const duration = cd.duration as number | undefined;
+            const signLink = c.sign_token ? `${APP_URL}/tr/sign/${c.sign_token}` : null;
+            return (
+              <div key={c.id} className="bg-white rounded-2xl shadow-sm p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-slate-900 truncate">🏠 {propTitle}</p>
+                    <p className="text-sm text-slate-600 mt-0.5">👤 {ownerName}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${statusBg}`}>
+                    {statusLabel}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                  {commission !== undefined && <span>💰 %{commission}+KDV</span>}
+                  {duration !== undefined && <span>📅 {duration} ay</span>}
+                  <span>· {date}</span>
+                </div>
+                {signLink && c.status === "pending_signature" && (
+                  <a
+                    href={signLink}
+                    target="_blank" rel="noopener noreferrer"
+                    className="block mt-3 text-xs text-amber-700 hover:text-amber-900 underline break-all"
+                  >
+                    🔗 İmza linki: {signLink}
+                  </a>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <ReturnButtons token={token || null} botPhone={BOT_WA_NUMBER} />
     </div>
