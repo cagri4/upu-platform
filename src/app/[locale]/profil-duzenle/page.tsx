@@ -113,7 +113,10 @@ export default function ProfilDuzenlePage() {
   if (status === "done") return <Center>
     <div className="text-5xl mb-3">✨</div>
     <h1 className="text-xl font-bold mb-2">Profil kaydedildi!</h1>
-    <p className="text-slate-600 text-sm mb-6">Web sayfanız WhatsApp&apos;a düşecek. WhatsApp&apos;a dönün.</p>
+    <p className="text-slate-600 text-sm mb-6">Web sayfanız hazır.</p>
+    <a href={`/tr/panel?t=${encodeURIComponent(token || "")}`} className="block w-full bg-violet-600 text-white text-center font-semibold py-3 rounded-xl mb-2 active:scale-95 transition">
+      🖥 Panele Dön
+    </a>
     <ReturnButtons token={token} botPhone={BOT_WA_NUMBER} />
   </Center>;
 
@@ -124,7 +127,7 @@ export default function ProfilDuzenlePage() {
           <div className="text-3xl mb-1">🪪</div>
           <h1 className="text-xl font-bold">Profil Düzenle</h1>
           <p className="text-violet-100 text-sm mt-1">
-            ℹ️ Vereceğiniz bilgiler, oluşturacağım <strong>web sayfanızda</strong> kullanılacak.
+            💡 İpucu: Vereceğiniz bilgiler, oluşturacağım <strong>web sayfanızda</strong> kullanılacak.
           </p>
         </div>
 
@@ -199,18 +202,17 @@ export default function ProfilDuzenlePage() {
 
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
-          <div className="flex items-center gap-2">
+          <div className="flex gap-2">
+            <button type="submit" disabled={status === "saving"}
+              className="flex-1 bg-violet-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95 transition">
+              {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet"}
+            </button>
             <a
               href={`/tr/panel${token ? `?t=${encodeURIComponent(token)}` : ""}`}
-              className="flex-shrink-0 w-14 h-14 flex items-center justify-center bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-800 rounded-xl text-xl font-bold shadow active:scale-95 transition"
-              aria-label="Panele dön"
+              className="flex items-center justify-center bg-white border border-slate-300 text-slate-700 px-4 py-4 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition whitespace-nowrap"
             >
-              ←
+              🖥 Panele
             </a>
-            <button type="submit" disabled={status === "saving"}
-              className="flex-1 bg-violet-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95">
-              {status === "saving" ? "Kaydediliyor..." : "Kaydet"}
-            </button>
           </div>
         </form>
       </div>

@@ -1,6 +1,9 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import { ReturnButtons } from "@/components/return-buttons";
+
+const BOT_WA_NUMBER = "31644967207";
 
 export default function SozlesmelerimPage() {
   const searchParams = useSearchParams();
@@ -24,11 +27,13 @@ export default function SozlesmelerimPage() {
 
       <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
         <div className="text-5xl mb-3">📋</div>
-        <p className="font-semibold text-slate-900 mb-1">Sözleşme listesi yakında</p>
+        <p className="font-semibold text-slate-900 mb-1">Henüz sözleşme eklemediniz</p>
         <p className="text-slate-500 text-sm">
-          Yeni sözleşme oluşturmak için yukarıdaki butonu kullanın — WhatsApp&apos;tan akış başlar.
+          Yeni sözleşme oluşturmak için yukarıdaki butonu kullanın.
         </p>
       </div>
+
+      <ReturnButtons token={token || null} botPhone={BOT_WA_NUMBER} />
     </div>
   );
 }

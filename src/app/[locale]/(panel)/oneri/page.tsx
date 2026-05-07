@@ -1,6 +1,14 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
+import { ReturnButtons } from "@/components/return-buttons";
+
+const BOT_WA_NUMBER = "31644967207";
+
 export default function OneriPage() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get("t") || searchParams.get("token") || "";
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-8 shadow-sm text-center">
@@ -13,6 +21,8 @@ export default function OneriPage() {
           Şu an WhatsApp&apos;tan mesaj atabilir veya <a href="mailto:hello@upudev.nl" className="underline">hello@upudev.nl</a> adresine yazabilirsiniz.
         </p>
       </div>
+
+      <ReturnButtons token={token || null} botPhone={BOT_WA_NUMBER} />
     </div>
   );
 }

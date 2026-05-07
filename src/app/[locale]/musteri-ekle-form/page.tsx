@@ -112,7 +112,10 @@ export default function MusteriEkleFormPage() {
   if (status === "done") return <Center>
     <div className="text-5xl mb-3">🎉</div>
     <h1 className="text-xl font-bold mb-2">Müşteri kaydedildi!</h1>
-    <p className="text-slate-600 text-sm mb-6">WhatsApp&apos;a dönerek devam edebilirsiniz.</p>
+    <p className="text-slate-600 text-sm mb-6">Müşterileriniz panelde listelenir.</p>
+    <a href={`/tr/panel?t=${encodeURIComponent(token || "")}`} className="block w-full bg-emerald-600 text-white text-center font-semibold py-3 rounded-xl mb-2 active:scale-95 transition">
+      🖥 Panele Dön
+    </a>
     <ReturnButtons token={token} botPhone={BOT_WA_NUMBER} />
   </Center>;
 
@@ -122,7 +125,7 @@ export default function MusteriEkleFormPage() {
         <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">🤝</div>
           <h1 className="text-xl font-bold">Müşteri Ekle</h1>
-          <p className="text-emerald-100 text-sm mt-1">Müşterinin bilgilerini ve aradığı kriterleri girin.</p>
+          <p className="text-emerald-100 text-sm mt-1">💡 İpucu: Ne kadar bilgi girerseniz AI eşleştirmesi o kadar isabetli olur.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -197,10 +200,16 @@ export default function MusteriEkleFormPage() {
 
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
-          <button type="submit" disabled={status === "saving"}
-            className="w-full bg-emerald-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95">
-            {status === "saving" ? "Kaydediliyor..." : "✅ Müşteriyi Kaydet"}
-          </button>
+          <div className="flex gap-2">
+            <button type="submit" disabled={status === "saving"}
+              className="flex-1 bg-emerald-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95 transition">
+              {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet"}
+            </button>
+            <a href={`/tr/panel?t=${encodeURIComponent(token || "")}`}
+              className="flex items-center justify-center bg-white border border-slate-300 text-slate-700 px-4 py-4 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition whitespace-nowrap">
+              🖥 Panele
+            </a>
+          </div>
         </form>
       </div>
     </div>

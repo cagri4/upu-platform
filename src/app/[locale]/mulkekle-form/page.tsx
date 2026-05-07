@@ -259,9 +259,12 @@ export default function MulkEkleFormPage() {
     <h1 className="text-xl font-bold mb-2">{isEdit ? "Mülk güncellendi!" : "Mülk eklendi!"}</h1>
     <p className="text-slate-600 text-sm mb-6">
       {isEdit
-        ? "Değişiklikler kaydedildi. Mülklerim sayfasına geri dönebilirsiniz."
-        : "Sunum birkaç saniye içinde WhatsApp'ınıza düşecek. WhatsApp'a dönüp bekleyebilirsiniz."}
+        ? "Değişiklikler kaydedildi."
+        : "Sunum birkaç saniye içinde hazır olacak."}
     </p>
+    <a href={`/tr/panel?t=${encodeURIComponent(token || "")}`} className="block w-full bg-emerald-600 text-white text-center font-semibold py-3 rounded-xl mb-2 active:scale-95 transition">
+      🖥 Panele Dön
+    </a>
     <ReturnButtons token={token} botPhone={BOT_WA_NUMBER} />
   </Center>;
 
@@ -272,7 +275,7 @@ export default function MulkEkleFormPage() {
           <div className="text-3xl mb-1">{isEdit ? "✏️" : "🏠"}</div>
           <h1 className="text-xl font-bold">{isEdit ? "Mülkü Düzenle" : "Mülk Ekle"}</h1>
           <p className="text-blue-100 text-sm mt-1">
-            {isEdit ? "Bilgileri güncelleyin ve kaydedin." : "Ne kadar bilgi girerseniz AI o kadar iyi sunum yazar."}
+            {isEdit ? "Bilgileri güncelleyin ve kaydedin." : "💡 İpucu: Ne kadar bilgi girerseniz AI o kadar iyi sunum yazar."}
           </p>
         </div>
 
@@ -386,10 +389,16 @@ export default function MulkEkleFormPage() {
 
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
-          <button type="submit" disabled={status === "saving"}
-            className="w-full bg-green-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95 transition">
-            {status === "saving" ? "Kaydediliyor..." : (isEdit ? "✅ Değişiklikleri Kaydet" : "✅ Kaydet ve WhatsApp'a Dön")}
-          </button>
+          <div className="flex gap-2">
+            <button type="submit" disabled={status === "saving"}
+              className="flex-1 bg-green-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95 transition">
+              {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet"}
+            </button>
+            <a href={`/tr/panel?t=${encodeURIComponent(token || "")}`}
+              className="flex items-center justify-center bg-white border border-slate-300 text-slate-700 px-4 py-4 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition whitespace-nowrap">
+              🖥 Panele
+            </a>
+          </div>
         </form>
       </div>
     </div>

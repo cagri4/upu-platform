@@ -1,6 +1,14 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
+import { ReturnButtons } from "@/components/return-buttons";
+
+const BOT_WA_NUMBER = "31644967207";
+
 export default function TakvimPage() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get("t") || searchParams.get("token") || "";
+
   return (
     <div className="space-y-5">
       <div className="bg-gradient-to-br from-sky-700 to-cyan-900 text-white rounded-2xl p-5">
@@ -25,6 +33,8 @@ export default function TakvimPage() {
           TODO listesi, randevu takvimi ve WhatsApp hatırlatma bildirimleri tek ekranda — Faz 3&apos;te aktif olacak.
         </p>
       </div>
+
+      <ReturnButtons token={token || null} botPhone={BOT_WA_NUMBER} />
     </div>
   );
 }

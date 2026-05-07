@@ -1,6 +1,14 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
+import { ReturnButtons } from "@/components/return-buttons";
+
+const BOT_WA_NUMBER = "31644967207";
+
 export default function HakkindaPage() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get("t") || searchParams.get("token") || "";
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-br from-stone-700 to-stone-900 text-white rounded-2xl p-6 shadow-lg">
@@ -21,6 +29,8 @@ export default function HakkindaPage() {
           İletişim: <a href="mailto:hello@upudev.nl" className="underline">hello@upudev.nl</a>
         </p>
       </div>
+
+      <ReturnButtons token={token || null} botPhone={BOT_WA_NUMBER} />
     </div>
   );
 }
