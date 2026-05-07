@@ -49,23 +49,54 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
 
   const supabase = getServiceClient();
 
-  // Welcome + yetenek listesi
-  const introMsg =
-    `👋 Merhaba! Ben UPU, sizin kişisel AI asistanınızım. 7/24 satışlarınızı artırmak için çalışacağım.\n\n` +
-    `*Yapabileceklerimden bazıları:*\n\n` +
-    `• Her sabah sahibinden'de bölgenize düşen *yeni sahibi ilanları* kriterinize göre süzüp link listesi olarak WhatsApp'a gönderirim. Tek tıkla linkleri inceler, dilerseniz hızlı bir şekilde sahibinden verilmiş ilan sahibine ulaşırsınız.\n` +
-    `• Portföyünüz için dakikalar içinde profesyonel sunumlar hazırlar, tek linkle müşterinize gönderirim.\n` +
-    `• Sunum ve ilan açıklamalarında yapay zeka ile satış hedefli metinler yazarım.\n` +
-    `• Sahibinden.com'a ilan yüklemenizi 30 dakikadan 3 dakikaya indiririm.`;
-
-  await sendText(ctx.phone, introMsg);
-
-  // Mark onboarding completed
+  // Profil çek — firstName ve metadata için
   const { data: profile } = await supabase
     .from("profiles")
     .select("metadata, display_name")
     .eq("id", ctx.userId)
     .single();
+  const displayName = (profile?.display_name as string) || ctx.userName || "";
+  const firstName = displayName.split(/\s+/)[0] || "";
+
+  // Sıcak karşılama — 3 mesaj, aralarında ~1.8 sn gecikme (sohbet havası).
+  // 2026-05-07 öncesinde tek uzun blok + sendEmlakMenu (2 mesaj) idi;
+  // okumayı zorlaştırıyordu. Yeni desen: kısa greeting → yetenekler → panel CTA.
+
+  // Mesaj 1 — greeting
+  const greeting = firstName
+    ? `👋 Merhaba ${firstName}! ✨\n\nBen UPU, kişisel AI asistanın. 7/24 satışlarını artırmak için çalışacağım.`
+    : `👋 Merhaba! ✨\n\nBen UPU, kişisel AI asistanın. 7/24 satışlarını artırmak için çalışacağım.`;
+  await sendText(ctx.phone, greeting);
+
+  await sleep(1800);
+
+  // Mesaj 2 — kabiliyetler
+  const capabilities =
+    `🎯 *Yapabileceklerimden bazıları:*\n\n` +
+    `✅ Her sabah Bodrum'daki sahibi ilanlarını filtreleyip sana gönderirim\n` +
+    `✅ AI ile dakikalar içinde profesyonel sunum hazırlarım\n` +
+    `✅ Sahibinden ilan yüklemeni 30 dk'dan 3 dk'ya indiririm\n` +
+    `✅ Müşteri-mülk eşleştirme önerileri yaparım`;
+  await sendText(ctx.phone, capabilities);
+
+  await sleep(1800);
+
+  // Mesaj 3 — Paneli Aç CTA (magic link mint inline; sendEmlakMenu yerine geçer)
+  const { randomBytes } = await import("crypto");
+  const { sendUrlButton } = await import("./send");
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
+  const panelToken = randomBytes(16).toString("hex");
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  await supabase.from("magic_link_tokens").insert({
+    user_id: ctx.userId, token: panelToken, expires_at: expiresAt,
+  });
+  const panelUrl = `${APP_URL}/tr/panel?t=${panelToken}`;
+  const ctaMsg =
+    `🖥 *Yönetim paneliniz hazır.*\n\n` +
+    `Tüm komutları görüntülemek için panele gidin. Hızlı erişim için WhatsApp'tan komut adını da yazabilirsin.`;
+  await sendUrlButton(ctx.phone, ctaMsg, "🖥 Paneli Aç", panelUrl, { skipNav: true });
+
+  // Mark onboarding completed
   const newMeta = {
     ...(profile?.metadata as Record<string, unknown> || {}),
     onboarding_completed: true,
@@ -75,16 +106,12 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   };
   await supabase.from("profiles").update({ metadata: newMeta }).eq("id", ctx.userId);
 
-  // Free-ride pattern: tek otomatik push = ana komut menüsü.
-  // Eski "Hızlı Arama" yönlendirmesi kaldırıldı (kullanıcı zorla göreve
-  // sokulmuyor). Menü greet=false — selamlama zaten introMsg'da var.
-  const { sendEmlakMenu } = await import("@/tenants/emlak/menu");
-  await sendEmlakMenu(
-    { userId: ctx.userId, phone: ctx.phone, userName: (profile?.display_name as string) || ctx.userName || "" },
-    false,
-  );
-
   return true;
+}
+
+/** Mesajlar arası sohbet havası için kısa gecikme. */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**

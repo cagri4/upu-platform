@@ -265,3 +265,47 @@ Onay kriterleri:
 
 Onay sonrası: bu dosya replikasyon brief'i için kopyalanır, her SaaS için
 "Adım 2 — sidebar config + KPI" tablosundan ilgili satır kullanılır.
+
+---
+
+## 10. Sıcak Karşılama (3-Mesaj Pattern, 2026-05-07)
+
+WA selamlama tek uzun blok yerine 3 mesaja bölündü, aralarında ~1.8 sn sleep
+("sohbet havası"). emlak için `src/platform/whatsapp/intro.ts` içinde
+`startIntro` fonksiyonunun emlak path'ine uygulandı. sendEmlakMenu çağrısı
+kaldırıldı — Mesaj 3 (panel CTA) onun yerini aldı.
+
+### Pattern Sabit
+- **Mesaj 1 (greeting):** `👋 Merhaba {firstName}! ✨\n\nBen UPU, kişisel AI asistanın. 7/24 <core-promise>.`
+- **sleep 1800 ms**
+- **Mesaj 2 (kabiliyetler):** `🎯 *Yapabileceklerimden bazıları:*\n\n✅ <madde1>\n✅ <madde2>\n✅ <madde3>\n✅ <madde4>` (4 madde, fiil ile başla, 1 satır)
+- **sleep 1800 ms**
+- **Mesaj 3 (CTA):** `🖥 *Yönetim paneliniz hazır.*\n\nTüm komutları görüntülemek için panele gidin. Hızlı erişim için WhatsApp'tan komut adını da yazabilirsin.` + sendUrlButton "🖥 Paneli Aç" + magic link
+
+### WA Cloud API Typing Indicator Notu
+Cloud API typing_indicator yalnız `markAsRead` çağrısında inbound message_id'ye
+attach edilebilir — outbound mesajlar arasında native typing göstergesi yok.
+Sleep yeterli; mesajlar 1.8 sn aralıkla geldiği için kullanıcı doğal "yazıyor"
+ritmi hisseder. (markAsRead zaten ilk gelen mesajda typing tetikler — read
+receipt kapsamında, ekstra iş gerekmiyor.)
+
+### Sektörel Wording Tablosu (6 SaaS Replikasyon)
+
+| SaaS | Core promise (Mesaj 1) | 4 Kabiliyet (Mesaj 2) |
+|---|---|---|
+| **emlak** | 7/24 satışlarını artırmak için çalışacağım | (1) Her sabah Bodrum'daki sahibi ilanlarını filtreleyip sana gönderirim (2) AI ile dakikalar içinde profesyonel sunum hazırlarım (3) Sahibinden ilan yüklemeni 30 dk'dan 3 dk'ya indiririm (4) Müşteri-mülk eşleştirme önerileri yaparım |
+| **bayi** | tahsilat ve sipariş operasyonunu kolaylaştıracağım | (1) Yeni bayi başvurularını telefonla onaylayıp sisteme ekleyeyim (2) Vadesi gelen tahsilatlar için hatırlatma metni hazırlayıp onayınla bayiye göndereyim (3) Bayi siparişlerini WA'dan tek akışta sisteme kaydedeyim (4) Tüm bayilerinize tek tıkla kampanya duyurusu yapayım |
+| **doga** (caretta-xanthos) | rezervasyon ve gönüllü organizasyonunu sorunsuz yöneteceğim | (1) Günlük rezervasyon brifingi sabah hazırlayayım (2) Kaplumbağa kayıt formlarını WA'dan tek akışta sisteme alayım (3) Etkinlik duyuruları + bağışçı mesajlarını ben yazayım, onaylarsın (4) Gönüllü çağrılarına tek tıkla yanıt verebilesin |
+| **otel** | doluluğunu ve gelirini artırmak için çalışacağım | (1) Sabah doluluk + bugün çek-in/çek-out brifingi (2) Telefonla gelen rezervasyonları tek akışta sisteme kaydedeyim (3) Sürekli müşterilere doğum günü/sezon mesajı taslakları (4) Açık ödemeler + kart bilgisi olmayan rezervasyonlar uyarı |
+| **market** | kasanı her gün düzenli tutmak için çalışacağım | (1) Sabah dünkü ciro + bugün stok brifingi (2) Stok kritik seviyeye düşünce uyarayım, tedarikçi sipariş önerisi sunayım (3) Müşteri sadakat hatırlatmaları + doğum günü kupon önerileri (4) Tedarikçi siparişlerini WA'dan tek akışta sisteme alayım |
+| **restoran** | siparişlerini hızlandırıp müdavim ilişkisini güçlendireceğim | (1) Sabah dünkü satış + bugün rezervasyon brifingi (2) Telefonla gelen rezervasyonları masa atamayla sisteme kaydedeyim (3) Müdavim panosu — kim 2+ haftadır yok, kimin doğum günü uyarısı (4) Sadakat club daveti + sürpriz mesaj taslakları |
+| **site** (siteyonetim) | sakin iletişimini ve aidat takibini düzene sokacağım | (1) Açık şikayet/talep özetini her sabah getireyim (2) Aidat ödenmemiş daireler için hatırlatma metni hazırlayım (3) Etkinlik + duyuru mesajlarını ben yazayım, onaylarsın (4) Personel görev atama + tamamlanma bildirimi |
+
+### Replikasyon Adımı
+
+`src/platform/whatsapp/intro.ts` veya tenant-specific intro dosyasında:
+1. Tek uzun introMsg sendText'i sil
+2. 3 sequential sendText + sleep(1800) ekle (yukarıdaki tablo metinlerini kullan)
+3. Mesaj 3'te magic link mint + sendUrlButton "🖥 Paneli Aç"
+4. Eski tenant menu helper (sendEmlakMenu vb.) çağrısını kaldır — Mesaj 3 onu kapsar
+5. profile metadata `onboarding_completed: true` set et
