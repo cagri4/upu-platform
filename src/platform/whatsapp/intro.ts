@@ -21,7 +21,7 @@ import {
 } from "./onboarding";
 import { getServiceClient } from "@/platform/auth/supabase";
 
-const INTRO_TENANTS = new Set(["emlak", "bayi", "restoran"]);
+const INTRO_TENANTS = new Set(["emlak", "bayi", "restoran", "siteyonetim", "otel"]);
 
 /**
  * Start the intro — value-first demo.
@@ -45,6 +45,12 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
   }
   if (ctx.tenantKey === "restoran") {
     return await startRestoranIntro(ctx);
+  }
+  if (ctx.tenantKey === "siteyonetim") {
+    return await startSiteyonetimIntro(ctx);
+  }
+  if (ctx.tenantKey === "otel") {
+    return await startOtelIntro(ctx);
   }
 
   const supabase = getServiceClient();
@@ -178,28 +184,50 @@ async function startBayiIntro(ctx: WaContext): Promise<boolean> {
 }
 
 /**
- * Restoran intro — koridor akışı: tek-tıklama Form'u Aç.
+ * Restoran intro — warm welcome 3 mesaj (2026-05-07 emlak replikasyonu).
  *
- * Bayi pattern aynısı: 2 mesaj (tanıtım + form CTA). Form save sonrası
- * sektör bazlı demo seed otomatik tetiklenir, kullanıcı bizim "örnek
- * restoran" verisi içinde tour'a başlar.
+ * Sohbet havası için 3 mesaj 1.8 sn aralıklarla:
+ *   1) Selamlama + core promise (firstName ile)
+ *   2) "Yapabileceklerim" 4 madde
+ *   3) Form çağrısı + 📝 Form'u Aç CTA URL
+ *
+ * Form save sonrası /api/restoran-profil/save'in `sendWarmWelcome`
+ * fonksiyonu ikinci bir 3-mesaj seti gönderir (Mesaj 3 = 🖥 Paneli Aç).
+ *
+ * Tüm metinler formal "siz" — gold standard pattern.
  */
 async function startRestoranIntro(ctx: WaContext): Promise<boolean> {
-  // Blok 1 — tanıtım
-  const introMsg =
-    `👋 Merhaba! Ben UPU, restoran asistanınız. Müdavim takibi, rezervasyon yönetimi ve sabah raporu için cep arkadaşınız.\n\n` +
-    `*Yapabileceklerimden bazıları:*\n\n` +
-    `• Her sabah günlük brifing — dünkü satış, bugün rezervasyonlar, doğum günü olan müdavimler, kritik stok\n` +
-    `• Telefonla gelen rezervasyonları WA'dan tek akışta sisteme kaydederim — masa atama, özel istek, doğum günü notu\n` +
-    `• Müdavim panosu — kim hangi sıklıkla geliyor, kim 2+ haftadır yok, kimin doğum günü\n` +
-    `• Müşterilerinizi sadakat club'a davet ederim, doğum günlerinde sürpriz mesaj taslağı hazırlarım\n` +
-    `• Mevcut kasanıza, mutfak sisteminize, muhasebecinize *dokunmuyorum* — sadece üzerine akıllı katman koyuyorum`;
-  await sendText(ctx.phone, introMsg);
+  // firstName: profile.metadata.display_name | profile.display_name
+  const sb = getServiceClient();
+  const { data: profile } = await sb
+    .from("profiles")
+    .select("display_name, metadata")
+    .eq("id", ctx.userId)
+    .maybeSingle();
+  const fullName = (profile?.display_name as string) || "";
+  const firstName = fullName ? fullName.split(/\s+/)[0] : "";
 
-  // Blok 2 — magic link Form'u Aç
+  // Mesaj 1 — selamlama + core promise
+  const greet = firstName ? `👋 Merhaba ${firstName}! ✨` : `👋 Merhaba! ✨`;
+  await sendText(ctx.phone,
+    `${greet}\n\n` +
+    `Ben kişisel asistanınız UPU. 7/24 siparişlerinizi hızlandırıp müdavim ilişkinizi güçlendireceğim.`,
+  );
+  await sleep(1800);
+
+  // Mesaj 2 — 4 madde
+  await sendText(ctx.phone,
+    `🎯 *Yapabileceklerimden bazıları:*\n\n` +
+    `✅ Sabah dünkü satış + bugün rezervasyon brifinginizi hazırlarım\n` +
+    `✅ Telefonla gelen rezervasyonlarınızı masa atamayla sisteme kaydederim\n` +
+    `✅ Müdavim panosu — kim 2+ haftadır yok, kimin doğum günü olduğunu size bildiririm\n` +
+    `✅ Sadakat club daveti + sürpriz mesaj taslaklarını hazırlarım`,
+  );
+  await sleep(1800);
+
+  // Mesaj 3 — magic link Form'u Aç (formal "siz")
   const { randomBytes } = await import("crypto");
   const { sendUrlButton } = await import("./send");
-  const sb = getServiceClient();
   const token = randomBytes(16).toString("hex");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   await sb.from("magic_link_tokens").insert({
@@ -207,13 +235,192 @@ async function startRestoranIntro(ctx: WaContext): Promise<boolean> {
   });
   const url = `https://restoranai.upudev.nl/tr/restoran-profil?t=${token}`;
   const formMsg =
-    `📋 *Şimdi sizi tanıyalım, lütfen formu doldurun.*\n\n` +
-    `• Restoran adı, sektör (kebap/cafe/catering), lokasyon\n` +
+    `📋 *Sizi tanıyalım, lütfen formu doldurun.*\n\n` +
+    `• Restoran adı, işletme tipi (kebap/cafe/catering/tatlıcı), lokasyon\n` +
     `• Yetkili adı, brifing tercihi\n` +
     `• (Opsiyonel) muhasebe yazılımı, kapasite\n\n` +
-    `⏱ Tahmini 2-3 dk. Form bitince size örnek bir restoran (Sultan Ahmet Kebabevi) yükleyeceğim — ` +
+    `⏱ Tahmini 2-3 dk. Form bitince örnek bir restoran (Sultan Ahmet Kebabevi) yükleyeceğim — ` +
     `gerçek bağlantı kurulana kadar üzerinde çalışırsınız.`;
   await sendUrlButton(ctx.phone, formMsg, "📝 Form'u Aç", url, { skipNav: true });
+
+  return true;
+}
+
+/**
+ * Siteyönetim intro — warm welcome 3 mesaj (2026-05-07 emlak replikasyonu).
+ *
+ * Mesaj 1 greeting + core promise → sleep 1.8 sn → Mesaj 2 4 madde →
+ * sleep 1.8 sn → arka planda otomatik bina + demo seed yükle →
+ * Mesaj 3 magic link "Paneli Aç". Kullanıcı panele girdiğinde KPI'lar
+ * önceden dolu görünür (boş "Hoşgeldin, 0/0/0/0/0" karşılama yok).
+ *
+ * Mevcut WA onboarding 4-soru flow (siteyonetimOnboardingFlow) bu yolda
+ * tetiklenmez — gateway startIntro=true dönerse onboarding skip eder.
+ * Onboarding flow registered kalıyor; legacy invite_codes (6-hex) yolu
+ * için fallback olarak çalışır.
+ */
+async function startSiteyonetimIntro(ctx: WaContext): Promise<boolean> {
+  const sb = getServiceClient();
+  const { data: profile } = await sb
+    .from("profiles")
+    .select("display_name, metadata, tenant_id")
+    .eq("id", ctx.userId)
+    .maybeSingle();
+  const fullName = profile?.display_name || ctx.userName || "";
+  const firstName = fullName ? fullName.split(/\s+/)[0] : "";
+
+  // Mesaj 1 — selamlama + core promise (formal "siz")
+  const greet = firstName ? `👋 Merhaba ${firstName}! ✨` : `👋 Merhaba! ✨`;
+  await sendText(ctx.phone,
+    `${greet}\n\n` +
+    `Ben kişisel asistanınız UPU. 7/24 sakin iletişiminizi ve aidat takibinizi düzene sokacağım.`,
+  );
+  await sleep(1800);
+
+  // Mesaj 2 — 4 madde (replikasyon brief'inden)
+  await sendText(ctx.phone,
+    `🎯 *Yapabileceklerimden bazıları:*\n\n` +
+    `✅ Açık şikayet/talep özetinizi her sabah getiririm\n` +
+    `✅ Aidat ödenmemiş daireler için hatırlatma metni hazırlarım\n` +
+    `✅ Etkinlik + duyuru mesajlarınızı yazar, onayınızla gönderirim\n` +
+    `✅ Personel görev atama + tamamlanma bildirimleri yaparım`,
+  );
+  await sleep(1800);
+
+  // Arka planda: bina yoksa otomatik yarat + demo seed yükle.
+  // Idempotent — bina zaten varsa veya seed atılmışsa skip eder.
+  const tenantId = profile?.tenant_id || ctx.tenantId;
+  let buildingId: string | null = null;
+  try {
+    const { data: existing } = await sb
+      .from("sy_buildings")
+      .select("id")
+      .eq("manager_id", ctx.userId)
+      .eq("tenant_id", tenantId)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing?.id) {
+      buildingId = existing.id as string;
+    } else {
+      const { generateAccessCode } = await import("@/tenants/siteyonetim/commands/helpers");
+      const buildingName = firstName ? `${firstName} Apartmanı` : "Apartmanım";
+      const { data: created } = await sb
+        .from("sy_buildings")
+        .insert({
+          tenant_id: tenantId,
+          name: buildingName,
+          manager_id: ctx.userId,
+          access_code: generateAccessCode(),
+        })
+        .select("id")
+        .single();
+      buildingId = (created?.id as string | undefined) ?? null;
+    }
+
+    if (buildingId) {
+      const { seedSiteyonetimDemoData } = await import("@/tenants/siteyonetim/demo/seed");
+      await seedSiteyonetimDemoData(sb, tenantId, ctx.userId, buildingId);
+    }
+  } catch (err) {
+    console.error("[siteyonetim:intro] demo seed err:", err);
+    // Hata durumunda mesaj 3'ü atla — kullanıcı yine de panele giderse
+    // boş bir bina görür. Ana flow bozulmaz.
+  }
+
+  // Mesaj 3 — Paneli Aç magic link
+  const { randomBytes } = await import("crypto");
+  const { sendUrlButton } = await import("./send");
+  const APP_URL = "https://residenceai.upudev.nl";
+  const panelToken = randomBytes(16).toString("hex");
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  await sb.from("magic_link_tokens").insert({
+    user_id: ctx.userId, token: panelToken, expires_at: expiresAt,
+  });
+  const panelUrl = `${APP_URL}/tr/site?t=${panelToken}`;
+  const ctaMsg =
+    `🖥 *Yönetim paneliniz hazır.*\n\n` +
+    `Tüm sisteminizi yönetmek için panele gidin.\n\n` +
+    `_Dilerseniz daha sonra komutlarla buradan da yönetebilirsiniz._`;
+  await sendUrlButton(ctx.phone, ctaMsg, "🖥 Paneli Aç", panelUrl, { skipNav: true });
+
+  // Profil metadata: onboarding tamamlandı + intro tetik tekrar etmesin
+  const newMeta = {
+    ...(profile?.metadata as Record<string, unknown> || {}),
+    onboarding_completed: true,
+  };
+  await sb.from("profiles").update({ metadata: newMeta }).eq("id", ctx.userId);
+
+  return true;
+}
+
+/**
+ * Otel intro — sıcak karşılama 3-mesaj pattern (formal "siz", emlak şablonu).
+ *
+ * Mesaj 1 (greeting):     "Ben kişisel asistanınız UPU. Doluluğunuzu ve gelirinizi artırmak için çalışacağım."
+ * sleep 1800
+ * Mesaj 2 (4 yetenek):    sabah brifing / telefonla rez / loyalty taslağı / açık ödeme uyarı
+ * sleep 1800
+ * Mesaj 3 (panel CTA):    "🖥 Yönetim paneliniz hazır." + 7-gün magic link
+ *
+ * Onboarding skip — çünkü misafirler için onboarding zaten yok (route.ts'te
+ * skipOnboarding) ve sahip için onboarding mevcut otel onboarding flow ile
+ * ayrı tetikleniyor (4-step: hotel_name/location/room_count/briefing).
+ * Bu intro o flow tamamlandıktan SONRA geliyor — yani sahibi tanıdık,
+ * panel link gönderme aşaması.
+ */
+async function startOtelIntro(ctx: WaContext): Promise<boolean> {
+  const supabase = getServiceClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("metadata, display_name")
+    .eq("id", ctx.userId)
+    .single();
+  const displayName = (profile?.display_name as string) || ctx.userName || "";
+  const firstName = displayName.split(/\s+/)[0] || "";
+
+  // Mesaj 1 — greeting (formal "siz")
+  const greeting = firstName
+    ? `👋 Merhaba ${firstName}! ✨\n\nBen kişisel asistanınız UPU. 7/24 doluluğunuzu ve gelirinizi artırmak için çalışacağım.`
+    : `👋 Merhaba! ✨\n\nBen kişisel asistanınız UPU. 7/24 doluluğunuzu ve gelirinizi artırmak için çalışacağım.`;
+  await sendText(ctx.phone, greeting);
+
+  await sleep(1800);
+
+  // Mesaj 2 — 4 kabiliyet
+  const capabilities =
+    `🎯 *Yapabileceklerimden bazıları:*\n\n` +
+    `✅ Sabah doluluk + bugün çek-in/çek-out brifinginizi hazırlarım\n` +
+    `✅ Telefonla gelen rezervasyonlarınızı tek akışta sisteme kaydederim\n` +
+    `✅ Sürekli müşterileriniz için doğum günü/sezon mesajı taslakları hazırlarım\n` +
+    `✅ Açık ödemeler ve kart bilgisi olmayan rezervasyonlar için uyarı veririm`;
+  await sendText(ctx.phone, capabilities);
+
+  await sleep(1800);
+
+  // Mesaj 3 — Paneli Aç CTA (magic link mint inline)
+  const { randomBytes } = await import("crypto");
+  const { sendUrlButton } = await import("./send");
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://hotelai.upudev.nl";
+  const panelToken = randomBytes(16).toString("hex");
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  await supabase.from("magic_link_tokens").insert({
+    user_id: ctx.userId, token: panelToken, expires_at: expiresAt,
+  });
+  const panelUrl = `${APP_URL}/tr/otel-panel?t=${panelToken}`;
+  const ctaMsg =
+    `🖥 *Yönetim paneliniz hazır.*\n\n` +
+    `Tüm sisteminizi yönetmek için panele gidin.\n\n` +
+    `_Dilerseniz daha sonra komutlarla buradan da yönetebilirsiniz._`;
+  await sendUrlButton(ctx.phone, ctaMsg, "🖥 Paneli Aç", panelUrl, { skipNav: true });
+
+  // Profil metadata: onboarding tamamlandı + intro tetik tekrar etmesin
+  const newMeta = {
+    ...(profile?.metadata as Record<string, unknown> || {}),
+    onboarding_completed: true,
+    discovery_step: "completed",
+  };
+  await supabase.from("profiles").update({ metadata: newMeta }).eq("id", ctx.userId);
 
   return true;
 }
