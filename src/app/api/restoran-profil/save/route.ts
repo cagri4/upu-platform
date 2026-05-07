@@ -20,7 +20,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { sendText, sendButtons } from "@/platform/whatsapp/send";
+import { sendText, sendUrlButton } from "@/platform/whatsapp/send";
+import { randomBytes } from "crypto";
 import {
   DEMO_TABLES, DEMO_MENU, DEMO_INVENTORY, DEMO_LOYALTY,
   DEMO_PAID_ORDERS, DEMO_RESERVATIONS,
@@ -165,16 +166,20 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // ── WA welcome (komut roadmap'i) ───────────────────────────────────────
+  // ── WA welcome (3-mesaj warm welcome — emlak gold standard pattern) ───
   if (userPhone) {
     try {
-      await sendDemoWelcomeMessages(userPhone, display_name, restaurant_name);
+      await sendWarmWelcome(supabase, userId, userPhone, display_name);
     } catch (err) {
       console.error("[restoran-profil/save] WA send error:", err);
     }
   }
 
   return NextResponse.json({ ok: true });
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // ── Seed implementation (yerel, /api/restoran-demo/seed ile aynı dataset) ─
@@ -327,33 +332,53 @@ async function seedRestoranTenant(
   await supabase.from("rst_reservations").insert(reservationRows);
 }
 
-// ── WA welcome message (komut yol haritası) ─────────────────────────────
+// ── 3-Mesaj Warm Welcome (emlak gold standard pattern, 2026-05-07) ──────
+//
+// 1. greeting + core promise (formal "siz")
+// 2. 4 madde (kabiliyetler)
+// 3. panel CTA + 🖥 Paneli Aç magic link
+// Aralarda sleep(1800) — sohbet havası.
 
-async function sendDemoWelcomeMessages(phone: string, name: string, restaurantName: string): Promise<void> {
-  const firstName = name.split(/\s+/)[0] || "Merhaba";
+async function sendWarmWelcome(
+  supabase: ReturnType<typeof getServiceClient>,
+  userId: string,
+  phone: string,
+  displayName: string,
+): Promise<void> {
+  const firstName = displayName.split(/\s+/)[0] || "Merhaba";
 
-  // Mesaj 1: tebrik + örnek restoran tanıtımı
-  await sendText(phone,
-    `🎉 *Hoş geldin ${firstName}!*\n\n` +
-    `${restaurantName} profilini kaydettim. Şimdi seninle bir örnek üzerinden ilerleyeceğiz: ` +
-    `*Sultan Ahmet Kebabevi (Rotterdam)* — bizim demo restoranımız.\n\n` +
-    `Ekibimiz kurulumda kendi POS'unuza, mutfak sisteminize ve muhasebenize bağlanacak. ` +
-    `Şimdilik bu örnek veri üzerinden komutları deneyebilirsin.`);
+  // Mesaj 1 — greeting + core promise (formal "siz")
+  const greeting =
+    `👋 Merhaba ${firstName}! ✨\n\n` +
+    `Ben kişisel asistanınız UPU. 7/24 siparişlerinizi hızlandırıp müdavim ilişkinizi güçlendireceğim.`;
+  await sendText(phone, greeting);
 
-  // Mesaj 2: bugünkü brifing önizleme + komut roadmap
-  await sendButtons(phone,
-    `☀️ *İlk komut:* \`brifing\`\n\n` +
-    `Sabah brifingini deneyelim. Sultan Ahmet'in dünkü satış, bugünkü rezervasyonları, doğum günü olan müdavimleri ve kritik stoğunu göreceksin.\n\n` +
-    `*Sonra şunları sırayla deneyebilirsin:*\n` +
-    `• \`rezervasyon\` — bugün+yarın liste\n` +
-    `• \`sadakat\` — müdavim panosu (Murat 18 gündür yok)\n` +
-    `• \`rezervasyonekle\` — yeni rezervasyon ekle\n` +
-    `• \`menukalemleri\` — 30 yemek\n` +
-    `• \`stok\` — kritik kalemler\n\n` +
-    `Hazırsan başla 👇`,
-    [
-      { id: "cmd:brifing", title: "☀️ Brifing" },
-      { id: "cmd:rezervasyon", title: "📅 Rezervasyon" },
-      { id: "cmd:sadakat", title: "💝 Müdavim" },
-    ]);
+  await sleep(1800);
+
+  // Mesaj 2 — 4 kabiliyet
+  const capabilities =
+    `🎯 *Yapabileceklerimden bazıları:*\n\n` +
+    `✅ Sabah dünkü satış + bugün rezervasyon brifinginizi hazırlarım\n` +
+    `✅ Telefonla gelen rezervasyonlarınızı masa atamayla sisteme kaydederim\n` +
+    `✅ Müdavim panosu — kim 2+ haftadır yok, kimin doğum günü olduğunu size bildiririm\n` +
+    `✅ Sadakat club daveti + sürpriz mesaj taslaklarını hazırlarım`;
+  await sendText(phone, capabilities);
+
+  await sleep(1800);
+
+  // Mesaj 3 — Panel CTA (yeni magic link mint, "🖥 Paneli Aç" buton)
+  const panelToken = randomBytes(16).toString("hex");
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  await supabase.from("magic_link_tokens").insert({
+    user_id: userId,
+    token: panelToken,
+    expires_at: expiresAt,
+  });
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL_RESTORAN || "https://restoranai.upudev.nl";
+  const panelUrl = `${APP_URL}/tr/restoran-panel?t=${panelToken}`;
+  const ctaMsg =
+    `🖥 *Yönetim paneliniz hazır.*\n\n` +
+    `Tüm sisteminizi yönetmek için panele gidin. Demo verisi olarak Sultan Ahmet Kebabevi yüklendi — gerçek bağlantı kurulana kadar üzerinde çalışırsınız.\n\n` +
+    `_Dilerseniz daha sonra komutlarla buradan da yönetebilirsiniz._`;
+  await sendUrlButton(phone, ctaMsg, "🖥 Paneli Aç", panelUrl, { skipNav: true });
 }
