@@ -14,7 +14,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { token, property_id, customer_id, commission, duration, exclusive } = body || {};
+    const { token, property_id, customer_id, commission, duration, exclusive, generated_text, edited } = body || {};
 
     if (!token || !property_id || !customer_id) {
       return NextResponse.json({ error: "Mülk ve müşteri seçimi zorunlu." }, { status: 400 });
@@ -77,6 +77,8 @@ export async function POST(req: NextRequest) {
           exclusive: !!exclusive,
           commission: Number(commission) || 2,
           duration: Number(duration) || 3,
+          generated_text: typeof generated_text === "string" && generated_text.length > 0 ? generated_text : null,
+          edited: !!edited,
         },
       })
       .select("id")

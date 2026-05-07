@@ -21,7 +21,7 @@ interface CustomerOption {
   looking_for: string[] | null;
 }
 
-type Status = "loading" | "select" | "form" | "saving" | "done" | "error";
+type Status = "loading" | "select" | "generating" | "preview" | "saving" | "done" | "error";
 
 export default function SozlesmeYapPage() {
   const searchParams = useSearchParams();
@@ -41,6 +41,11 @@ export default function SozlesmeYapPage() {
   const [duration, setDuration] = useState("3");
   const [exclusive, setExclusive] = useState(false);
 
+  // AI generated text + edit state
+  const [generatedText, setGeneratedText] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [edited, setEdited] = useState(false);
+
   // Result
   const [signLink, setSignLink] = useState("");
   const [copied, setCopied] = useState(false);
@@ -58,11 +63,11 @@ export default function SozlesmeYapPage() {
       .catch(() => { setStatus("error"); setError("Bağlantı hatası."); });
   }, [token]);
 
-  async function handleSave() {
+  async function handleGenerate() {
     if (!selectedPropId || !selectedCustId) { setError("Mülk ve müşteri seçimi zorunlu."); return; }
-    setStatus("saving"); setError("");
+    setStatus("generating"); setError("");
     try {
-      const res = await fetch("/api/sozlesme/save", {
+      const res = await fetch("/api/sozlesme/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -75,11 +80,38 @@ export default function SozlesmeYapPage() {
         }),
       });
       const d = await res.json();
-      if (!res.ok) { setStatus("form"); setError(d.error || "Kaydedilemedi."); return; }
+      if (!res.ok) { setStatus("select"); setError(d.error || "AI üretim hatası."); return; }
+      setGeneratedText(d.generated_text || "");
+      setEdited(false);
+      setStatus("preview");
+    } catch {
+      setStatus("select"); setError("Bağlantı hatası.");
+    }
+  }
+
+  async function handleSave() {
+    setStatus("saving"); setError("");
+    try {
+      const res = await fetch("/api/sozlesme/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          property_id: selectedPropId,
+          customer_id: selectedCustId,
+          commission: Number(commission) || 2,
+          duration: Number(duration) || 3,
+          exclusive,
+          generated_text: generatedText,
+          edited,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setStatus("preview"); setError(d.error || "Kaydedilemedi."); return; }
       setSignLink(d.sign_link || "");
       setStatus("done");
     } catch {
-      setStatus("form"); setError("Bağlantı hatası.");
+      setStatus("preview"); setError("Bağlantı hatası.");
     }
   }
 
@@ -101,6 +133,73 @@ export default function SozlesmeYapPage() {
         <div className="text-4xl mb-3">⚠️</div>
         <h1 className="text-lg font-bold mb-2">Hata</h1>
         <p className="text-slate-600 text-sm">{error}</p>
+      </div>
+    );
+  }
+
+  if (status === "generating") {
+    return (
+      <div className="space-y-5">
+        <div className="bg-gradient-to-br from-amber-700 to-orange-900 text-white rounded-2xl p-5">
+          <div className="text-3xl mb-1">🤖</div>
+          <h1 className="text-xl font-bold">Sözleşme hazırlanıyor...</h1>
+          <p className="text-amber-200 text-sm mt-1">AI 5-10 saniyede taslak metni hazırlıyor.</p>
+        </div>
+        <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
+          <div className="text-5xl animate-pulse mb-4">📝</div>
+          <p className="text-sm text-slate-500">Yapay zeka çalışıyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "preview" || status === "saving") {
+    return (
+      <div className="space-y-5">
+        <div className="bg-gradient-to-br from-amber-700 to-orange-900 text-white rounded-2xl p-5">
+          <div className="text-3xl mb-1">📄</div>
+          <h1 className="text-xl font-bold">Sözleşme Taslağı</h1>
+          <p className="text-amber-200 text-sm mt-1">Metni inceleyin. İsterseniz düzenleyin, sonra kaydedin.</p>
+        </div>
+
+        {editing ? (
+          <textarea
+            value={generatedText}
+            onChange={e => { setGeneratedText(e.target.value); setEdited(true); }}
+            rows={20}
+            className="w-full bg-white border border-slate-300 rounded-2xl p-4 text-sm text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-amber-400"
+          />
+        ) : (
+          <div className="bg-white rounded-2xl p-5 shadow-sm">
+            <pre className="whitespace-pre-wrap text-sm text-slate-800 font-sans leading-relaxed">{generatedText}</pre>
+          </div>
+        )}
+
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => setEditing(v => !v)}
+            disabled={status === "saving"}
+            className="flex-1 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition"
+          >
+            {editing ? "👁 Önizleme" : "✏️ Düzenle"}
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={status === "saving"}
+            className="flex-1 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-300 text-white py-3 rounded-xl font-semibold text-sm active:scale-95 transition"
+          >
+            {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet"}
+          </button>
+        </div>
+
+        <button
+          onClick={() => setStatus("select")}
+          className="w-full bg-white border border-slate-300 text-slate-600 py-2 rounded-xl text-xs hover:bg-slate-50 transition"
+        >
+          ← Geri (yeniden seç)
+        </button>
       </div>
     );
   }
@@ -150,13 +249,13 @@ export default function SozlesmeYapPage() {
     );
   }
 
-  // status === "select" | "form" | "saving"
+  // status === "select"
   return (
     <div className="space-y-5">
       <div className="bg-gradient-to-br from-amber-700 to-orange-900 text-white rounded-2xl p-5">
         <div className="text-3xl mb-1">📝</div>
         <h1 className="text-xl font-bold">Sözleşme Yap</h1>
-        <p className="text-amber-200 text-sm mt-1">Mülk + müşteri seç, parametreleri belirle, imza linki üret.</p>
+        <p className="text-amber-200 text-sm mt-1">Mülk + müşteri seç, parametreleri belirle, AI taslak hazırlasın.</p>
       </div>
 
       {/* Mülk seç */}
@@ -240,11 +339,11 @@ export default function SozlesmeYapPage() {
 
       <div className="flex gap-2">
         <button
-          onClick={handleSave}
-          disabled={status === "saving" || !selectedPropId || !selectedCustId}
+          onClick={handleGenerate}
+          disabled={!selectedPropId || !selectedCustId}
           className="flex-1 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white py-4 rounded-xl font-semibold text-lg shadow-lg active:scale-95 transition"
         >
-          {status === "saving" ? "Oluşturuluyor..." : "✅ Sözleşmeyi Oluştur"}
+          🤖 AI ile Sözleşme Üret
         </button>
         <a
           href={`/tr/panel?t=${encodeURIComponent(token)}`}
