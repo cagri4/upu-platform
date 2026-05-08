@@ -357,9 +357,15 @@ export default function MulkEkleFormPage() {
                 </span>
               </label>
               <p className="text-xs text-slate-500">Sunumda otomatik kullanılacak. İlk fotoğraf kapak olur.</p>
-              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                💡 Tek seferde en fazla <strong>4 fotoğraf</strong> ekleyin, ya da <ChromeOpenInlineLink /> ve hepsini birden ekleyin.
-              </p>
+              {/* Chrome ipucu yalnız WA/in-app WebView'da görünür. Seçenek A
+                  intent:// ile kullanıcıyı Chrome'a yönlendirdiği için
+                  WebView dışı durumda ipucu gereksiz; rare WebView fallback
+                  case için tutuldu. */}
+              {isInAppBrowser && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  💡 Tek seferde en fazla <strong>4 fotoğraf</strong> ekleyin, ya da <ChromeOpenInlineLink /> ve hepsini birden ekleyin.
+                </p>
+              )}
               <ChromeSuggest />
 
               {photoError && (
