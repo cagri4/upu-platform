@@ -4,6 +4,35 @@ import { useEffect, useState } from "react";
 import { useIsInAppBrowser } from "./use-in-app-browser";
 
 /**
+ * Inline link — "şu linke tıklayarak Chrome'da açın" — foto bölümü ipucunda
+ * kullanılır. Her tarayıcıda görünür (WebView dışında native Chrome'a gider,
+ * Chrome zaten açıksa ?chrome=1 query no-op).
+ */
+export function ChromeOpenInlineLink() {
+  const [chromeUrl, setChromeUrl] = useState("#");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const u = new URL(window.location.href);
+      const search = u.search ? `${u.search}&chrome=1` : `?chrome=1`;
+      const isAndroid = /Android/i.test(navigator.userAgent || "");
+      setChromeUrl(isAndroid
+        ? `intent://${u.host}${u.pathname}${search}#Intent;scheme=https;package=com.android.chrome;end`
+        : `googlechrome://${u.host}${u.pathname}${search}`);
+    } catch {
+      setChromeUrl(window.location.href);
+    }
+  }, []);
+
+  return (
+    <a href={chromeUrl} className="underline text-amber-900 font-medium">
+      şu linke tıklayarak Chrome&apos;da açın
+    </a>
+  );
+}
+
+/**
  * Mülk ekle form'unda foto upload sorunlarını önlemek için
  * WebView/in-app browser kullanıcılarını sistem Chrome'una yönlendirir.
  *

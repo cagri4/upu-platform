@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useWhatsappDeeplink } from "@/lib/whatsapp-deeplink";
 
-import { ReturnButtons } from "@/components/return-buttons";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -112,12 +111,16 @@ export default function ProfilDuzenlePage() {
   </Center>;
   if (status === "done") return <Center>
     <div className="text-5xl mb-3">✨</div>
-    <h1 className="text-xl font-bold mb-2">Profil kaydedildi!</h1>
+    <h1 className="text-xl font-bold mb-2 text-slate-900">Profil kaydedildi!</h1>
     <p className="text-slate-600 text-sm mb-6">Web sayfanız hazır.</p>
-    <a href={`/tr/panel?t=${encodeURIComponent(token || "")}`} className="block w-full bg-violet-600 text-white text-center font-semibold py-3 rounded-xl mb-2 active:scale-95 transition">
-      🖥 Panele Dön
-    </a>
-    <ReturnButtons token={token} botPhone={BOT_WA_NUMBER} />
+    <div className="space-y-2">
+      <a href={`/tr/panel?t=${encodeURIComponent(token || "")}`} className="block w-full bg-violet-600 hover:bg-violet-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
+        🖥 Panele Dön
+      </a>
+      <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="block w-full bg-green-600 hover:bg-green-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
+        💬 WhatsApp&apos;a Dön
+      </a>
+    </div>
   </Center>;
 
   return (
@@ -202,14 +205,14 @@ export default function ProfilDuzenlePage() {
 
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <button type="submit" disabled={status === "saving"}
-              className="flex-1 bg-violet-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95 transition">
+              className="bg-violet-600 text-white py-4 rounded-xl font-semibold text-base shadow-lg disabled:opacity-60 active:scale-95 transition">
               {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet"}
             </button>
             <a
               href={`/tr/panel${token ? `?t=${encodeURIComponent(token)}` : ""}`}
-              className="flex items-center justify-center bg-white border border-slate-300 text-slate-700 px-4 py-4 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition whitespace-nowrap"
+              className="flex items-center justify-center bg-white border border-slate-300 text-slate-700 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition"
             >
               🖥 Panele
             </a>
