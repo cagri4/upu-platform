@@ -38,6 +38,26 @@ interface Tracking {
   created_at: string;
 }
 
+interface SonucLead {
+  source_id: string;
+  source_url: string;
+  title: string;
+  type: string;
+  listing_type: string;
+  price: number | null;
+  area: number | null;
+  rooms: string | null;
+  location_neighborhood: string | null;
+}
+
+interface SonucState {
+  status: "loading" | "ready" | "error";
+  leads: SonucLead[];
+  error?: string;
+  matched?: number;
+  total_today?: number;
+}
+
 type View = "list" | "form";
 type Status = "loading" | "ready" | "saving" | "error";
 
@@ -61,6 +81,10 @@ export default function TakipPage() {
 
   // Per-row in-flight ops
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  // Sonuç expand state
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sonucByTakip, setSonucByTakip] = useState<Record<string, SonucState>>({});
 
   async function loadList() {
     if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
@@ -140,6 +164,32 @@ export default function TakipPage() {
       });
       await loadList();
     } finally { setBusyId(null); }
+  }
+
+  async function fetchSonuc(id: string) {
+    setSonucByTakip(p => ({ ...p, [id]: { status: "loading", leads: [] } }));
+    try {
+      const r = await fetch(`/api/takip/sonuc?id=${encodeURIComponent(id)}&t=${encodeURIComponent(token)}`);
+      const d = await r.json();
+      if (!r.ok) {
+        setSonucByTakip(p => ({ ...p, [id]: { status: "error", leads: [], error: d.error || "Yüklenemedi." } }));
+        return;
+      }
+      setSonucByTakip(p => ({ ...p, [id]: {
+        status: "ready",
+        leads: d.leads || [],
+        matched: d.matched ?? 0,
+        total_today: d.total_today ?? 0,
+      } }));
+    } catch {
+      setSonucByTakip(p => ({ ...p, [id]: { status: "error", leads: [], error: "Bağlantı hatası." } }));
+    }
+  }
+
+  function toggleSonuc(id: string) {
+    if (expandedId === id) { setExpandedId(null); return; }
+    setExpandedId(id);
+    if (!sonucByTakip[id]) void fetchSonuc(id);
   }
 
   async function handleDelete(id: string) {
@@ -265,6 +315,15 @@ export default function TakipPage() {
         <p className="text-orange-100 text-sm mt-1">{items.length} takip{items.filter(t => t.active).length > 0 ? ` · ${items.filter(t => t.active).length} aktif` : ""}</p>
       </div>
 
+      <div className="space-y-2">
+        <p className="text-xs text-slate-700 bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 leading-relaxed">
+          🏠 Bu sayfada son 24 saatte sadece mülk sahipleri tarafından paylaşılan ilanlar yer alır.
+        </p>
+        <p className="text-xs text-slate-700 bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 leading-relaxed">
+          🔔 Bu panelde oluşturacağınız takipler her sabah WhatsApp&apos;ınıza mesaj olarak gönderilir.
+        </p>
+      </div>
+
       <button
         onClick={startNew}
         className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white py-4 rounded-2xl shadow-md hover:shadow-lg active:scale-95 transition font-semibold"
@@ -289,6 +348,8 @@ export default function TakipPage() {
             const priceRange = t.price_min || t.price_max
               ? `${t.price_min ? new Intl.NumberFormat("tr-TR").format(t.price_min) : "0"} – ${t.price_max ? new Intl.NumberFormat("tr-TR").format(t.price_max) : "∞"} ₺`
               : null;
+            const sonuc = sonucByTakip[t.id];
+            const isExpanded = expandedId === t.id;
             return (
               <div key={t.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
                 <div className="p-4">
@@ -301,28 +362,86 @@ export default function TakipPage() {
                   <p className="text-xs text-slate-600 leading-relaxed">{summary}</p>
                   {priceRange && <p className="text-xs text-slate-500 mt-1">💰 {priceRange}</p>}
                 </div>
-                <div className="border-t border-slate-100 grid grid-cols-3">
+                <div className="border-t border-slate-100 grid grid-cols-4">
                   <button
                     onClick={() => void handleToggle(t.id, t.active)}
                     disabled={busyId === t.id}
-                    className="py-3 text-sm font-medium text-amber-700 hover:bg-amber-50 active:bg-amber-100 transition disabled:opacity-50"
+                    className="py-3 text-xs font-medium text-amber-700 hover:bg-amber-50 active:bg-amber-100 transition disabled:opacity-50"
                   >
                     {t.active ? "⏸ Durdur" : "▶️ Aktif"}
                   </button>
                   <button
                     onClick={() => startEdit(t)}
-                    className="py-3 text-sm font-medium text-indigo-700 hover:bg-indigo-50 active:bg-indigo-100 transition border-l border-slate-100"
+                    className="py-3 text-xs font-medium text-indigo-700 hover:bg-indigo-50 active:bg-indigo-100 transition border-l border-slate-100"
                   >
                     ✏️ Düzenle
                   </button>
                   <button
                     onClick={() => void handleDelete(t.id)}
                     disabled={busyId === t.id}
-                    className="py-3 text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100 transition border-l border-slate-100 disabled:opacity-50"
+                    className="py-3 text-xs font-medium text-red-600 hover:bg-red-50 active:bg-red-100 transition border-l border-slate-100 disabled:opacity-50"
                   >
                     🗑 {busyId === t.id ? "..." : "Sil"}
                   </button>
+                  <button
+                    onClick={() => toggleSonuc(t.id)}
+                    aria-expanded={isExpanded}
+                    className={`py-3 text-xs font-medium border-l border-slate-100 transition ${isExpanded ? "bg-emerald-50 text-emerald-800" : "text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100"}`}
+                  >
+                    📊 Sonuç {isExpanded ? "▾" : "▸"}
+                  </button>
                 </div>
+
+                {isExpanded && (
+                  <div className="border-t border-slate-100 bg-slate-50 p-3">
+                    {sonuc?.status === "loading" && (
+                      <div className="text-center py-4 text-sm text-slate-500">⏳ Yükleniyor...</div>
+                    )}
+                    {sonuc?.status === "error" && (
+                      <div className="text-center py-4 text-sm text-red-600">⚠️ {sonuc.error}</div>
+                    )}
+                    {sonuc?.status === "ready" && sonuc.leads.length === 0 && (
+                      <div className="text-center py-4 text-sm text-slate-500">
+                        Bugün eşleşme yok.
+                        {(sonuc.total_today ?? 0) > 0 && (
+                          <span className="block text-xs text-slate-400 mt-1">
+                            Bodrum&apos;da {sonuc.total_today} ilan var ama kriterinize uyan yok.
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {sonuc?.status === "ready" && sonuc.leads.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-slate-600 mb-1">
+                          Son 24 saatte <strong>{sonuc.matched}</strong> eşleşme:
+                        </p>
+                        {sonuc.leads.map(l => {
+                          const priceStr = l.price
+                            ? `${new Intl.NumberFormat("tr-TR").format(l.price)} ₺`
+                            : "Fiyat ?";
+                          const specs = [l.rooms, l.area ? `${l.area}m²` : null].filter(Boolean).join(" · ");
+                          return (
+                            <a
+                              key={l.source_id}
+                              href={l.source_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block bg-white rounded-lg p-3 shadow-sm hover:bg-emerald-50 transition"
+                            >
+                              <p className="text-sm font-medium text-slate-900 leading-tight line-clamp-2">{l.title}</p>
+                              <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-slate-600 mt-1">
+                                {l.location_neighborhood && <span>📍 {l.location_neighborhood}</span>}
+                                {specs && <span>{specs}</span>}
+                                <span className="font-semibold text-stone-900">💰 {priceStr}</span>
+                              </div>
+                              <p className="text-xs text-emerald-700 mt-1 truncate">🔗 sahibinden&apos;de aç →</p>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
