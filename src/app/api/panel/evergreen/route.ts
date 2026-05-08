@@ -1,13 +1,18 @@
 /**
- * /api/panel/evergreen?phone=<E164_or_local>
+ * /api/panel/evergreen?uid=<user_id>  (preferred — multi-tenant safe)
+ * /api/panel/evergreen?phone=<phone>  (legacy fallback — single-tenant assumption)
  *
  * "Süresi dolmaz" panel link'i. WA mesajlarındaki "🖥 Panele Git" CTA'ları
  * bu URL'e yönlendirir; tıklandığında server fresh magic_link_token mint
  * edip /tr/panel'e 302'ler. Eski mesajlardan tıklasalar bile çalışır.
  *
- * Güvenlik notu: phone WA'da bot'a yazışan numarayla aynı olduğu için
- * pratik kullanımda risk düşüktür. URL üçüncü tarafa sızdırılırsa,
- * mevcut magic_link_tokens pre-mint pattern'i ile aynı risk profili.
+ * 2026-05-08 multi-tenant fix:
+ *   Aynı whatsapp_phone'a birden fazla profil olabilir (kullanıcı hem emlak
+ *   hem bayi tenant'ında). Eski phone-only lookup .maybeSingle() multi-match
+ *   olduğunda null döndürüp /tr landing'e fırlatıyordu (regression).
+ *   Yeni: uid query param tercih edilir (her profile unique). phone fallback
+ *   yalnız tek profil eşleşmesi varsa çalışır; multi-match durumunda first row
+ *   alınır + log warning (legacy WA mesajlarının kırılmaması için).
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
@@ -18,22 +23,52 @@ export const dynamic = "force-dynamic";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
 
 export async function GET(req: NextRequest) {
+  const uid = req.nextUrl.searchParams.get("uid");
   const phone = req.nextUrl.searchParams.get("phone");
-  if (!phone) return NextResponse.redirect(`${APP_URL}/tr`);
+
+  if (!uid && !phone) {
+    return NextResponse.redirect(`${APP_URL}/tr`);
+  }
 
   const sb = getServiceClient();
-  const { data: profile } = await sb
-    .from("profiles")
-    .select("id")
-    .eq("whatsapp_phone", phone)
-    .maybeSingle();
+  let userId: string | null = null;
 
-  if (!profile) return NextResponse.redirect(`${APP_URL}/tr`);
+  if (uid) {
+    // Preferred: direct PK lookup — multi-tenant safe
+    const { data } = await sb
+      .from("profiles")
+      .select("id")
+      .eq("id", uid)
+      .maybeSingle();
+    if (data) userId = data.id;
+  }
+
+  if (!userId && phone) {
+    // Legacy fallback: phone lookup — limit 1 (multi-match'te first row)
+    const { data } = await sb
+      .from("profiles")
+      .select("id")
+      .eq("whatsapp_phone", phone)
+      .limit(1);
+    if (data && data.length > 0) {
+      userId = data[0].id;
+      // Multi-tenant warning — phone-only URL ambiguous
+      const { count } = await sb
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("whatsapp_phone", phone);
+      if ((count ?? 0) > 1) {
+        console.warn(`[panel:evergreen] phone ${phone} matches ${count} profiles, used first (uid param tercih edilmeli)`);
+      }
+    }
+  }
+
+  if (!userId) return NextResponse.redirect(`${APP_URL}/tr`);
 
   const token = randomBytes(16).toString("hex");
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 saat
   await sb.from("magic_link_tokens").insert({
-    user_id: profile.id,
+    user_id: userId,
     token,
     expires_at: expiresAt,
   });

@@ -30,8 +30,10 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
 export async function sendEmlakMenu(ctx: Pick<WaContext, "userId" | "phone" | "userName">, greet = false): Promise<void> {
   const firstName = (ctx.userName || "").split(/\s+/)[0] || "";
 
-  // Evergreen URL — pre-mint token KULLANMIYORUZ; eski mesajlardan tıklansa da çalışır
-  const url = `${APP_URL}/api/panel/evergreen?phone=${encodeURIComponent(ctx.phone)}`;
+  // Evergreen URL — uid-based (multi-tenant safe). 2026-05-08 fix: phone-based
+  // lookup aynı whatsapp_phone'a birden fazla profil varsa multi-match → null
+  // dönüyordu (kullanıcı landing'e atılıyordu). uid PK lookup ambigüite yok.
+  const url = `${APP_URL}/api/panel/evergreen?uid=${encodeURIComponent(ctx.userId)}`;
 
   const text = greet
     ? (
@@ -95,10 +97,11 @@ export async function sendBackToPanel(
   phone: string,
 ): Promise<void> {
   // Evergreen pattern (2026-05-07): pre-mint token YERİNE /api/panel/evergreen
-  // URL'i kullanılır. Tıklandığında server fresh token mint eder, eski mesajlardan
-  // bile süresi dolmuş hatası vermez.
-  void userId; // referans için tutuldu — endpoint phone'dan user'ı çözer
-  const panelUrl = `${APP_URL}/api/panel/evergreen?phone=${encodeURIComponent(phone)}`;
+  // URL'i kullanılır. Tıklandığında server fresh token mint eder.
+  // 2026-05-08 multi-tenant fix: uid-based URL (phone aynı kullanıcıda 2+
+  // tenant profile için ambigüite — uid PK direkt çözer).
+  void phone;
+  const panelUrl = `${APP_URL}/api/panel/evergreen?uid=${encodeURIComponent(userId)}`;
   await sendUrlButton(
     phone,
     "Diğer komutlar için panele dönebilirsiniz.",

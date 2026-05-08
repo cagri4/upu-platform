@@ -91,10 +91,10 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
 
   await sleep(1800);
 
-  // Mesaj 3 — Paneli Aç CTA (evergreen URL — eski mesajlardan tıklansa da çalışır)
+  // Mesaj 3 — Paneli Aç CTA (evergreen URL, uid-based — multi-tenant safe)
   const { sendUrlButton } = await import("./send");
   const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
-  const panelUrl = `${APP_URL}/api/panel/evergreen?phone=${encodeURIComponent(ctx.phone)}`;
+  const panelUrl = `${APP_URL}/api/panel/evergreen?uid=${encodeURIComponent(ctx.userId)}`;
   const ctaMsg =
     `🖥 *Yönetim paneliniz hazır.*\n\n` +
     `Tüm sisteminizi yönetmek için panele gidin.\n\n` +
