@@ -41,6 +41,14 @@ const TENANT_TABLES: Record<string, string[]> = {
     "emlak_property_photos",
     "emlak_monitoring_criteria",
     "emlak_publishing_history",
+    // FAZ B (2026-05-08) — multi-row Takiplerim
+    "emlak_tracking_criteria",
+    // FAZ A (2026-05-08) — panel-içi sözleşme akışı (shared table, user_id filter)
+    "contracts",
+    // Customer/lead tracking (per-user)
+    "emlak_customer_contacts",
+    "emlak_lead_calls",
+    "emlak_contact_actions",
   ],
   bayi: [
     "bayi_products",
