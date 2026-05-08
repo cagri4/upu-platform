@@ -17,9 +17,28 @@ interface ContractInfo {
   type: string;
   status: string;
   summary: ContractSummary;
+  generated_text?: string | null;
   signed?: boolean;
   signed_at?: string;
   signature_url?: string;
+}
+
+/**
+ * Minimal markdown → HTML renderer.
+ * generated_text Claude tarafından üretilir (controlled source); HTML
+ * special chars escape edilir, sonra ## / ### / **bold** / *italic*
+ * basic syntax HTML'e dönüştürülür.
+ */
+function renderContractMarkdown(text: string): string {
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  html = html.replace(/^### (.+)$/gm, '<h4 style="font-size:14px;font-weight:600;color:#1a1a2e;margin:14px 0 6px 0">$1</h4>');
+  html = html.replace(/^## (.+)$/gm, '<h3 style="font-size:15px;font-weight:700;color:#1a1a2e;margin:18px 0 8px 0;border-bottom:1px solid #e9ecef;padding-bottom:4px">$1</h3>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, '<em>$1</em>');
+  return html;
 }
 
 export default function SignPage() {
@@ -197,14 +216,21 @@ export default function SignPage() {
           <h1 style={styles.title}>Sözleşme İmzalandı</h1>
           <p style={styles.subtitle}>Bu sözleşme {signDate} tarihinde imzalanmıştır.</p>
 
-          <div style={styles.summaryBox}>
-            {s.property_title && <p style={styles.summaryLine}><strong>Mülk:</strong> {s.property_title}</p>}
-            <p style={styles.summaryLine}><strong>Adres:</strong> {s.property_address}</p>
-            <p style={styles.summaryLine}><strong>Mülk Sahibi:</strong> {s.owner_name}</p>
-            <p style={styles.summaryLine}><strong>Münhasır:</strong> {s.exclusive ? 'Evet' : 'Hayır'}</p>
-            <p style={styles.summaryLine}><strong>Komisyon:</strong> %{s.commission}+KDV</p>
-            <p style={styles.summaryLine}><strong>Süre:</strong> {s.duration} ay</p>
-          </div>
+          {contract.generated_text ? (
+            <div
+              style={styles.contractTextBox}
+              dangerouslySetInnerHTML={{ __html: renderContractMarkdown(contract.generated_text) }}
+            />
+          ) : (
+            <div style={styles.summaryBox}>
+              {s.property_title && <p style={styles.summaryLine}><strong>Mülk:</strong> {s.property_title}</p>}
+              <p style={styles.summaryLine}><strong>Adres:</strong> {s.property_address}</p>
+              <p style={styles.summaryLine}><strong>Mülk Sahibi:</strong> {s.owner_name}</p>
+              <p style={styles.summaryLine}><strong>Münhasır:</strong> {s.exclusive ? 'Evet' : 'Hayır'}</p>
+              <p style={styles.summaryLine}><strong>Komisyon:</strong> %{s.commission}+KDV</p>
+              <p style={styles.summaryLine}><strong>Süre:</strong> {s.duration} ay</p>
+            </div>
+          )}
 
           {contract.signature_url && (
             <div style={{ textAlign: 'center' as const, marginBottom: '16px' }}>
@@ -250,16 +276,23 @@ export default function SignPage() {
     <div style={styles.container}>
       <div style={styles.card}>
         <h1 style={styles.title}>Yetkilendirme Sözleşmesi</h1>
-        <p style={styles.subtitle}>Aşağıdaki sözleşmeyi imzalamak üzeresiniz.</p>
+        <p style={styles.subtitle}>Aşağıdaki sözleşmeyi okuyup imzalayın.</p>
 
-        <div style={styles.summaryBox}>
-          {s.property_title && <p style={styles.summaryLine}><strong>Mülk:</strong> {s.property_title}</p>}
-          <p style={styles.summaryLine}><strong>Adres:</strong> {s.property_address}</p>
-          <p style={styles.summaryLine}><strong>Mülk Sahibi:</strong> {s.owner_name}</p>
-          <p style={styles.summaryLine}><strong>Münhasır:</strong> {s.exclusive ? 'Evet' : 'Hayır'}</p>
-          <p style={styles.summaryLine}><strong>Komisyon:</strong> %{s.commission}+KDV</p>
-          <p style={styles.summaryLine}><strong>Süre:</strong> {s.duration} ay</p>
-        </div>
+        {contract!.generated_text ? (
+          <div
+            style={styles.contractTextBox}
+            dangerouslySetInnerHTML={{ __html: renderContractMarkdown(contract!.generated_text) }}
+          />
+        ) : (
+          <div style={styles.summaryBox}>
+            {s.property_title && <p style={styles.summaryLine}><strong>Mülk:</strong> {s.property_title}</p>}
+            <p style={styles.summaryLine}><strong>Adres:</strong> {s.property_address}</p>
+            <p style={styles.summaryLine}><strong>Mülk Sahibi:</strong> {s.owner_name}</p>
+            <p style={styles.summaryLine}><strong>Münhasır:</strong> {s.exclusive ? 'Evet' : 'Hayır'}</p>
+            <p style={styles.summaryLine}><strong>Komisyon:</strong> %{s.commission}+KDV</p>
+            <p style={styles.summaryLine}><strong>Süre:</strong> {s.duration} ay</p>
+          </div>
+        )}
 
         <div style={styles.signArea}>
           <p style={styles.signLabel}>İmzanızı aşağıya çizin:</p>
@@ -279,7 +312,7 @@ export default function SignPage() {
         {error && <p style={styles.errorText}>{error}</p>}
 
         <p style={styles.legalNote}>
-          &quot;İmzala ve Onayla&quot; butonuna basarak yukarıdaki sözleşme koşullarını kabul ettiğinizi onaylıyorsunuz.
+          &quot;İmzala ve Onayla&quot; butonuna basarak yukarıdaki sözleşme metninin tamamını okuduğunuzu ve koşullarını kabul ettiğinizi onaylıyorsunuz.
         </p>
       </div>
     </div>
@@ -293,6 +326,20 @@ const styles: Record<string, React.CSSProperties> = {
   subtitle: { fontSize: '14px', color: '#666', textAlign: 'center' as const, margin: '0 0 20px 0' },
   summaryBox: { background: '#f8f9fa', borderRadius: '10px', padding: '16px', marginBottom: '20px', border: '1px solid #e9ecef' },
   summaryLine: { fontSize: '13px', color: '#333', margin: '6px 0', lineHeight: 1.4 },
+  contractTextBox: {
+    background: '#fff',
+    border: '1px solid #dee2e6',
+    borderRadius: '10px',
+    padding: '16px 18px',
+    marginBottom: '20px',
+    maxHeight: '400px',
+    overflowY: 'auto' as const,
+    fontSize: '13px',
+    color: '#333',
+    lineHeight: 1.55,
+    whiteSpace: 'pre-wrap' as const,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  },
   signArea: { marginBottom: '16px' },
   signLabel: { fontSize: '14px', fontWeight: 600, color: '#1a1a2e', marginBottom: '8px' },
   canvas: { width: '100%', height: '180px', border: '2px solid #dee2e6', borderRadius: '10px', cursor: 'crosshair', touchAction: 'none', background: '#fff' },

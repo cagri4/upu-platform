@@ -31,6 +31,10 @@ export async function GET(
     commission: cd.commission,
     duration: cd.duration,
   };
+  // FAZ A (2026-05-08): tam AI sözleşme metni varsa müşteriye preview olarak
+  // gösterilir. Eski (pre-FAZ A) sözleşmelerde generated_text yok → page
+  // summary fallback'e düşer.
+  const generated_text = (cd.generated_text as string | undefined) || null;
 
   if (contract.signed_at) {
     // Return signed contract with signature URL + details
@@ -48,6 +52,7 @@ export async function GET(
       signed_at: contract.signed_at,
       signature_url: full?.owner_signature_url || null,
       summary,
+      generated_text,
     });
   }
 
@@ -56,6 +61,7 @@ export async function GET(
     type: contract.type,
     status: contract.status,
     summary,
+    generated_text,
   });
 }
 
