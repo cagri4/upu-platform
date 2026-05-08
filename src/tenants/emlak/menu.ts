@@ -16,8 +16,6 @@
 
 import type { WaContext } from "@/platform/whatsapp/types";
 import { sendUrlButton } from "@/platform/whatsapp/send";
-import { getServiceClient } from "@/platform/auth/supabase";
-import { randomBytes } from "crypto";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
 
@@ -30,10 +28,11 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
 export async function sendEmlakMenu(ctx: Pick<WaContext, "userId" | "phone" | "userName">, greet = false): Promise<void> {
   const firstName = (ctx.userName || "").split(/\s+/)[0] || "";
 
-  // Evergreen URL — uid-based (multi-tenant safe). 2026-05-08 fix: phone-based
-  // lookup aynı whatsapp_phone'a birden fazla profil varsa multi-match → null
-  // dönüyordu (kullanıcı landing'e atılıyordu). uid PK lookup ambigüite yok.
-  const url = `${APP_URL}/api/panel/evergreen?uid=${encodeURIComponent(ctx.userId)}`;
+  // 2026-05-08: external-redirect (Seçenek A) — Android'de intent:// ile
+  // Chrome'a, iOS'da Safari'ye breakout dener; başarısızsa evergreen'e
+  // fallback (yine multi-tenant safe uid lookup). Eski direct evergreen
+  // WA WebView içinde açıyordu — fix.
+  const url = `${APP_URL}/api/panel/external-redirect?uid=${encodeURIComponent(ctx.userId)}`;
 
   const text = greet
     ? (
@@ -64,15 +63,11 @@ export async function sendCommandHelp(
   ctx: Pick<WaContext, "userId" | "phone">,
   command: string,
 ): Promise<void> {
-  const sb = getServiceClient();
-  const panelToken = randomBytes(16).toString("hex");
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  await sb.from("magic_link_tokens").insert({ user_id: ctx.userId, token: panelToken, expires_at: expiresAt });
-
   // 2026-05-06: "❓ Yardım" button yerine "🖥 Panele Git" — kullanıcı her
   // komut sonrası kontrol noktasına dönebilir, başka komut başlatabilir.
-  // Tutorial linki text içinde clickable URL olarak verilir.
-  const panelUrl = `${APP_URL}/tr/panel?t=${panelToken}`;
+  // 2026-05-08: pre-mint token kaldırıldı, external-redirect (Seçenek A)
+  // kullanılır — Android Chrome / iOS Safari breakout, WebView dışına çık.
+  const panelUrl = `${APP_URL}/api/panel/external-redirect?uid=${encodeURIComponent(ctx.userId)}`;
   const tutorialUrl = `${APP_URL}/tr/yardim/${command}`;
 
   await sendUrlButton(
@@ -96,12 +91,11 @@ export async function sendBackToPanel(
   userId: string,
   phone: string,
 ): Promise<void> {
-  // Evergreen pattern (2026-05-07): pre-mint token YERİNE /api/panel/evergreen
-  // URL'i kullanılır. Tıklandığında server fresh token mint eder.
-  // 2026-05-08 multi-tenant fix: uid-based URL (phone aynı kullanıcıda 2+
-  // tenant profile için ambigüite — uid PK direkt çözer).
+  // 2026-05-08: external-redirect (Seçenek A) — Android'de intent:// ile
+  // Chrome'a, iOS'da Safari'ye breakout dener; başarısızsa evergreen'e
+  // fallback. Önceki direct evergreen URL WA WebView içinde açılıyordu.
   void phone;
-  const panelUrl = `${APP_URL}/api/panel/evergreen?uid=${encodeURIComponent(userId)}`;
+  const panelUrl = `${APP_URL}/api/panel/external-redirect?uid=${encodeURIComponent(userId)}`;
   await sendUrlButton(
     phone,
     "Diğer komutlar için panele dönebilirsiniz.",

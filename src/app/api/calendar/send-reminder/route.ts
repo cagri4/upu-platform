@@ -100,8 +100,9 @@ export async function POST(req: NextRequest) {
 
       await sendText(phone, text);
 
-      // Panele Git CTA (evergreen uid-based)
-      const panelUrl = `${APP_URL}/api/panel/evergreen?uid=${encodeURIComponent(ev.user_id)}`;
+      // Panele Git CTA — external-redirect (Seçenek A: Android intent://Chrome,
+      // iOS Safari breakout, fallback evergreen). WebView dışına çıkarmak için.
+      const panelUrl = `${APP_URL}/api/panel/external-redirect?uid=${encodeURIComponent(ev.user_id)}`;
       await sendUrlButton(phone, "Panele dönmek için:", "🖥 Panele Git", panelUrl, { skipNav: true });
 
       await sb.from("emlak_calendar_events")

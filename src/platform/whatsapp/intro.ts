@@ -91,11 +91,10 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
 
   await sleep(1800);
 
-  // Mesaj 3 — Paneli Aç CTA — Seçenek A test (2026-05-08):
+  // Mesaj 3 — Paneli Aç CTA — Seçenek A (2026-05-08):
   // external-redirect endpoint sistem tarayıcısı (Chrome/Safari) breakout dener.
-  // WA WebView dışına çıkarmak için. Sadece emlak intro Mesaj 3 — sendBackToPanel
-  // ve sendEmlakMenu yine /api/panel/evergreen kullanıyor (kullanıcı testi sonrası
-  // genişletme kararı verilecek).
+  // WA WebView dışına çıkarmak için. sendBackToPanel + sendEmlakMenu de aynı
+  // pattern'e geçti (commit sonrası — tüm panel CTA'larında external-redirect).
   const { sendUrlButton } = await import("./send");
   const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
   const panelUrl = `${APP_URL}/api/panel/external-redirect?uid=${encodeURIComponent(ctx.userId)}`;
