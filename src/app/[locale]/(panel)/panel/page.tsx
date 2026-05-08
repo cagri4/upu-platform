@@ -9,9 +9,10 @@ interface KPIs {
   contracts: number;
   presentations: number;
   tracking: number;
+  calendar: number;
 }
 
-type CardKey = keyof KPIs | "takvim" | "profil" | "websitem";
+type CardKey = keyof KPIs | "profil" | "websitem";
 
 interface CardDef {
   key: CardKey;
@@ -32,7 +33,7 @@ const CARD_DEFS: CardDef[] = [
   { key: "contracts",    label: "Sözleşmeler",       icon: "📋", color: "from-amber-500 to-orange-600",      href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}` },
   { key: "tracking",     label: "Takiplerim",        icon: "🎯", color: "from-rose-500 to-pink-600",         href: t => `/tr/takip?t=${encodeURIComponent(t)}` },
   { key: "presentations", label: "Sunumlarım",       icon: "📊", color: "from-violet-500 to-fuchsia-600",    href: t => `/tr/sunumlarim?t=${encodeURIComponent(t)}` },
-  { key: "takvim",       label: "Takvim",            icon: "📅", color: "from-sky-500 to-cyan-600",          href: t => `/tr/takvim?t=${encodeURIComponent(t)}`,  comingSoon: true,  staticValue: () => "Yakında" },
+  { key: "calendar",     label: "Takvim",            icon: "📅", color: "from-sky-500 to-cyan-600",          href: t => `/tr/takvim?t=${encodeURIComponent(t)}` },
   { key: "profil",       label: "Profilim",          icon: "👤", color: "from-stone-600 to-stone-800",       href: t => `/tr/profil-duzenle?t=${encodeURIComponent(t)}`, staticValue: () => "Düzenle" },
   { key: "websitem",     label: "Web Sitem",         icon: "🌐", color: "from-teal-500 to-emerald-700",      href: (t, slug) => slug ? `/u/${slug}` : `/api/panel/web-sitem?t=${encodeURIComponent(t)}`, staticValue: (slug) => slug ? "Aktif" : "Kur" },
 ];
@@ -124,6 +125,12 @@ export default function PanelimPage() {
             <p className="font-semibold text-slate-900">🌐 Profilim</p>
             <p className="text-slate-600 leading-snug mt-0.5">
               Bilgileriniz kişisel web sayfanıza otomatik yansır, müşterilere paylaşın.
+            </p>
+          </li>
+          <li>
+            <p className="font-semibold text-slate-900">📅 Takvim</p>
+            <p className="text-slate-600 leading-snug mt-0.5">
+              Tarih ve saat girerek hatırlatıcı kurun, WhatsApp&apos;ınıza zamanı geldiğinde gönderirim.
             </p>
           </li>
         </ul>

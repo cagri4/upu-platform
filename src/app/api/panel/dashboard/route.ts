@@ -26,12 +26,13 @@ export async function GET(req: NextRequest) {
   const userId = pt.user_id;
 
   // Paralel count sorguları + profile (web_slug için)
-  const [propsRes, custRes, contractsRes, presRes, trackingRes, profileRes] = await Promise.all([
+  const [propsRes, custRes, contractsRes, presRes, trackingRes, calendarRes, profileRes] = await Promise.all([
     sb.from("emlak_properties").select("*", { count: "exact", head: true }).eq("user_id", userId).neq("status", "deleted"),
     sb.from("emlak_customers").select("*", { count: "exact", head: true }).eq("user_id", userId).is("deleted_at", null),
-    sb.from("contracts").select("*", { count: "exact", head: true }).eq("user_id", userId).neq("status", "cancelled"),
+    sb.from("contracts").select("*", { count: "exact", head: true }).eq("user_id", userId).neq("status", "cancelled").neq("status", "deleted"),
     sb.from("emlak_presentations").select("*", { count: "exact", head: true }).eq("user_id", userId).neq("status", "deleted"),
     sb.from("emlak_tracking_criteria").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("active", true),
+    sb.from("emlak_calendar_events").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("status", "pending"),
     sb.from("profiles").select("metadata").eq("id", userId).single(),
   ]);
 
@@ -47,6 +48,7 @@ export async function GET(req: NextRequest) {
       contracts: contractsRes.count || 0,
       presentations: presRes.count || 0,
       tracking: trackingRes.count || 0,
+      calendar: calendarRes.count || 0,
     },
     webSlug,
   });
