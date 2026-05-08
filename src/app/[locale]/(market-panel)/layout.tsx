@@ -78,6 +78,9 @@ export default function MarketPanelGroupLayout({ children }: { children: ReactNo
           >
             WhatsApp&apos;a dön
           </a>
+          <p className="text-slate-500 text-xs mt-4 leading-relaxed">
+            💡 WhatsApp&apos;a döndükten sonra son gönderdiğim &quot;Panele Git&quot; butonuna tekrar dokunarak yeni bir bağlantı alabilirsiniz.
+          </p>
         </div>
       </div>
     );
