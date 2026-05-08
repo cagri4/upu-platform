@@ -239,6 +239,15 @@ export default function SignPage() {
             </div>
           )}
 
+          <a
+            href={`/api/sozlesmelerim/pdf?id=${contract.id}&sign=${token}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={styles.pdfBtn}
+          >
+            📄 Sözleşmeyi PDF olarak indir
+          </a>
+
           <p style={styles.hint}>Bu sayfayı kapatabilirsiniz.</p>
         </div>
       </div>
@@ -352,4 +361,20 @@ const styles: Record<string, React.CSSProperties> = {
   successIcon: { fontSize: '48px', textAlign: 'center' as const, marginBottom: '12px' },
   errorIcon: { fontSize: '48px', textAlign: 'center' as const, marginBottom: '12px' },
   hint: { fontSize: '13px', color: '#999', textAlign: 'center' as const, marginTop: '8px' },
+  pdfBtn: {
+    display: 'block',
+    width: '100%',
+    padding: '12px',
+    border: 'none',
+    borderRadius: '10px',
+    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+    color: '#fff',
+    fontSize: '14px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    textAlign: 'center' as const,
+    textDecoration: 'none',
+    marginTop: '12px',
+    marginBottom: '4px',
+  },
 };

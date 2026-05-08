@@ -5,8 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { ReturnButtons } from "@/components/return-buttons";
 
 const BOT_WA_NUMBER = "31644967207";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
-
 interface Contract {
   id: string;
   status: string;
@@ -83,32 +81,30 @@ export default function SozlesmelerimPage() {
             const date = new Date(c.created_at).toLocaleDateString("tr-TR");
             const commission = cd.commission as number | undefined;
             const duration = cd.duration as number | undefined;
-            const signLink = c.sign_token ? `${APP_URL}/tr/sign/${c.sign_token}` : null;
             return (
-              <div key={c.id} className="bg-white rounded-2xl shadow-sm p-4">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-slate-900 truncate">🏠 {propTitle}</p>
-                    <p className="text-sm text-slate-600 mt-0.5">👤 {ownerName}</p>
+              <div key={c.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-slate-900 truncate">🏠 {propTitle}</p>
+                      <p className="text-sm text-slate-600 mt-0.5">👤 {ownerName}</p>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${statusBg}`}>
+                      {statusLabel}
+                    </span>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${statusBg}`}>
-                    {statusLabel}
-                  </span>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                    {commission !== undefined && <span>💰 %{commission}+KDV</span>}
+                    {duration !== undefined && <span>📅 {duration} ay</span>}
+                    <span>· {date}</span>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
-                  {commission !== undefined && <span>💰 %{commission}+KDV</span>}
-                  {duration !== undefined && <span>📅 {duration} ay</span>}
-                  <span>· {date}</span>
-                </div>
-                {signLink && c.status === "pending_signature" && (
-                  <a
-                    href={signLink}
-                    target="_blank" rel="noopener noreferrer"
-                    className="block mt-3 text-xs text-amber-700 hover:text-amber-900 underline break-all"
-                  >
-                    🔗 İmza linki: {signLink}
-                  </a>
-                )}
+                <a
+                  href={`/tr/sozlesmelerim/${c.id}?t=${encodeURIComponent(token)}`}
+                  className="block py-3 text-center text-sm font-medium text-amber-700 hover:bg-amber-50 active:bg-amber-100 transition border-t border-slate-100"
+                >
+                  📄 İncele →
+                </a>
               </div>
             );
           })}

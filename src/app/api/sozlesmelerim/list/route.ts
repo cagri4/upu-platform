@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
     .select("id, status, contract_data, sign_token, signed_at, created_at")
     .eq("user_id", pt.user_id)
     .neq("status", "cancelled")
+    .neq("status", "deleted")
     .order("created_at", { ascending: false })
     .limit(50);
 

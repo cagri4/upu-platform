@@ -20,13 +20,13 @@ export default function HakkindaPage() {
 
       <div className="bg-white rounded-2xl p-6 shadow-sm space-y-3 text-sm text-slate-700 leading-relaxed">
         <p>
-          UPUDev, küçük ve orta ölçekli işletmelerin tekrar eden operasyonlarını yapay zeka ile otomatikleştirmek üzerine kurulu bir teknoloji firmasıdır. Sektörel asistanlarımız (emlak, bayi, otel, market, restoran, site yönetimi) WhatsApp üzerinden çalışır — ekstra uygulama indirmenize gerek yoktur.
+          UPUDev, Hollanda merkezli bir Türk teknoloji firmasıdır. Küçük ve orta ölçekli işletmelerin tekrar eden operasyonlarını yapay zeka ile otomatikleştirmek üzere kurulmuştur. Sektörel asistanlarımız (emlak, bayi, otel, market, restoran, site yönetimi) WhatsApp üzerinden çalışır — ekstra uygulama indirmenize gerek yoktur.
         </p>
         <p>
           Vizyonumuz: her sektör için 7/24 çalışan, sade ama güçlü bir AI çalışma arkadaşı. Ödediğiniz aylık ücret bir personelin maaşının çok altındadır; karşılığında saatlerinizi geri kazanırsınız.
         </p>
         <p className="text-slate-500 text-xs pt-3 border-t border-slate-100">
-          İletişim: <a href="mailto:hello@upudev.nl" className="underline">hello@upudev.nl</a>
+          İletişim: <a href="mailto:info@upudev.nl" className="underline">info@upudev.nl</a>
         </p>
       </div>
 
