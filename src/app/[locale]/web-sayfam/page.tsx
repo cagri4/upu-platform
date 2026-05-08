@@ -141,9 +141,6 @@ export default function WebSayfamPage() {
         >
           {finishing ? "⏳ Yönlendiriliyor..." : "💬 WhatsApp'a Dön"}
         </button>
-        <p className="text-xs text-slate-500 text-center mt-2 px-4">
-          WhatsApp&apos;a döndüğünüzde sıradaki adım için yeni bir mesaj sizi bekliyor olacak.
-        </p>
       </div>
     </div>
   );

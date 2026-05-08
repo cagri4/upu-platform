@@ -29,7 +29,7 @@ interface CardDef {
 const CARD_DEFS: CardDef[] = [
   { key: "properties",   label: "Mülklerim",         icon: "🏢", color: "from-indigo-500 to-blue-600",       href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}` },
   { key: "customers",    label: "Müşterilerim",      icon: "👥", color: "from-emerald-500 to-teal-600",      href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}` },
-  { key: "contracts",    label: "Aktif Sözleşmeler", icon: "📋", color: "from-amber-500 to-orange-600",      href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}` },
+  { key: "contracts",    label: "Sözleşmeler",       icon: "📋", color: "from-amber-500 to-orange-600",      href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}` },
   { key: "tracking",     label: "Takiplerim",        icon: "🎯", color: "from-rose-500 to-pink-600",         href: t => `/tr/takip?t=${encodeURIComponent(t)}` },
   { key: "presentations", label: "Sunumlarım",       icon: "📊", color: "from-violet-500 to-fuchsia-600",    href: t => `/tr/sunumlarim?t=${encodeURIComponent(t)}` },
   { key: "takvim",       label: "Takvim",            icon: "📅", color: "from-sky-500 to-cyan-600",          href: t => `/tr/takvim?t=${encodeURIComponent(t)}`,  comingSoon: true,  staticValue: () => "Yakında" },

@@ -5,16 +5,11 @@ import React from "react";
 /**
  * Form/sayfa altında 2 buton: Panele Dön + WhatsApp'a Dön.
  *
- * WhatsApp WebView içinden açılan sayfalarda, intent:// veya wa.me
- * scheme'i "başka uygulama açılıyor" uyarısı gösteriyor. Bu sayfalar
- * her zaman WhatsApp gateway'inden geldiği için (kullanıcı WA chat'te
- * bot mesajındaki linke tıklıyor) "her zaman WebView içinde" kabul
- * edilir — tıklandığında history.back() / window.close() ile aynı
- * sekmede WA chat'e döner. Android intent fallback kaldırıldı.
- *
- * Edge-case: kullanıcı linki kopyalayıp Chrome'a yapıştırırsa back-stack
- * boş olur, fallback window.close() denenir; o da fail ederse en son
- * çare wa.me redirect.
+ * 2026-05-08 fix: WhatsApp'a Dön artık DAİMA `wa.me/<bot>` deeplink'ine gider.
+ * Önceki davranış (history.back / window.close fallback) panel-içi sayfalarda
+ * (kullanıcı /tr/panel → /tr/mulklerim navigasyonu sonrası) yanlış yöne
+ * (panele) götürüyordu — history.length>1 olduğu için. Direct wa.me linki
+ * her zaman WA chat'e götürür; mobile'da WA app açılır, desktop'ta web.wa.
  */
 export function ReturnButtons({
   token,
@@ -30,25 +25,10 @@ export function ReturnButtons({
   showPanel?: boolean;
 }) {
   async function handleWaClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (!onWaReturn) return; // direct link, no JS interception
     e.preventDefault();
-    if (onWaReturn) {
-      try { await onWaReturn(); } catch { /* swallow */ }
-    }
-    try {
-      if (typeof window !== "undefined" && window.history.length > 1) {
-        window.history.back();
-        return;
-      }
-      if (typeof window !== "undefined") {
-        window.close();
-        // close başarısız olursa en son çare:
-        setTimeout(() => {
-          if (!document.hidden) window.location.href = `https://wa.me/${botPhone}`;
-        }, 200);
-      }
-    } catch {
-      window.location.href = `https://wa.me/${botPhone}`;
-    }
+    try { await onWaReturn(); } catch { /* swallow */ }
+    window.location.href = `https://wa.me/${botPhone}`;
   }
 
   const panelHref = `/tr/panel${token ? `?t=${encodeURIComponent(token)}` : ""}`;
@@ -65,7 +45,7 @@ export function ReturnButtons({
       )}
       <a
         href={`https://wa.me/${botPhone}`}
-        onClick={handleWaClick}
+        onClick={onWaReturn ? handleWaClick : undefined}
         className="block w-full bg-green-600 hover:bg-green-700 active:bg-green-800 text-white py-4 rounded-xl font-semibold text-base shadow-lg text-center active:scale-95 transition"
       >
         💬 WhatsApp&apos;a Dön
