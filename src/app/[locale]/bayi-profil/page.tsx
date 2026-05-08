@@ -228,11 +228,13 @@ export default function BayiProfilPage() {
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
       <div className="max-w-md mx-auto p-4">
-        <div className="bg-gradient-to-br from-emerald-600 to-teal-600 text-white rounded-2xl p-5 mb-5">
+        <div className="bg-gradient-to-br from-emerald-600 to-teal-600 text-white rounded-2xl p-5 mb-3">
           <div className="text-3xl mb-1">🏢</div>
           <h1 className="text-xl font-bold">Firma Profili</h1>
           <p className="text-emerald-100 text-sm mt-1">Zorunlu alanlar + ülke ve yazılım tercihleri. ~5 dakika. Daha sonra güncelleyebilirsiniz.</p>
         </div>
+
+        <p className="text-xs text-slate-500 mb-3 px-1">💡 İpucu: Eksik bilgileri sonradan da güncelleyebilirsiniz, ama zorunlu alanları doldurmadan kayıt yapılmaz.</p>
 
         <Section title="🌐 Lokalizasyon">
           <Field label="Ülke">
@@ -401,18 +403,20 @@ export default function BayiProfilPage() {
           </>
         )}
 
-        <button onClick={save} disabled={status === "saving"}
-          className="w-full bg-emerald-600 text-white py-3 rounded-xl font-semibold disabled:opacity-60 active:scale-95 mt-4">
-          {status === "saving" ? "Kaydediliyor..." : "📤 Profili Kaydet"}
-        </button>
-
-        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
-
-        <div className="mt-6 text-center">
-          <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="text-xs text-slate-500 hover:underline">
-            WhatsApp&apos;a geri dön
+        <div className="grid grid-cols-2 gap-2 mt-4">
+          <button onClick={save} disabled={status === "saving"}
+            className="bg-emerald-600 text-white py-3 rounded-xl font-semibold disabled:opacity-60 active:scale-95">
+            {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet"}
+          </button>
+          <a
+            href={token ? `/tr/bayi-panel?t=${encodeURIComponent(token)}` : `https://wa.me/${BOT_WA_NUMBER}`}
+            className="bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-center active:scale-95 hover:bg-slate-50 flex items-center justify-center"
+          >
+            🏠 Panele Dön
           </a>
         </div>
+
+        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
       </div>
     </div>
   );
