@@ -606,6 +606,21 @@ async function handleWebpanelShared(ctx: WaContext, tenant: ReturnType<typeof ge
   const subdomain = tenant?.slug || "estateai";
   const appUrl = `https://${subdomain}.upudev.nl`;
 
+  // Bayi için evergreen URL — server fresh token mint eder, eski mesajlardan
+  // bile çalışır, "süresi dolmuş" hatası bitmesi (Bölüm 17).
+  if (ctx.tenantKey === "bayi") {
+    const evergreenUrl = `${appUrl}/api/bayi-panel/evergreen?uid=${encodeURIComponent(ctx.userId)}`;
+    const { sendUrlButton } = await import("./send");
+    await sendUrlButton(ctx.phone,
+      `🖥 *Web Panel*\n\nTüm sisteminizi yönetmek için panele gidin.`,
+      "🖥 Paneli Aç",
+      evergreenUrl,
+      { skipNav: true },
+    );
+    await sendNavFooter(ctx.phone);
+    return;
+  }
+
   try {
     const supabase = getServiceClient();
     const { randomBytes } = await import("crypto");

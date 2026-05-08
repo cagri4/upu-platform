@@ -162,7 +162,14 @@ export default function BayiBaglantiPage() {
     <div className="text-4xl mb-3">⚠️</div>
     <h1 className="text-xl font-bold mb-2">Yardıma ihtiyacınız var</h1>
     <p className="text-slate-600 text-sm mb-4">{error}</p>
-    <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-emerald-600 text-white px-6 py-3 rounded-lg">WhatsApp ile destek al</a>
+    <div className="grid grid-cols-2 gap-2">
+      <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="bg-emerald-600 text-white py-3 rounded-lg text-center font-semibold">💬 WA Destek</a>
+      {token && (
+        <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`} className="bg-white border border-slate-300 text-slate-700 py-3 rounded-lg text-center font-semibold hover:bg-slate-50">
+          🏠 Panele Dön
+        </a>
+      )}
+    </div>
   </Center>;
 
   // 1. Seçim
@@ -184,6 +191,12 @@ export default function BayiBaglantiPage() {
           Yardım gerekirse <strong>kurulum ekibimiz 24 saat içinde</strong> size döner —
           istediğiniz zaman <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="text-emerald-700 underline">WhatsApp&apos;tan</a> yazın.
         </Footnote>
+        {token && (
+          <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`}
+            className="block w-full text-center bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-50 mt-3">
+            🏠 Panele Dön
+          </a>
+        )}
       </Page>
     );
   }
@@ -214,10 +227,18 @@ export default function BayiBaglantiPage() {
           Listede yok — kurulum ekibinize danışayım
         </button>
 
-        <button onClick={() => setStep("select_method")}
-          className="w-full text-xs text-slate-400 hover:text-slate-600 mt-1">
-          ← Geri dön
-        </button>
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          <button onClick={() => setStep("select_method")}
+            className="bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-sm">
+            ← Geri
+          </button>
+          {token && (
+            <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`}
+              className="bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-sm text-center flex items-center justify-center">
+              🏠 Panele Dön
+            </a>
+          )}
+        </div>
       </Page>
     );
   }
@@ -245,15 +266,22 @@ export default function BayiBaglantiPage() {
           {error && <p className="text-xs text-red-600">{error}</p>}
         </div>
 
-        <button onClick={submitOnPremForm}
-          className="w-full bg-emerald-600 text-white py-3 rounded-xl font-semibold active:scale-95">
-          Bağlan →
-        </button>
-
-        <button onClick={() => setStep("select_software")}
-          className="w-full text-xs text-slate-400 hover:text-slate-600 mt-3">
-          ← Yazılım listesine dön
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={submitOnPremForm}
+            className="bg-emerald-600 text-white py-3 rounded-xl font-semibold active:scale-95">
+            ✅ Bağlan
+          </button>
+          <button onClick={() => setStep("select_software")}
+            className="bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-sm">
+            ← Geri
+          </button>
+        </div>
+        {token && (
+          <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`}
+            className="block w-full text-center bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-50 mt-2 text-sm">
+            🏠 Panele Dön
+          </a>
+        )}
 
         <Footnote>
           🔒 Bağlantı bilgileriniz sadece senkron işleminde kullanılır, panellerimizde gösterilmez.
@@ -307,10 +335,20 @@ export default function BayiBaglantiPage() {
             Senkronizasyon her gece otomatik tekrarlanır. İstediğiniz zaman elle tetikleyebilirsiniz.
           </p>
 
-          <a href={`https://wa.me/${BOT_WA_NUMBER}`}
-            className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-semibold">
-            WhatsApp&apos;a dön
-          </a>
+          <div className="grid grid-cols-2 gap-2">
+            {token ? (
+              <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold text-center">
+                🏠 Panele Git
+              </a>
+            ) : (
+              <span />
+            )}
+            <a href={`https://wa.me/${BOT_WA_NUMBER}`}
+              className="bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-center hover:bg-slate-50">
+              💬 WhatsApp&apos;a Dön
+            </a>
+          </div>
         </div>
 
         {!isDemoMode && (
