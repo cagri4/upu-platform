@@ -96,12 +96,37 @@ export default function PanelimPage() {
         })}
       </div>
 
-      {/* Quick actions hint */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm text-sm text-slate-600">
-        <p className="font-semibold text-slate-900 mb-2">💡 Hızlı işlem</p>
-        <p>
-          Yeni mülk eklemek için sol menüden <strong>Mülklerim</strong>, müşteri eklemek için <strong>Müşterilerim</strong>, ya da WhatsApp&apos;ta doğrudan komut adını yazabilirsiniz (örn. <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">mulkekle</span>).
+      {/* İpucu — killer özellikler kısa anlatım */}
+      <div className="bg-white rounded-2xl p-5 shadow-sm">
+        <p className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+          <span className="text-lg">💡</span> İpucu
         </p>
+        <ul className="space-y-3 text-sm">
+          <li>
+            <p className="font-semibold text-slate-900">🎯 Takiplerim</p>
+            <p className="text-slate-600 leading-snug mt-0.5">
+              Kart ekle, her sabah Bodrum&apos;daki yeni sahibi ilanları WhatsApp&apos;ınıza gelir.
+            </p>
+          </li>
+          <li>
+            <p className="font-semibold text-slate-900">🤖 Mülklerim</p>
+            <p className="text-slate-600 leading-snug mt-0.5">
+              Mülk ekledikçe AI saniyelerde profesyonel sunum hazırlar.
+            </p>
+          </li>
+          <li>
+            <p className="font-semibold text-slate-900">📋 Sözleşmelerim</p>
+            <p className="text-slate-600 leading-snug mt-0.5">
+              Mülk + müşteri seç, AI hukuki taslak metni üretir, paylaşılabilir link ile imzalanır.
+            </p>
+          </li>
+          <li>
+            <p className="font-semibold text-slate-900">🌐 Profilim</p>
+            <p className="text-slate-600 leading-snug mt-0.5">
+              Bilgileriniz kişisel web sayfanıza otomatik yansır, müşterilere paylaşın.
+            </p>
+          </li>
+        </ul>
       </div>
     </div>
   );

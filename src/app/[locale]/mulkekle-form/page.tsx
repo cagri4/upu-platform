@@ -259,7 +259,7 @@ export default function MulkEkleFormPage() {
     <p className="text-slate-600 text-sm mb-6">
       {isEdit
         ? "Değişiklikler kaydedildi."
-        : "Sunum birkaç saniye içinde hazır olacak."}
+        : "Bu mülke ait sunumu sizin için hazırlamaya başladım bile.. Birazdan panel > Sunumlarım bölümünden inceleyebilirsiniz."}
     </p>
     <div className="space-y-2">
       <a href={`/tr/panel?t=${encodeURIComponent(token || "")}`} className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
