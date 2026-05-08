@@ -91,10 +91,14 @@ export async function startIntro(ctx: WaContext): Promise<boolean> {
 
   await sleep(1800);
 
-  // Mesaj 3 — Paneli Aç CTA (evergreen URL, uid-based — multi-tenant safe)
+  // Mesaj 3 — Paneli Aç CTA — Seçenek A test (2026-05-08):
+  // external-redirect endpoint sistem tarayıcısı (Chrome/Safari) breakout dener.
+  // WA WebView dışına çıkarmak için. Sadece emlak intro Mesaj 3 — sendBackToPanel
+  // ve sendEmlakMenu yine /api/panel/evergreen kullanıyor (kullanıcı testi sonrası
+  // genişletme kararı verilecek).
   const { sendUrlButton } = await import("./send");
   const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
-  const panelUrl = `${APP_URL}/api/panel/evergreen?uid=${encodeURIComponent(ctx.userId)}`;
+  const panelUrl = `${APP_URL}/api/panel/external-redirect?uid=${encodeURIComponent(ctx.userId)}`;
   const ctaMsg =
     `🖥 *Yönetim paneliniz hazır.*\n\n` +
     `Tüm sisteminizi yönetmek için panele gidin.\n\n` +
