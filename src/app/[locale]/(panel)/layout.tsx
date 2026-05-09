@@ -14,7 +14,14 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
-import { AdminLayout } from "@/components/admin-layout";
+import { AdminLayout, type SidebarItem } from "@/components/admin-layout";
+
+const EMLAK_BOTTOM_TABS: SidebarItem[] = [
+  { id: "panelim",    label: "Panelim",       icon: "🏠", href: t => `/tr/panel?t=${encodeURIComponent(t)}`,         matchPath: "/tr/panel" },
+  { id: "mulkler",    label: "Mülkler",       icon: "🏢", href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}`,     matchPath: "/tr/mulklerim" },
+  { id: "musteriler", label: "Müşteriler",    icon: "👥", href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}`,  matchPath: "/tr/musterilerim" },
+  { id: "sozlesme",   label: "Sözleşmeler",   icon: "📋", href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}`, matchPath: "/tr/sozlesmelerim" },
+];
 
 type InitState = "loading" | "ready" | "error";
 
@@ -95,7 +102,13 @@ export default function PanelGroupLayout({ children }: { children: ReactNode }) 
   }
 
   return (
-    <AdminLayout token={token} displayName={displayName} officeName={officeName} tenantKey="emlak">
+    <AdminLayout
+      token={token}
+      displayName={displayName}
+      officeName={officeName}
+      tenantKey="emlak"
+      bottomTabs={EMLAK_BOTTOM_TABS}
+    >
       {children}
     </AdminLayout>
   );

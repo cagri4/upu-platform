@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { QrScannerModal } from "@/components/qr-scanner-modal";
+import { BottomTabBar } from "@/components/bottom-tab-bar";
 
 /**
  * AdminLayout chrome context — sayfalardan QR scanner modalı tetiklemek
@@ -92,6 +93,13 @@ export interface AdminLayoutProps {
    * QR claim çağrısında "hangi panelden tarandı" bilgisi olarak gönderilir.
    */
   tenantKey?: "emlak" | "bayi" | "market" | "otel" | "restoran" | "siteyonetim";
+  /**
+   * Mobile bottom tab bar item'ları. Geçilirse mobile/tablet'te (md altı)
+   * altta sabit 4 sektörel sekme + "Daha" görünür. Geçilmezse sadece
+   * sidebar drawer (mevcut davranış).
+   * En fazla ilk 4 item gösterilir; 5. otomatik "Daha" → drawer açar.
+   */
+  bottomTabs?: SidebarItem[];
   children: ReactNode;
 }
 
@@ -101,13 +109,14 @@ const ACCENT_CLASSES: Record<NonNullable<AdminLayoutProps["accentColor"]>, {
   border: string;
   focusRing: string;
   avatar: string;
+  bottomActive: string;
 }> = {
-  emerald: { active: "bg-emerald-600", border: "lg:border-emerald-300", focusRing: "focus:ring-emerald-400", avatar: "bg-emerald-100 text-emerald-700" },
-  rose:    { active: "bg-rose-600",    border: "lg:border-rose-300",    focusRing: "focus:ring-rose-400",    avatar: "bg-rose-100 text-rose-700" },
-  indigo:  { active: "bg-indigo-600",  border: "lg:border-indigo-300",  focusRing: "focus:ring-indigo-400",  avatar: "bg-indigo-100 text-indigo-700" },
-  amber:   { active: "bg-amber-600",   border: "lg:border-amber-300",   focusRing: "focus:ring-amber-400",   avatar: "bg-amber-100 text-amber-700" },
-  violet:  { active: "bg-violet-600",  border: "lg:border-violet-300",  focusRing: "focus:ring-violet-400",  avatar: "bg-violet-100 text-violet-700" },
-  cyan:    { active: "bg-cyan-600",    border: "lg:border-cyan-300",    focusRing: "focus:ring-cyan-400",    avatar: "bg-cyan-100 text-cyan-700" },
+  emerald: { active: "bg-emerald-600", border: "lg:border-emerald-300", focusRing: "focus:ring-emerald-400", avatar: "bg-emerald-100 text-emerald-700", bottomActive: "text-emerald-600" },
+  rose:    { active: "bg-rose-600",    border: "lg:border-rose-300",    focusRing: "focus:ring-rose-400",    avatar: "bg-rose-100 text-rose-700",       bottomActive: "text-rose-600" },
+  indigo:  { active: "bg-indigo-600",  border: "lg:border-indigo-300",  focusRing: "focus:ring-indigo-400",  avatar: "bg-indigo-100 text-indigo-700",   bottomActive: "text-indigo-600" },
+  amber:   { active: "bg-amber-600",   border: "lg:border-amber-300",   focusRing: "focus:ring-amber-400",   avatar: "bg-amber-100 text-amber-700",     bottomActive: "text-amber-600" },
+  violet:  { active: "bg-violet-600",  border: "lg:border-violet-300",  focusRing: "focus:ring-violet-400",  avatar: "bg-violet-100 text-violet-700",   bottomActive: "text-violet-600" },
+  cyan:    { active: "bg-cyan-600",    border: "lg:border-cyan-300",    focusRing: "focus:ring-cyan-400",    avatar: "bg-cyan-100 text-cyan-700",       bottomActive: "text-cyan-600" },
 };
 
 export function AdminLayout({
@@ -121,6 +130,7 @@ export function AdminLayout({
   brandIconCollapsed = "🖥",
   accentColor = "emerald",
   tenantKey = "emlak",
+  bottomTabs,
   children,
 }: AdminLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -307,9 +317,23 @@ export function AdminLayout({
           </div>
         </header>
 
-        {/* Page content */}
-        <main id="main-content" className="p-4 sm:p-6 max-w-6xl mx-auto">{children}</main>
+        {/* Page content — bottom tab bar varsa mobile'da alt padding */}
+        <main
+          id="main-content"
+          className={`p-4 sm:p-6 max-w-6xl mx-auto ${bottomTabs ? "pb-24 md:pb-6" : ""}`}
+        >
+          {children}
+        </main>
       </div>
+
+      {bottomTabs && bottomTabs.length > 0 && (
+        <BottomTabBar
+          tabs={bottomTabs}
+          token={token}
+          onMore={() => setDrawerOpen(true)}
+          accentClass={accent.bottomActive}
+        />
+      )}
 
       <QrScannerModal
         open={qrScannerOpen}
