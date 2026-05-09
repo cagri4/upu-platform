@@ -111,82 +111,40 @@ export function useViewDensity(storageKey: string) {
 }
 
 interface ViewDensityToggleProps {
-  view: ViewMode;
+  /** Geriye uyum için tutuluyor; component artık view kullanmıyor. */
+  view?: ViewMode;
   columns: ColumnCount;
-  onViewChange: (v: ViewMode) => void;
+  /** Geriye uyum için tutuluyor; component artık view değiştirmiyor. */
+  onViewChange?: (v: ViewMode) => void;
   onColumnsChange: (c: ColumnCount) => void;
-  /** Liste görünümünde sütun seçici gizlensin (anlamsız). Default true. */
-  hideColumnsOnList?: boolean;
 }
 
 export function ViewDensityToggle({
-  view,
   columns,
-  onViewChange,
   onColumnsChange,
-  hideColumnsOnList = true,
 }: ViewDensityToggleProps) {
-  const showColumns = view === "grid" || !hideColumnsOnList;
-
   return (
     <div className="inline-flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-1 text-xs">
-      {/* View mode toggle */}
+      <span className="text-slate-500 text-[11px] pl-1">Sütun:</span>
       <div className="inline-flex rounded-md overflow-hidden">
-        <button
-          type="button"
-          onClick={() => onViewChange("grid")}
-          aria-pressed={view === "grid"}
-          aria-label="Kart görünümü"
-          title="Kart görünümü"
-          className={`px-2.5 py-1.5 transition ${
-            view === "grid"
-              ? "bg-slate-900 text-white"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          🔲
-        </button>
-        <button
-          type="button"
-          onClick={() => onViewChange("list")}
-          aria-pressed={view === "list"}
-          aria-label="Liste görünümü"
-          title="Liste görünümü"
-          className={`px-2.5 py-1.5 transition ${
-            view === "list"
-              ? "bg-slate-900 text-white"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          ☰
-        </button>
+        {([1, 2, 3, 4] as ColumnCount[]).map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => onColumnsChange(c)}
+            aria-pressed={columns === c}
+            aria-label={`${c} sütun`}
+            title={`${c} sütun yan yana`}
+            className={`px-2.5 py-1.5 transition font-medium ${
+              columns === c
+                ? "bg-slate-900 text-white"
+                : "text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            {c}
+          </button>
+        ))}
       </div>
-
-      {showColumns && (
-        <>
-          <span className="text-slate-300">|</span>
-          <span className="text-slate-500 text-[11px]">Sütun:</span>
-          <div className="inline-flex rounded-md overflow-hidden">
-            {([1, 2, 3, 4] as ColumnCount[]).map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => onColumnsChange(c)}
-                aria-pressed={columns === c}
-                aria-label={`${c} sütun`}
-                title={`${c} sütun yan yana`}
-                className={`px-2.5 py-1.5 transition font-medium ${
-                  columns === c
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
     </div>
   );
 }
