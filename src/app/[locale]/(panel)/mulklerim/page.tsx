@@ -151,26 +151,33 @@ export default function MulklerimPage() {
           </div>
         ) : (
           <div className={gridClasses}>
-            {filtered.map((p) => (
+            {filtered.map((p) => {
+              const compact = columns >= 3;
+              const mini = columns === 4;
+              return (
               <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                <div className="flex gap-3 p-3">
-                  <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-slate-200">
-                    {p.cover ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.cover} alt={p.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400">🏠</div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-slate-900 leading-tight line-clamp-2">{p.title || "Mülk"}</h3>
-                    <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap gap-x-2">
-                      {p.listing_type && <span>{p.listing_type === "satilik" ? "Satılık" : "Kiralık"}</span>}
-                      {p.rooms && <span>{p.rooms}</span>}
-                      {p.area && <span>{p.area}m²</span>}
+                <div className={`flex gap-2 sm:gap-3 ${mini ? "p-2 flex-col" : "p-3"}`}>
+                  {!mini && (
+                    <div className={`${compact ? "w-14 h-14" : "w-20 h-20"} flex-shrink-0 rounded-lg overflow-hidden bg-slate-200`}>
+                      {p.cover ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.cover} alt={p.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400">🏠</div>
+                      )}
                     </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`font-semibold text-slate-900 leading-tight ${mini ? "text-xs line-clamp-1" : "line-clamp-2"}`}>{p.title || "Mülk"}</h3>
+                    {!mini && (
+                      <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap gap-x-2">
+                        {p.listing_type && <span>{p.listing_type === "satilik" ? "Satılık" : "Kiralık"}</span>}
+                        {p.rooms && <span>{p.rooms}</span>}
+                        {p.area && <span>{p.area}m²</span>}
+                      </div>
+                    )}
                     {p.price && (
-                      <p className="text-sm font-bold text-stone-900 mt-0.5">
+                      <p className={`font-bold text-stone-900 mt-0.5 ${mini ? "text-[11px]" : "text-sm"}`}>
                         {new Intl.NumberFormat("tr-TR").format(p.price)} ₺
                       </p>
                     )}
@@ -182,31 +189,32 @@ export default function MulklerimPage() {
                       href={`/d/p/${p.sunum_token}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-1 py-3 text-sm font-medium text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 transition"
+                      className={`flex items-center justify-center gap-1 ${mini ? "py-1.5 text-[11px]" : compact ? "py-2 text-xs" : "py-3 text-sm"} font-medium text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 transition`}
                     >
-                      📊 Sunum
+                      📊 {!mini && "Sunum"}
                     </a>
                   ) : (
-                    <span className="flex items-center justify-center gap-1 py-3 text-sm font-medium text-slate-400 cursor-not-allowed">
-                      📊 Yok
+                    <span className={`flex items-center justify-center gap-1 ${mini ? "py-1.5 text-[11px]" : compact ? "py-2 text-xs" : "py-3 text-sm"} font-medium text-slate-400 cursor-not-allowed`}>
+                      📊 {!mini && "Yok"}
                     </span>
                   )}
                   <a
                     href={`/tr/mulkekle-form?id=${p.id}&t=${token || ""}`}
-                    className="flex items-center justify-center gap-1 py-3 text-sm font-medium text-indigo-700 hover:bg-indigo-50 active:bg-indigo-100 transition border-l border-slate-100"
+                    className={`flex items-center justify-center gap-1 ${mini ? "py-1.5 text-[11px]" : compact ? "py-2 text-xs" : "py-3 text-sm"} font-medium text-indigo-700 hover:bg-indigo-50 active:bg-indigo-100 transition border-l border-slate-100`}
                   >
-                    ✏️ Düzenle
+                    ✏️ {!mini && "Düzenle"}
                   </a>
                   <button
                     onClick={() => void handleDelete(p.id)}
                     disabled={deletingId === p.id}
-                    className="flex items-center justify-center gap-1 py-3 text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100 transition border-l border-slate-100 disabled:opacity-50"
+                    className={`flex items-center justify-center gap-1 ${mini ? "py-1.5 text-[11px]" : compact ? "py-2 text-xs" : "py-3 text-sm"} font-medium text-red-600 hover:bg-red-50 active:bg-red-100 transition border-l border-slate-100 disabled:opacity-50`}
                   >
-                    🗑️ {deletingId === p.id ? "Siliniyor..." : "Sil"}
+                    🗑️ {!mini && (deletingId === p.id ? "..." : "Sil")}
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

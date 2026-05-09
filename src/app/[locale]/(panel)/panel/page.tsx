@@ -85,27 +85,33 @@ export default function PanelimPage() {
         />
       </div>
 
-      {/* KPI / quick-link grid */}
+      {/* KPI / quick-link grid — yoğunluğa göre adapte */}
       <div className={gridClasses}>
         {CARD_DEFS.map((card) => {
           const value = card.staticValue
             ? card.staticValue(webSlug)
             : (kpis ? (kpis[card.key as keyof KPIs] ?? 0) : "—");
           const href = token ? card.href(token, webSlug) : "#";
+          const compact = columns >= 3;
+          const mini = columns === 4;
           return (
             <a
               key={card.key}
               href={href}
-              className={`block bg-gradient-to-br ${card.color} text-white rounded-2xl p-4 shadow-md hover:shadow-lg active:scale-95 transition relative`}
+              className={`block bg-gradient-to-br ${card.color} text-white rounded-2xl shadow-md hover:shadow-lg active:scale-95 transition relative ${
+                mini ? "p-2" : compact ? "p-3" : "p-4"
+              }`}
             >
               {card.comingSoon && (
-                <span className="absolute top-2 right-2 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
+                <span className={`absolute right-1.5 ${mini ? "top-1 text-[9px] px-1" : "top-2 text-[10px] px-1.5 py-0.5"} bg-white/20 rounded-full uppercase tracking-wide`}>
                   Yakında
                 </span>
               )}
-              <div className="text-2xl mb-1">{card.icon}</div>
-              <div className="text-2xl sm:text-3xl font-bold leading-none truncate">{value}</div>
-              <div className="text-xs opacity-90 mt-1.5">{card.label}</div>
+              <div className={mini ? "text-base mb-0.5" : compact ? "text-xl mb-0.5" : "text-2xl mb-1"}>{card.icon}</div>
+              <div className={`font-bold leading-none truncate ${
+                mini ? "text-base" : compact ? "text-xl" : "text-2xl sm:text-3xl"
+              }`}>{value}</div>
+              <div className={`opacity-90 ${mini ? "text-[10px] mt-0.5" : compact ? "text-[11px] mt-1" : "text-xs mt-1.5"}`}>{card.label}</div>
             </a>
           );
         })}
