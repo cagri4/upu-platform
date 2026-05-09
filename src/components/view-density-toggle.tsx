@@ -57,11 +57,17 @@ function savePref(storageKey: string, pref: ViewDensityPref) {
   }
 }
 
+/**
+ * Sütun sayısı kullanıcının seçimini birebir uygular — mobil/desktop fark
+ * etmez. Çok dar kartlar oluşursa kullanıcı istediği zaman sütun sayısını
+ * azaltır. Önceki responsive override ("mobil'de 1, sm'den itibaren N")
+ * kaldırıldı çünkü kullanıcı tarafında "seçim etkisiz" hissi yaratıyordu.
+ */
 const GRID_CLASS_MAP: Record<ColumnCount, string> = {
   1: "grid grid-cols-1 gap-3",
-  2: "grid grid-cols-1 sm:grid-cols-2 gap-3",
-  3: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3",
-  4: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3",
+  2: "grid grid-cols-2 gap-2 sm:gap-3",
+  3: "grid grid-cols-3 gap-2 sm:gap-3",
+  4: "grid grid-cols-4 gap-2 sm:gap-3",
 };
 
 const LIST_CLASS = "flex flex-col gap-2";
@@ -158,9 +164,9 @@ export function ViewDensityToggle({
 
       {showColumns && (
         <>
-          <span className="text-slate-300 hidden md:inline">|</span>
-          <span className="text-slate-500 text-[11px] hidden md:inline">Sütun:</span>
-          <div className="hidden md:inline-flex rounded-md overflow-hidden">
+          <span className="text-slate-300">|</span>
+          <span className="text-slate-500 text-[11px]">Sütun:</span>
+          <div className="inline-flex rounded-md overflow-hidden">
             {([1, 2, 3, 4] as ColumnCount[]).map((c) => (
               <button
                 key={c}
