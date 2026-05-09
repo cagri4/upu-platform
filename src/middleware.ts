@@ -15,6 +15,14 @@ export function middleware(req: NextRequest) {
 
   const hostname = req.headers.get("host") || "localhost:3000";
 
+  // qr.upudev.nl host'unda kök URL doğrudan QR giriş sayfasına gider —
+  // locale landing'i atla. URL bar temiz kalır (rewrite, redirect değil).
+  if (hostname.startsWith("qr.upudev.nl") && (pathname === "/" || pathname === "")) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/tr/qr-giris";
+    return NextResponse.rewrite(url);
+  }
+
   // Resolve tenant from domain
   const tenant = getTenantByDomain(hostname);
   const isAdmin = isAdminDomain(hostname);
