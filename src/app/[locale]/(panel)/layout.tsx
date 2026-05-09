@@ -95,7 +95,7 @@ export default function PanelGroupLayout({ children }: { children: ReactNode }) 
   }
 
   return (
-    <AdminLayout token={token} displayName={displayName} officeName={officeName}>
+    <AdminLayout token={token} displayName={displayName} officeName={officeName} tenantKey="emlak">
       {children}
     </AdminLayout>
   );

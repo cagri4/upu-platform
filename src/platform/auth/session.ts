@@ -51,6 +51,18 @@ export async function verifySession(token: string): Promise<PanelSession | null>
   }
 }
 
+/**
+ * Cookie domain: prod'da `.upudev.nl` (parent domain) → tüm subdomain'lerde
+ * paylaşımlı olur (estateai/retailai/marketai/otelai/restoranai/qr).
+ * Bu sayede `qr.upudev.nl`'de tarayıcıya set edilen session cookie'si
+ * tenant subdomain'lerinde de geçerli olur. Dev (NODE_ENV=development)
+ * ortamında localhost için domain set edilmez (browser kabul etmez).
+ */
+function getCookieDomain(): string | null {
+  if (process.env.NODE_ENV !== "production") return null;
+  return ".upudev.nl";
+}
+
 export function buildSessionCookie(jwt: string): string {
   const isProd = process.env.NODE_ENV === "production";
   const parts = [
@@ -60,6 +72,8 @@ export function buildSessionCookie(jwt: string): string {
     "HttpOnly",
     "SameSite=Strict",
   ];
+  const domain = getCookieDomain();
+  if (domain) parts.push(`Domain=${domain}`);
   if (isProd) parts.push("Secure");
   return parts.join("; ");
 }
@@ -73,6 +87,8 @@ export function buildClearCookie(): string {
     "HttpOnly",
     "SameSite=Strict",
   ];
+  const domain = getCookieDomain();
+  if (domain) parts.push(`Domain=${domain}`);
   if (isProd) parts.push("Secure");
   return parts.join("; ");
 }

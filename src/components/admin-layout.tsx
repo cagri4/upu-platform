@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { QrScannerModal } from "@/components/qr-scanner-modal";
 
 export interface SidebarItem {
   id: string;
@@ -66,6 +67,11 @@ export interface AdminLayoutProps {
   brandIconCollapsed?: string;
   /** Aktif item highlight rengi (Tailwind class — örn "emerald-600"). */
   accentColor?: "emerald" | "rose" | "indigo" | "amber" | "violet" | "cyan";
+  /**
+   * Tenant key (emlak / bayi / market / otel / restoran / siteyonetim).
+   * QR claim çağrısında "hangi panelden tarandı" bilgisi olarak gönderilir.
+   */
+  tenantKey?: "emlak" | "bayi" | "market" | "otel" | "restoran" | "siteyonetim";
   children: ReactNode;
 }
 
@@ -94,9 +100,11 @@ export function AdminLayout({
   brandTitle = "🖥 UPU Emlak",
   brandIconCollapsed = "🖥",
   accentColor = "emerald",
+  tenantKey = "emlak",
   children,
 }: AdminLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [qrScannerOpen, setQrScannerOpen] = useState(false);
   const firstName = (displayName || "").split(/\s+/)[0] || "";
   const pathname = usePathname() || "";
   const items = sidebarItems ?? DEFAULT_SIDEBAR_ITEMS;
@@ -210,6 +218,14 @@ export function AdminLayout({
         </nav>
         <div className="p-3 md:p-2 lg:p-3 border-t border-stone-700 flex-shrink-0 space-y-1">
           <button
+            onClick={() => setQrScannerOpen(true)}
+            title="Bilgisayardan Aç"
+            className={`w-full flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm text-stone-300 hover:bg-stone-800 transition focus:outline-none focus:ring-2 ${accent.focusRing}`}
+          >
+            <span>🖥</span>
+            <span className="md:hidden lg:inline">Bilgisayardan Aç</span>
+          </button>
+          <button
             onClick={handleLogout}
             title="WhatsApp'a Dön"
             className={`w-full flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm text-stone-300 hover:bg-stone-800 transition focus:outline-none focus:ring-2 ${accent.focusRing}`}
@@ -271,6 +287,12 @@ export function AdminLayout({
         {/* Page content */}
         <main id="main-content" className="p-4 sm:p-6 max-w-6xl mx-auto">{children}</main>
       </div>
+
+      <QrScannerModal
+        open={qrScannerOpen}
+        tenantKey={tenantKey}
+        onClose={() => setQrScannerOpen(false)}
+      />
     </div>
   );
 }

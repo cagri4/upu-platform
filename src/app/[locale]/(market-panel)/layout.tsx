@@ -120,6 +120,7 @@ export default function MarketPanelGroupLayout({ children }: { children: ReactNo
       brandTitle="🛒 UPU Market"
       brandIconCollapsed="🛒"
       accentColor="amber"
+      tenantKey="market"
     >
       {children}
     </AdminLayout>

@@ -108,6 +108,7 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
       brandTitle={BAYI_BRAND_TITLE}
       brandIconCollapsed={BAYI_BRAND_ICON}
       accentColor={BAYI_ACCENT}
+      tenantKey="bayi"
     >
       {children}
     </AdminLayout>

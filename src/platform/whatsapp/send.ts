@@ -179,6 +179,28 @@ export async function sendList(
 
 // Send a CTA URL button message — hides long URL behind a clickable button label.
 // Uses WhatsApp Cloud API interactive "cta_url" type (1 URL button per message).
+/**
+ * WhatsApp WebView'da sıkışmayı önlemek için sendUrlButton ile gönderilen
+ * upudev.nl URL'lerini otomatik external-redirect endpoint'iyle sarar.
+ * Halihazırda sarılmış URL'ler (eski emlak `/api/panel/external-redirect`
+ * veya yeni generic `/api/external-redirect`) double wrap edilmez.
+ * upudev.nl dışı URL'ler (wa.me vb.) dokunulmadan geçer.
+ */
+function maybeWrapForWebViewBreakout(url: string): string {
+  try {
+    if (url.includes("/api/external-redirect") || url.includes("/api/panel/external-redirect")) {
+      return url;
+    }
+    const u = new URL(url);
+    if (u.protocol !== "https:") return url;
+    if (u.hostname !== "upudev.nl" && !u.hostname.endsWith(".upudev.nl")) return url;
+    const host = process.env.NEXT_PUBLIC_APP_URL || "https://retailai.upudev.nl";
+    return `${host}/api/external-redirect?to=${encodeURIComponent(url)}`;
+  } catch {
+    return url;
+  }
+}
+
 export async function sendUrlButton(
   phone: string,
   text: string,
@@ -188,6 +210,8 @@ export async function sendUrlButton(
 ) {
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
+
+  const ctaUrl = maybeWrapForWebViewBreakout(url);
 
   try {
     const resp = await fetch(`${WA_API}/${phoneId}/messages`, {
@@ -202,7 +226,7 @@ export async function sendUrlButton(
             name: "cta_url",
             parameters: {
               display_text: buttonLabel.substring(0, 20),
-              url,
+              url: ctaUrl,
             },
           },
         },
@@ -211,8 +235,8 @@ export async function sendUrlButton(
     if (!resp.ok) {
       const err = await resp.text();
       console.error("[wa:send] cta_url API error:", resp.status, err);
-      // Fallback: send text with URL inline
-      await sendText(phone, `${text}\n\n🔗 ${url}`);
+      // Fallback: send text with URL inline (wrap edilmiş — WebView breakout korunur)
+      await sendText(phone, `${text}\n\n🔗 ${ctaUrl}`);
     } else if (!opts?.skipNav && !isNavSuppressedByContext()) {
       await sendNavFooter(phone);
     }

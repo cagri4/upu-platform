@@ -112,6 +112,7 @@ export default function OtelPanelGroupLayout({ children }: { children: ReactNode
       brandTitle="🏨 UPU Otel"
       brandIconCollapsed="🏨"
       accentColor="rose"
+      tenantKey="otel"
     >
       {children}
     </AdminLayout>
