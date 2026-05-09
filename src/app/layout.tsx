@@ -5,13 +5,13 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin", "latin-ext"] });
 
 export const metadata: Metadata = {
-  title: "UPU Emlak",
-  description: "Yapay zeka destekli emlak yönetim asistanınız.",
+  title: "UPU",
+  description: "Yapay zeka destekli iş asistanınız.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "UPU Emlak",
+    title: "UPU",
   },
   icons: {
     icon: [
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#10b981",
+  themeColor: "#1877F2",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

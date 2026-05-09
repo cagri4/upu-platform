@@ -16,12 +16,43 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { AdminLayout, type SidebarItem } from "@/components/admin-layout";
 
-const EMLAK_BOTTOM_TABS: SidebarItem[] = [
-  { id: "panelim",    label: "Panelim",     icon: "🏠", iconSrc: "/icons/emlak/panelim.png",    href: t => `/tr/panel?t=${encodeURIComponent(t)}`,         matchPath: "/tr/panel" },
-  { id: "mulkler",    label: "Mülkler",     icon: "🏢", iconSrc: "/icons/emlak/mulkler.png",    href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}`,     matchPath: "/tr/mulklerim" },
-  { id: "musteriler", label: "Müşteriler",  icon: "👥", iconSrc: "/icons/emlak/musteriler.png", href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}`,  matchPath: "/tr/musterilerim" },
-  { id: "sozlesme",   label: "Sözleşmeler", icon: "📋", iconSrc: "/icons/emlak/sozlesme.png",   href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}`, matchPath: "/tr/sozlesmelerim" },
-];
+/**
+ * Bottom tab item'larının tam kataloğu — kullanıcı /tr/panel-ayarlari'da
+ * bu set arasından max 4 sekme seçer; localStorage `upu-bottom-tabs:emlak`
+ * id listesi olarak tutulur. Default: ilk 4 (panelim/mulkler/musteriler/sozlesme).
+ */
+const EMLAK_TAB_CATALOG: Record<string, SidebarItem> = {
+  panelim:    { id: "panelim",    label: "Panelim",     icon: "🏠", iconSrc: "/icons/emlak/panelim.png",    href: t => `/tr/panel?t=${encodeURIComponent(t)}`,         matchPath: "/tr/panel" },
+  mulkler:    { id: "mulkler",    label: "Mülkler",     icon: "🏢", iconSrc: "/icons/emlak/mulkler.png",    href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}`,     matchPath: "/tr/mulklerim" },
+  musteriler: { id: "musteriler", label: "Müşteriler",  icon: "👥", iconSrc: "/icons/emlak/musteriler.png", href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}`,  matchPath: "/tr/musterilerim" },
+  sozlesme:   { id: "sozlesme",   label: "Sözleşmeler", icon: "📋", iconSrc: "/icons/emlak/sozlesme.png",   href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}`, matchPath: "/tr/sozlesmelerim" },
+  sunumlar:   { id: "sunumlar",   label: "Sunumlar",    icon: "📊", iconSrc: "/icons/emlak/sunumlar.png",   href: t => `/tr/sunumlarim?t=${encodeURIComponent(t)}`,    matchPath: "/tr/sunumlarim" },
+  takip:      { id: "takip",      label: "Takip",       icon: "🎯", iconSrc: "/icons/emlak/takip.png",      href: t => `/tr/takip?t=${encodeURIComponent(t)}`,         matchPath: "/tr/takip" },
+  ara:        { id: "ara",        label: "Tara",        icon: "🔍", iconSrc: "/icons/emlak/ara.png",        href: t => `/tr/ara?t=${encodeURIComponent(t)}`,           matchPath: "/tr/ara" },
+  takvim:     { id: "takvim",     label: "Takvim",      icon: "📅", iconSrc: "/icons/emlak/takvim.png",     href: t => `/tr/takvim?t=${encodeURIComponent(t)}`,        matchPath: "/tr/takvim" },
+  profil:     { id: "profil",     label: "Profil",      icon: "👤", iconSrc: "/icons/emlak/profil.png",     href: t => `/tr/profil-duzenle?t=${encodeURIComponent(t)}`, matchPath: "/tr/profil-duzenle" },
+  websitem:   { id: "websitem",   label: "Web Sitem",   icon: "🌐", iconSrc: "/icons/emlak/websitem.png",   href: t => `/api/panel/web-sitem?t=${encodeURIComponent(t)}` },
+};
+
+const DEFAULT_TAB_IDS = ["panelim", "mulkler", "musteriler", "sozlesme"];
+const TABS_STORAGE_KEY = "upu-bottom-tabs:emlak";
+
+function loadBottomTabs(): SidebarItem[] {
+  if (typeof window === "undefined") {
+    return DEFAULT_TAB_IDS.map((id) => EMLAK_TAB_CATALOG[id]).filter(Boolean);
+  }
+  try {
+    const raw = window.localStorage.getItem(TABS_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw) as unknown;
+      if (Array.isArray(arr) && arr.every((x) => typeof x === "string")) {
+        const items = arr.slice(0, 4).map((id) => EMLAK_TAB_CATALOG[id]).filter(Boolean);
+        if (items.length > 0) return items;
+      }
+    }
+  } catch { /* yut */ }
+  return DEFAULT_TAB_IDS.map((id) => EMLAK_TAB_CATALOG[id]).filter(Boolean);
+}
 
 type InitState = "loading" | "ready" | "error";
 
@@ -33,6 +64,13 @@ export default function PanelGroupLayout({ children }: { children: ReactNode }) 
   const [error, setError] = useState("");
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [officeName, setOfficeName] = useState<string | null>(null);
+  const [bottomTabs, setBottomTabs] = useState<SidebarItem[]>(() =>
+    DEFAULT_TAB_IDS.map((id) => EMLAK_TAB_CATALOG[id]).filter(Boolean),
+  );
+
+  useEffect(() => {
+    setBottomTabs(loadBottomTabs());
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,7 +145,7 @@ export default function PanelGroupLayout({ children }: { children: ReactNode }) 
       displayName={displayName}
       officeName={officeName}
       tenantKey="emlak"
-      bottomTabs={EMLAK_BOTTOM_TABS}
+      bottomTabs={bottomTabs}
     >
       {children}
     </AdminLayout>

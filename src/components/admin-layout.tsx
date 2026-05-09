@@ -61,7 +61,8 @@ const DEFAULT_SIDEBAR_ITEMS: SidebarItem[] = [
   { id: "takvim",      label: "Takvim",           icon: "📅", iconSrc: "/icons/emlak/takvim.png",     href: t => `/tr/takvim?t=${encodeURIComponent(t)}`,            matchPath: "/tr/takvim" },
   { id: "profil",      label: "Profilim",         icon: "👤", iconSrc: "/icons/emlak/profil.png",     href: t => `/tr/profil-duzenle?t=${encodeURIComponent(t)}`,    matchPath: "/tr/profil-duzenle" },
   { id: "websitem",    label: "Web Sitem",        icon: "🌐", iconSrc: "/icons/emlak/websitem.png",   href: t => `/api/panel/web-sitem?t=${encodeURIComponent(t)}` },
-  { id: "hakkinda",    label: "UPUDev Hakkında",  icon: "ℹ️",  href: t => `/tr/hakkinda?t=${encodeURIComponent(t)}`,           matchPath: "/tr/hakkinda", separatorBefore: true },
+  { id: "ayarlar",     label: "Panel Ayarları",   icon: "⚙️",  href: t => `/tr/panel-ayarlari?t=${encodeURIComponent(t)}`,    matchPath: "/tr/panel-ayarlari", separatorBefore: true },
+  { id: "hakkinda",    label: "UPUDev Hakkında",  icon: "ℹ️",  href: t => `/tr/hakkinda?t=${encodeURIComponent(t)}`,           matchPath: "/tr/hakkinda" },
   { id: "oneri",       label: "Öneri / Şikayet",  icon: "💬", href: t => `/tr/oneri?t=${encodeURIComponent(t)}`,             matchPath: "/tr/oneri" },
   { id: "destek",      label: "Destek Talebi",    icon: "🛟", href: t => `/tr/destek?t=${encodeURIComponent(t)}`,            matchPath: "/tr/destek" },
 ];
