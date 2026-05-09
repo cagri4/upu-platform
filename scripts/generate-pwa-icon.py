@@ -25,15 +25,15 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 BASE = OUT_DIR / "icon-base-1024.png"
 
 PROMPT = (
-    "Premium app icon design for 'UPU Emlak' real estate AI assistant. "
-    "Bold square (rounded corners will be applied by OS automatically — generate "
-    "as full square). Vibrant emerald-to-teal vertical gradient background "
-    "(#10b981 top to #059669 bottom). In the center, a clean modern white "
-    "minimalist symbol combining a stylized house silhouette with a subtle "
-    "AI / smart-home accent (small dot or circuit hint). Premium SaaS look, "
-    "similar to Notion / Linear / Stripe app icons. No text, no letters. "
-    "Generous padding around the symbol (icon will be masked to circle on iOS). "
-    "Crisp vector look, professional, glossy minimal. 1024x1024."
+    "App icon — friendly blue robot character ONLY. "
+    "Cute mascot robot head: rounded square face, small antenna on top, "
+    "two big round friendly eyes (white sclera, blue iris), warm smile. "
+    "Solid Facebook blue (#1877F2) robot character on a clean white "
+    "square background (icon will be OS-masked, full bleed white). "
+    "Centered with generous padding, premium SaaS feel like Notion / Linear. "
+    "STRICT: NO TEXT, NO LETTERS, NO WORDS, NO 'UPU' WRITING anywhere on the icon — "
+    "only the robot character itself, nothing else. "
+    "Crisp, professional, glossy minimal vector look. 1024x1024."
 )
 
 def generate_base():
