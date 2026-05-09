@@ -2,9 +2,11 @@
 
 /**
  * Emlak yönetim paneli route group layout.
- * - /api/panel/init ile token doğrulanır + displayName/officeName fetch
- * - AdminLayout (sidebar + topbar) sarımı uygulanır
- * - Token yoksa/expired ise full-screen hata gösterilir, child sayfa render edilmez
+ *
+ * Auth akışı (cookie öncelikli):
+ *   1) /api/panel/me — cookie session geçerse direkt ready (URL'de token gerekmez)
+ *   2) Cookie yoksa/geçersizse + URL'de t=... varsa → /api/panel/init ile token doğrula + cookie set
+ *   3) İkisi de yoksa hata göster
  *
  * Form sayfaları (mulkekle-form, profil-duzenle, musteri-ekle-form) bu group DIŞINDA
  * kalır — WA WebView'da full-screen pattern korunur.
@@ -26,16 +28,41 @@ export default function PanelGroupLayout({ children }: { children: ReactNode }) 
   const [officeName, setOfficeName] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) { setState("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/panel/init?t=${encodeURIComponent(token)}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.error) { setState("error"); setError(d.error); return; }
-        setDisplayName(d.displayName ?? null);
-        setOfficeName(d.officeName ?? null);
-        setState("ready");
-      })
-      .catch(() => { setState("error"); setError("Bağlantı hatası."); });
+    let cancelled = false;
+    const apply = (d: { displayName?: string | null; officeName?: string | null }) => {
+      if (cancelled) return;
+      setDisplayName(d.displayName ?? null);
+      setOfficeName(d.officeName ?? null);
+      setState("ready");
+    };
+    const fail = (msg: string) => {
+      if (cancelled) return;
+      setState("error");
+      setError(msg);
+    };
+
+    (async () => {
+      try {
+        const meRes = await fetch("/api/panel/me", { credentials: "same-origin" });
+        if (meRes.ok) {
+          const d = await meRes.json();
+          if (d?.success) return apply(d);
+        }
+        if (!token) {
+          return fail("Oturum bulunamadı veya süresi dolmuş.");
+        }
+        const initRes = await fetch(`/api/panel/init?t=${encodeURIComponent(token)}`, {
+          credentials: "same-origin",
+        });
+        const d = await initRes.json();
+        if (d?.error) return fail(d.error);
+        apply(d);
+      } catch {
+        fail("Bağlantı hatası.");
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [token]);
 
   if (state === "loading") {

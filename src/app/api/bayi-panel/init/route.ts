@@ -8,6 +8,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { attachSessionToResponse } from "@/platform/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -41,13 +42,17 @@ export async function GET(req: NextRequest) {
       (meta.company_name as string) ||
       null;
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       displayName: profile?.display_name || null,
       firmaUnvani,
       officeName: firmaUnvani,
       tenantId: profile?.tenant_id || null,
       botPhone: "31644967207",
+    });
+    return await attachSessionToResponse(response, {
+      uid: magicToken.user_id,
+      tenantId: profile?.tenant_id ?? null,
     });
   } catch (err) {
     console.error("[bayi-panel:init]", err);

@@ -33,16 +33,41 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
   const [firmaUnvani, setFirmaUnvani] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) { setState("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/bayi-panel/init?t=${encodeURIComponent(token)}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.error) { setState("error"); setError(d.error); return; }
-        setDisplayName(d.displayName ?? null);
-        setFirmaUnvani(d.firmaUnvani ?? d.officeName ?? null);
-        setState("ready");
-      })
-      .catch(() => { setState("error"); setError("Bağlantı hatası."); });
+    let cancelled = false;
+    const apply = (d: { displayName?: string | null; firmaUnvani?: string | null; officeName?: string | null }) => {
+      if (cancelled) return;
+      setDisplayName(d.displayName ?? null);
+      setFirmaUnvani(d.firmaUnvani ?? d.officeName ?? null);
+      setState("ready");
+    };
+    const fail = (msg: string) => {
+      if (cancelled) return;
+      setState("error");
+      setError(msg);
+    };
+
+    (async () => {
+      try {
+        const meRes = await fetch("/api/bayi-panel/me", { credentials: "same-origin" });
+        if (meRes.ok) {
+          const d = await meRes.json();
+          if (d?.success) return apply(d);
+        }
+        if (!token) {
+          return fail("Oturum bulunamadı veya süresi dolmuş.");
+        }
+        const initRes = await fetch(`/api/bayi-panel/init?t=${encodeURIComponent(token)}`, {
+          credentials: "same-origin",
+        });
+        const d = await initRes.json();
+        if (d?.error) return fail(d.error);
+        apply(d);
+      } catch {
+        fail("Bağlantı hatası.");
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [token]);
 
   if (state === "loading") {

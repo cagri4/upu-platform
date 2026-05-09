@@ -123,7 +123,7 @@ export function AdminLayout({
   }, [drawerOpen]);
 
   function handleLogout() {
-    // WA'a dön — WebView aware (history.back / wa.me fallback)
+    // WA'a dön — cookie KORUNUR (sonraki "Panele Git" linkinde direkt açılır)
     try {
       if (typeof window !== "undefined" && window.history.length > 1) {
         window.history.back();
@@ -133,6 +133,17 @@ export function AdminLayout({
     } catch {
       window.location.href = `https://wa.me/${botPhone}`;
     }
+  }
+
+  async function handleSignOut() {
+    // Oturum kapat: cookie temizle, sonra WA'ya yönlendir.
+    // Cihaz paylaşımı / başka kullanıcıya devretme senaryosu için.
+    try {
+      await fetch("/api/panel-session/logout", { method: "POST", credentials: "same-origin" });
+    } catch {
+      // network hatasında bile WA'ya yönlendir, kullanıcı sıkışmasın
+    }
+    window.location.href = `https://wa.me/${botPhone}`;
   }
 
   return (
@@ -197,7 +208,7 @@ export function AdminLayout({
             );
           })}
         </nav>
-        <div className="p-3 md:p-2 lg:p-3 border-t border-stone-700 flex-shrink-0">
+        <div className="p-3 md:p-2 lg:p-3 border-t border-stone-700 flex-shrink-0 space-y-1">
           <button
             onClick={handleLogout}
             title="WhatsApp'a Dön"
@@ -205,6 +216,14 @@ export function AdminLayout({
           >
             <span>💬</span>
             <span className="md:hidden lg:inline">WhatsApp&apos;a Dön</span>
+          </button>
+          <button
+            onClick={handleSignOut}
+            title="Oturumu Kapat"
+            className={`w-full flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2 md:justify-center lg:justify-start rounded-lg text-xs text-stone-400 hover:bg-stone-800 hover:text-stone-200 transition focus:outline-none focus:ring-2 ${accent.focusRing}`}
+          >
+            <span>🚪</span>
+            <span className="md:hidden lg:inline">Oturumu Kapat</span>
           </button>
         </div>
       </aside>

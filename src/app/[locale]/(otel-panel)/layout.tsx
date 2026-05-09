@@ -37,16 +37,41 @@ export default function OtelPanelGroupLayout({ children }: { children: ReactNode
   const [officeName, setOfficeName] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) { setState("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/otel-panel/init?t=${encodeURIComponent(token)}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.error) { setState("error"); setError(d.error); return; }
-        setDisplayName(d.displayName ?? null);
-        setOfficeName(d.officeName ?? null);
-        setState("ready");
-      })
-      .catch(() => { setState("error"); setError("Bağlantı hatası."); });
+    let cancelled = false;
+    const apply = (d: { displayName?: string | null; officeName?: string | null }) => {
+      if (cancelled) return;
+      setDisplayName(d.displayName ?? null);
+      setOfficeName(d.officeName ?? null);
+      setState("ready");
+    };
+    const fail = (msg: string) => {
+      if (cancelled) return;
+      setState("error");
+      setError(msg);
+    };
+
+    (async () => {
+      try {
+        const meRes = await fetch("/api/otel-panel/me", { credentials: "same-origin" });
+        if (meRes.ok) {
+          const d = await meRes.json();
+          if (d?.success) return apply(d);
+        }
+        if (!token) {
+          return fail("Oturum bulunamadı veya süresi dolmuş.");
+        }
+        const initRes = await fetch(`/api/otel-panel/init?t=${encodeURIComponent(token)}`, {
+          credentials: "same-origin",
+        });
+        const d = await initRes.json();
+        if (d?.error) return fail(d.error);
+        apply(d);
+      } catch {
+        fail("Bağlantı hatası.");
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [token]);
 
   if (state === "loading") {
