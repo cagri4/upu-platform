@@ -1,9 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { QrScannerModal } from "@/components/qr-scanner-modal";
+
+/**
+ * AdminLayout chrome context — sayfalardan QR scanner modalı tetiklemek
+ * için. Panelim sayfasındaki "Bilgisayardan Kullan" kartı openQrScanner()
+ * çağırarak sidebar'daki butonla aynı modalı açar.
+ */
+interface PanelChromeContextValue {
+  openQrScanner: () => void;
+}
+
+const PanelChromeContext = createContext<PanelChromeContextValue | null>(null);
+
+export function usePanelChrome(): PanelChromeContextValue {
+  const ctx = useContext(PanelChromeContext);
+  if (!ctx) {
+    // AdminLayout dışında çağrılırsa no-op döner — app crash etmesin
+    return { openQrScanner: () => {} };
+  }
+  return ctx;
+}
 
 export interface SidebarItem {
   id: string;
@@ -154,7 +174,10 @@ export function AdminLayout({
     window.location.href = `https://wa.me/${botPhone}`;
   }
 
+  const chromeValue: PanelChromeContextValue = { openQrScanner: () => setQrScannerOpen(true) };
+
   return (
+    <PanelChromeContext.Provider value={chromeValue}>
     <div className="min-h-screen bg-slate-50">
       {/* Skip-to-content (klavye nav) */}
       <a
@@ -294,5 +317,6 @@ export function AdminLayout({
         onClose={() => setQrScannerOpen(false)}
       />
     </div>
+    </PanelChromeContext.Provider>
   );
 }

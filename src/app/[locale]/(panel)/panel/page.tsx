@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { usePanelChrome } from "@/components/admin-layout";
+import { ViewDensityToggle, useViewDensity } from "@/components/view-density-toggle";
 
 interface KPIs {
   properties: number;
@@ -41,6 +43,8 @@ const CARD_DEFS: CardDef[] = [
 export default function PanelimPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token");
+  const { openQrScanner } = usePanelChrome();
+  const { view, columns, setView, setColumns, gridClasses } = useViewDensity("emlak-panelim");
 
   const [kpis, setKpis] = useState<KPIs | null>(null);
   const [webSlug, setWebSlug] = useState<string | null>(null);
@@ -71,8 +75,18 @@ export default function PanelimPage() {
         </p>
       </div>
 
+      {/* View density toggle */}
+      <div className="flex justify-end">
+        <ViewDensityToggle
+          view={view}
+          columns={columns}
+          onViewChange={setView}
+          onColumnsChange={setColumns}
+        />
+      </div>
+
       {/* KPI / quick-link grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+      <div className={gridClasses}>
         {CARD_DEFS.map((card) => {
           const value = card.staticValue
             ? card.staticValue(webSlug)
@@ -95,6 +109,25 @@ export default function PanelimPage() {
             </a>
           );
         })}
+      </div>
+
+      {/* Bilgisayardan Kullan — feature highlight */}
+      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5 shadow-sm">
+        <div className="flex items-start gap-4">
+          <div className="text-3xl flex-shrink-0">🖥</div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-slate-900 mb-1">Bilgisayardan Kullanın</h3>
+            <p className="text-sm text-slate-600 leading-relaxed mb-3">
+              Bilgisayarınızda <span className="font-semibold text-slate-900">qr.upudev.nl</span> sayfasını açın, telefonunuzdaki QR kodu kameraya tutun — saniyeler içinde panel masaüstünüzde de açılır.
+            </p>
+            <button
+              onClick={openQrScanner}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+            >
+              🖥 Şimdi Bağlan
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* İpucu — killer özellikler kısa anlatım */}

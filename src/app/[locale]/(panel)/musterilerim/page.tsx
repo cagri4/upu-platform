@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { whatsappDeeplink } from "@/lib/whatsapp-deeplink";
 import { ReturnButtons } from "@/components/return-buttons";
+import { ViewDensityToggle, useViewDensity } from "@/components/view-density-toggle";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -53,6 +54,7 @@ export default function MusterilerimPage() {
   const [items, setItems] = useState<CustomerItem[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const { view, columns, setView, setColumns, gridClasses } = useViewDensity("musterilerim");
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLocaleLowerCase("tr");
@@ -107,8 +109,7 @@ export default function MusterilerimPage() {
   </Center>;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
-      <div className="max-w-md mx-auto p-4">
+    <div className="pb-24">
         <div className="bg-gradient-to-br from-emerald-700 to-teal-900 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">👥</div>
           <h1 className="text-xl font-bold">Müşterilerim</h1>
@@ -124,14 +125,22 @@ export default function MusterilerimPage() {
         </a>
 
         {items.length > 0 && (
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="🔍 Müşteri ara (isim, telefon, bölge)"
-            className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 mb-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-            aria-label="Müşteri ara"
-          />
+          <div className="mb-3 flex flex-col sm:flex-row gap-2 sm:items-center">
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="🔍 Müşteri ara (isim, telefon, bölge)"
+              className="flex-1 bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              aria-label="Müşteri ara"
+            />
+            <ViewDensityToggle
+              view={view}
+              columns={columns}
+              onViewChange={setView}
+              onColumnsChange={setColumns}
+            />
+          </div>
         )}
 
         {items.length === 0 ? (
@@ -145,7 +154,7 @@ export default function MusterilerimPage() {
             <p className="text-slate-500 text-sm">Eşleşen müşteri bulunamadı.</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className={gridClasses}>
             {filtered.map((c) => {
               const lf = lookingForLabel(c.looking_for);
               const pt = (c.property_type || []).map(t => PT_LABELS[t] || t).join(", ");
@@ -190,7 +199,6 @@ export default function MusterilerimPage() {
         )}
 
         <ReturnButtons token={token} botPhone={BOT_WA_NUMBER} />
-      </div>
     </div>
   );
 }

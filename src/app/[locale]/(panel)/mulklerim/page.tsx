@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { whatsappDeeplink } from "@/lib/whatsapp-deeplink";
 import { ReturnButtons } from "@/components/return-buttons";
+import { ViewDensityToggle, useViewDensity } from "@/components/view-density-toggle";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -34,6 +35,7 @@ export default function MulklerimPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { view, columns, setView, setColumns, gridClasses } = useViewDensity("mulklerim");
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLocaleLowerCase("tr");
@@ -103,8 +105,7 @@ export default function MulklerimPage() {
   </Center>;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
-      <div className="max-w-md mx-auto p-4">
+    <div className="pb-24">
         <div className="bg-gradient-to-br from-stone-700 to-stone-900 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">📁</div>
           <h1 className="text-xl font-bold">Mülklerim</h1>
@@ -120,14 +121,22 @@ export default function MulklerimPage() {
         </a>
 
         {items.length > 0 && (
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="🔍 Mülk ara (başlık, bölge, tip)"
-            className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 mb-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            aria-label="Mülk ara"
-          />
+          <div className="mb-3 flex flex-col sm:flex-row gap-2 sm:items-center">
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="🔍 Mülk ara (başlık, bölge, tip)"
+              className="flex-1 bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              aria-label="Mülk ara"
+            />
+            <ViewDensityToggle
+              view={view}
+              columns={columns}
+              onViewChange={setView}
+              onColumnsChange={setColumns}
+            />
+          </div>
         )}
 
         {items.length === 0 ? (
@@ -141,7 +150,7 @@ export default function MulklerimPage() {
             <p className="text-slate-500 text-sm">Eşleşen mülk bulunamadı.</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className={gridClasses}>
             {filtered.map((p) => (
               <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
                 <div className="flex gap-3 p-3">
@@ -214,7 +223,6 @@ export default function MulklerimPage() {
             } catch { /* devam mesajı server'dan after() ile gider */ }
           }}
         />
-      </div>
     </div>
   );
 }
