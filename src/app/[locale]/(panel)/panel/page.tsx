@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { usePanelChrome } from "@/components/admin-layout";
 import { ViewDensityToggle, useViewDensity } from "@/components/view-density-toggle";
+import { PwaInstallCard } from "@/components/pwa-install-card";
 
 interface KPIs {
   properties: number;
@@ -126,6 +127,9 @@ export default function PanelimPage() {
           );
         })}
       </div>
+
+      {/* PWA Install — mobile only, standalone'da gizlenir */}
+      <PwaInstallCard />
 
       {/* Bilgisayardan Kullan — feature highlight */}
       <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5 shadow-sm">
