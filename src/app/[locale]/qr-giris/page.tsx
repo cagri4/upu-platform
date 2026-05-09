@@ -44,6 +44,7 @@ export default function QrGirisPage() {
     setState("loading");
     setErrorMsg("");
     setSecondsLeft(60);
+    setCode(null);
     try {
       const res = await fetch("/api/panel-session/qr-create", { method: "POST" });
       const d = await res.json();
@@ -54,15 +55,7 @@ export default function QrGirisPage() {
       }
       setCode(d.code);
       setState("showing");
-      // QR çiz
-      if (canvasRef.current) {
-        await QRCode.toCanvas(canvasRef.current, `${QR_DATA_PREFIX}${d.code}`, {
-          width: 280,
-          margin: 1,
-          errorCorrectionLevel: "M",
-          color: { dark: "#0f172a", light: "#ffffff" },
-        });
-      }
+      // QR çizimi state="showing" + canvas mount edildikten sonra effect ile yapılır
     } catch {
       setState("error");
       setErrorMsg("Bağlantı hatası.");
@@ -74,6 +67,21 @@ export default function QrGirisPage() {
     return () => clearTimers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Canvas mount edildikten sonra QR çiz — race condition önler
+  useEffect(() => {
+    if (state !== "showing" || !code || !canvasRef.current) return;
+    QRCode.toCanvas(canvasRef.current, `${QR_DATA_PREFIX}${code}`, {
+      width: 280,
+      margin: 1,
+      errorCorrectionLevel: "M",
+      color: { dark: "#0f172a", light: "#ffffff" },
+    }).catch((err) => {
+      console.error("[qr-giris] QRCode.toCanvas error:", err);
+      setState("error");
+      setErrorMsg("QR kod çizilemedi.");
+    });
+  }, [state, code]);
 
   useEffect(() => {
     if (state !== "showing" || !code) return;
