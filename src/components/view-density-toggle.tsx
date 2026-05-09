@@ -158,8 +158,9 @@ export function ViewDensityToggle({
 
       {showColumns && (
         <>
-          <span className="text-slate-300">|</span>
-          <div className="inline-flex rounded-md overflow-hidden">
+          <span className="text-slate-300 hidden md:inline">|</span>
+          <span className="text-slate-500 text-[11px] hidden md:inline">Sütun:</span>
+          <div className="hidden md:inline-flex rounded-md overflow-hidden">
             {([1, 2, 3, 4] as ColumnCount[]).map((c) => (
               <button
                 key={c}
@@ -167,7 +168,7 @@ export function ViewDensityToggle({
                 onClick={() => onColumnsChange(c)}
                 aria-pressed={columns === c}
                 aria-label={`${c} sütun`}
-                title={`${c} sütun`}
+                title={`${c} sütun yan yana`}
                 className={`px-2.5 py-1.5 transition font-medium ${
                   columns === c
                     ? "bg-slate-900 text-white"
