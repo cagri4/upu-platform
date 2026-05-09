@@ -131,6 +131,27 @@ export default function PanelimPage() {
       {/* PWA Install — mobile only, standalone'da gizlenir */}
       <PwaInstallCard />
 
+      {/* Sahibinden Otomatik Form — Chrome eklentisi tanıtım kartı */}
+      <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-5 shadow-sm">
+        <div className="flex items-start gap-4">
+          <div className="text-3xl flex-shrink-0">📋</div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-slate-900 mb-1">Sahibinden Otomatik Form</h3>
+            <p className="text-sm text-slate-600 leading-relaxed mb-3">
+              Mülk bilgilerinizi <span className="font-semibold text-slate-900">sahibinden.com</span> ilan formuna otomatik doldurur. Chrome eklentimizi yükleyin — 30 dakikalık ilan girişi 3 dakikaya iner.
+            </p>
+            <a
+              href="https://chromewebstore.google.com/detail/bcafoeijofbhelbanpfjhmhiokjnggbe"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+            >
+              🧩 Chrome Eklentisini Kur
+            </a>
+          </div>
+        </div>
+      </div>
+
       {/* Bilgisayardan Kullan — feature highlight */}
       <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5 shadow-sm">
         <div className="flex items-start gap-4">
