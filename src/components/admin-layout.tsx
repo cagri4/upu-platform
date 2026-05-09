@@ -230,7 +230,9 @@ export function AdminLayout({
         <nav className="p-3 md:p-2 lg:p-3 space-y-1 flex-1 overflow-y-auto" aria-label="Ana menü">
           {items.map((item) => {
             const isActive = item.id === activeId;
-            const href = token ? item.href(token) : "#";
+            // Token yoksa cookie session aktif — item.href("") boş query
+            // ile absolute path; layout cookie session ile devam eder.
+            const href = item.href(token || "");
             return (
               <div key={item.id}>
                 {item.separatorBefore && (

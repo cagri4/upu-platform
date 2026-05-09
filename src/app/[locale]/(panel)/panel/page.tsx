@@ -69,8 +69,11 @@ export default function PanelimPage() {
   const [webSlug, setWebSlug] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) return;
-    fetch(`/api/panel/dashboard?t=${encodeURIComponent(token)}`)
+    // Token yoksa cookie session ile dene (cookie-aware dashboard endpoint)
+    const url = token
+      ? `/api/panel/dashboard?t=${encodeURIComponent(token)}`
+      : `/api/panel/dashboard`;
+    fetch(url, { credentials: "same-origin" })
       .then((r) => r.json())
       .then((d) => {
         if (!d?.error) {

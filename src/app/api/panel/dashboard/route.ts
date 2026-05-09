@@ -1,29 +1,42 @@
 /**
  * /api/panel/dashboard — Dashboard KPI count'ları.
- * Token doğrula + kullanıcının kendi verilerinden 5 sayım.
+ *
+ * Auth (cookie öncelikli, /api/panel/me ile aynı pattern):
+ *   1) Cookie session geçerse → kullanıcı çözülür, token gerekmez
+ *   2) Cookie yoksa + ?t=<token> varsa → magic link doğrula (legacy, eski WA URL'leri)
+ *   3) İkisi de yoksa 401
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { getSessionFromCookies } from "@/platform/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const token = req.nextUrl.searchParams.get("t") || req.nextUrl.searchParams.get("token");
-  if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
-
   const sb = getServiceClient();
-  const { data: pt } = await sb
-    .from("magic_link_tokens")
-    .select("user_id, expires_at")
-    .eq("token", token)
-    .maybeSingle();
+  let userId: string | null = null;
 
-  if (!pt) return NextResponse.json({ error: "Geçersiz link" }, { status: 404 });
-  if (new Date(pt.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Linkin süresi dolmuş" }, { status: 400 });
+  // 1) Cookie session öncelikli
+  const session = await getSessionFromCookies();
+  if (session?.uid) {
+    userId = session.uid;
+  } else {
+    // 2) Token query fallback (legacy WA URL'leri)
+    const token = req.nextUrl.searchParams.get("t") || req.nextUrl.searchParams.get("token");
+    if (!token) return NextResponse.json({ error: "Oturum bulunamadı" }, { status: 401 });
+    const { data: pt } = await sb
+      .from("magic_link_tokens")
+      .select("user_id, expires_at")
+      .eq("token", token)
+      .maybeSingle();
+    if (!pt) return NextResponse.json({ error: "Geçersiz link" }, { status: 404 });
+    if (new Date(pt.expires_at) < new Date()) {
+      return NextResponse.json({ error: "Linkin süresi dolmuş" }, { status: 400 });
+    }
+    userId = pt.user_id;
   }
 
-  const userId = pt.user_id;
+  if (!userId) return NextResponse.json({ error: "Oturum çözülemedi" }, { status: 401 });
 
   // Paralel count sorguları + profile (web_slug için)
   const [propsRes, custRes, contractsRes, presRes, trackingRes, calendarRes, profileRes] = await Promise.all([

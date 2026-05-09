@@ -39,7 +39,9 @@ export function BottomTabBar({ tabs, token, onMore, accentClass }: BottomTabBarP
           const isActive = item.matchPath
             ? (pathname === item.matchPath || pathname.startsWith(item.matchPath + "/"))
             : false;
-          const href = token ? item.href(token) : "#";
+          // Token yoksa cookie session aktif — item.href("") absolute path döner
+          // (örn /tr/panel?t= boş query). Layout cookie session ile devam eder.
+          const href = item.href(token || "");
           return (
             <a
               key={item.id}
