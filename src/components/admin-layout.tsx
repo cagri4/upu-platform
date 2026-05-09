@@ -138,6 +138,7 @@ export function AdminLayout({
 }: AdminLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [qrScannerOpen, setQrScannerOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const firstName = (displayName || "").split(/\s+/)[0] || "";
   const pathname = usePathname() || "";
   const items = sidebarItems ?? DEFAULT_SIDEBAR_ITEMS;
@@ -301,20 +302,41 @@ export function AdminLayout({
             </button>
             <div className="flex-1" />
             <div className="flex items-center gap-2 text-slate-500">
-              <button
-                className={`p-2 hover:bg-slate-100 rounded-lg focus:outline-none focus:ring-2 ${accent.focusRing} min-w-[44px] min-h-[44px] flex items-center justify-center`}
-                title="Bildirimler (yakında)"
-                aria-label="Bildirimler"
+              <div className="relative">
+                <button
+                  className={`p-2 hover:bg-slate-100 rounded-lg focus:outline-none focus:ring-2 ${accent.focusRing} min-w-[44px] min-h-[44px] flex items-center justify-center`}
+                  title="Bildirimler"
+                  aria-label="Bildirimler"
+                  aria-expanded={notifOpen}
+                  onClick={() => setNotifOpen(v => !v)}
+                  type="button"
+                >
+                  🔔
+                </button>
+                {notifOpen && (
+                  <>
+                    <button
+                      className="fixed inset-0 z-30 bg-transparent"
+                      aria-label="Kapat"
+                      onClick={() => setNotifOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-lg z-40 p-4">
+                      <p className="text-sm font-semibold text-slate-900 mb-1">🔔 Bildirimler</p>
+                      <p className="text-sm text-slate-600">Henüz bildiriminiz yok.</p>
+                      <p className="text-xs text-slate-400 mt-2 italic">İleride: önemli olaylar burada görünecek.</p>
+                    </div>
+                  </>
+                )}
+              </div>
+              <a
+                href={`https://wa.me/${botPhone}`}
+                target="_blank" rel="noopener noreferrer"
+                className={`p-2 hover:bg-slate-100 rounded-lg focus:outline-none focus:ring-2 ${accent.focusRing} min-w-[44px] min-h-[44px] flex items-center justify-center text-green-600`}
+                title="WhatsApp'ta bot ile sohbet"
+                aria-label="WhatsApp'a Dön"
               >
-                🔔
-              </button>
-              <button
-                className={`p-2 hover:bg-slate-100 rounded-lg focus:outline-none focus:ring-2 ${accent.focusRing} min-w-[44px] min-h-[44px] flex items-center justify-center`}
-                title="AI yardımcı (yakında)"
-                aria-label="AI yardımcı"
-              >
-                🤖
-              </button>
+                💬
+              </a>
               <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-200">
                 <div className={`w-8 h-8 rounded-full ${accent.avatar} flex items-center justify-center text-sm font-semibold`}>
                   {firstName.charAt(0).toUpperCase() || "?"}

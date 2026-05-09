@@ -31,15 +31,32 @@ interface CardDef {
   staticValue?: (slug: string | null) => string | number;
 }
 
-const CARD_DEFS: CardDef[] = [
-  { key: "properties",   label: "Mülklerim",   icon: "🏢", iconSrc: "/icons/emlak/mulkler.png",    color: "from-indigo-500 to-blue-600",    href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}` },
-  { key: "customers",    label: "Müşterilerim", icon: "👥", iconSrc: "/icons/emlak/musteriler.png", color: "from-emerald-500 to-teal-600",   href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}` },
-  { key: "contracts",    label: "Sözleşmeler", icon: "📋", iconSrc: "/icons/emlak/sozlesme.png",   color: "from-amber-500 to-orange-600",   href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}` },
-  { key: "tracking",     label: "Takiplerim",  icon: "🎯", iconSrc: "/icons/emlak/takip.png",      color: "from-rose-500 to-pink-600",      href: t => `/tr/takip?t=${encodeURIComponent(t)}` },
-  { key: "presentations", label: "Sunumlarım", icon: "📊", iconSrc: "/icons/emlak/sunumlar.png",   color: "from-violet-500 to-fuchsia-600", href: t => `/tr/sunumlarim?t=${encodeURIComponent(t)}` },
-  { key: "calendar",     label: "Takvim",      icon: "📅", iconSrc: "/icons/emlak/takvim.png",     color: "from-sky-500 to-cyan-600",       href: t => `/tr/takvim?t=${encodeURIComponent(t)}` },
-  { key: "profil",       label: "Profilim",    icon: "👤", iconSrc: "/icons/emlak/profil.png",     color: "from-stone-600 to-stone-800",    href: t => `/tr/profil-duzenle?t=${encodeURIComponent(t)}`, staticValue: () => "Düzenle" },
-  { key: "websitem",     label: "Web Sitem",   icon: "🌐", iconSrc: "/icons/emlak/websitem.png",   color: "from-teal-500 to-emerald-700",   href: (t, slug) => slug ? `/u/${slug}` : `/api/panel/web-sitem?t=${encodeURIComponent(t)}`, staticValue: (slug) => slug ? "Aktif" : "Kur" },
+// App-icon stilinde pastel arka plan tonları (her kategoriye özel renk)
+const CARD_DEFS: Array<CardDef & { bg: string; valueColor: string; labelColor: string }> = [
+  { key: "properties",   label: "Mülklerim",   icon: "🏢", iconSrc: "/icons/emlak/mulkler.png",    color: "from-indigo-500 to-blue-600",
+    bg: "bg-gradient-to-br from-indigo-100 to-blue-200",      valueColor: "text-indigo-900",  labelColor: "text-indigo-800",
+    href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}` },
+  { key: "customers",    label: "Müşterilerim", icon: "👥", iconSrc: "/icons/emlak/musteriler.png", color: "from-emerald-500 to-teal-600",
+    bg: "bg-gradient-to-br from-emerald-100 to-teal-200",     valueColor: "text-emerald-900", labelColor: "text-emerald-800",
+    href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}` },
+  { key: "contracts",    label: "Sözleşmeler", icon: "📋", iconSrc: "/icons/emlak/sozlesme.png",   color: "from-amber-500 to-orange-600",
+    bg: "bg-gradient-to-br from-amber-100 to-orange-200",     valueColor: "text-amber-900",   labelColor: "text-amber-800",
+    href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}` },
+  { key: "tracking",     label: "Takiplerim",  icon: "🎯", iconSrc: "/icons/emlak/takip.png",      color: "from-rose-500 to-pink-600",
+    bg: "bg-gradient-to-br from-rose-100 to-pink-200",        valueColor: "text-rose-900",    labelColor: "text-rose-800",
+    href: t => `/tr/takip?t=${encodeURIComponent(t)}` },
+  { key: "presentations", label: "Sunumlarım", icon: "📊", iconSrc: "/icons/emlak/sunumlar.png",   color: "from-violet-500 to-fuchsia-600",
+    bg: "bg-gradient-to-br from-violet-100 to-fuchsia-200",   valueColor: "text-violet-900",  labelColor: "text-violet-800",
+    href: t => `/tr/sunumlarim?t=${encodeURIComponent(t)}` },
+  { key: "calendar",     label: "Takvim",      icon: "📅", iconSrc: "/icons/emlak/takvim.png",     color: "from-sky-500 to-cyan-600",
+    bg: "bg-gradient-to-br from-sky-100 to-cyan-200",         valueColor: "text-sky-900",     labelColor: "text-sky-800",
+    href: t => `/tr/takvim?t=${encodeURIComponent(t)}` },
+  { key: "profil",       label: "Profilim",    icon: "👤", iconSrc: "/icons/emlak/profil.png",     color: "from-stone-600 to-stone-800",
+    bg: "bg-gradient-to-br from-stone-100 to-stone-300",      valueColor: "text-stone-900",   labelColor: "text-stone-800",
+    href: t => `/tr/profil-duzenle?t=${encodeURIComponent(t)}`, staticValue: () => "Düzenle" },
+  { key: "websitem",     label: "Web Sitem",   icon: "🌐", iconSrc: "/icons/emlak/websitem.png",   color: "from-teal-500 to-emerald-700",
+    bg: "bg-gradient-to-br from-teal-100 to-emerald-200",     valueColor: "text-teal-900",    labelColor: "text-teal-800",
+    href: (t, slug) => slug ? `/u/${slug}` : `/api/panel/web-sitem?t=${encodeURIComponent(t)}`, staticValue: (slug) => slug ? "Aktif" : "Kur" },
 ];
 
 export default function PanelimPage() {
@@ -100,12 +117,12 @@ export default function PanelimPage() {
             <a
               key={card.key}
               href={href}
-              className={`block bg-gradient-to-br ${card.color} text-white rounded-2xl shadow-md hover:shadow-lg active:scale-95 transition relative ${
+              className={`block ${card.bg} aspect-square rounded-3xl shadow-sm hover:shadow-md active:scale-95 transition relative flex flex-col items-center justify-center gap-1 text-center ${
                 mini ? "p-2" : compact ? "p-3" : "p-4"
               }`}
             >
               {card.comingSoon && (
-                <span className={`absolute right-1.5 ${mini ? "top-1 text-[9px] px-1" : "top-2 text-[10px] px-1.5 py-0.5"} bg-white/20 rounded-full uppercase tracking-wide`}>
+                <span className={`absolute right-1.5 ${mini ? "top-1 text-[9px] px-1" : "top-2 text-[10px] px-1.5 py-0.5"} bg-white/70 text-slate-700 rounded-full uppercase tracking-wide font-medium`}>
                   Yakında
                 </span>
               )}
@@ -114,15 +131,15 @@ export default function PanelimPage() {
                 <img
                   src={card.iconSrc}
                   alt=""
-                  className={`${mini ? "w-6 h-6 mb-0.5" : compact ? "w-8 h-8 mb-1" : "w-10 h-10 mb-1.5"} drop-shadow-sm`}
+                  className={`${mini ? "w-10 h-10" : compact ? "w-12 h-12" : "w-16 h-16"} drop-shadow-sm`}
                 />
               ) : (
-                <div className={mini ? "text-base mb-0.5" : compact ? "text-xl mb-0.5" : "text-2xl mb-1"}>{card.icon}</div>
+                <div className={mini ? "text-3xl" : compact ? "text-4xl" : "text-5xl"}>{card.icon}</div>
               )}
-              <div className={`font-bold leading-none truncate ${
+              <div className={`font-bold leading-none ${card.valueColor} ${
                 mini ? "text-base" : compact ? "text-xl" : "text-2xl sm:text-3xl"
               }`}>{value}</div>
-              <div className={`opacity-90 ${mini ? "text-[10px] mt-0.5" : compact ? "text-[11px] mt-1" : "text-xs mt-1.5"}`}>{card.label}</div>
+              <div className={`font-medium ${card.labelColor} ${mini ? "text-[10px]" : compact ? "text-xs" : "text-sm"}`}>{card.label}</div>
             </a>
           );
         })}
@@ -131,26 +148,8 @@ export default function PanelimPage() {
       {/* PWA Install — mobile only, standalone'da gizlenir */}
       <PwaInstallCard />
 
-      {/* Sahibinden Otomatik Form — Chrome eklentisi tanıtım kartı */}
-      <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-5 shadow-sm">
-        <div className="flex items-start gap-4">
-          <div className="text-3xl flex-shrink-0">📋</div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-slate-900 mb-1">Sahibinden Otomatik Form</h3>
-            <p className="text-sm text-slate-600 leading-relaxed mb-3">
-              Mülk bilgilerinizi <span className="font-semibold text-slate-900">sahibinden.com</span> ilan formuna otomatik doldurur. Chrome eklentimizi yükleyin — 30 dakikalık ilan girişi 3 dakikaya iner.
-            </p>
-            <a
-              href="https://chromewebstore.google.com/detail/bcafoeijofbhelbanpfjhmhiokjnggbe"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-            >
-              🧩 Chrome Eklentisini Kur
-            </a>
-          </div>
-        </div>
-      </div>
+      {/* Sahibinden Otomatik Form — Chrome eklentisi tutorial */}
+      <SahibindenTutorialCard />
 
       {/* Bilgisayardan Kullan — feature highlight */}
       <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5 shadow-sm">
@@ -208,6 +207,69 @@ export default function PanelimPage() {
             </p>
           </li>
         </ul>
+      </div>
+    </div>
+  );
+}
+
+function SahibindenTutorialCard() {
+  const [open, setOpen] = useState(false);
+  const STEPS = [
+    { n: "1️⃣", title: "PC'de Chrome açın", desc: "Masaüstünden Chrome tarayıcısını başlatın." },
+    { n: "2️⃣", title: "Eklentiyi indirin", desc: "Chrome Web Store'dan ‘UPU Sahibinden Form Doldurucu' eklentisini açın.", link: { url: "https://chromewebstore.google.com/detail/bcafoeijofbhelbanpfjhmhiokjnggbe", label: "🧩 Chrome Web Store →" } },
+    { n: "3️⃣", title: "‘Chrome'a Ekle' butonuna tıklayın", desc: "Açılan onay penceresinde ‘Eklenti Ekle' deyin." },
+    { n: "4️⃣", title: "sahibinden.com'da ilan ver sayfasına gidin", desc: "Yeni sekmede ilan ver sayfasını açın.", link: { url: "https://www.sahibinden.com/ilan-ver", label: "🌐 Yeni sekme →" } },
+    { n: "5️⃣", title: "Eklenti üst köşede görünecek", desc: "Mülk seçin, tek tıkla form otomatik dolar." },
+  ];
+  return (
+    <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-5 shadow-sm">
+      <div className="flex items-start gap-4">
+        <div className="text-3xl flex-shrink-0">📋</div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-slate-900 mb-1">Sahibinden Otomatik Form</h3>
+          <p className="text-sm text-slate-600 leading-relaxed mb-3">
+            Mülk bilgilerinizi <span className="font-semibold text-slate-900">sahibinden.com</span> ilan formuna otomatik doldurur. Chrome eklentimizi yükleyin — 30 dakikalık ilan girişi 3 dakikaya iner.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href="https://chromewebstore.google.com/detail/bcafoeijofbhelbanpfjhmhiokjnggbe"
+              target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+            >
+              🧩 Chrome Eklentisini Kur
+            </a>
+            <button
+              type="button"
+              onClick={() => setOpen(v => !v)}
+              className="inline-flex items-center gap-1 text-xs text-amber-800 underline hover:text-amber-900"
+              aria-expanded={open}
+            >
+              {open ? "Daha az göster ▴" : "Nasıl çalışır? ▾"}
+            </button>
+          </div>
+          {open && (
+            <ol className="mt-4 space-y-3 text-sm border-t border-amber-200 pt-3">
+              {STEPS.map((s) => (
+                <li key={s.n} className="flex gap-3">
+                  <span className="flex-shrink-0 text-base">{s.n}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-900 leading-tight">{s.title}</p>
+                    <p className="text-slate-600 text-xs mt-0.5">{s.desc}</p>
+                    {s.link && (
+                      <a
+                        href={s.link.url}
+                        target="_blank" rel="noopener noreferrer"
+                        className="inline-block mt-1 text-xs text-amber-800 underline hover:text-amber-900 break-all"
+                      >
+                        {s.link.label}
+                      </a>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       </div>
     </div>
   );
