@@ -29,7 +29,10 @@ export function usePanelChrome(): PanelChromeContextValue {
 export interface SidebarItem {
   id: string;
   label: string;
+  /** Emoji fallback — iconSrc yoksa veya yüklenemezse gösterilir. */
   icon: string;
+  /** Opsiyonel görsel ikon yolu (örn '/icons/emlak/panelim.png'). Varsa emoji yerine kullanılır. */
+  iconSrc?: string;
   /** Mobil/desktop link. Token zorunluysa burada inject edilir. */
   href: (token: string) => string;
   /** Aktif highlight için path eşleşmesi. */
@@ -48,16 +51,16 @@ export interface SidebarItem {
  * giderildi — Sözleşmelerim placeholder sayfasına yönlendirir).
  */
 const DEFAULT_SIDEBAR_ITEMS: SidebarItem[] = [
-  { id: "panelim",     label: "Panelim",          icon: "🏠", href: t => `/tr/panel?t=${encodeURIComponent(t)}`,             matchPath: "/tr/panel" },
-  { id: "mulkler",     label: "Mülklerim",        icon: "🏢", href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}`,         matchPath: "/tr/mulklerim" },
-  { id: "musteriler",  label: "Müşterilerim",     icon: "👥", href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}`,      matchPath: "/tr/musterilerim" },
-  { id: "sozlesme",    label: "Sözleşmelerim",    icon: "📋", href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}`,    matchPath: "/tr/sozlesmelerim" },
-  { id: "sunumlar",    label: "Sunumlarım",       icon: "📊", href: t => `/tr/sunumlarim?t=${encodeURIComponent(t)}`,        matchPath: "/tr/sunumlarim" },
-  { id: "takip",       label: "Takiplerim",       icon: "🎯", href: t => `/tr/takip?t=${encodeURIComponent(t)}`,             matchPath: "/tr/takip" },
-  { id: "ara",         label: "Portföy Tara",     icon: "🔍", href: t => `/tr/ara?t=${encodeURIComponent(t)}`,               matchPath: "/tr/ara" },
-  { id: "takvim",      label: "Takvim",           icon: "📅", href: t => `/tr/takvim?t=${encodeURIComponent(t)}`,            matchPath: "/tr/takvim" },
-  { id: "profil",      label: "Profilim",         icon: "👤", href: t => `/tr/profil-duzenle?t=${encodeURIComponent(t)}`,    matchPath: "/tr/profil-duzenle" },
-  { id: "websitem",    label: "Web Sitem",        icon: "🌐", href: t => `/api/panel/web-sitem?t=${encodeURIComponent(t)}` },
+  { id: "panelim",     label: "Panelim",          icon: "🏠", iconSrc: "/icons/emlak/panelim.png",    href: t => `/tr/panel?t=${encodeURIComponent(t)}`,             matchPath: "/tr/panel" },
+  { id: "mulkler",     label: "Mülklerim",        icon: "🏢", iconSrc: "/icons/emlak/mulkler.png",    href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}`,         matchPath: "/tr/mulklerim" },
+  { id: "musteriler",  label: "Müşterilerim",     icon: "👥", iconSrc: "/icons/emlak/musteriler.png", href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}`,      matchPath: "/tr/musterilerim" },
+  { id: "sozlesme",    label: "Sözleşmelerim",    icon: "📋", iconSrc: "/icons/emlak/sozlesme.png",   href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}`,    matchPath: "/tr/sozlesmelerim" },
+  { id: "sunumlar",    label: "Sunumlarım",       icon: "📊", iconSrc: "/icons/emlak/sunumlar.png",   href: t => `/tr/sunumlarim?t=${encodeURIComponent(t)}`,        matchPath: "/tr/sunumlarim" },
+  { id: "takip",       label: "Takiplerim",       icon: "🎯", iconSrc: "/icons/emlak/takip.png",      href: t => `/tr/takip?t=${encodeURIComponent(t)}`,             matchPath: "/tr/takip" },
+  { id: "ara",         label: "Portföy Tara",     icon: "🔍", iconSrc: "/icons/emlak/ara.png",        href: t => `/tr/ara?t=${encodeURIComponent(t)}`,               matchPath: "/tr/ara" },
+  { id: "takvim",      label: "Takvim",           icon: "📅", iconSrc: "/icons/emlak/takvim.png",     href: t => `/tr/takvim?t=${encodeURIComponent(t)}`,            matchPath: "/tr/takvim" },
+  { id: "profil",      label: "Profilim",         icon: "👤", iconSrc: "/icons/emlak/profil.png",     href: t => `/tr/profil-duzenle?t=${encodeURIComponent(t)}`,    matchPath: "/tr/profil-duzenle" },
+  { id: "websitem",    label: "Web Sitem",        icon: "🌐", iconSrc: "/icons/emlak/websitem.png",   href: t => `/api/panel/web-sitem?t=${encodeURIComponent(t)}` },
   { id: "hakkinda",    label: "UPUDev Hakkında",  icon: "ℹ️",  href: t => `/tr/hakkinda?t=${encodeURIComponent(t)}`,           matchPath: "/tr/hakkinda", separatorBefore: true },
   { id: "oneri",       label: "Öneri / Şikayet",  icon: "💬", href: t => `/tr/oneri?t=${encodeURIComponent(t)}`,             matchPath: "/tr/oneri" },
   { id: "destek",      label: "Destek Talebi",    icon: "🛟", href: t => `/tr/destek?t=${encodeURIComponent(t)}`,            matchPath: "/tr/destek" },
@@ -242,7 +245,12 @@ export function AdminLayout({
                       : "text-stone-300 hover:bg-stone-800 hover:text-white"
                   }`}
                 >
-                  <span className="text-base">{item.icon}</span>
+                  {item.iconSrc ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.iconSrc} alt="" className="w-5 h-5 flex-shrink-0" />
+                  ) : (
+                    <span className="text-base">{item.icon}</span>
+                  )}
                   <span className="md:hidden lg:inline">{item.label}</span>
                 </a>
               </div>

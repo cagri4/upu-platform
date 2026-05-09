@@ -17,10 +17,10 @@ import { useSearchParams } from "next/navigation";
 import { AdminLayout, type SidebarItem } from "@/components/admin-layout";
 
 const EMLAK_BOTTOM_TABS: SidebarItem[] = [
-  { id: "panelim",    label: "Panelim",       icon: "🏠", href: t => `/tr/panel?t=${encodeURIComponent(t)}`,         matchPath: "/tr/panel" },
-  { id: "mulkler",    label: "Mülkler",       icon: "🏢", href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}`,     matchPath: "/tr/mulklerim" },
-  { id: "musteriler", label: "Müşteriler",    icon: "👥", href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}`,  matchPath: "/tr/musterilerim" },
-  { id: "sozlesme",   label: "Sözleşmeler",   icon: "📋", href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}`, matchPath: "/tr/sozlesmelerim" },
+  { id: "panelim",    label: "Panelim",     icon: "🏠", iconSrc: "/icons/emlak/panelim.png",    href: t => `/tr/panel?t=${encodeURIComponent(t)}`,         matchPath: "/tr/panel" },
+  { id: "mulkler",    label: "Mülkler",     icon: "🏢", iconSrc: "/icons/emlak/mulkler.png",    href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}`,     matchPath: "/tr/mulklerim" },
+  { id: "musteriler", label: "Müşteriler",  icon: "👥", iconSrc: "/icons/emlak/musteriler.png", href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}`,  matchPath: "/tr/musterilerim" },
+  { id: "sozlesme",   label: "Sözleşmeler", icon: "📋", iconSrc: "/icons/emlak/sozlesme.png",   href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}`, matchPath: "/tr/sozlesmelerim" },
 ];
 
 type InitState = "loading" | "ready" | "error";

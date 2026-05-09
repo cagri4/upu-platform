@@ -50,7 +50,12 @@ export function BottomTabBar({ tabs, token, onMore, accentClass }: BottomTabBarP
                 isActive ? accentClass : "text-slate-500 hover:text-slate-900"
               }`}
             >
-              <span className="text-xl leading-none">{item.icon}</span>
+              {item.iconSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={item.iconSrc} alt="" className="w-6 h-6" />
+              ) : (
+                <span className="text-xl leading-none">{item.icon}</span>
+              )}
               <span className="text-[10px] font-medium leading-tight truncate max-w-full">
                 {item.label}
               </span>

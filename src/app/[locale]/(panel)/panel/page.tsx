@@ -20,6 +20,7 @@ interface CardDef {
   key: CardKey;
   label: string;
   icon: string;
+  iconSrc?: string;
   color: string;
   /** Token + opsiyonel webSlug ile href üretir. */
   href: (t: string, slug: string | null) => string;
@@ -30,14 +31,14 @@ interface CardDef {
 }
 
 const CARD_DEFS: CardDef[] = [
-  { key: "properties",   label: "Mülklerim",         icon: "🏢", color: "from-indigo-500 to-blue-600",       href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}` },
-  { key: "customers",    label: "Müşterilerim",      icon: "👥", color: "from-emerald-500 to-teal-600",      href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}` },
-  { key: "contracts",    label: "Sözleşmeler",       icon: "📋", color: "from-amber-500 to-orange-600",      href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}` },
-  { key: "tracking",     label: "Takiplerim",        icon: "🎯", color: "from-rose-500 to-pink-600",         href: t => `/tr/takip?t=${encodeURIComponent(t)}` },
-  { key: "presentations", label: "Sunumlarım",       icon: "📊", color: "from-violet-500 to-fuchsia-600",    href: t => `/tr/sunumlarim?t=${encodeURIComponent(t)}` },
-  { key: "calendar",     label: "Takvim",            icon: "📅", color: "from-sky-500 to-cyan-600",          href: t => `/tr/takvim?t=${encodeURIComponent(t)}` },
-  { key: "profil",       label: "Profilim",          icon: "👤", color: "from-stone-600 to-stone-800",       href: t => `/tr/profil-duzenle?t=${encodeURIComponent(t)}`, staticValue: () => "Düzenle" },
-  { key: "websitem",     label: "Web Sitem",         icon: "🌐", color: "from-teal-500 to-emerald-700",      href: (t, slug) => slug ? `/u/${slug}` : `/api/panel/web-sitem?t=${encodeURIComponent(t)}`, staticValue: (slug) => slug ? "Aktif" : "Kur" },
+  { key: "properties",   label: "Mülklerim",   icon: "🏢", iconSrc: "/icons/emlak/mulkler.png",    color: "from-indigo-500 to-blue-600",    href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}` },
+  { key: "customers",    label: "Müşterilerim", icon: "👥", iconSrc: "/icons/emlak/musteriler.png", color: "from-emerald-500 to-teal-600",   href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}` },
+  { key: "contracts",    label: "Sözleşmeler", icon: "📋", iconSrc: "/icons/emlak/sozlesme.png",   color: "from-amber-500 to-orange-600",   href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}` },
+  { key: "tracking",     label: "Takiplerim",  icon: "🎯", iconSrc: "/icons/emlak/takip.png",      color: "from-rose-500 to-pink-600",      href: t => `/tr/takip?t=${encodeURIComponent(t)}` },
+  { key: "presentations", label: "Sunumlarım", icon: "📊", iconSrc: "/icons/emlak/sunumlar.png",   color: "from-violet-500 to-fuchsia-600", href: t => `/tr/sunumlarim?t=${encodeURIComponent(t)}` },
+  { key: "calendar",     label: "Takvim",      icon: "📅", iconSrc: "/icons/emlak/takvim.png",     color: "from-sky-500 to-cyan-600",       href: t => `/tr/takvim?t=${encodeURIComponent(t)}` },
+  { key: "profil",       label: "Profilim",    icon: "👤", iconSrc: "/icons/emlak/profil.png",     color: "from-stone-600 to-stone-800",    href: t => `/tr/profil-duzenle?t=${encodeURIComponent(t)}`, staticValue: () => "Düzenle" },
+  { key: "websitem",     label: "Web Sitem",   icon: "🌐", iconSrc: "/icons/emlak/websitem.png",   color: "from-teal-500 to-emerald-700",   href: (t, slug) => slug ? `/u/${slug}` : `/api/panel/web-sitem?t=${encodeURIComponent(t)}`, staticValue: (slug) => slug ? "Aktif" : "Kur" },
 ];
 
 export default function PanelimPage() {
@@ -107,7 +108,16 @@ export default function PanelimPage() {
                   Yakında
                 </span>
               )}
-              <div className={mini ? "text-base mb-0.5" : compact ? "text-xl mb-0.5" : "text-2xl mb-1"}>{card.icon}</div>
+              {card.iconSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={card.iconSrc}
+                  alt=""
+                  className={`${mini ? "w-6 h-6 mb-0.5" : compact ? "w-8 h-8 mb-1" : "w-10 h-10 mb-1.5"} drop-shadow-sm`}
+                />
+              ) : (
+                <div className={mini ? "text-base mb-0.5" : compact ? "text-xl mb-0.5" : "text-2xl mb-1"}>{card.icon}</div>
+              )}
               <div className={`font-bold leading-none truncate ${
                 mini ? "text-base" : compact ? "text-xl" : "text-2xl sm:text-3xl"
               }`}>{value}</div>
