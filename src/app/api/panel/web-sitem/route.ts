@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     if (!pt || new Date(pt.expires_at) < new Date()) {
       return NextResponse.redirect(`${APP_URL}/tr/panel`);
     }
-    userId = userId;
+    userId = pt.user_id;
   }
 
   const { data: profile } = await sb
