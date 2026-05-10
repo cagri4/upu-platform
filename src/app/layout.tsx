@@ -35,8 +35,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html className={`${inter.className} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html className={`${inter.className} h-full antialiased bg-white`}>
+      <body className="min-h-full flex flex-col bg-white">{children}</body>
     </html>
   );
 }

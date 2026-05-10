@@ -12,15 +12,21 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* App'in proper bir dark theme'i yok — OS dark mode'da bg'yi siyah'a
+   çevirmek PWA standalone'da panel ve /u/[slug] sayfalarını "siyah ekran"
+   gibi gösteriyor (page wrapper'lar bg-stone-50/slate-50, ama html/body
+   gutter ve safe-area dark görünüyordu). Tüm kontekslerde explicit beyaz. */
+html, body {
+  background: #ffffff;
+}
+
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  html, body {
+    background: #ffffff !important;
   }
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
