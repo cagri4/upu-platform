@@ -39,7 +39,7 @@ interface Lead {
 
 export default function AraPage() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("t") || searchParams.get("token");
+  const token = searchParams.get("t") || searchParams.get("token") || "";
 
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState("");
@@ -52,8 +52,8 @@ export default function AraPage() {
   const [rooms, setRooms] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/setup/init?token=${encodeURIComponent(token)}`)
+    // cookie-aware: token yoksa endpoint cookie session kabul eder
+    fetch(`/api/setup/init?token=${encodeURIComponent(token)}`, { credentials: "same-origin" })
       .then(async r => {
         const d = await r.json();
         if (!r.ok) { setStatus("error"); setError(d.error || "Link doğrulanamadı."); return; }

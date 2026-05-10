@@ -25,8 +25,8 @@ export default function SozlesmelerimPage() {
   const [items, setItems] = useState<Contract[]>([]);
 
   useEffect(() => {
-    if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/sozlesmelerim/list?t=${encodeURIComponent(token)}`)
+    // cookie-aware: token yoksa endpoint cookie session kabul eder
+    fetch(`/api/sozlesmelerim/list?t=${encodeURIComponent(token)}`, { credentials: "same-origin" })
       .then(async r => {
         const d = await r.json();
         if (!r.ok) { setStatus("error"); setError(d.error || "Yüklenemedi."); return; }

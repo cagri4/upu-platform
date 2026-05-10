@@ -20,15 +20,15 @@ type Status = "loading" | "ready" | "error";
 
 export default function SunumlarimPage() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("t") || searchParams.get("token");
+  const token = searchParams.get("t") || searchParams.get("token") || "";
 
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState("");
   const [items, setItems] = useState<PresItem[]>([]);
 
   useEffect(() => {
-    if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/sunumlarim/init?t=${encodeURIComponent(token)}`)
+    // cookie-aware: token yoksa endpoint cookie session kabul eder
+    fetch(`/api/sunumlarim/init?t=${encodeURIComponent(token)}`, { credentials: "same-origin" })
       .then(async (r) => {
         const d = await r.json();
         if (!r.ok) { setStatus("error"); setError(d.error || "Link doğrulanamadı."); return; }

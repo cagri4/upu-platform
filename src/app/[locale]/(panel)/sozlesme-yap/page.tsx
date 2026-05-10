@@ -51,8 +51,8 @@ export default function SozlesmeYapPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/sozlesme/init?t=${encodeURIComponent(token)}`)
+    // cookie-aware: token yoksa endpoint cookie session kabul eder
+    fetch(`/api/sozlesme/init?t=${encodeURIComponent(token)}`, { credentials: "same-origin" })
       .then(async r => {
         const d = await r.json();
         if (!r.ok) { setStatus("error"); setError(d.error || "Yüklenemedi."); return; }

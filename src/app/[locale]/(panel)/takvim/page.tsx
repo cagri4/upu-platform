@@ -51,7 +51,7 @@ export default function TakvimPage() {
   const [scheduledLocal, setScheduledLocal] = useState(""); // datetime-local format
 
   async function loadList() {
-    if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
+    // cookie-aware: token yoksa endpoint cookie session kabul eder
     try {
       const res = await fetch(`/api/calendar/list?t=${encodeURIComponent(token)}`);
       const d = await res.json();

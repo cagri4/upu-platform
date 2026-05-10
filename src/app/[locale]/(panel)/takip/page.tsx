@@ -87,7 +87,7 @@ export default function TakipPage() {
   const [sonucByTakip, setSonucByTakip] = useState<Record<string, SonucState>>({});
 
   async function loadList() {
-    if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
+    // cookie-aware: token yoksa endpoint cookie session kabul eder
     try {
       const res = await fetch(`/api/takip/init?t=${encodeURIComponent(token)}`);
       const d = await res.json();
