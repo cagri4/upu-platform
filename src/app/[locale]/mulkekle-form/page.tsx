@@ -77,15 +77,11 @@ export default function MulkEkleFormPage() {
   const [photoError, setPhotoError] = useState("");
 
   useEffect(() => {
-    if (!token) {
-      setStatus("error");
-      setError("Link geçersiz.");
-      return;
-    }
+    const tokenQs = token ? `&t=${encodeURIComponent(token)}` : "";
 
     // Düzenleme modu: mevcut mülkün verilerini yükle
     if (isEdit) {
-      fetch(`/api/mulklerim/get?id=${encodeURIComponent(editId!)}&t=${encodeURIComponent(token)}`)
+      fetch(`/api/mulklerim/get?id=${encodeURIComponent(editId!)}${tokenQs}`, { credentials: "same-origin" })
         .then(async (r) => {
           const data = await r.json();
           if (!r.ok) { setStatus("error"); setError(data.error || "Mülk yüklenemedi."); return; }
@@ -122,7 +118,8 @@ export default function MulkEkleFormPage() {
       return;
     }
 
-    fetch(`/api/setup/init?token=${encodeURIComponent(token)}`)
+    const setupQs = token ? `?token=${encodeURIComponent(token)}` : "";
+    fetch(`/api/setup/init${setupQs}`, { credentials: "same-origin" })
       .then(async (r) => {
         const data = await r.json();
         if (!r.ok) { setStatus("error"); setError(data.error || "Link doğrulanamadı."); return; }
@@ -169,7 +166,7 @@ export default function MulkEkleFormPage() {
           const fd = new FormData();
           fd.append("token", token || "");
           fd.append("file", file);
-          const res = await fetch("/api/mulkekle/upload-photo", { method: "POST", body: fd });
+          const res = await fetch("/api/mulkekle/upload-photo", { method: "POST", body: fd, credentials: "same-origin" });
           const data = await res.json().catch(() => ({ error: "Sunucu cevabı okunamadı." }));
           if (!res.ok) {
             setPhotoError(`Fotoğraf ${i + 1}: ${data.error || `Hata ${res.status}`}`);
@@ -207,6 +204,7 @@ export default function MulkEkleFormPage() {
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           token,
           ...(isEdit ? { id: editId } : {}),
@@ -262,11 +260,11 @@ export default function MulkEkleFormPage() {
         : "Bu mülke ait sunumu sizin için hazırlamaya başladım bile.. Birazdan panel > Sunumlarım bölümünden inceleyebilirsiniz."}
     </p>
     <div className="space-y-2">
-      <a href={`/tr/panel?t=${encodeURIComponent(token || "")}`} className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
+      <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`} className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
         🖥 Panele Dön
       </a>
       {!isEdit && (
-        <a href={`/api/panel/start?cmd=mulkekle&t=${encodeURIComponent(token || "")}`} className="block w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
+        <a href={token ? `/api/panel/start?cmd=mulkekle&t=${encodeURIComponent(token)}` : `/api/panel/start?cmd=mulkekle`} className="block w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
           ➕ Yeni Mülk Ekle
         </a>
       )}
@@ -406,7 +404,7 @@ export default function MulkEkleFormPage() {
               className="bg-green-600 text-white py-4 rounded-xl font-semibold text-base shadow-lg disabled:opacity-60 active:scale-95 transition">
               {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet"}
             </button>
-            <a href={`/tr/panel?t=${encodeURIComponent(token || "")}`}
+            <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`}
               className="flex items-center justify-center bg-white border border-slate-300 text-slate-700 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition">
               🖥 Panele
             </a>

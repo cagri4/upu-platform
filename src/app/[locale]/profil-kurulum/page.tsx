@@ -20,8 +20,8 @@ export default function ProfilKurulumPage() {
   const [briefingEnabled, setBriefingEnabled] = useState(true);
 
   useEffect(() => {
-    if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/setup/init?token=${encodeURIComponent(token)}`)
+    const tokenQs = token ? `?token=${encodeURIComponent(token)}` : "";
+    fetch(`/api/setup/init${tokenQs}`, { credentials: "same-origin" })
       .then(async r => {
         const d = await r.json();
         if (!r.ok) { setStatus("error"); setError(d.error || "Link doğrulanamadı."); return; }
@@ -43,6 +43,7 @@ export default function ProfilKurulumPage() {
       const res = await fetch(`/api/profil/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           token,
           display_name: displayName.trim(),

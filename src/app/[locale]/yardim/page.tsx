@@ -15,7 +15,7 @@ export default function YardimIndexPage() {
 
   useEffect(() => {
     if (!token) { setStatus("ready"); return; } // Token zorunlu değil — public sayfa
-    fetch(`/api/yardim/init?t=${encodeURIComponent(token)}`)
+    fetch(`/api/yardim/init?t=${encodeURIComponent(token)}`, { credentials: "same-origin" })
       .then(async (r) => {
         if (!r.ok) { const d = await r.json(); setError(d.error || "Link doğrulanamadı."); setStatus("error"); return; }
         setStatus("ready");

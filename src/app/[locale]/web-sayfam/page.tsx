@@ -28,8 +28,8 @@ export default function WebSayfamPage() {
   const [finishing, setFinishing] = useState(false);
 
   useEffect(() => {
-    if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/websayfam/init?t=${encodeURIComponent(token)}`)
+    const tokenQs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/websayfam/init${tokenQs}`, { credentials: "same-origin" })
       .then(async (r) => {
         const d = await r.json();
         if (!r.ok) { setStatus("error"); setError(d.error || "Link doğrulanamadı."); return; }
@@ -65,6 +65,7 @@ export default function WebSayfamPage() {
       await fetch("/api/websayfam/finish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ token }),
       });
     } catch {
@@ -127,7 +128,7 @@ export default function WebSayfamPage() {
             💬 WhatsApp&apos;ta Paylaş
           </button>
           <a
-            href={`/tr/profil-duzenle?t=${token || ""}`}
+            href={token ? `/tr/profil-duzenle?t=${encodeURIComponent(token)}` : `/tr/profil-duzenle`}
             className="block bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-medium text-sm text-center active:scale-95"
           >
             ✏️ Profil bilgilerini düzenle

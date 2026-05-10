@@ -49,12 +49,9 @@ export default function SetupPage() {
   const [briefingEnabled, setBriefingEnabled] = useState(true);
 
   useEffect(() => {
-    if (!token) {
-      setStatus("error");
-      setError("Link geçersiz. Tokensız erişim yasak.");
-      return;
-    }
-    fetch(`/api/setup/init?token=${encodeURIComponent(token)}`)
+    // Cookie session veya legacy ?token= akışı — token yoksa cookie ile devam etmeyi dene.
+    const tokenQs = token ? `?token=${encodeURIComponent(token)}` : "";
+    fetch(`/api/setup/init${tokenQs}`, { credentials: "same-origin" })
       .then(async (r) => {
         const data = await r.json();
         if (!r.ok) {
@@ -89,6 +86,7 @@ export default function SetupPage() {
       const res = await fetch(`/api/setup/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           token,
           display_name: displayName.trim(),

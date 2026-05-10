@@ -42,8 +42,8 @@ export default function MusteriEkleFormPage() {
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
-    if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/musteri/init?t=${encodeURIComponent(token)}`)
+    const tokenQs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/musteri/init${tokenQs}`, { credentials: "same-origin" })
       .then(async (r) => {
         const d = await r.json();
         if (!r.ok) { setStatus("error"); setError(d.error || "Link doğrulanamadı."); return; }
@@ -78,6 +78,7 @@ export default function MusteriEkleFormPage() {
       const res = await fetch("/api/musteri/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           token,
           name: name.trim(),
@@ -113,10 +114,10 @@ export default function MusteriEkleFormPage() {
     <h1 className="text-xl font-bold mb-2 text-slate-900">Müşteri kaydedildi!</h1>
     <p className="text-slate-600 text-sm mb-6">Müşterileriniz panelde listelenir.</p>
     <div className="space-y-2">
-      <a href={`/tr/panel?t=${encodeURIComponent(token || "")}`} className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
+      <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`} className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
         🖥 Panele Dön
       </a>
-      <a href={`/api/panel/start?cmd=musteriEkle&t=${encodeURIComponent(token || "")}`} className="block w-full bg-teal-600 hover:bg-teal-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
+      <a href={token ? `/api/panel/start?cmd=musteriEkle&t=${encodeURIComponent(token)}` : `/api/panel/start?cmd=musteriEkle`} className="block w-full bg-teal-600 hover:bg-teal-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
         ➕ Yeni Müşteri Ekle
       </a>
       <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="block w-full bg-green-600 hover:bg-green-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
@@ -211,7 +212,7 @@ export default function MusteriEkleFormPage() {
               className="bg-emerald-600 text-white py-4 rounded-xl font-semibold text-base shadow-lg disabled:opacity-60 active:scale-95 transition">
               {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet"}
             </button>
-            <a href={`/tr/panel?t=${encodeURIComponent(token || "")}`}
+            <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`}
               className="flex items-center justify-center bg-white border border-slate-300 text-slate-700 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition">
               🖥 Panele
             </a>

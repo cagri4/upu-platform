@@ -30,8 +30,8 @@ export default function ProfilDuzenlePage() {
   const [photoError, setPhotoError] = useState("");
 
   useEffect(() => {
-    if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/profilduzenle/init?t=${encodeURIComponent(token)}`)
+    const tokenQs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/profilduzenle/init${tokenQs}`, { credentials: "same-origin" })
       .then(async (r) => {
         const d = await r.json();
         if (!r.ok) { setStatus("error"); setError(d.error || "Link doğrulanamadı."); return; }
@@ -58,7 +58,7 @@ export default function ProfilDuzenlePage() {
       const fd = new FormData();
       fd.append("token", token || "");
       fd.append("file", file);
-      const res = await fetch("/api/profilduzenle/upload-photo", { method: "POST", body: fd });
+      const res = await fetch("/api/profilduzenle/upload-photo", { method: "POST", body: fd, credentials: "same-origin" });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
         setPhotoError(d.error || `Hata ${res.status}`);
@@ -82,6 +82,7 @@ export default function ProfilDuzenlePage() {
       const res = await fetch("/api/profilduzenle/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           token,
           full_name: fullName.trim(),
@@ -114,7 +115,7 @@ export default function ProfilDuzenlePage() {
     <h1 className="text-xl font-bold mb-2 text-slate-900">Profil kaydedildi!</h1>
     <p className="text-slate-600 text-sm mb-6">Web sayfanız hazır.</p>
     <div className="space-y-2">
-      <a href={`/tr/panel?t=${encodeURIComponent(token || "")}`} className="block w-full bg-violet-600 hover:bg-violet-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
+      <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`} className="block w-full bg-violet-600 hover:bg-violet-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
         🖥 Panele Dön
       </a>
       <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="block w-full bg-green-600 hover:bg-green-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
