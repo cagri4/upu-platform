@@ -15,7 +15,7 @@ interface KPIs {
   calendar: number;
 }
 
-type CardKey = keyof KPIs | "profil" | "websitem";
+type CardKey = keyof KPIs | "profil" | "websitem" | "bildirimler";
 
 interface CardDef {
   key: CardKey;
@@ -57,6 +57,9 @@ const CARD_DEFS: Array<CardDef & { bg: string; valueColor: string; labelColor: s
   { key: "websitem",     label: "Web Sitem",   icon: "🌐", iconSrc: "/icons/emlak/websitem.png",   color: "from-teal-500 to-emerald-700",
     bg: "bg-gradient-to-br from-teal-100 to-emerald-200",     valueColor: "text-teal-900",    labelColor: "text-teal-800",
     href: (t, slug) => slug ? `/u/${slug}` : `/api/panel/web-sitem?t=${encodeURIComponent(t)}`, staticValue: (slug) => slug ? "Aktif" : "Kur" },
+  { key: "bildirimler",  label: "Bildirimler", icon: "🔔",                                       color: "from-yellow-500 to-amber-600",
+    bg: "bg-gradient-to-br from-yellow-100 to-amber-200",     valueColor: "text-amber-900",   labelColor: "text-amber-800",
+    href: t => t ? `/tr/bildirimler?t=${encodeURIComponent(t)}` : `/tr/bildirimler`, staticValue: () => "Ayarla" },
 ];
 
 export default function PanelimPage() {
