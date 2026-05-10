@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { after } from "next/server";
 import { randomBytes } from "crypto";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { getSessionFromCookies } from "@/platform/auth/session";
 import { sendUrlButton } from "@/platform/whatsapp/send";
 import type { Metadata } from "next";
 import { ShareFAB } from "./share-fab";
@@ -158,6 +159,13 @@ export default async function PresentationPage({ params }: PageProps) {
   const pres = await getPresentation(token);
   if (!pres) notFound();
 
+  // Owner detection: aynı route hem panelden hem public link'ten açılıyor.
+  // Cookie session'daki uid pres.user_id ile eşleşirse owner sayılır → geri
+  // butonu, edit/delete ve paylaş gibi kontroller görünür. Public ziyaretçide
+  // (cookie yok veya başka kullanıcı) bunlar render edilmez.
+  const session = await getSessionFromCookies();
+  const isOwner = !!session && session.uid === pres.user_id;
+
   const content = pres.content as PresentationContent;
   const properties = content.properties || [];
   const firstProp = properties[0];
@@ -253,26 +261,31 @@ export default async function PresentationPage({ params }: PageProps) {
   return (
     <html lang="tr">
       <body className="bg-stone-50 text-stone-900 antialiased">
-        {/* Mobil portrait modda yatay çevir uyarısı */}
-        <div className="portrait-rotate-hint fixed top-3 inset-x-3 z-30 bg-stone-900/95 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 print:hidden">
-          <span className="text-base">📱↔️</span>
-          <span className="leading-tight">En iyi görünüm için telefonunuzu <strong>yan çevirin</strong>.</span>
-        </div>
-        <style>{`
-          @media (orientation: landscape), (min-width: 768px) {
-            .portrait-rotate-hint { display: none !important; }
-          }
-        `}</style>
+        {/* Owner-only sticky back bar */}
+        {isOwner && (
+          <div className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-stone-200 print:hidden">
+            <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between">
+              <a
+                href="/tr/sunumlarim"
+                className="inline-flex items-center gap-2 text-sm font-medium text-stone-700 hover:text-stone-900"
+              >
+                <span aria-hidden="true">←</span>
+                <span>Sunumlarım</span>
+              </a>
+              <span className="text-xs text-stone-400">Sahip görünümü</span>
+            </div>
+          </div>
+        )}
 
-        <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
+        <div className="max-w-6xl mx-auto py-6 md:py-8 px-3 md:px-4 space-y-5 md:space-y-6">
 
           {/* ── Slide 1: Cover (büyük foto sol, tipografi sağ + dekoratif kareler) ─── */}
           {!isDeleted("cover") && (
-          <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
-            <SlideControls presToken={token} slideKey="cover" initialText={displayTitle} editable />
-            <div className="h-full grid grid-cols-2">
+          <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden md:aspect-[16/9]">
+            {isOwner && <SlideControls presToken={token} slideKey="cover" initialText={displayTitle} editable />}
+            <div className="grid grid-cols-1 md:grid-cols-2 md:h-full">
               {/* Left: framed photo with beige bg */}
-              <div className="bg-[#B89B89] flex items-center justify-center p-6 md:p-10">
+              <div className="bg-[#B89B89] flex items-center justify-center p-6 md:p-10 aspect-[4/3] md:aspect-auto">
                 <div className="w-full h-full max-h-[85%] bg-white shadow-lg overflow-hidden">
                   {photos[0] ? (
                     <img src={photos[0]} alt={displayTitle} className="w-full h-full object-cover" />
@@ -284,7 +297,7 @@ export default async function PresentationPage({ params }: PageProps) {
                 </div>
               </div>
               {/* Right: typography heavy + decorative squares */}
-              <div className="relative flex flex-col justify-center p-8 md:p-12 bg-white">
+              <div className="relative flex flex-col justify-center p-6 md:p-12 bg-white">
                 {/* dekoratif kareler */}
                 <div className="absolute top-6 right-10 w-10 h-10 bg-[#B89B89]/30"></div>
                 <div className="absolute top-16 right-6 w-6 h-6 bg-[#B89B89]"></div>
@@ -292,7 +305,7 @@ export default async function PresentationPage({ params }: PageProps) {
                 <div className="absolute bottom-4 right-8 w-10 h-10 bg-[#B89B89]"></div>
 
                 <p className="text-xs uppercase tracking-[0.2em] text-stone-500 mb-4 font-semibold">Mülk Sunumu</p>
-                <h1 className="text-4xl md:text-6xl font-black text-stone-900 leading-[0.95] mb-4 tracking-tight uppercase">{displayTitle}</h1>
+                <h1 className="text-3xl md:text-6xl font-black text-stone-900 leading-[0.95] mb-4 tracking-tight uppercase">{displayTitle}</h1>
                 {subtitle && (
                   <p className="text-base md:text-lg text-stone-600 mb-6 font-medium">{subtitle}</p>
                 )}
@@ -304,19 +317,19 @@ export default async function PresentationPage({ params }: PageProps) {
 
           {/* ── Slide 2: Property Details — bej yarım blok + büyük foto sağ ─── */}
           {firstProp && !isDeleted("property") && (
-            <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
-              <SlideControls presToken={token} slideKey="property" initialText={firstProp.description || ""} editable />
-              <div className="h-full grid grid-cols-2">
+            <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden md:aspect-[16/9]">
+              {isOwner && <SlideControls presToken={token} slideKey="property" initialText={firstProp.description || ""} editable />}
+              <div className="grid grid-cols-1 md:grid-cols-2 md:h-full">
                 {/* Left: text on beige half-bg */}
-                <div className="bg-[#D4C0B0] flex flex-col justify-center p-8 md:p-12">
+                <div className="bg-[#D4C0B0] flex flex-col justify-center p-6 md:p-12">
                   <p className="text-xs uppercase tracking-[0.2em] text-stone-700 mb-3 font-semibold">
                     {firstProp.listing_type ? getListingLabel(firstProp.listing_type).toUpperCase() : "MÜLK"}
                   </p>
-                  <h2 className="text-3xl md:text-5xl font-black text-stone-900 leading-[0.95] mb-4 uppercase tracking-tight">
+                  <h2 className="text-2xl md:text-5xl font-black text-stone-900 leading-[0.95] mb-4 uppercase tracking-tight">
                     {firstProp.title}
                   </h2>
                   {firstProp.price && (
-                    <p className="text-3xl md:text-4xl font-black text-stone-900 mb-5">
+                    <p className="text-2xl md:text-4xl font-black text-stone-900 mb-5">
                       {formatPrice(firstProp.price)}
                     </p>
                   )}
@@ -334,7 +347,7 @@ export default async function PresentationPage({ params }: PageProps) {
                   )}
                 </div>
                 {/* Right: full-bleed photo */}
-                <div className="bg-stone-100 flex items-center justify-center overflow-hidden">
+                <div className="bg-stone-100 flex items-center justify-center overflow-hidden aspect-[4/3] md:aspect-auto">
                   {photos[1] ? (
                     <img src={photos[1]} alt={firstProp.title} className="w-full h-full object-cover" />
                   ) : photos[0] ? (
@@ -354,11 +367,11 @@ export default async function PresentationPage({ params }: PageProps) {
             if (isDeleted(slideKey)) return null;
             const photo = photos[2 + i] || photos[1] || photos[0];
             return (
-              <div key={`ai-${i}`} className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
-                <SlideControls presToken={token} slideKey={slideKey} initialText={chunk} editable />
-                <div className={`h-full grid grid-cols-2 ${i % 2 === 1 ? "lg:[&>div:first-child]:order-2" : ""}`}>
+              <div key={`ai-${i}`} className="relative bg-white rounded-2xl shadow-sm overflow-hidden md:aspect-[16/9]">
+                {isOwner && <SlideControls presToken={token} slideKey={slideKey} initialText={chunk} editable />}
+                <div className={`grid grid-cols-1 md:grid-cols-2 md:h-full ${i % 2 === 1 ? "lg:[&>div:first-child]:order-2" : ""}`}>
                   {/* Photo */}
-                  <div className="bg-stone-100 flex items-center justify-center overflow-hidden">
+                  <div className="bg-stone-100 flex items-center justify-center overflow-hidden aspect-[4/3] md:aspect-auto">
                     {photo ? (
                       <img src={photo} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -366,7 +379,7 @@ export default async function PresentationPage({ params }: PageProps) {
                     )}
                   </div>
                   {/* Text panel — bej yarı blok varyasyonlu */}
-                  <div className={`relative flex flex-col justify-center p-8 md:p-12 ${i === 1 ? "bg-[#D4C0B0]" : "bg-white"}`}>
+                  <div className={`relative flex flex-col justify-center p-6 md:p-12 ${i === 1 ? "bg-[#D4C0B0]" : "bg-white"}`}>
                     {/* dekoratif kareler bazı slaytlarda */}
                     {i === 0 && (
                       <>
@@ -391,9 +404,9 @@ export default async function PresentationPage({ params }: PageProps) {
             const slideKey = `extra:${i}`;
             if (isDeleted(slideKey)) return null;
             return (
-            <div key={`extra-${i}`} className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
-              <SlideControls presToken={token} slideKey={slideKey} />
-              <div className="h-full grid grid-cols-2 gap-1 bg-stone-200">
+            <div key={`extra-${i}`} className="relative bg-white rounded-2xl shadow-sm overflow-hidden aspect-[4/3] md:aspect-[16/9]">
+              {isOwner && <SlideControls presToken={token} slideKey={slideKey} />}
+              <div className="h-full grid grid-cols-1 md:grid-cols-2 gap-1 bg-stone-200">
                 {pair.map((src, j) => (
                   <div key={j} className="bg-stone-100 flex items-center justify-center overflow-hidden">
                     <img src={src} alt="" className="w-full h-full object-cover" />
@@ -411,14 +424,14 @@ export default async function PresentationPage({ params }: PageProps) {
 
           {/* ── Contact Slide — büyük TEŞEKKÜR + iletişim ─── */}
           {!isDeleted("closing") && (
-          <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
-            <SlideControls presToken={token} slideKey="closing" />
-            <div className="h-full grid grid-cols-2">
+          <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden md:aspect-[16/9]">
+            {isOwner && <SlideControls presToken={token} slideKey="closing" />}
+            <div className="grid grid-cols-1 md:grid-cols-2 md:h-full">
               {/* Sol: büyük TEŞEKKÜR + iletişim */}
-              <div className="relative flex flex-col justify-center p-8 md:p-12">
+              <div className="relative flex flex-col justify-center p-6 md:p-12">
                 <div className="absolute top-8 left-8 w-20 h-1.5 bg-[#B89B89]"></div>
                 <div className="absolute bottom-8 right-8 w-16 h-1.5 bg-[#B89B89]"></div>
-                <h2 className="text-5xl md:text-7xl font-black text-[#B89B89] leading-[0.9] mb-6 uppercase tracking-tight">
+                <h2 className="text-4xl md:text-7xl font-black text-[#B89B89] leading-[0.9] mb-6 uppercase tracking-tight">
                   Teşekkür<br/>Ederiz
                 </h2>
                 <p className="text-stone-600 text-sm md:text-base mb-6 max-w-md leading-relaxed">
@@ -446,7 +459,7 @@ export default async function PresentationPage({ params }: PageProps) {
                 </div>
               </div>
               {/* Sağ: foto kolajı + dekoratif */}
-              <div className="relative bg-stone-100 overflow-hidden">
+              <div className="relative bg-stone-100 overflow-hidden aspect-[4/3] md:aspect-auto">
                 {photos.length > 0 ? (
                   <div className="grid grid-rows-2 h-full gap-1 bg-stone-200">
                     {photos[0] && (
@@ -474,8 +487,8 @@ export default async function PresentationPage({ params }: PageProps) {
 
         </div>
 
-        {/* Floating share button (sol alt) */}
-        <ShareFAB title={displayTitle} />
+        {/* Floating share button (sol alt) — sadece owner görür */}
+        {isOwner && <ShareFAB title={displayTitle} />}
       </body>
     </html>
   );
