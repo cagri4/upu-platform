@@ -260,11 +260,12 @@ export default async function PresentationPage({ params }: PageProps) {
 
   return (
     <html lang="tr">
-      <body className="bg-stone-50 text-stone-900 antialiased">
-        {/* Owner-only sticky back bar */}
+      <body className="bg-stone-50 text-stone-900 antialiased overflow-hidden">
+        {/* Owner-only fixed back bar — sticky parent overflow-x ile bozulduğu
+            için fixed konumlanmış; z-50 ile slide content'in üstünde kalır. */}
         {isOwner && (
-          <div className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-stone-200 print:hidden">
-            <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between">
+          <div className="fixed top-0 left-0 right-0 z-50 h-11 bg-white/95 backdrop-blur border-b border-stone-200 print:hidden">
+            <div className="max-w-6xl mx-auto px-4 h-full flex items-center justify-between">
               <a
                 href="/tr/sunumlarim"
                 className="inline-flex items-center gap-2 text-sm font-medium text-stone-700 hover:text-stone-900"
@@ -277,11 +278,16 @@ export default async function PresentationPage({ params }: PageProps) {
           </div>
         )}
 
-        <div className="max-w-6xl mx-auto py-6 md:py-8 px-3 md:px-4 space-y-5 md:space-y-6">
+        {/* Yatay swipe carousel — her slide tam viewport, scroll-snap mandatory.
+            Mobilde doğal touch-swipe, desktop'ta yatay scroll. */}
+        <main
+          className={`flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory bg-stone-50 ${isOwner ? "h-[calc(100dvh-2.75rem)] mt-11" : "h-[100dvh]"}`}
+        >
 
           {/* ── Slide 1: Cover (büyük foto sol, tipografi sağ + dekoratif kareler) ─── */}
           {!isDeleted("cover") && (
-          <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden md:aspect-[16/9]">
+          <section className="w-screen h-full flex-shrink-0 snap-center overflow-y-auto px-3 md:px-6 py-4 md:py-6 flex">
+          <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden m-auto w-full max-w-4xl md:aspect-[16/9]">
             {isOwner && <SlideControls presToken={token} slideKey="cover" initialText={displayTitle} editable />}
             <div className="grid grid-cols-1 md:grid-cols-2 md:h-full">
               {/* Left: framed photo with beige bg */}
@@ -313,11 +319,13 @@ export default async function PresentationPage({ params }: PageProps) {
               </div>
             </div>
           </div>
+          </section>
           )}
 
           {/* ── Slide 2: Property Details — bej yarım blok + büyük foto sağ ─── */}
           {firstProp && !isDeleted("property") && (
-            <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden md:aspect-[16/9]">
+            <section className="w-screen h-full flex-shrink-0 snap-center overflow-y-auto px-3 md:px-6 py-4 md:py-6 flex">
+            <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden m-auto w-full max-w-4xl md:aspect-[16/9]">
               {isOwner && <SlideControls presToken={token} slideKey="property" initialText={firstProp.description || ""} editable />}
               <div className="grid grid-cols-1 md:grid-cols-2 md:h-full">
                 {/* Left: text on beige half-bg */}
@@ -358,6 +366,7 @@ export default async function PresentationPage({ params }: PageProps) {
                 </div>
               </div>
             </div>
+            </section>
           )}
 
           {/* ── Slides 3-5: AI Summary (split into 3) ───────────────── */}
@@ -367,7 +376,8 @@ export default async function PresentationPage({ params }: PageProps) {
             if (isDeleted(slideKey)) return null;
             const photo = photos[2 + i] || photos[1] || photos[0];
             return (
-              <div key={`ai-${i}`} className="relative bg-white rounded-2xl shadow-sm overflow-hidden md:aspect-[16/9]">
+              <section key={`ai-${i}`} className="w-screen h-full flex-shrink-0 snap-center overflow-y-auto px-3 md:px-6 py-4 md:py-6 flex">
+              <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden m-auto w-full max-w-4xl md:aspect-[16/9]">
                 {isOwner && <SlideControls presToken={token} slideKey={slideKey} initialText={chunk} editable />}
                 <div className={`grid grid-cols-1 md:grid-cols-2 md:h-full ${i % 2 === 1 ? "lg:[&>div:first-child]:order-2" : ""}`}>
                   {/* Photo */}
@@ -396,6 +406,7 @@ export default async function PresentationPage({ params }: PageProps) {
                   </div>
                 </div>
               </div>
+              </section>
             );
           })}
 
@@ -404,7 +415,8 @@ export default async function PresentationPage({ params }: PageProps) {
             const slideKey = `extra:${i}`;
             if (isDeleted(slideKey)) return null;
             return (
-            <div key={`extra-${i}`} className="relative bg-white rounded-2xl shadow-sm overflow-hidden aspect-[4/3] md:aspect-[16/9]">
+            <section key={`extra-${i}`} className="w-screen h-full flex-shrink-0 snap-center overflow-y-auto px-3 md:px-6 py-4 md:py-6 flex">
+            <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden m-auto w-full max-w-4xl aspect-[4/3] md:aspect-[16/9]">
               {isOwner && <SlideControls presToken={token} slideKey={slideKey} />}
               <div className="h-full grid grid-cols-1 md:grid-cols-2 gap-1 bg-stone-200">
                 {pair.map((src, j) => (
@@ -419,12 +431,14 @@ export default async function PresentationPage({ params }: PageProps) {
                 )}
               </div>
             </div>
+            </section>
             );
           })}
 
           {/* ── Contact Slide — büyük TEŞEKKÜR + iletişim ─── */}
           {!isDeleted("closing") && (
-          <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden md:aspect-[16/9]">
+          <section className="w-screen h-full flex-shrink-0 snap-center overflow-y-auto px-3 md:px-6 py-4 md:py-6 flex">
+          <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden m-auto w-full max-w-4xl md:aspect-[16/9]">
             {isOwner && <SlideControls presToken={token} slideKey="closing" />}
             <div className="grid grid-cols-1 md:grid-cols-2 md:h-full">
               {/* Sol: büyük TEŞEKKÜR + iletişim */}
@@ -483,9 +497,10 @@ export default async function PresentationPage({ params }: PageProps) {
               </div>
             </div>
           </div>
+          </section>
           )}
 
-        </div>
+        </main>
 
         {/* Floating share button (sol alt) — sadece owner görür */}
         {isOwner && <ShareFAB title={displayTitle} />}
