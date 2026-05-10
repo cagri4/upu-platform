@@ -54,8 +54,9 @@ export default function ContractDetailPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!token || !id) { setStatus("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/sozlesmelerim/get?id=${encodeURIComponent(id)}&t=${encodeURIComponent(token)}`)
+    if (!id) { setStatus("error"); setError("Sözleşme bulunamadı."); return; }
+    const tokenQs = token ? `&t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/sozlesmelerim/get?id=${encodeURIComponent(id)}${tokenQs}`, { credentials: "same-origin" })
       .then(async r => {
         const d = await r.json();
         if (!r.ok) { setStatus("error"); setError(d.error || "Yüklenemedi."); return; }
@@ -66,7 +67,8 @@ export default function ContractDetailPage() {
   }, [token, id]);
 
   function downloadPdf() {
-    window.open(`/api/sozlesmelerim/pdf?id=${encodeURIComponent(id)}&t=${encodeURIComponent(token)}`, "_blank");
+    const tokenQs = token ? `&t=${encodeURIComponent(token)}` : "";
+    window.open(`/api/sozlesmelerim/pdf?id=${encodeURIComponent(id)}${tokenQs}`, "_blank");
   }
 
   function copySignLink() {
@@ -85,7 +87,8 @@ export default function ContractDetailPage() {
       const res = await fetch("/api/sozlesmelerim/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, id }),
+        credentials: "same-origin",
+        body: JSON.stringify(token ? { token, id } : { id }),
       });
       if (!res.ok) {
         const d = await res.json();
@@ -93,7 +96,8 @@ export default function ContractDetailPage() {
         setError(d.error || "Silinemedi.");
         return;
       }
-      router.push(`/tr/sozlesmelerim?t=${encodeURIComponent(token)}`);
+      const back = token ? `/tr/sozlesmelerim?t=${encodeURIComponent(token)}` : `/tr/sozlesmelerim`;
+      router.push(back);
     } catch {
       setStatus("ready");
       setError("Bağlantı hatası.");
@@ -108,7 +112,7 @@ export default function ContractDetailPage() {
       <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
         <div className="text-4xl mb-3">⚠️</div>
         <p className="text-slate-600 text-sm">{error}</p>
-        <a href={`/tr/sozlesmelerim?t=${encodeURIComponent(token)}`} className="inline-block mt-4 text-emerald-600 underline text-sm">
+        <a href={token ? `/tr/sozlesmelerim?t=${encodeURIComponent(token)}` : `/tr/sozlesmelerim`} className="inline-block mt-4 text-emerald-600 underline text-sm">
           ← Sözleşmelerim
         </a>
       </div>
@@ -221,7 +225,7 @@ export default function ContractDetailPage() {
 
       {/* Geri buton */}
       <a
-        href={`/tr/sozlesmelerim?t=${encodeURIComponent(token)}`}
+        href={token ? `/tr/sozlesmelerim?t=${encodeURIComponent(token)}` : `/tr/sozlesmelerim`}
         className="block w-full bg-white border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium text-center hover:bg-slate-50 transition"
       >
         ← Sözleşmelerime Dön

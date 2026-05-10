@@ -8,6 +8,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { getSessionFromCookies } from "@/platform/auth/session";
 import { PDFDocument, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { readFile } from "node:fs/promises";
@@ -39,7 +40,6 @@ export async function GET(req: NextRequest) {
   const signToken = req.nextUrl.searchParams.get("sign");
 
   if (!id) return NextResponse.json({ error: "id gerekli." }, { status: 400 });
-  if (!token && !signToken) return NextResponse.json({ error: "Token gerekli." }, { status: 400 });
 
   const sb = getServiceClient();
 
@@ -54,29 +54,39 @@ export async function GET(req: NextRequest) {
   };
   let contractRow: ContractRow | null = null;
 
-  if (token) {
-    const { data: pt } = await sb
-      .from("magic_link_tokens")
-      .select("user_id, expires_at")
-      .eq("token", token).maybeSingle();
-    if (!pt) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-    if (new Date(pt.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-    }
-    const { data } = await sb
-      .from("contracts")
-      .select("id, contract_data, signed_at, created_at, owner_signature_url, user_id, status")
-      .eq("id", id)
-      .eq("user_id", pt.user_id)
-      .maybeSingle();
-    contractRow = (data as unknown as ContractRow | null) ?? null;
-  } else if (signToken) {
-    // Sign token bazlı erişim — müşteri /sign sayfasından PDF indirme
+  // İki erişim yolu:
+  // - Owner: cookie session öncelik, legacy ?t= token fallback
+  // - Customer: ?sign=<sign_token> (imza linki üzerinden)
+  if (signToken) {
     const { data } = await sb
       .from("contracts")
       .select("id, contract_data, signed_at, created_at, owner_signature_url, user_id, status")
       .eq("id", id)
       .eq("sign_token", signToken)
+      .maybeSingle();
+    contractRow = (data as unknown as ContractRow | null) ?? null;
+  } else {
+    let userId: string | null = null;
+    const session = await getSessionFromCookies();
+    if (session?.uid) {
+      userId = session.uid;
+    } else if (token) {
+      const { data: pt } = await sb
+        .from("magic_link_tokens")
+        .select("user_id, expires_at")
+        .eq("token", token).maybeSingle();
+      if (!pt) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
+      if (new Date(pt.expires_at) < new Date()) {
+        return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
+      }
+      userId = pt.user_id;
+    }
+    if (!userId) return NextResponse.json({ error: "Oturum bulunamadı." }, { status: 401 });
+    const { data } = await sb
+      .from("contracts")
+      .select("id, contract_data, signed_at, created_at, owner_signature_url, user_id, status")
+      .eq("id", id)
+      .eq("user_id", userId)
       .maybeSingle();
     contractRow = (data as unknown as ContractRow | null) ?? null;
   }
