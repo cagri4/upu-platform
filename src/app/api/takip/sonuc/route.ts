@@ -5,6 +5,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { resolvePanelAuth } from "@/platform/auth/panel-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -42,26 +43,20 @@ function matchesCriteria(lead: DailyLead, c: Criteria): boolean {
 }
 
 export async function GET(req: NextRequest) {
-  const token = req.nextUrl.searchParams.get("t") || req.nextUrl.searchParams.get("token");
   const id = req.nextUrl.searchParams.get("id");
-  if (!token || !id) return NextResponse.json({ error: "Token ve id gerekli." }, { status: 400 });
+  if (!id) return NextResponse.json({ error: "id gerekli." }, { status: 400 });
+
+  const auth = await resolvePanelAuth(req);
+  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const sb = getServiceClient();
-  const { data: pt } = await sb
-    .from("magic_link_tokens")
-    .select("user_id, expires_at")
-    .eq("token", token).maybeSingle();
-  if (!pt) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-  if (new Date(pt.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-  }
 
   // Takip kriteri (kullanıcıya ait olmalı)
   const { data: takip } = await sb
     .from("emlak_tracking_criteria")
     .select("name, neighborhoods, property_types, listing_type, price_min, price_max")
     .eq("id", id)
-    .eq("user_id", pt.user_id)
+    .eq("user_id", auth.userId)
     .maybeSingle();
   if (!takip) return NextResponse.json({ error: "Takip bulunamadı." }, { status: 404 });
 

@@ -7,6 +7,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { getSessionFromCookies } from "@/platform/auth/session";
 import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -14,24 +15,30 @@ export const dynamic = "force-dynamic";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
 
 export async function GET(req: NextRequest) {
-  const token = req.nextUrl.searchParams.get("t");
-  if (!token) return NextResponse.redirect(`${APP_URL}/tr/panel`);
-
   const sb = getServiceClient();
-  const { data: pt } = await sb
-    .from("magic_link_tokens")
-    .select("user_id, expires_at")
-    .eq("token", token)
-    .maybeSingle();
+  let userId: string | null = null;
 
-  if (!pt || new Date(pt.expires_at) < new Date()) {
-    return NextResponse.redirect(`${APP_URL}/tr/panel`);
+  const session = await getSessionFromCookies();
+  if (session?.uid) {
+    userId = session.uid;
+  } else {
+    const token = req.nextUrl.searchParams.get("t");
+    if (!token) return NextResponse.redirect(`${APP_URL}/tr/panel`);
+    const { data: pt } = await sb
+      .from("magic_link_tokens")
+      .select("user_id, expires_at")
+      .eq("token", token)
+      .maybeSingle();
+    if (!pt || new Date(pt.expires_at) < new Date()) {
+      return NextResponse.redirect(`${APP_URL}/tr/panel`);
+    }
+    userId = userId;
   }
 
   const { data: profile } = await sb
     .from("profiles")
     .select("metadata")
-    .eq("id", pt.user_id)
+    .eq("id", userId)
     .single();
 
   const meta = (profile?.metadata as Record<string, unknown> | null) || {};
@@ -45,6 +52,6 @@ export async function GET(req: NextRequest) {
   // Slug yoksa profil-duzenle'ye fresh token ile yönlendir
   const newToken = randomBytes(16).toString("hex");
   const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  await sb.from("magic_link_tokens").insert({ user_id: pt.user_id, token: newToken, expires_at: expires });
+  await sb.from("magic_link_tokens").insert({ user_id: userId, token: newToken, expires_at: expires });
   return NextResponse.redirect(`${APP_URL}/tr/profil-duzenle?t=${newToken}`);
 }

@@ -8,6 +8,7 @@
  */
 import { NextRequest, NextResponse, after } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { resolvePanelAuthFromBody } from "@/platform/auth/panel-auth";
 import { sendText } from "@/platform/whatsapp/send";
 
 export const dynamic = "force-dynamic";
@@ -17,19 +18,11 @@ const MAX_PER_USER = 5;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const token = body.token as string;
-    if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+    const auth = await resolvePanelAuthFromBody(req, body);
+    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const supabase = getServiceClient();
-    const { data: magicToken } = await supabase
-      .from("magic_link_tokens")
-      .select("id, user_id, expires_at")
-      .eq("token", token).maybeSingle();
-
-    if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-    if (new Date(magicToken.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-    }
+    const userId = auth.userId;
 
     const id = typeof body.id === "string" && body.id ? body.id : null;
     const isEdit = !!id;
@@ -53,7 +46,7 @@ export async function POST(req: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", id)
-        .eq("user_id", magicToken.user_id);
+        .eq("user_id", userId);
       if (error) {
         console.error("[takip:save] update", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -64,7 +57,7 @@ export async function POST(req: NextRequest) {
     // INSERT — limit kontrol
     const { count } = await supabase.from("emlak_tracking_criteria")
       .select("*", { count: "exact", head: true })
-      .eq("user_id", magicToken.user_id);
+      .eq("user_id", userId);
     if ((count ?? 0) >= MAX_PER_USER) {
       return NextResponse.json({
         error: `En fazla ${MAX_PER_USER} takip ekleyebilirsiniz. Mevcut takiplerinizden birini silin.`,
@@ -73,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     const { data: inserted, error } = await supabase.from("emlak_tracking_criteria")
       .insert({
-        user_id: magicToken.user_id,
+        user_id: userId,
         name,
         neighborhoods,
         property_types: propertyTypes,
@@ -96,7 +89,7 @@ export async function POST(req: NextRequest) {
         const { data: profile } = await sb
           .from("profiles")
           .select("whatsapp_phone")
-          .eq("id", magicToken.user_id)
+          .eq("id", userId)
           .single();
         if (!profile?.whatsapp_phone) return;
         const phone = profile.whatsapp_phone as string;
@@ -110,7 +103,7 @@ export async function POST(req: NextRequest) {
           `✅ *Takip eklendi!*\n\n📍 *${name}*\nKriter: ${summary}\n\nYarın sabah 06:45'te bu kriterlere uyan yeni sahibi ilanlar WhatsApp'ınıza düşecek.`,
         );
         const { sendBackToPanel } = await import("@/tenants/emlak/menu");
-        await sendBackToPanel(magicToken.user_id, phone);
+        await sendBackToPanel(userId, phone);
       } catch (waErr) {
         console.error("[takip:save] WA notify failed:", waErr);
       }

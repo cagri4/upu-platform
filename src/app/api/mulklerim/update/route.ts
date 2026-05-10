@@ -7,6 +7,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { resolvePanelAuthFromBody } from "@/platform/auth/panel-auth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -22,23 +23,14 @@ function toArr(v: unknown): string[] | null {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const token = body.token as string;
-    const id = body.id as string;
-    if (!token || !id) {
-      return NextResponse.json({ error: "Token ve id gerekli." }, { status: 400 });
-    }
+    const id = body.id as string | undefined;
+    if (!id) return NextResponse.json({ error: "id gerekli." }, { status: 400 });
+
+    const auth = await resolvePanelAuthFromBody(req, body);
+    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const supabase = getServiceClient();
-    const { data: magicToken } = await supabase
-      .from("magic_link_tokens")
-      .select("user_id, expires_at")
-      .eq("token", token)
-      .maybeSingle();
-
-    if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-    if (new Date(magicToken.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-    }
+    const userId = auth.userId;
 
     if (!body.title || String(body.title).trim().length < 3) {
       return NextResponse.json({ error: "Başlık en az 3 karakter olmalı." }, { status: 400 });
@@ -83,7 +75,7 @@ export async function POST(req: NextRequest) {
         image_url: photoUrls[0] || null,
       })
       .eq("id", id)
-      .eq("user_id", magicToken.user_id);
+      .eq("user_id", userId);
 
     if (updErr) {
       console.error("[mulklerim:update]", updErr);
@@ -112,7 +104,7 @@ export async function POST(req: NextRequest) {
       .filter(u => !existingUrls.has(u))
       .map((u, idx) => ({
         property_id: id,
-        user_id: magicToken.user_id,
+        user_id: userId,
         url: u,
         sort_order: idx + 1,
       }));

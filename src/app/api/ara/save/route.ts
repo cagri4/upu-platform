@@ -11,13 +11,14 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { resolvePanelAuthFromBody } from "@/platform/auth/panel-auth";
 import { sendUrlButton } from "@/platform/whatsapp/send";
 import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
 
 interface SearchPayload {
-  token: string;
+  token?: string;
   listing_type?: string;
   property_types?: string[];
   price_min?: number | null;
@@ -28,25 +29,16 @@ interface SearchPayload {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as SearchPayload;
-    const token = body.token;
-    if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+    const auth = await resolvePanelAuthFromBody(req, body);
+    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const supabase = getServiceClient();
-    const { data: magicToken } = await supabase
-      .from("magic_link_tokens")
-      .select("id, user_id, expires_at, used_at")
-      .eq("token", token)
-      .maybeSingle();
-
-    if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-    if (new Date(magicToken.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-    }
+    const userId = auth.userId;
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("whatsapp_phone, metadata")
-      .eq("id", magicToken.user_id)
+      .eq("id", userId)
       .single();
     const userPhone = profile?.whatsapp_phone as string | undefined;
 

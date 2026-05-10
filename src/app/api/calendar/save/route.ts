@@ -4,15 +4,15 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { resolvePanelAuthFromBody } from "@/platform/auth/panel-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { token, id, title, description, scheduled_at, related_customer_id, related_property_id } = body || {};
+    const { id, title, description, scheduled_at, related_customer_id, related_property_id } = body || {};
 
-    if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
     if (!title || typeof title !== "string" || !title.trim()) {
       return NextResponse.json({ error: "Başlık zorunlu." }, { status: 400 });
     }
@@ -22,16 +22,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Geçersiz tarih." }, { status: 400 });
     }
 
-    const sb = getServiceClient();
-    const { data: pt } = await sb
-      .from("magic_link_tokens")
-      .select("user_id, expires_at")
-      .eq("token", token).maybeSingle();
-    if (!pt) return NextResponse.json({ error: "Geçersiz link" }, { status: 404 });
-    if (new Date(pt.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Linkin süresi dolmuş" }, { status: 400 });
-    }
+    const auth = await resolvePanelAuthFromBody(req, body);
+    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
+    const sb = getServiceClient();
     const payload = {
       title: title.trim().slice(0, 100),
       description: description ? String(description).slice(0, 500) : null,
@@ -46,7 +40,7 @@ export async function POST(req: NextRequest) {
       const { error } = await sb.from("emlak_calendar_events")
         .update(payload)
         .eq("id", id)
-        .eq("user_id", pt.user_id)
+        .eq("user_id", auth.userId)
         .eq("status", "pending"); // sent/failed events düzenlenmez
       if (error) {
         console.error("[calendar:save] update", error);
@@ -58,7 +52,7 @@ export async function POST(req: NextRequest) {
     // INSERT
     const { data: inserted, error } = await sb.from("emlak_calendar_events")
       .insert({
-        user_id: pt.user_id,
+        user_id: auth.userId,
         ...payload,
         status: "pending",
       })

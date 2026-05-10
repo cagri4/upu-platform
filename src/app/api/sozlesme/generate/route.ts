@@ -9,6 +9,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { resolvePanelAuthFromBody } from "@/platform/auth/panel-auth";
 import { askClaude } from "@/platform/ai/claude";
 
 export const dynamic = "force-dynamic";
@@ -37,34 +38,29 @@ const DISCLAIMER =
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { token, property_id, customer_id, commission, duration, exclusive } = body || {};
+    const { property_id, customer_id, commission, duration, exclusive } = body || {};
 
-    if (!token || !property_id || !customer_id) {
+    if (!property_id || !customer_id) {
       return NextResponse.json({ error: "Mülk ve müşteri seçimi zorunlu." }, { status: 400 });
     }
 
+    const auth = await resolvePanelAuthFromBody(req, body);
+    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
     const sb = getServiceClient();
-    const { data: pt } = await sb
-      .from("magic_link_tokens")
-      .select("user_id, expires_at")
-      .eq("token", token)
-      .maybeSingle();
-    if (!pt) return NextResponse.json({ error: "Geçersiz link" }, { status: 404 });
-    if (new Date(pt.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Linkin süresi dolmuş" }, { status: 400 });
-    }
+    const userId = auth.userId;
 
     // Mülk + müşteri çek (kullanıcıya ait olmalı)
     const [propRes, custRes, profileRes] = await Promise.all([
       sb.from("emlak_properties")
         .select("title, listing_type, type, price, area, rooms, location_city, location_district, location_neighborhood, description")
-        .eq("id", property_id).eq("user_id", pt.user_id).maybeSingle(),
+        .eq("id", property_id).eq("user_id", userId).maybeSingle(),
       sb.from("emlak_customers")
         .select("name, phone, email")
-        .eq("id", customer_id).eq("user_id", pt.user_id).maybeSingle(),
+        .eq("id", customer_id).eq("user_id", userId).maybeSingle(),
       sb.from("profiles")
         .select("display_name, metadata")
-        .eq("id", pt.user_id).single(),
+        .eq("id", userId).single(),
     ]);
 
     if (!propRes.data) return NextResponse.json({ error: "Mülk bulunamadı." }, { status: 404 });

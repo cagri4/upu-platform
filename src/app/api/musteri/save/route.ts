@@ -10,6 +10,7 @@
  */
 import { NextRequest, NextResponse, after } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { resolvePanelAuthFromBody } from "@/platform/auth/panel-auth";
 import { sendButtons } from "@/platform/whatsapp/send";
 
 export const dynamic = "force-dynamic";
@@ -17,20 +18,11 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const token = body.token as string;
-    if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+    const auth = await resolvePanelAuthFromBody(req, body);
+    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const supabase = getServiceClient();
-    const { data: magicToken } = await supabase
-      .from("magic_link_tokens")
-      .select("user_id, expires_at")
-      .eq("token", token)
-      .maybeSingle();
-
-    if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-    if (new Date(magicToken.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-    }
+    const userId = auth.userId;
 
     const name = String(body.name || "").trim();
     if (name.length < 2) {
@@ -45,7 +37,7 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("tenant_id, whatsapp_phone")
-      .eq("id", magicToken.user_id)
+      .eq("id", userId)
       .single();
     const tenantId = profile?.tenant_id as string | undefined;
     if (!tenantId) return NextResponse.json({ error: "Profil eksik." }, { status: 500 });
@@ -71,7 +63,7 @@ export async function POST(req: NextRequest) {
       .from("emlak_customers")
       .insert({
         tenant_id: tenantId,
-        user_id: magicToken.user_id,
+        user_id: userId,
         name,
         phone,
         email: body.email ? String(body.email).trim() : null,
@@ -108,7 +100,7 @@ export async function POST(req: NextRequest) {
           `✅ *Müşteri kaydedildi!*\n\n👤 ${name}\n📞 ${phone}`,
         );
         const { sendBackToPanel } = await import("@/tenants/emlak/menu");
-        await sendBackToPanel(magicToken.user_id, userPhone);
+        await sendBackToPanel(userId, userPhone);
       } catch (err) {
         console.error("[musteri:save] WA notify failed:", err);
       }

@@ -4,6 +4,7 @@
  */
 import { NextRequest, NextResponse, after } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { getSessionFromCookies } from "@/platform/auth/session";
 import { sendUrlButton } from "@/platform/whatsapp/send";
 import { randomBytes } from "crypto";
 
@@ -21,19 +22,29 @@ function toArr(v: unknown): string[] | null {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const token = body.token as string;
-    if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+    const token = body.token as string | undefined;
 
+    // Cookie session öncelik, legacy magic-link token fallback.
+    // Token path'inde used_at kontrolü ve tüketim aynen korunur.
     const supabase = getServiceClient();
-    const { data: magicToken } = await supabase
-      .from("magic_link_tokens")
-      .select("id, user_id, expires_at, used_at")
-      .eq("token", token)
-      .maybeSingle();
-
-    if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-    if (magicToken.used_at) return NextResponse.json({ error: "Bu link zaten kullanılmış." }, { status: 400 });
-    if (new Date(magicToken.expires_at) < new Date()) return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
+    let userId: string | null = null;
+    let magicTokenId: string | null = null;
+    const session = await getSessionFromCookies();
+    if (session?.uid) {
+      userId = session.uid;
+    } else if (token) {
+      const { data: magicToken } = await supabase
+        .from("magic_link_tokens")
+        .select("id, user_id, expires_at, used_at")
+        .eq("token", token)
+        .maybeSingle();
+      if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
+      if (magicToken.used_at) return NextResponse.json({ error: "Bu link zaten kullanılmış." }, { status: 400 });
+      if (new Date(magicToken.expires_at) < new Date()) return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
+      userId = userId;
+      magicTokenId = magicToken.id;
+    }
+    if (!userId) return NextResponse.json({ error: "Oturum bulunamadı." }, { status: 401 });
 
     if (!body.title || String(body.title).trim().length < 3) {
       return NextResponse.json({ error: "Başlık en az 3 karakter olmalı." }, { status: 400 });
@@ -45,7 +56,7 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("whatsapp_phone, tenant_id")
-      .eq("id", magicToken.user_id)
+      .eq("id", userId)
       .single();
     const userPhone = profile?.whatsapp_phone as string | undefined;
     const tenantId = profile?.tenant_id as string | undefined;
@@ -53,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     const { data: inserted, error } = await supabase.from("emlak_properties").insert({
       tenant_id: tenantId,
-      user_id: magicToken.user_id,
+      user_id: userId,
       title: String(body.title).trim(),
       listing_type: body.listing_type || "satilik",
       type: body.type || "daire",
@@ -93,7 +104,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error?.message || "Kaydedilemedi." }, { status: 500 });
     }
 
-    await supabase.from("magic_link_tokens").update({ used_at: new Date().toISOString() }).eq("id", magicToken.id);
+    if (magicTokenId) {
+      await supabase.from("magic_link_tokens").update({ used_at: new Date().toISOString() }).eq("id", magicTokenId);
+    }
 
     // Persist uploaded photos (from pre-uploaded URLs via /api/mulkekle/upload-photo)
     const photoUrls: string[] = Array.isArray(body.photo_urls)
@@ -102,7 +115,7 @@ export async function POST(req: NextRequest) {
     if (photoUrls.length > 0) {
       const photoRows = photoUrls.map((url, idx) => ({
         property_id: inserted.id,
-        user_id: magicToken.user_id,
+        user_id: userId,
         url,
         sort_order: idx + 1,
       }));
@@ -179,7 +192,7 @@ export async function POST(req: NextRequest) {
 
         const { data: pres } = await sb.from("emlak_presentations").insert({
           tenant_id: tenantId,
-          user_id: magicToken.user_id,
+          user_id: userId,
           customer_id: null,
           property_ids: [inserted.id],
           title: propTitle,
@@ -210,7 +223,7 @@ export async function POST(req: NextRequest) {
         }
 
         const { sendBackToPanel } = await import("@/tenants/emlak/menu");
-        await sendBackToPanel(magicToken.user_id, userPhone);
+        await sendBackToPanel(userId, userPhone);
       } catch (waErr) {
         console.error("[mulkekle:save] WA notify failed:", waErr);
       }

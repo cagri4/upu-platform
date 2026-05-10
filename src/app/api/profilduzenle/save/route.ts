@@ -7,6 +7,7 @@
  */
 import { NextRequest, NextResponse, after } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { resolvePanelAuthFromBody } from "@/platform/auth/panel-auth";
 import { sendUrlButton, sendText } from "@/platform/whatsapp/send";
 import { randomBytes } from "crypto";
 
@@ -51,20 +52,11 @@ async function ensureUniqueSlug(supabase: ReturnType<typeof getServiceClient>, b
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const token = body.token as string;
-    if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+    const auth = await resolvePanelAuthFromBody(req, body);
+    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const supabase = getServiceClient();
-    const { data: magicToken } = await supabase
-      .from("magic_link_tokens")
-      .select("user_id, expires_at")
-      .eq("token", token)
-      .maybeSingle();
-
-    if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-    if (new Date(magicToken.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-    }
+    const userId = auth.userId;
 
     const fullName = String(body.full_name || "").trim();
     if (fullName.length < 2) {
@@ -74,7 +66,7 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("display_name, metadata, whatsapp_phone")
-      .eq("id", magicToken.user_id)
+      .eq("id", userId)
       .single();
     const meta = (profile?.metadata as Record<string, unknown> | null) || {};
     const existingAgent = (meta.agent_profile as AgentProfile) || {};
@@ -85,7 +77,7 @@ export async function POST(req: NextRequest) {
     } else {
       webSlug = slugify(webSlug);
     }
-    webSlug = await ensureUniqueSlug(supabase, webSlug, magicToken.user_id);
+    webSlug = await ensureUniqueSlug(supabase, webSlug, userId);
 
     const newAgent: AgentProfile = {
       full_name: fullName,
@@ -106,7 +98,7 @@ export async function POST(req: NextRequest) {
         metadata: newMeta,
         display_name: fullName,
       })
-      .eq("id", magicToken.user_id);
+      .eq("id", userId);
 
     if (error) {
       console.error("[profilduzenle:save]", error);
@@ -131,7 +123,7 @@ export async function POST(req: NextRequest) {
         const webToken = randomBytes(16).toString("hex");
         const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
         await sb.from("magic_link_tokens").insert({
-          user_id: magicToken.user_id,
+          user_id: userId,
           token: webToken,
           expires_at: expires,
         });
@@ -146,7 +138,7 @@ export async function POST(req: NextRequest) {
         );
 
         const { sendBackToPanel } = await import("@/tenants/emlak/menu");
-        await sendBackToPanel(magicToken.user_id, userPhone);
+        await sendBackToPanel(userId, userPhone);
       } catch (err) {
         console.error("[profilduzenle:save] WA notify failed:", err);
       }
