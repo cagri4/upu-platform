@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { resolvePanelAuthFromBody } from "@/platform/auth/panel-auth";
+import { isPro } from "@/platform/billing/is-pro";
 import { NOTIFICATION_TYPE_MAP } from "@/platform/notifications/types";
 
 export const dynamic = "force-dynamic";
@@ -33,15 +34,14 @@ export async function POST(req: NextRequest) {
     const sb = getServiceClient();
     const userId = auth.userId;
 
-    // Tier kontrolü
+    // Tier kontrolü — subscriptions table'dan (trial veya Pro)
+    const userIsPro = await isPro(userId);
     const { data: profile } = await sb
       .from("profiles")
       .select("metadata")
       .eq("id", userId)
       .single();
     const meta = (profile?.metadata as Record<string, unknown> | null) || {};
-    const planRaw = meta.plan as string | undefined;
-    const isPro = planRaw === "pro";
 
     // Preferences upsert
     const prefs = Array.isArray(body.preferences) ? body.preferences : [];
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       const def = NOTIFICATION_TYPE_MAP[p.type];
       if (!def) continue; // bilinmeyen tür
       // Free user Pro türünü ENABLE etmeye çalışırsa reddet
-      if (p.enabled && def.tier === "pro" && !isPro) {
+      if (p.enabled && def.tier === "pro" && !userIsPro) {
         return NextResponse.json(
           { error: `"${def.label}" Pro üyelik gerektiriyor.` },
           { status: 403 },

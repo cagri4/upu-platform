@@ -38,8 +38,8 @@ export async function GET(req: NextRequest) {
 
   if (!userId) return NextResponse.json({ error: "Oturum çözülemedi" }, { status: 401 });
 
-  // Paralel count sorguları + profile (web_slug için)
-  const [propsRes, custRes, contractsRes, presRes, trackingRes, calendarRes, profileRes] = await Promise.all([
+  // Paralel count sorguları + profile (web_slug için) + subscription
+  const [propsRes, custRes, contractsRes, presRes, trackingRes, calendarRes, profileRes, subRes] = await Promise.all([
     sb.from("emlak_properties").select("*", { count: "exact", head: true }).eq("user_id", userId).neq("status", "deleted"),
     sb.from("emlak_customers").select("*", { count: "exact", head: true }).eq("user_id", userId).is("deleted_at", null),
     sb.from("contracts").select("*", { count: "exact", head: true }).eq("user_id", userId).neq("status", "cancelled").neq("status", "deleted"),
@@ -47,11 +47,37 @@ export async function GET(req: NextRequest) {
     sb.from("emlak_tracking_criteria").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("active", true),
     sb.from("emlak_calendar_events").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("status", "pending"),
     sb.from("profiles").select("metadata").eq("id", userId).single(),
+    sb.from("subscriptions").select("plan, status, trial_ends_at, current_period_end, cancel_at_period_end").eq("user_id", userId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   const meta = (profileRes.data?.metadata as Record<string, unknown> | null) || {};
   const agent = (meta.agent_profile as { web_slug?: string } | undefined);
   const webSlug = agent?.web_slug || null;
+
+  // Subscription özeti — panel kartı için
+  const sub = subRes.data;
+  let subscription: {
+    plan: string;
+    status: string;
+    trial_ends_at: string | null;
+    current_period_end: string | null;
+    cancel_at_period_end: boolean;
+    daysLeft: number | null;
+  } | null = null;
+  if (sub) {
+    let daysLeft: number | null = null;
+    if (sub.plan === "trial" && sub.trial_ends_at) {
+      daysLeft = Math.max(0, Math.ceil((new Date(sub.trial_ends_at as string).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+    }
+    subscription = {
+      plan: sub.plan as string,
+      status: sub.status as string,
+      trial_ends_at: (sub.trial_ends_at as string | null) ?? null,
+      current_period_end: (sub.current_period_end as string | null) ?? null,
+      cancel_at_period_end: !!sub.cancel_at_period_end,
+      daysLeft,
+    };
+  }
 
   return NextResponse.json({
     success: true,
@@ -64,5 +90,6 @@ export async function GET(req: NextRequest) {
       calendar: calendarRes.count || 0,
     },
     webSlug,
+    subscription,
   });
 }

@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { resolvePanelAuth } from "@/platform/auth/panel-auth";
+import { isPro } from "@/platform/billing/is-pro";
 import { NOTIFICATION_TYPES, getDefaultPreferences } from "@/platform/notifications/types";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +52,7 @@ export async function GET(req: NextRequest) {
     enabled: existingMap.get(t.type) ?? (t.tier === "free"),
   }));
 
-  // Profile metadata: dnd + preset + tier
+  // Profile metadata: dnd + preset
   const { data: profile } = await sb
     .from("profiles")
     .select("metadata")
@@ -60,10 +61,9 @@ export async function GET(req: NextRequest) {
   const meta = (profile?.metadata as Record<string, unknown> | null) || {};
   const notif = (meta.notifications as { dnd?: unknown; preset?: string } | undefined) || {};
 
-  // tier: metadata.plan'dan; default "free" (profiles.plan kolonu yok,
-  // billing/abonelik metadata içinde tutuluyor şimdilik)
-  const planRaw = meta.plan as string | undefined;
-  const tier: "free" | "pro" = planRaw === "pro" ? "pro" : "free";
+  // Tier: subscriptions table'dan (trial active veya Pro abonelik) — metadata.plan
+  // legacy fallback artık kullanılmıyor.
+  const tier: "free" | "pro" = (await isPro(userId)) ? "pro" : "free";
 
   return NextResponse.json({
     success: true,

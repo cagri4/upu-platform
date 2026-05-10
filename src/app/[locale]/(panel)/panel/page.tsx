@@ -15,7 +15,16 @@ interface KPIs {
   calendar: number;
 }
 
-type CardKey = keyof KPIs | "profil" | "websitem" | "bildirimler";
+type CardKey = keyof KPIs | "profil" | "websitem" | "bildirimler" | "uyelik";
+
+interface SubscriptionSummary {
+  plan: string;
+  status: string;
+  trial_ends_at: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  daysLeft: number | null;
+}
 
 interface CardDef {
   key: CardKey;
@@ -60,6 +69,9 @@ const CARD_DEFS: Array<CardDef & { bg: string; valueColor: string; labelColor: s
   { key: "bildirimler",  label: "Bildirimler", icon: "🔔",                                       color: "from-yellow-500 to-amber-600",
     bg: "bg-gradient-to-br from-yellow-100 to-amber-200",     valueColor: "text-amber-900",   labelColor: "text-amber-800",
     href: t => t ? `/tr/bildirimler?t=${encodeURIComponent(t)}` : `/tr/bildirimler`, staticValue: () => "Ayarla" },
+  { key: "uyelik",       label: "Üyelik",      icon: "💎",                                       color: "from-violet-500 to-fuchsia-700",
+    bg: "bg-gradient-to-br from-violet-100 to-fuchsia-200",   valueColor: "text-violet-900",  labelColor: "text-violet-800",
+    href: t => t ? `/tr/uyelik?t=${encodeURIComponent(t)}` : `/tr/uyelik` },
 ];
 
 export default function PanelimPage() {
@@ -70,6 +82,7 @@ export default function PanelimPage() {
 
   const [kpis, setKpis] = useState<KPIs | null>(null);
   const [webSlug, setWebSlug] = useState<string | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null);
 
   useEffect(() => {
     // Token yoksa cookie session ile dene (cookie-aware dashboard endpoint)
@@ -82,10 +95,22 @@ export default function PanelimPage() {
         if (!d?.error) {
           if (d?.kpis) setKpis(d.kpis);
           if (d?.webSlug) setWebSlug(d.webSlug);
+          if (d?.subscription) setSubscription(d.subscription as SubscriptionSummary);
         }
       })
       .catch(() => { /* sessizce yut — layout zaten init'i validate etti */ });
   }, [token]);
+
+  function uyelikValue(): string {
+    if (!subscription) return "—";
+    if (subscription.plan === "pro_monthly" || subscription.plan === "pro_yearly") {
+      return subscription.cancel_at_period_end ? "Bitiyor" : "Pro";
+    }
+    if (subscription.plan === "trial" && (subscription.daysLeft ?? 0) > 0) {
+      return `${subscription.daysLeft} gün`;
+    }
+    return "Yükselt";
+  }
 
   return (
     <div className="space-y-6">
@@ -113,9 +138,14 @@ export default function PanelimPage() {
       {/* KPI / quick-link grid — yoğunluğa göre adapte */}
       <div className={gridClasses}>
         {CARD_DEFS.map((card) => {
-          const value = card.staticValue
-            ? card.staticValue(webSlug)
-            : (kpis ? (kpis[card.key as keyof KPIs] ?? 0) : "—");
+          let value: string | number;
+          if (card.key === "uyelik") {
+            value = uyelikValue();
+          } else if (card.staticValue) {
+            value = card.staticValue(webSlug);
+          } else {
+            value = kpis ? (kpis[card.key as keyof KPIs] ?? 0) : "—";
+          }
           // Token yoksa cookie session aktif — boş string ile absolute path
           // üretilir; (panel) layout cookie auth ile devam eder.
           const href = card.href(token || "", webSlug);

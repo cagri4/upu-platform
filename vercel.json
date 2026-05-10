@@ -31,6 +31,10 @@
     {
       "path": "/api/cron/bayi-fair-use",
       "schedule": "0 8 * * 1"
+    },
+    {
+      "path": "/api/cron/billing-tick",
+      "schedule": "0 3 * * *"
     }
   ]
 }
