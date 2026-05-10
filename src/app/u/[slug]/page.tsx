@@ -6,8 +6,9 @@
  */
 import { notFound } from "next/navigation";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { getSessionFromCookies } from "@/platform/auth/session";
 import type { Metadata } from "next";
-import { EditFAB } from "./edit-fab";
+import { OwnerToolbar } from "./owner-toolbar";
 
 interface AgentProfile {
   full_name?: string;
@@ -178,6 +179,12 @@ export default async function AgentLandingPage({ params, searchParams }: PagePro
   if (!data) notFound();
 
   const { agent, aboutText, properties, profile } = data;
+
+  // Owner kontrolü: cookie session uid'si site sahibinin user_id'si ile
+  // eşleşirse veya legacy ?t=/?token= query'si verilmişse owner sayılır.
+  // Public ziyaretçide owner toolbar/EditFAB DOM'a hiç eklenmez.
+  const session = await getSessionFromCookies();
+  const isOwner = (!!session && session.uid === profile.id) || !!ownerToken;
   const name = agent.full_name || profile.display_name || "Emlak Danışmanı";
   const phone = agent.phone || "";
   const email = agent.email || "";
@@ -196,9 +203,9 @@ export default async function AgentLandingPage({ params, searchParams }: PagePro
   return (
     <html lang="tr">
       <body className="bg-stone-50 text-stone-900 antialiased">
-        <EditFAB slug={slug} />
+        {isOwner && <OwnerToolbar slug={slug} ownerToken={ownerToken} />}
 
-        <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+        <div className={`max-w-5xl mx-auto px-4 py-8 space-y-8 ${isOwner ? "pt-20" : ""}`}>
 
           {/* Hero — büyük foto + büyük tipografi */}
           <section className="relative bg-white rounded-3xl shadow-sm overflow-hidden">
@@ -382,16 +389,6 @@ export default async function AgentLandingPage({ params, searchParams }: PagePro
             </div>
           </section>
 
-          {ownerToken && (
-            <div className="text-center py-2">
-              <a
-                href={`/tr/panel?t=${encodeURIComponent(ownerToken)}`}
-                className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-6 py-3 rounded-full shadow"
-              >
-                🖥 Panele Git
-              </a>
-            </div>
-          )}
         </div>
       </body>
     </html>
