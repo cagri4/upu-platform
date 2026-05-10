@@ -113,7 +113,9 @@ export default function PanelimPage() {
           const value = card.staticValue
             ? card.staticValue(webSlug)
             : (kpis ? (kpis[card.key as keyof KPIs] ?? 0) : "—");
-          const href = token ? card.href(token, webSlug) : "#";
+          // Token yoksa cookie session aktif — boş string ile absolute path
+          // üretilir; (panel) layout cookie auth ile devam eder.
+          const href = card.href(token || "", webSlug);
           const compact = columns >= 3;
           const mini = columns === 4;
           return (
