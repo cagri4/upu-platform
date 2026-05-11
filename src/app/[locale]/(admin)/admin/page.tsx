@@ -130,7 +130,15 @@ export default function AdminPage() {
             <span className="text-2xl">🚀</span>
             <h1 className="text-xl font-bold">UPU Super Admin</h1>
           </div>
-          <span className="text-sm text-slate-400">adminpanel.upudev.nl</span>
+          <div className="flex items-center gap-3">
+            <a
+              href="/admin/tickets"
+              className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg"
+            >
+              🛟 Destek
+            </a>
+            <span className="text-sm text-slate-400 hidden md:inline">adminpanel.upudev.nl</span>
+          </div>
         </div>
       </header>
 
