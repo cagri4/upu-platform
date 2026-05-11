@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { PwaUpdateBanner } from "@/components/pwa-update-banner";
 
 const inter = Inter({ subsets: ["latin", "latin-ext"] });
 
@@ -36,7 +37,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html className={`${inter.className} h-full antialiased bg-white`}>
-      <body className="min-h-full flex flex-col bg-white">{children}</body>
+      <body className="min-h-full flex flex-col bg-white">
+        {children}
+        <PwaUpdateBanner />
+      </body>
     </html>
   );
 }
