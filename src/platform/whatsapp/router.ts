@@ -420,6 +420,17 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     }
   }
 
+  // Destek admin komutları: /destek <id> mesaj, /destek-kapat <id>, /destek-liste
+  // (case-sensitive — orijinal ctx.text üzerinden çalışır, mesaj içeriği bozulmasın)
+  if (ctx.text.trim().startsWith("/destek")) {
+    const { handleDestekAdminCommand } = await import("@/platform/admin/destek-handler");
+    const handled = await handleDestekAdminCommand(ctx, ctx.text);
+    if (handled) {
+      logCommand(ctx, "admin:destek", true);
+      return;
+    }
+  }
+
   // Test state commands (admin-only, defined in test-state.ts)
   // /kaydet, /yukle, /sifirla — dev workflow accelerators
   {
