@@ -126,6 +126,16 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       return;
     }
 
+    // Notification interactive button replies (notif_view_<id>, notif_ack_<id>)
+    if (ctx.interactiveId.startsWith("notif_")) {
+      const { handleNotificationButton } = await import("@/platform/notifications/button-handler");
+      const handled = await handleNotificationButton(ctx, ctx.interactiveId);
+      if (handled) {
+        logCommand(ctx, ctx.interactiveId, true);
+        return;
+      }
+    }
+
     // Admin panel callbacks
     if (ctx.interactiveId.startsWith("admin:")) {
       const adminUser = await isAdmin(ctx);

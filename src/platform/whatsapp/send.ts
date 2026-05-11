@@ -94,7 +94,7 @@ export async function sendButtons(
   phone: string,
   text: string,
   buttons: Array<{ id: string; title: string }>,
-  opts?: { skipNav?: boolean },
+  opts?: { skipNav?: boolean; header?: string },
 ) {
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
@@ -110,20 +110,24 @@ export async function sendButtons(
   const shouldAddNav = !isNavFooter && !opts?.skipNav && !isNavSuppressedByContext();
 
   try {
+    const interactive: Record<string, unknown> = {
+      type: "button",
+      body: { text: truncateText(text, 1024) },
+      action: {
+        buttons: validButtons.map(b => ({
+          type: "reply", reply: { id: b.id, title: b.title.substring(0, 20) },
+        })),
+      },
+    };
+    if (opts?.header) {
+      interactive.header = { type: "text", text: opts.header.substring(0, 60) };
+    }
     const resp = await fetch(`${WA_API}/${phoneId}/messages`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         messaging_product: "whatsapp", to: phone, type: "interactive",
-        interactive: {
-          type: "button",
-          body: { text: truncateText(text, 1024) },
-          action: {
-            buttons: validButtons.map(b => ({
-              type: "reply", reply: { id: b.id, title: b.title.substring(0, 20) },
-            })),
-          },
-        },
+        interactive,
       }),
     });
     if (!resp.ok) {
