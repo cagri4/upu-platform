@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { sendText, sendNavFooter } from "@/platform/whatsapp/send";
+import { sendNotification } from "@/platform/notifications/send-notification";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +12,7 @@ export async function GET(req: Request) {
 
   const supabase = getServiceClient();
   let triggered = 0;
+  let skipped = 0;
 
   try {
     // Get due reminders
@@ -23,38 +24,32 @@ export async function GET(req: Request) {
       .limit(100);
 
     if (!reminders?.length) {
-      return NextResponse.json({ ok: true, triggered: 0 });
+      return NextResponse.json({ ok: true, triggered: 0, skipped: 0 });
     }
 
-    // Get user phones in bulk
-    const userIds = [...new Set(reminders.map((r) => r.user_id))];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, whatsapp_phone")
-      .in("id", userIds)
-      .not("whatsapp_phone", "is", null);
-
-    const phoneMap = new Map((profiles || []).map((p) => [p.id, p.whatsapp_phone]));
-
     for (const reminder of reminders) {
-      const phone = phoneMap.get(reminder.user_id);
-      if (!phone) continue;
-
       try {
-        const message =
-          `\u23F0 Hatirlatma: ${reminder.topic || ""}` +
-          (reminder.note ? `\n\n${reminder.note}` : "");
+        const topic = (reminder.topic as string) || "Hat\u0131rlatma";
+        const note = (reminder.note as string) || "";
 
-        await sendText(phone, message);
-        await sendNavFooter(phone);
+        // sendNotification handles shouldNotify + DB log + WA interactive
+        const result = await sendNotification({
+          userId: reminder.user_id as string,
+          type: "hatirlatma_manuel",
+          title: `\u23F0 ${topic}`,
+          body: note || `Manuel olarak kurdu\u011Funuz hat\u0131rlatma zaman\u0131 geldi: ${topic}`,
+          payload: { click_target: "/tr/takvim" },
+        });
 
-        // Mark as triggered
+        // Yine de "triggered" i\u015Faretle \u2014 tercih kapal\u0131ysa bile ayn\u0131 reminder
+        // tekrar tekrar firing etmesin (DB'ye log yaz\u0131ld\u0131 veya ge\u00E7ildi).
         await supabase
           .from("reminders")
           .update({ triggered: true })
           .eq("id", reminder.id);
 
-        triggered++;
+        if (result.notification_id) triggered++;
+        else skipped++;
       } catch (err) {
         console.error(`[cron:hourly-check] Error for reminder ${reminder.id}:`, err);
       }
@@ -64,5 +59,5 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, triggered });
+  return NextResponse.json({ ok: true, triggered, skipped });
 }
