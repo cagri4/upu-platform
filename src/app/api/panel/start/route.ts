@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { randomBytes } from "crypto";
 import { getYardimEntry } from "@/lib/yardim-content";
+import { resolvePanelAuth } from "@/platform/auth/panel-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -27,29 +28,19 @@ const BOT_PHONE = "31644967207";
 
 export async function GET(req: NextRequest) {
   const cmd = req.nextUrl.searchParams.get("cmd");
-  const panelToken = req.nextUrl.searchParams.get("t");
-
-  if (!cmd || !panelToken) {
+  if (!cmd) {
     return NextResponse.redirect(`${APP_URL}/tr/panel`);
   }
 
-  const sb = getServiceClient();
-  const { data: pt } = await sb
-    .from("magic_link_tokens")
-    .select("user_id, expires_at")
-    .eq("token", panelToken)
-    .maybeSingle();
-
-  if (!pt) {
-    return NextResponse.redirect(`${APP_URL}/tr/panel`);
-  }
-  if (new Date(pt.expires_at) < new Date()) {
+  // Cookie session öncelik, token fallback (legacy WA link'ler)
+  const auth = await resolvePanelAuth(req);
+  if ("error" in auth) {
     return NextResponse.redirect(`${APP_URL}/tr/panel`);
   }
 
   const entry = getYardimEntry(cmd);
   if (!entry?.startAction) {
-    return NextResponse.redirect(`${APP_URL}/tr/panel?t=${panelToken}`);
+    return NextResponse.redirect(`${APP_URL}/tr/panel`);
   }
 
   if (entry.startAction.type === "wa") {
@@ -57,11 +48,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // type === "web" — yeni magic token mint et + redirect
+  // type === "web" — yeni magic token mint et + redirect (form sayfaları
+  // hâlâ ?t= query bekliyor; cookie session olsa bile fresh token üret)
+  const sb = getServiceClient();
   const newToken = randomBytes(16).toString("hex");
   const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   await sb.from("magic_link_tokens").insert({
-    user_id: pt.user_id,
+    user_id: auth.userId,
     token: newToken,
     expires_at: expires,
   });
