@@ -24,17 +24,21 @@ interface Subscription {
 
 type Status = "loading" | "ready" | "error";
 
-const PRO_FEATURES = [
-  { label: "Akıllı bildirimler — sıcak müşteri, sözleşme bitiyor, AI önerileri", free: false },
-  { label: "Mülk ve ilan takibi (yeni ilan, fiyat değişimi)", free: false },
-  { label: "Müşteri-mülk eşleşme uyarıları", free: false },
-  { label: "Sunum açılma bildirimleri", free: false },
-  { label: "Web sitem ziyaretçi raporu — haftalık", free: false },
-  { label: "AI proaktif öneriler — kim arasın, hangi mülk fiyatı düşmeli", free: false },
-  { label: "Sınırsız mülk, müşteri, sunum kaydı", free: true },
-  { label: "WhatsApp tek tıkla yönet (mülk ekle, müşteri kaydet)", free: true },
-  { label: "Kişisel emlak web sayfası (/u/<slug>)", free: true },
-  { label: "Sahibinden Chrome eklentisi (otomatik form doldurma)", free: true },
+// Karşılaştırma tablosu — Free'de olanlar üstte (her iki kolonda ✓),
+// Pro-only'ler altta (Free'de ✗, Pro'da ✓).
+const FEATURE_ROWS: Array<{ label: string; free: boolean; pro: boolean }> = [
+  // Her plana dahil
+  { label: "Sınırsız mülk, müşteri, sunum kaydı", free: true, pro: true },
+  { label: "WhatsApp tek tıkla yönet (mülk ekle, müşteri kaydet)", free: true, pro: true },
+  { label: "Kişisel emlak web sayfası", free: true, pro: true },
+  { label: "Sahibinden Chrome eklentisi", free: true, pro: true },
+  // Sadece Pro
+  { label: "Akıllı bildirimler — sıcak müşteri, sözleşme bitiyor", free: false, pro: true },
+  { label: "Mülk ve ilan takibi (yeni ilan, fiyat değişimi)", free: false, pro: true },
+  { label: "Müşteri-mülk eşleşme uyarıları", free: false, pro: true },
+  { label: "Sunum açılma bildirimleri", free: false, pro: true },
+  { label: "Web sitem ziyaretçi raporu — haftalık", free: false, pro: true },
+  { label: "AI proaktif öneriler", free: false, pro: true },
 ];
 
 export default function UyelikPage() {
@@ -214,26 +218,44 @@ export default function UyelikPage() {
           </section>
         )}
 
-        {/* Pro features list */}
-        <section className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-sm font-bold text-slate-900 mb-3">Plan Karşılaştırması</p>
-          <ul className="space-y-2 text-sm">
-            {PRO_FEATURES.map((f, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <span className={`text-base ${f.free ? "text-emerald-600" : isProTier ? "text-violet-600" : "text-slate-300"}`}>
-                  {f.free ? "✓" : isProTier ? "✓" : "🔒"}
-                </span>
-                <span className={`flex-1 leading-snug ${f.free ? "text-slate-800" : isProTier ? "text-slate-800" : "text-slate-500"}`}>
-                  {f.label}
-                  {!f.free && (
-                    <span className="ml-2 text-[10px] uppercase tracking-wide font-semibold text-violet-700 bg-violet-100 px-1.5 py-0.5 rounded align-middle">
-                      Pro
-                    </span>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
+        {/* Plan Karşılaştırması — 3-sütun tablo */}
+        <section>
+          <p className="text-sm font-bold text-slate-900 mb-3 px-1">Plan Karşılaştırması</p>
+          <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-sm bg-white">
+            <table className="w-full text-sm table-fixed">
+              <thead>
+                <tr className="bg-slate-50 text-slate-700">
+                  <th className="text-left font-semibold px-3 py-3 w-auto">Özellik</th>
+                  <th className="text-center font-semibold px-2 py-3 w-14 sm:w-20">Free</th>
+                  <th className="text-center font-semibold px-2 py-3 w-14 sm:w-20 bg-gradient-to-br from-violet-50 to-fuchsia-50 text-violet-800">
+                    Pro
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {FEATURE_ROWS.map((row, i) => (
+                  <tr key={i} className="border-t border-slate-100 even:bg-slate-50/40">
+                    <td className="px-3 py-3 text-slate-800 leading-snug">{row.label}</td>
+                    <td className="text-center px-2 py-3" aria-label={row.free ? "Var" : "Yok"}>
+                      {row.free
+                        ? <span className="text-emerald-600 text-base font-bold">✓</span>
+                        : <span className="text-rose-400 text-base font-bold">✗</span>}
+                    </td>
+                    <td className="text-center px-2 py-3 bg-gradient-to-br from-violet-50/60 to-fuchsia-50/40" aria-label={row.pro ? "Var" : "Yok"}>
+                      {row.pro
+                        ? <span className="text-violet-600 text-base font-bold">✓</span>
+                        : <span className="text-rose-400 text-base font-bold">✗</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!isProTier && (
+            <p className="text-xs text-slate-500 mt-2 px-1">
+              💎 Pro özellikleri açmak için yukarıdaki planlardan birini seç.
+            </p>
+          )}
         </section>
 
         {/* Cancel button — sadece Pro paid user için */}
