@@ -40,13 +40,13 @@ export default function PropertiesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">📋 Mülklerim</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">📋 Mülklerim</h1>
         <div className="flex gap-2 text-sm">
           {(['all', 'satilik', 'kiralik'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1 rounded-md ${filter === f ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}
+              className={`px-3 py-1 rounded-md ${filter === f ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700 dark:text-slate-300'}`}
             >
               {f === 'all' ? 'Tümü' : f === 'satilik' ? 'Satılık' : 'Kiralık'}
             </button>
@@ -59,7 +59,7 @@ export default function PropertiesPage() {
       ) : filtered.length === 0 ? (
         <Card className="p-8 text-center">
           <Home className="mx-auto mb-3 h-10 w-10 text-slate-400" />
-          <p className="text-slate-600">Henüz mülk eklenmemiş.</p>
+          <p className="text-slate-600 dark:text-slate-400">Henüz mülk eklenmemiş.</p>
           <p className="text-sm text-slate-500 mt-1">WhatsApp'tan "mülk ekle" yazarak başlayın.</p>
         </Card>
       ) : (
@@ -81,12 +81,12 @@ export default function PropertiesPage() {
                   </span>
                 </div>
                 <div className="p-4">
-                  <h3 className="font-semibold text-slate-900 truncate">{p.title}</h3>
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">{p.title}</h3>
                   <div className="flex items-center gap-1 text-sm text-slate-500 mt-1">
                     <MapPin size={14} />
                     <span>{p.location_neighborhood || p.location_district || '—'}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-600 mt-2">
+                  <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 mt-2">
                     {p.rooms && <span className="flex items-center gap-1"><BedDouble size={14} />{p.rooms}</span>}
                     {p.area && <span className="flex items-center gap-1"><Maximize2 size={14} />{p.area} m²</span>}
                   </div>

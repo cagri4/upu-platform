@@ -80,7 +80,7 @@ export function SlideControls({ presToken, slideKey, initialText, editable }: Pr
         {editable && (
           <button
             onClick={() => setEditing(true)}
-            className="bg-white/95 hover:bg-white shadow-md rounded-full w-9 h-9 flex items-center justify-center text-slate-700 hover:text-indigo-600 active:scale-95 border border-slate-200"
+            className="bg-white/95 hover:bg-white shadow-md rounded-full w-9 h-9 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-indigo-600 active:scale-95 border border-slate-200 dark:border-slate-800/50"
             title="Düzenle"
             aria-label="Düzenle"
           >
@@ -90,7 +90,7 @@ export function SlideControls({ presToken, slideKey, initialText, editable }: Pr
         <button
           onClick={() => void del()}
           disabled={deleting}
-          className="bg-white/95 hover:bg-white shadow-md rounded-full w-9 h-9 flex items-center justify-center text-slate-700 hover:text-red-600 active:scale-95 border border-slate-200 disabled:opacity-50"
+          className="bg-white/95 hover:bg-white shadow-md rounded-full w-9 h-9 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-red-600 active:scale-95 border border-slate-200 dark:border-slate-800/50 disabled:opacity-50"
           title="Sayfayı sil"
           aria-label="Sayfayı sil"
         >
@@ -102,22 +102,22 @@ export function SlideControls({ presToken, slideKey, initialText, editable }: Pr
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => !saving && setEditing(false)}>
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-slate-900 mb-3">Slaytı Düzenle</h3>
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">Slaytı Düzenle</h3>
             <textarea
               rows={8}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg p-3 text-sm text-slate-900"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-sm text-slate-900 dark:text-slate-100"
               placeholder="Slayt metnini yazın..."
             />
             {error && (
-              <div className="mt-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">⚠️ {error}</div>
+              <div className="mt-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-3 py-2 rounded text-sm">⚠️ {error}</div>
             )}
             <div className="flex gap-2 mt-4">
               <button
                 onClick={() => setEditing(false)}
                 disabled={saving}
-                className="flex-1 px-4 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-medium disabled:opacity-50"
               >
                 İptal
               </button>

@@ -113,10 +113,10 @@ export default function SetupPage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
           <div className="text-4xl mb-3">⏳</div>
-          <p className="text-slate-600">Link doğrulanıyor...</p>
+          <p className="text-slate-600 dark:text-slate-400">Link doğrulanıyor...</p>
         </div>
       </div>
     );
@@ -124,11 +124,11 @@ export default function SetupPage() {
 
   if (status === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">
           <div className="text-4xl mb-3">⚠️</div>
-          <h1 className="text-xl font-bold text-slate-900 mb-2">Hata</h1>
-          <p className="text-slate-600 text-sm mb-4">{error}</p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Hata</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
           <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-medium">WhatsApp'a dön</a>
         </div>
       </div>
@@ -137,11 +137,11 @@ export default function SetupPage() {
 
   if (status === "done") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">
           <div className="text-5xl mb-3">🎉</div>
-          <h1 className="text-xl font-bold text-slate-900 mb-2">Hazırsın!</h1>
-          <p className="text-slate-600 text-sm mb-6">Profilin kaydedildi. Şimdi WhatsApp'a dönüp devam edelim.</p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Hazırsın!</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">Profilin kaydedildi. Şimdi WhatsApp'a dönüp devam edelim.</p>
           <a
             href={`https://wa.me/${BOT_WA_NUMBER}?text=${encodeURIComponent("başladım")}`}
             className="block bg-green-600 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-lg active:scale-95 transition"
@@ -155,7 +155,7 @@ export default function SetupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">👋</div>
@@ -166,22 +166,22 @@ export default function SetupPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Section 1: Search criteria */}
           <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-            <h2 className="font-bold text-slate-900 mb-1">🔍 Arama Kriterleri</h2>
+            <h2 className="font-bold text-slate-900 dark:text-slate-100 mb-1">🔍 Arama Kriterleri</h2>
             <p className="text-xs text-slate-500 mb-4">Her sabah sana uygun yeni ilanları göstereceğim.</p>
 
-            <label className="block text-sm font-medium text-slate-700 mb-1">Bölge</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Bölge</label>
             <select value={region} onChange={(e) => setRegion(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3 py-3 mb-4 text-base">
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 mb-4 text-base">
               {REGIONS.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
             </select>
 
-            <label className="block text-sm font-medium text-slate-700 mb-1">Mülk Tipi</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Mülk Tipi</label>
             <select value={propertyType} onChange={(e) => setPropertyType(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3 py-3 mb-4 text-base">
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 mb-4 text-base">
               {PROPERTY_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
             </select>
 
-            <label className="block text-sm font-medium text-slate-700 mb-1">İlan Tipi</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">İlan Tipi</label>
             <div className="grid grid-cols-3 gap-2 mb-4">
               {[
                 { id: "satilik", label: "Satılık" },
@@ -189,13 +189,13 @@ export default function SetupPage() {
                 { id: "hepsi", label: "Hepsi" },
               ].map((o) => (
                 <button type="button" key={o.id} onClick={() => setListingType(o.id)}
-                  className={`py-3 rounded-lg text-sm font-medium border-2 ${listingType === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
+                  className={`py-3 rounded-lg text-sm font-medium border-2 ${listingType === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}>
                   {o.label}
                 </button>
               ))}
             </div>
 
-            <label className="block text-sm font-medium text-slate-700 mb-1">Kimin ilanları</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kimin ilanları</label>
             <div className="grid grid-cols-3 gap-2">
               {[
                 { id: "sahibi", label: "Sahibinden" },
@@ -203,7 +203,7 @@ export default function SetupPage() {
                 { id: "hepsi", label: "Hepsi" },
               ].map((o) => (
                 <button type="button" key={o.id} onClick={() => setListedBy(o.id)}
-                  className={`py-3 rounded-lg text-xs font-medium border-2 ${listedBy === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
+                  className={`py-3 rounded-lg text-xs font-medium border-2 ${listedBy === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}>
                   {o.label}
                 </button>
               ))}
@@ -212,43 +212,43 @@ export default function SetupPage() {
 
           {/* Section 2: Profile */}
           <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-            <h2 className="font-bold text-slate-900 mb-1">👤 Profil Bilgileri</h2>
+            <h2 className="font-bold text-slate-900 dark:text-slate-100 mb-1">👤 Profil Bilgileri</h2>
             <p className="text-xs text-slate-500 mb-4">Sunumlarda imza olarak kullanacağım.</p>
 
-            <label className="block text-sm font-medium text-slate-700 mb-1">Ad Soyad *</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ad Soyad *</label>
             <input type="text" required value={displayName} onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Ahmet Yılmaz"
-              className="w-full border border-slate-300 rounded-lg px-3 py-3 mb-4 text-base" />
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 mb-4 text-base" />
 
-            <label className="block text-sm font-medium text-slate-700 mb-1">Ofis / Şirket</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ofis / Şirket</label>
             <input type="text" value={officeName} onChange={(e) => setOfficeName(e.target.value)}
               placeholder="ABC Emlak"
-              className="w-full border border-slate-300 rounded-lg px-3 py-3 mb-4 text-base" />
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 mb-4 text-base" />
 
-            <label className="block text-sm font-medium text-slate-700 mb-1">Çalıştığınız bölge</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Çalıştığınız bölge</label>
             <input type="text" value={location} onChange={(e) => setLocation(e.target.value)}
               placeholder="Bodrum Merkez"
-              className="w-full border border-slate-300 rounded-lg px-3 py-3 mb-4 text-base" />
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 mb-4 text-base" />
 
-            <label className="block text-sm font-medium text-slate-700 mb-1">E-posta</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">E-posta</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="ahmet@canemlak.com"
-              className="w-full border border-slate-300 rounded-lg px-3 py-3 mb-4 text-base" />
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 mb-4 text-base" />
 
-            <label className="block text-sm font-medium text-slate-700 mb-1">Tecrübe (yıl)</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tecrübe (yıl)</label>
             <input type="number" min="0" value={experienceYears} onChange={(e) => setExperienceYears(e.target.value)}
               placeholder="5"
-              className="w-full border border-slate-300 rounded-lg px-3 py-3 mb-4 text-base" />
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 mb-4 text-base" />
 
-            <label className="flex items-center gap-3 bg-slate-50 rounded-lg p-3">
+            <label className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950 rounded-lg p-3">
               <input type="checkbox" checked={briefingEnabled} onChange={(e) => setBriefingEnabled(e.target.checked)}
                 className="w-5 h-5 accent-indigo-600" />
-              <span className="text-sm text-slate-700">Her sabah durum raporu göndersin mi?</span>
+              <span className="text-sm text-slate-700 dark:text-slate-300">Her sabah durum raporu göndersin mi?</span>
             </label>
           </section>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">
               ⚠️ {error}
             </div>
           )}

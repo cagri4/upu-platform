@@ -91,7 +91,7 @@ export function HistoryView() {
             className={`px-3 py-1.5 rounded-full text-xs font-medium border-2 whitespace-nowrap ${
               filter === f.id
                 ? "bg-amber-600 text-white border-amber-600"
-                : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"
             }`}
           >
             {f.label}
@@ -100,7 +100,7 @@ export function HistoryView() {
         {hasUnread && (
           <button
             onClick={() => void markAllRead()}
-            className="ml-auto px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap"
+            className="ml-auto px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200 whitespace-nowrap"
           >
             Tümünü okundu işaretle
           </button>
@@ -129,7 +129,7 @@ export function HistoryView() {
                 href={href}
                 onClick={(e) => handleClick(n, e)}
                 className={`block bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md transition border-l-4 ${
-                  n.is_read ? "border-slate-200" : "border-amber-500 bg-amber-50/30"
+                  n.is_read ? "border-slate-200 dark:border-slate-800/50" : "border-amber-500 bg-amber-50/30"
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -137,8 +137,8 @@ export function HistoryView() {
                     <span className="w-2 h-2 bg-amber-500 rounded-full mt-2 flex-shrink-0" aria-label="okunmadı" />
                   )}
                   <div className={`flex-1 min-w-0 ${n.is_read ? "ml-2.5" : ""}`}>
-                    <h3 className="font-semibold text-sm text-slate-900">{n.title}</h3>
-                    <p className="text-sm text-slate-600 mt-1 leading-snug whitespace-pre-line">{n.body}</p>
+                    <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100">{n.title}</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 leading-snug whitespace-pre-line">{n.body}</p>
                     <p className="text-xs text-slate-400 mt-2">{fmtDate(n.created_at)}</p>
                   </div>
                 </div>

@@ -55,7 +55,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
     <div>
       <Link href="/tr/properties" className="inline-flex items-center gap-1 text-indigo-600 mb-4"><ArrowLeft size={16} /> Geri</Link>
       <Card className="p-8 text-center">
-        <p className="text-slate-600">Mülk bulunamadı.</p>
+        <p className="text-slate-600 dark:text-slate-400">Mülk bulunamadı.</p>
       </Card>
     </div>
   );
@@ -85,7 +85,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 
         <div className="p-6 space-y-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">{property.title}</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{property.title}</h1>
             <div className="flex items-center gap-1 text-slate-500 mt-1">
               <MapPin size={16} />
               <span>{[property.location_neighborhood, property.location_district, property.location_city].filter(Boolean).join(', ') || '—'}</span>
@@ -111,8 +111,8 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 
           {(property.description || property.ai_description) && (
             <div>
-              <h2 className="font-semibold text-slate-900 mb-2">Açıklama</h2>
-              <p className="text-slate-700 text-sm whitespace-pre-wrap">
+              <h2 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Açıklama</h2>
+              <p className="text-slate-700 dark:text-slate-300 text-sm whitespace-pre-wrap">
                 {property.ai_description || property.description}
               </p>
             </div>
@@ -132,9 +132,9 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 function InfoRow({ label, value }: { label: string; value: string | number | null | undefined }) {
   if (!value) return null;
   return (
-    <div className="bg-slate-50 rounded-md px-3 py-2">
+    <div className="bg-slate-50 dark:bg-slate-950 rounded-md px-3 py-2">
       <div className="text-xs text-slate-500">{label}</div>
-      <div className="font-medium text-slate-800 truncate">{value}</div>
+      <div className="font-medium text-slate-800 dark:text-slate-200 truncate">{value}</div>
     </div>
   );
 }

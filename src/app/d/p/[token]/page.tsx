@@ -260,11 +260,11 @@ export default async function PresentationPage({ params }: PageProps) {
 
   return (
     <html lang="tr">
-      <body className="bg-stone-50 text-stone-900 antialiased overflow-hidden">
+      <body className="bg-stone-50 dark:bg-stone-950/30 text-stone-900 antialiased overflow-hidden">
         {/* Owner-only fixed back bar — sticky parent overflow-x ile bozulduğu
             için fixed konumlanmış; z-50 ile slide content'in üstünde kalır. */}
         {isOwner && (
-          <div className="fixed top-0 left-0 right-0 z-50 h-11 bg-white/95 backdrop-blur border-b border-stone-200 print:hidden">
+          <div className="fixed top-0 left-0 right-0 z-50 h-11 bg-white/95 backdrop-blur border-b border-stone-200 dark:border-stone-800/50 print:hidden">
             <div className="max-w-6xl mx-auto px-4 h-full flex items-center justify-between">
               <a
                 href="/tr/sunumlarim"
@@ -281,7 +281,7 @@ export default async function PresentationPage({ params }: PageProps) {
         {/* Yatay swipe carousel — her slide tam viewport, scroll-snap mandatory.
             Mobilde doğal touch-swipe, desktop'ta yatay scroll. */}
         <main
-          className={`flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory bg-stone-50 ${isOwner ? "h-[calc(100dvh-2.75rem)] mt-11" : "h-[100dvh]"}`}
+          className={`flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory bg-stone-50 dark:bg-stone-950/30 ${isOwner ? "h-[calc(100dvh-2.75rem)] mt-11" : "h-[100dvh]"}`}
         >
 
           {/* ── Slide 1: Cover (büyük foto sol, tipografi sağ + dekoratif kareler) ─── */}
@@ -425,7 +425,7 @@ export default async function PresentationPage({ params }: PageProps) {
                   </div>
                 ))}
                 {pair.length === 1 && (
-                  <div className="bg-stone-50 flex items-center justify-center">
+                  <div className="bg-stone-50 dark:bg-stone-950/30 flex items-center justify-center">
                     <HomeIcon className="w-20 h-20 text-stone-300" />
                   </div>
                 )}

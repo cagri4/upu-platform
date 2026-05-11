@@ -121,7 +121,7 @@ export default function AdminTicketDetailPage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a href="/admin/tickets" className="text-slate-400 hover:text-white text-sm">← Destek Talepleri</a>
-            <span className="text-slate-700">/</span>
+            <span className="text-slate-700 dark:text-slate-300">/</span>
             <span className="text-slate-400 text-sm font-mono">#{ticket.id}</span>
           </div>
           <select

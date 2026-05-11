@@ -90,7 +90,7 @@ export default function AdminTicketsPage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a href="/admin" className="text-slate-400 hover:text-white text-sm">← Admin</a>
-            <span className="text-slate-700">/</span>
+            <span className="text-slate-700 dark:text-slate-300">/</span>
             <span className="text-2xl">🛟</span>
             <h1 className="text-xl font-bold">Destek Talepleri</h1>
           </div>
@@ -120,7 +120,7 @@ export default function AdminTicketsPage() {
                 key={o.id}
                 onClick={() => setStatusFilter(o.id)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
-                  statusFilter === o.id ? "bg-white dark:bg-slate-800 text-slate-900 border-white" : "bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600"
+                  statusFilter === o.id ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-white" : "bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600"
                 }`}
               >
                 {o.label}
@@ -133,7 +133,7 @@ export default function AdminTicketsPage() {
                 key={o.id}
                 onClick={() => setSince(o.id)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
-                  since === o.id ? "bg-white dark:bg-slate-800 text-slate-900 border-white" : "bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600"
+                  since === o.id ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-white" : "bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600"
                 }`}
               >
                 {o.label}

@@ -121,13 +121,13 @@ export default function BayiPanelimPage() {
       </div>
 
       {/* Bilgisayardan Kullan — feature highlight */}
-      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5 shadow-sm">
+      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl p-5 shadow-sm">
         <div className="flex items-start gap-4">
           <div className="text-3xl flex-shrink-0">🖥</div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-slate-900 mb-1">Bilgisayardan Kullanın</h3>
-            <p className="text-sm text-slate-600 leading-relaxed mb-3">
-              Bilgisayarınızda <span className="font-semibold text-slate-900">qr.upudev.nl</span> sayfasını açın, telefonunuzdaki QR kodu kameraya tutun — saniyeler içinde panel masaüstünüzde de açılır.
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Bilgisayardan Kullanın</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
+              Bilgisayarınızda <span className="font-semibold text-slate-900 dark:text-slate-100">qr.upudev.nl</span> sayfasını açın, telefonunuzdaki QR kodu kameraya tutun — saniyeler içinde panel masaüstünüzde de açılır.
             </p>
             <button
               onClick={openQrScanner}
@@ -140,10 +140,10 @@ export default function BayiPanelimPage() {
       </div>
 
       {/* Quick actions hint */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm text-sm text-slate-600">
-        <p className="font-semibold text-slate-900 mb-2">💡 Hızlı işlem</p>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm text-sm text-slate-600 dark:text-slate-400">
+        <p className="font-semibold text-slate-900 dark:text-slate-100 mb-2">💡 Hızlı işlem</p>
         <p>
-          Yeni bayi eklemek için sol menüden <strong>Bayilerim</strong>, sipariş kaydetmek için <strong>Siparişlerim</strong>, ya da WhatsApp&apos;ta doğrudan komut adını yazabilirsiniz (örn. <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">bayilerim</span>).
+          Yeni bayi eklemek için sol menüden <strong>Bayilerim</strong>, sipariş kaydetmek için <strong>Siparişlerim</strong>, ya da WhatsApp&apos;ta doğrudan komut adını yazabilirsiniz (örn. <span className="font-mono bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">bayilerim</span>).
         </p>
       </div>
     </div>

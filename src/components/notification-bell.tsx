@@ -109,7 +109,7 @@ export function NotificationBell({ accentColor = "indigo", token = "" }: {
         aria-label="Bildirimler"
         title="Bildirimler"
       >
-        <svg className="w-5 h-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg className="w-5 h-5 text-slate-700 dark:text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
@@ -121,9 +121,9 @@ export function NotificationBell({ accentColor = "indigo", token = "" }: {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 rounded-xl shadow-lg z-40 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-900">Bildirimler</p>
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl shadow-lg z-40 overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800/50 flex items-center justify-between">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Bildirimler</p>
             {unread > 0 && (
               <button
                 onClick={() => void markAllRead()}
@@ -153,8 +153,8 @@ export function NotificationBell({ accentColor = "indigo", token = "" }: {
                         <span className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5 flex-shrink-0" aria-label="okunmadı" />
                       )}
                       <div className={`flex-1 min-w-0 ${n.is_read ? "ml-3.5" : ""}`}>
-                        <p className="font-medium text-sm text-slate-900 truncate">{n.title}</p>
-                        <p className="text-xs text-slate-600 line-clamp-2 mt-0.5">{n.body}</p>
+                        <p className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">{n.title}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mt-0.5">{n.body}</p>
                         <p className="text-[10px] text-slate-400 mt-1">{timeAgo(n.created_at)}</p>
                       </div>
                     </div>
@@ -165,7 +165,7 @@ export function NotificationBell({ accentColor = "indigo", token = "" }: {
           </div>
           <a
             href={allHref}
-            className="block px-4 py-3 text-center text-sm font-medium text-indigo-600 hover:bg-indigo-50 border-t border-slate-200"
+            className="block px-4 py-3 text-center text-sm font-medium text-indigo-600 hover:bg-indigo-50 border-t border-slate-200 dark:border-slate-800/50"
           >
             Tümünü Gör →
           </a>

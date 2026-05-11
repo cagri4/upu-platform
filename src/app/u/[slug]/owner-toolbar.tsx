@@ -65,7 +65,7 @@ export function OwnerToolbar({
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-b border-stone-200 print:hidden">
+    <div className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-b border-stone-200 dark:border-stone-800/50 print:hidden">
       <div className="max-w-5xl mx-auto px-3 md:px-4 py-2.5 flex items-center justify-between gap-2">
         <a
           href={panelHref}

@@ -35,7 +35,7 @@ const STATUS_META: Record<string, { label: string; emoji: string; color: string 
   called: { label: "Aradım", emoji: "📞", color: "bg-blue-100 text-blue-700 border-blue-300" },
   no_answer: { label: "Cevap yok", emoji: "🔕", color: "bg-yellow-100 text-yellow-700 border-yellow-300" },
   interested: { label: "İlgilendi", emoji: "👍", color: "bg-green-100 text-green-700 border-green-300" },
-  not_interested: { label: "İlgilenmedi", emoji: "👎", color: "bg-slate-100 text-slate-600 border-slate-300" },
+  not_interested: { label: "İlgilenmedi", emoji: "👎", color: "bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-600" },
   listed: { label: "Portföye aldı", emoji: "🏆", color: "bg-purple-100 text-purple-700 border-purple-300" },
 };
 
@@ -85,7 +85,7 @@ export default function LeadListePage() {
   if (status === "loading") return <Center><div className="text-4xl mb-3">⏳</div><p>Yükleniyor...</p></Center>;
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div><h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp'a dön</a>
   </Center>;
 
@@ -99,7 +99,7 @@ export default function LeadListePage() {
   const doneCount = leads.filter(l => !!l.call).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-orange-600 to-red-600 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">🔥</div>
@@ -112,7 +112,7 @@ export default function LeadListePage() {
         <div className="grid grid-cols-3 gap-2 mb-4">
           {(["pending", "done", "all"] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`py-2 rounded-lg text-sm font-medium border-2 ${filter === f ? "bg-orange-600 text-white border-orange-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
+              className={`py-2 rounded-lg text-sm font-medium border-2 ${filter === f ? "bg-orange-600 text-white border-orange-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}>
               {f === "pending" ? "Aranacak" : f === "done" ? "İşaretli" : "Tümü"}
             </button>
           ))}
@@ -130,7 +130,7 @@ export default function LeadListePage() {
           ))}
         </div>
 
-        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
+        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
 
         <div className="mt-8 text-center">
           <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-medium">💬 WhatsApp'a Dön</a>
@@ -147,7 +147,7 @@ function LeadCard({ lead, saving, onAction }: { lead: Lead; saving: boolean; onA
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
       <div className="flex justify-between items-start gap-2 mb-2">
-        <h3 className="font-bold text-slate-900 leading-tight flex-1">{lead.title}</h3>
+        <h3 className="font-bold text-slate-900 dark:text-slate-100 leading-tight flex-1">{lead.title}</h3>
         {callMeta && (
           <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${callMeta.color} whitespace-nowrap`}>
             {callMeta.emoji} {callMeta.label}
@@ -155,12 +155,12 @@ function LeadCard({ lead, saving, onAction }: { lead: Lead; saving: boolean; onA
         )}
       </div>
 
-      <div className="text-sm text-slate-600 space-y-1 mb-3">
+      <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1 mb-3">
         <div>📍 {lead.location_neighborhood || "Bodrum"}</div>
         <div className="flex gap-3 flex-wrap">
           {lead.rooms && <span>🏠 {lead.rooms}</span>}
           {lead.area && <span>📐 {lead.area} m²</span>}
-          <span className="font-semibold text-slate-900">💰 {priceStr}</span>
+          <span className="font-semibold text-slate-900 dark:text-slate-100">💰 {priceStr}</span>
         </div>
         {lead.owner_name && <div>👤 {lead.owner_name}</div>}
       </div>
@@ -171,7 +171,7 @@ function LeadCard({ lead, saving, onAction }: { lead: Lead; saving: boolean; onA
           📞 {lead.owner_phone}
         </a>
       ) : (
-        <div className="bg-slate-100 text-slate-500 text-sm text-center py-2.5 rounded-lg mb-2">Telefon bulunamadı</div>
+        <div className="bg-slate-100 dark:bg-slate-900 text-slate-500 text-sm text-center py-2.5 rounded-lg mb-2">Telefon bulunamadı</div>
       )}
 
       <SahibindenLink href={lead.source_url} target="_blank" rel="noopener noreferrer"
@@ -181,19 +181,19 @@ function LeadCard({ lead, saving, onAction }: { lead: Lead; saving: boolean; onA
 
       <div className="grid grid-cols-2 gap-2">
         <button onClick={() => onAction("called")} disabled={saving}
-          className="py-2 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 active:scale-95 disabled:opacity-50">
+          className="py-2 rounded-lg text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-700 border border-blue-200 dark:border-blue-800/50 active:scale-95 disabled:opacity-50">
           📞 Aradım
         </button>
         <button onClick={() => onAction("no_answer")} disabled={saving}
-          className="py-2 rounded-lg text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-200 active:scale-95 disabled:opacity-50">
+          className="py-2 rounded-lg text-xs font-medium bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 border border-yellow-200 dark:border-yellow-800/50 active:scale-95 disabled:opacity-50">
           🔕 Cevap yok
         </button>
         <button onClick={() => onAction("interested")} disabled={saving}
-          className="py-2 rounded-lg text-xs font-medium bg-green-50 text-green-700 border border-green-200 active:scale-95 disabled:opacity-50">
+          className="py-2 rounded-lg text-xs font-medium bg-green-50 dark:bg-green-950/30 text-green-700 border border-green-200 dark:border-green-800/50 active:scale-95 disabled:opacity-50">
           👍 İlgilendi
         </button>
         <button onClick={() => onAction("not_interested")} disabled={saving}
-          className="py-2 rounded-lg text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200 active:scale-95 disabled:opacity-50">
+          className="py-2 rounded-lg text-xs font-medium bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800/50 active:scale-95 disabled:opacity-50">
           👎 İlgilenmedi
         </button>
         <button onClick={() => onAction("listed")} disabled={saving}
@@ -206,7 +206,7 @@ function LeadCard({ lead, saving, onAction }: { lead: Lead; saving: boolean; onA
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

@@ -72,8 +72,8 @@ export function RevisionBadge({ componentKey, locale, theme, labels }: Props) {
       </button>
 
       {open && (
-        <div className="absolute left-0 bottom-full mb-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 z-50 p-4">
-          <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-3">{labels.title}</h3>
+        <div className="absolute left-0 bottom-full mb-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800/50 z-50 p-4">
+          <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-3">{labels.title}</h3>
 
           {visible.length === 0 ? (
             <p className="text-sm text-slate-500">{labels.no_revisions}</p>
@@ -84,7 +84,7 @@ export function RevisionBadge({ componentKey, locale, theme, labels }: Props) {
                   <div className="text-[11px] font-semibold text-slate-500">
                     {formatDate(r.date, localeStr as "tr-TR" | "nl-NL" | "en-US")}
                   </div>
-                  <div className="text-sm text-slate-700 mt-0.5">{r.description}</div>
+                  <div className="text-sm text-slate-700 dark:text-slate-300 mt-0.5">{r.description}</div>
                 </li>
               ))}
             </ul>

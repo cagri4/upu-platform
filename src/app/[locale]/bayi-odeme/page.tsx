@@ -71,19 +71,19 @@ export default function BayiOdemePage() {
   if (status === "loading") return <Center><div className="text-4xl mb-3">⏳</div><p>Yükleniyor...</p></Center>;
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div><h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
   if (status === "done") return <Center>
     <div className="text-4xl mb-3">✅</div><h1 className="text-xl font-bold mb-2">Ödeme kaydedildi!</h1>
-    <p className="text-slate-600 text-sm mb-4">Teyit mesajı WhatsApp&apos;a gitti.</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">Teyit mesajı WhatsApp&apos;a gitti.</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
 
   const selectedDealer = dealers.find(d => d.id === dealerId);
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-green-600 to-emerald-600 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">💳</div>
@@ -95,10 +95,10 @@ export default function BayiOdemePage() {
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Bayi</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Bayi</label>
             {isOwner ? (
               <select value={dealerId} onChange={e => setDealerId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm">
                 <option value="">Bayi seçin...</option>
                 {dealers.map(d => (
                   <option key={d.id} value={d.id}>
@@ -107,7 +107,7 @@ export default function BayiOdemePage() {
                 ))}
               </select>
             ) : (
-              <div className="text-sm font-medium text-slate-800">{selectedDealer?.name || "—"}</div>
+              <div className="text-sm font-medium text-slate-800 dark:text-slate-200">{selectedDealer?.name || "—"}</div>
             )}
             {selectedDealer && (
               <div className="text-xs text-slate-500 mt-1">
@@ -117,19 +117,19 @@ export default function BayiOdemePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Tutar (₺)</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Tutar (₺)</label>
             <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
               min={0.01} step={0.01}
               placeholder="Örn. 5000"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-lg font-bold" />
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-lg font-bold" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-2">Yöntem</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Yöntem</label>
             <div className="grid grid-cols-2 gap-2">
               {METHODS.map(m => (
                 <button key={m.id} type="button" onClick={() => setMethod(m.id)}
-                  className={`py-2 rounded-lg text-sm font-medium border-2 ${method === m.id ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
+                  className={`py-2 rounded-lg text-sm font-medium border-2 ${method === m.id ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}>
                   {m.label}
                 </button>
               ))}
@@ -137,10 +137,10 @@ export default function BayiOdemePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Not (opsiyonel)</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Not (opsiyonel)</label>
             <textarea value={note} onChange={e => setNote(e.target.value)}
               rows={2} placeholder="Örn. Mart ayı faturası karşılığı"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm" />
           </div>
         </div>
 
@@ -149,14 +149,14 @@ export default function BayiOdemePage() {
           {status === "saving" ? "Kaydediliyor..." : "💳 Ödemeyi Kaydet"}
         </button>
 
-        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
+        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
       </div>
     </div>
   );
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

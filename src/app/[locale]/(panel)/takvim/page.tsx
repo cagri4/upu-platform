@@ -146,34 +146,34 @@ export default function TakvimPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-            <label className="block text-sm font-medium text-slate-900 mb-2">Başlık *</label>
+            <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">Başlık *</label>
             <input
               value={title} onChange={e => setTitle(e.target.value)} maxLength={100}
               placeholder="Mehmet Bey'i ara"
-              className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 text-base"
             />
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-            <label className="block text-sm font-medium text-slate-900 mb-2">Tarih ve Saat *</label>
+            <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">Tarih ve Saat *</label>
             <input
               type="datetime-local"
               value={scheduledLocal} onChange={e => setScheduledLocal(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 text-base"
             />
             <p className="text-xs text-slate-500 mt-1">Dakika hassasiyetinde — tam o anda mesaj gelir.</p>
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-            <label className="block text-sm font-medium text-slate-900 mb-2">Açıklama (opsiyonel)</label>
+            <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">Açıklama (opsiyonel)</label>
             <textarea
               value={description} onChange={e => setDescription(e.target.value)} rows={3} maxLength={500}
               placeholder="Sözleşme imzalanıp imzalanmadığını sor..."
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
             />
           </div>
 
-          {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
+          {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
           <div className="grid grid-cols-2 gap-2">
             <button type="submit" disabled={status === "saving"}
@@ -181,7 +181,7 @@ export default function TakvimPage() {
               {status === "saving" ? "Kaydediliyor..." : (editId ? "✅ Güncelle" : "✅ Kaydet")}
             </button>
             <button type="button" onClick={() => { setView("list"); setError(""); }}
-              className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-4 rounded-xl text-base font-medium hover:bg-slate-50 transition">
+              className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-4 rounded-xl text-base font-medium hover:bg-slate-50 transition">
               ← Geri
             </button>
           </div>
@@ -214,7 +214,7 @@ export default function TakvimPage() {
       {items.length === 0 ? (
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
           <div className="text-5xl mb-3">📅</div>
-          <p className="font-semibold text-slate-900 mb-1">Henüz hatırlatıcınız yok</p>
+          <p className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Henüz hatırlatıcınız yok</p>
           <p className="text-slate-500 text-sm">Yukarıdaki butonla ilk hatırlatıcınızı ekleyin.</p>
         </div>
       ) : (
@@ -260,13 +260,13 @@ function EventCard({ ev, busy, onEdit, onDelete, past = false }: {
     <div className={`bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden ${past ? "opacity-70" : ""}`}>
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-semibold text-slate-900 truncate">{ev.title}</h3>
+          <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">{ev.title}</h3>
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${statusBg}`}>
             {statusBadge}
           </span>
         </div>
         <p className="text-xs text-slate-500">⏰ {fmtDate(ev.scheduled_at)}</p>
-        {ev.description && <p className="text-sm text-slate-600 mt-2 leading-relaxed">{ev.description}</p>}
+        {ev.description && <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">{ev.description}</p>}
       </div>
       {!past ? (
         <div className="border-t border-slate-100 grid grid-cols-2">
@@ -303,7 +303,7 @@ function EventCard({ ev, busy, onEdit, onDelete, past = false }: {
 function Center({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
-      <p className="text-slate-600">{children}</p>
+      <p className="text-slate-600 dark:text-slate-400">{children}</p>
     </div>
   );
 }

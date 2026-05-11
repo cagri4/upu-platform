@@ -73,7 +73,7 @@ export default function BayiFaturaPage() {
   if (status === "loading") return <Center><div className="text-4xl mb-3">⏳</div><p>Yükleniyor...</p></Center>;
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div><h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
 
@@ -87,7 +87,7 @@ export default function BayiFaturaPage() {
   const overdue = invoices.filter(i => !i.is_paid && daysUntil(i.due_date) < 0).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">📄</div>
@@ -100,7 +100,7 @@ export default function BayiFaturaPage() {
         <div className="grid grid-cols-3 gap-2 mb-4">
           {(["unpaid", "paid", "all"] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`py-2 rounded-lg text-sm font-medium border-2 ${filter === f ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
+              className={`py-2 rounded-lg text-sm font-medium border-2 ${filter === f ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}>
               {f === "unpaid" ? "Ödenmedi" : f === "paid" ? "Ödendi" : "Tümü"}
             </button>
           ))}
@@ -117,10 +117,10 @@ export default function BayiFaturaPage() {
             const days = daysUntil(inv.due_date);
             const late = !inv.is_paid && days < 0;
             return (
-              <div key={inv.id} className={`bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm ${late ? "border-2 border-red-200" : ""}`}>
+              <div key={inv.id} className={`bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm ${late ? "border-2 border-red-200 dark:border-red-800/50" : ""}`}>
                 <div className="flex justify-between items-start gap-2 mb-2">
                   <div>
-                    <div className="font-bold text-slate-900">#{inv.invoice_no || inv.id.slice(0, 8)}</div>
+                    <div className="font-bold text-slate-900 dark:text-slate-100">#{inv.invoice_no || inv.id.slice(0, 8)}</div>
                     {isOwnerView && inv.dealer_name && (
                       <div className="text-xs text-slate-500 mt-0.5">🏪 {inv.dealer_name}</div>
                     )}
@@ -134,7 +134,7 @@ export default function BayiFaturaPage() {
                   )}
                 </div>
 
-                <div className="text-sm text-slate-700 space-y-1 mb-3">
+                <div className="text-sm text-slate-700 dark:text-slate-300 space-y-1 mb-3">
                   <div className="flex justify-between">
                     <span className="text-slate-500">Tutar</span>
                     <span className="font-bold text-lg">{fmt(inv.amount)} ₺</span>
@@ -147,7 +147,7 @@ export default function BayiFaturaPage() {
 
                 {!inv.is_paid && canMarkPaid && (
                   <button onClick={() => markPaid(inv.id)} disabled={busyId === inv.id}
-                    className="w-full py-2 rounded-lg text-sm font-medium bg-green-50 text-green-700 border border-green-200 active:scale-95 disabled:opacity-60">
+                    className="w-full py-2 rounded-lg text-sm font-medium bg-green-50 dark:bg-green-950/30 text-green-700 border border-green-200 dark:border-green-800/50 active:scale-95 disabled:opacity-60">
                     {busyId === inv.id ? "Kaydediliyor..." : "✅ Ödendi olarak işaretle"}
                   </button>
                 )}
@@ -156,7 +156,7 @@ export default function BayiFaturaPage() {
           })}
         </div>
 
-        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
+        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
 
         <div className="mt-8 text-center">
           <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-medium">💬 WhatsApp&apos;a Dön</a>
@@ -167,7 +167,7 @@ export default function BayiFaturaPage() {
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

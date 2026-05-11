@@ -124,7 +124,7 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">Ayarlar</h1>
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6">Ayarlar</h1>
 
       <div className="space-y-6">
         {/* Profile */}
@@ -173,7 +173,7 @@ export default function SettingsPage() {
               ].map((lang) => (
                 <button
                   key={lang.code}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 hover:border-indigo-500 transition text-sm"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800/50 hover:border-indigo-500 transition text-sm"
                 >
                   <span>{lang.flag}</span>
                   <span>{lang.label}</span>
@@ -217,9 +217,9 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             {/* Current Plan */}
-            <div className="mb-6 p-4 bg-slate-50 rounded-lg">
+            <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-950 rounded-lg">
               <p className="text-sm text-slate-500">Mevcut Plan</p>
-              <p className="text-xl font-bold text-slate-900">{currentPlan}</p>
+              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{currentPlan}</p>
               <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Aktif</span>
             </div>
 
@@ -228,11 +228,11 @@ export default function SettingsPage() {
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr>
-                    <th className="text-left px-3 py-3 bg-slate-50 border-b border-slate-200 w-1/4">
+                    <th className="text-left px-3 py-3 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800/50 w-1/4">
                       Eleman / Komut
                     </th>
                     {PLANS.map(plan => (
-                      <th key={plan.name} className={`text-center px-3 py-3 border-b border-slate-200 ${plan.highlight ? 'bg-indigo-50' : 'bg-slate-50'}`}>
+                      <th key={plan.name} className={`text-center px-3 py-3 border-b border-slate-200 dark:border-slate-800/50 ${plan.highlight ? 'bg-indigo-50 dark:bg-indigo-950/30' : 'bg-slate-50 dark:bg-slate-950'}`}>
                         <div className="font-bold text-base">{plan.label}</div>
                         <div className="text-lg font-bold mt-1">
                           <span className="text-slate-400 text-xs">₺</span>{plan.price}
@@ -247,7 +247,7 @@ export default function SettingsPage() {
                     <>
                       {/* Employee header row */}
                       <tr key={`emp-${emp.key}`}>
-                        <td colSpan={4} className="px-3 py-2.5 bg-slate-100 font-semibold text-slate-700 border-b border-slate-200">
+                        <td colSpan={4} className="px-3 py-2.5 bg-slate-100 dark:bg-slate-900 font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800/50">
                           {emp.icon} {emp.name}
                         </td>
                       </tr>
@@ -257,7 +257,7 @@ export default function SettingsPage() {
                         const label = COMMAND_LABELS[cmd] || cmd;
                         return (
                           <tr key={cmd} className="hover:bg-slate-50 border-b border-slate-100">
-                            <td className="px-3 py-2 text-slate-600">{label}</td>
+                            <td className="px-3 py-2 text-slate-600 dark:text-slate-400">{label}</td>
                             {PLANS.map(plan => (
                               <td key={plan.name} className={`text-center px-3 py-2 ${plan.highlight ? 'bg-indigo-50/30' : ''}`}>
                                 {access[plan.name] ? (
@@ -284,7 +284,7 @@ export default function SettingsPage() {
                   className={`py-3 rounded-lg text-sm font-medium transition ${
                     plan.highlight
                       ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
                   }`}
                 >
                   {plan.label} Sec — ₺{plan.price}/ay

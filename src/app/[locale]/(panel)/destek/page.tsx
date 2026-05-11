@@ -22,8 +22,8 @@ const STATUS_BADGE: Record<string, { label: string; bg: string }> = {
   open: { label: "🔴 Yeni", bg: "bg-rose-100 text-rose-700" },
   in_progress: { label: "🟡 İşlemde", bg: "bg-amber-100 text-amber-700" },
   replied: { label: "🟢 Yanıtlandı", bg: "bg-emerald-100 text-emerald-700" },
-  resolved: { label: "✅ Çözüldü", bg: "bg-slate-200 text-slate-700" },
-  closed: { label: "Kapalı", bg: "bg-slate-100 text-slate-500" },
+  resolved: { label: "✅ Çözüldü", bg: "bg-slate-200 text-slate-700 dark:text-slate-300" },
+  closed: { label: "Kapalı", bg: "bg-slate-100 dark:bg-slate-900 text-slate-500" },
 };
 
 function fmtDate(iso: string): string {
@@ -118,30 +118,30 @@ export default function DestekPage() {
       {showForm && (
         <form onSubmit={handleCreate} className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
           <div>
-            <label className="block text-sm font-medium text-slate-900 mb-2">Konu *</label>
+            <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">Konu *</label>
             <input
               value={subject}
               onChange={e => setSubject(e.target.value)}
               maxLength={100}
               placeholder="Kısa bir başlık"
-              className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 text-base"
             />
             <p className="text-xs text-slate-400 mt-1">{subject.length}/100</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-900 mb-2">Mesaj *</label>
+            <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">Mesaj *</label>
             <textarea
               value={message}
               onChange={e => setMessage(e.target.value)}
               rows={6}
               maxLength={2000}
               placeholder="Sorununuzu detaylı yazın..."
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
             />
             <p className="text-xs text-slate-400 mt-1">{message.length}/2000</p>
           </div>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>
+            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>
           )}
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -154,7 +154,7 @@ export default function DestekPage() {
             <button
               type="button"
               onClick={() => { setShowForm(false); setError(""); }}
-              className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium hover:bg-slate-50"
+              className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl text-sm font-medium hover:bg-slate-50"
             >
               İptal
             </button>
@@ -165,7 +165,7 @@ export default function DestekPage() {
       {tickets.length === 0 && !showForm ? (
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
           <div className="text-5xl mb-3">🛟</div>
-          <p className="font-semibold text-slate-900 mb-1">Henüz talebiniz yok</p>
+          <p className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Henüz talebiniz yok</p>
           <p className="text-slate-500 text-sm">Sorularınızı veya geri bildirimlerinizi buradan iletebilirsiniz.</p>
         </div>
       ) : (
@@ -179,13 +179,13 @@ export default function DestekPage() {
                 className="block bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-4 hover:shadow-md active:scale-[0.99] transition"
               >
                 <div className="flex items-start justify-between gap-2 mb-1">
-                  <h3 className="font-semibold text-slate-900 truncate flex-1">#{t.id} {t.subject}</h3>
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate flex-1">#{t.id} {t.subject}</h3>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${badge.bg}`}>
                     {badge.label}
                   </span>
                 </div>
                 {t.last_message ? (
-                  <p className="text-sm text-slate-600 leading-snug line-clamp-2">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-snug line-clamp-2">
                     {t.last_message.sender_type === "admin" ? "📬 " : "💬 "}
                     {t.last_message.message}
                   </p>
@@ -205,7 +205,7 @@ export default function DestekPage() {
 function Center({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
-      <p className="text-slate-600">{children}</p>
+      <p className="text-slate-600 dark:text-slate-400">{children}</p>
     </div>
   );
 }

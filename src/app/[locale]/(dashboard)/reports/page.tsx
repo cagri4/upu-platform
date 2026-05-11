@@ -50,10 +50,10 @@ export default function ReportsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h1 className="text-2xl font-bold text-slate-900">📊 Rapor</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">📊 Rapor</h1>
         <div className="flex gap-2 text-sm">
-          <button onClick={() => setPeriod('week')} className={`px-3 py-1 rounded-md ${period === 'week' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Son 7 gün</button>
-          <button onClick={() => setPeriod('month')} className={`px-3 py-1 rounded-md ${period === 'month' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Son 30 gün</button>
+          <button onClick={() => setPeriod('week')} className={`px-3 py-1 rounded-md ${period === 'week' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700 dark:text-slate-300'}`}>Son 7 gün</button>
+          <button onClick={() => setPeriod('month')} className={`px-3 py-1 rounded-md ${period === 'month' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700 dark:text-slate-300'}`}>Son 30 gün</button>
         </div>
       </div>
 
@@ -71,7 +71,7 @@ export default function ReportsPage() {
           </div>
 
           <Card className="p-5">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Müşteri Pipeline'ı</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Müşteri Pipeline'ı</h2>
             {totalPipe === 0 ? (
               <p className="text-sm text-slate-500">Henüz müşteri yok.</p>
             ) : (
@@ -82,10 +82,10 @@ export default function ReportsPage() {
                   return (
                     <div key={key}>
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="text-slate-700">{label}</span>
+                        <span className="text-slate-700 dark:text-slate-300">{label}</span>
                         <span className="text-slate-500">{n} ({pct}%)</span>
                       </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-2 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden">
                         <div className="h-full bg-indigo-500" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
@@ -107,7 +107,7 @@ function Stat({ icon: Icon, label, value, color }: { icon: React.ElementType; la
         <Icon className={color} size={26} />
         <div>
           <div className="text-xs text-slate-500">{label}</div>
-          <div className="text-2xl font-bold text-slate-900">{value}</div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{value}</div>
         </div>
       </div>
     </Card>

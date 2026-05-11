@@ -132,7 +132,7 @@ export default function SozlesmeYapPage() {
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow-sm">
         <div className="text-4xl mb-3">⚠️</div>
         <h1 className="text-lg font-bold mb-2">Hata</h1>
-        <p className="text-slate-600 text-sm">{error}</p>
+        <p className="text-slate-600 dark:text-slate-400 text-sm">{error}</p>
       </div>
     );
   }
@@ -167,21 +167,21 @@ export default function SozlesmeYapPage() {
             value={generatedText}
             onChange={e => { setGeneratedText(e.target.value); setEdited(true); }}
             rows={20}
-            className="w-full bg-white dark:bg-slate-800 border border-slate-300 rounded-2xl p-4 text-sm text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-2xl p-4 text-sm text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-amber-400"
           />
         ) : (
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
-            <pre className="whitespace-pre-wrap text-sm text-slate-800 font-sans leading-relaxed">{generatedText}</pre>
+            <pre className="whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-200 font-sans leading-relaxed">{generatedText}</pre>
           </div>
         )}
 
-        {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
+        {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
         <div className="flex gap-2">
           <button
             onClick={() => setEditing(v => !v)}
             disabled={status === "saving"}
-            className="flex-1 bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition"
+            className="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition"
           >
             {editing ? "👁 Önizleme" : "✏️ Düzenle"}
           </button>
@@ -196,7 +196,7 @@ export default function SozlesmeYapPage() {
 
         <button
           onClick={() => setStatus("select")}
-          className="w-full bg-white dark:bg-slate-800 border border-slate-300 text-slate-600 py-2 rounded-xl text-xs hover:bg-slate-50 transition"
+          className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 py-2 rounded-xl text-xs hover:bg-slate-50 transition"
         >
           ← Geri (yeniden seç)
         </button>
@@ -210,9 +210,9 @@ export default function SozlesmeYapPage() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
           <div className="text-5xl mb-3">📝</div>
           <h1 className="text-xl font-bold mb-2">Sözleşme oluşturuldu!</h1>
-          <p className="text-slate-600 text-sm mb-4">İmza linki müşterinize iletilebilir.</p>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">İmza linki müşterinize iletilebilir.</p>
           {signLink && (
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 break-all mb-3">
+            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/50 rounded-lg p-3 text-xs text-slate-700 dark:text-slate-300 break-all mb-3">
               {signLink}
             </div>
           )}
@@ -241,7 +241,7 @@ export default function SozlesmeYapPage() {
         </a>
         <a
           href={`/tr/panel?t=${encodeURIComponent(token)}`}
-          className="block w-full bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium text-center hover:bg-slate-50 transition"
+          className="block w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl text-sm font-medium text-center hover:bg-slate-50 transition"
         >
           🖥 Panele Dön
         </a>
@@ -260,14 +260,14 @@ export default function SozlesmeYapPage() {
 
       {/* Mülk seç */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-        <label className="block text-sm font-semibold text-slate-900 mb-2">🏠 Mülk seç *</label>
+        <label className="block text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">🏠 Mülk seç *</label>
         {props.length === 0 ? (
           <p className="text-sm text-slate-500">Henüz mülk yok. Önce mülk eklemelisiniz.</p>
         ) : (
           <select
             value={selectedPropId}
             onChange={e => setSelectedPropId(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 bg-white dark:bg-slate-800"
+            className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 text-base text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
           >
             <option value="">— Seçin —</option>
             {props.map(p => {
@@ -285,14 +285,14 @@ export default function SozlesmeYapPage() {
 
       {/* Müşteri seç */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-        <label className="block text-sm font-semibold text-slate-900 mb-2">👤 Müşteri seç *</label>
+        <label className="block text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">👤 Müşteri seç *</label>
         {customers.length === 0 ? (
           <p className="text-sm text-slate-500">Henüz müşteri yok. Önce müşteri eklemelisiniz.</p>
         ) : (
           <select
             value={selectedCustId}
             onChange={e => setSelectedCustId(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 bg-white dark:bg-slate-800"
+            className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 text-base text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
           >
             <option value="">— Seçin —</option>
             {customers.map(c => (
@@ -306,26 +306,26 @@ export default function SozlesmeYapPage() {
 
       {/* Parametreler */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
-        <p className="text-sm font-semibold text-slate-900">⚙️ Sözleşme parametreleri</p>
+        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">⚙️ Sözleşme parametreleri</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-slate-600 mb-1">Komisyon (%)</label>
+            <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Komisyon (%)</label>
             <input
               type="number" min="0" max="20" step="0.5"
               value={commission} onChange={e => setCommission(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-base"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base"
             />
           </div>
           <div>
-            <label className="block text-xs text-slate-600 mb-1">Süre (ay)</label>
+            <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Süre (ay)</label>
             <input
               type="number" min="1" max="60"
               value={duration} onChange={e => setDuration(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-base"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base"
             />
           </div>
         </div>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
           <input
             type="checkbox" checked={exclusive}
             onChange={e => setExclusive(e.target.checked)}
@@ -335,7 +335,7 @@ export default function SozlesmeYapPage() {
         </label>
       </div>
 
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
+      {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
       <div className="flex gap-2">
         <button
@@ -347,7 +347,7 @@ export default function SozlesmeYapPage() {
         </button>
         <a
           href={`/tr/panel?t=${encodeURIComponent(token)}`}
-          className="flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 px-4 py-4 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition whitespace-nowrap"
+          className="flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 px-4 py-4 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition whitespace-nowrap"
         >
           🖥 Panele
         </a>

@@ -136,13 +136,13 @@ export default function MusteriEkleFormPage() {
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
   if (status === "done") return <Center>
     <div className="text-5xl mb-3">{isEdit ? "✅" : "🎉"}</div>
-    <h1 className="text-xl font-bold mb-2 text-slate-900">{isEdit ? "Müşteri güncellendi!" : "Müşteri kaydedildi!"}</h1>
-    <p className="text-slate-600 text-sm mb-6">{isEdit ? "Değişiklikler kaydedildi." : "Müşterileriniz panelde listelenir."}</p>
+    <h1 className="text-xl font-bold mb-2 text-slate-900 dark:text-slate-100">{isEdit ? "Müşteri güncellendi!" : "Müşteri kaydedildi!"}</h1>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">{isEdit ? "Değişiklikler kaydedildi." : "Müşterileriniz panelde listelenir."}</p>
     <div className="space-y-2">
       <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`} className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
         🖥 Panele Dön
@@ -157,7 +157,7 @@ export default function MusteriEkleFormPage() {
   </Center>;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">{isEdit ? "✏️" : "🤝"}</div>
@@ -182,39 +182,39 @@ export default function MusteriEkleFormPage() {
 
           <Section title="🎯 Aradığı Mülk">
             <div>
-              <label className="block text-sm font-medium text-slate-900 mb-2">
+              <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">
                 İlan Tipi <span className="text-slate-400 text-xs">({lookingFor.length} seçili)</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {[{id:"satilik",label:"Satılık"},{id:"kiralik",label:"Kiralık"}].map(o => (
                   <button type="button" key={o.id} onClick={() => toggleLookingFor(o.id)}
-                    className={`py-2.5 rounded-lg text-sm font-medium border-2 ${lookingFor.includes(o.id) ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
+                    className={`py-2.5 rounded-lg text-sm font-medium border-2 ${lookingFor.includes(o.id) ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}>
                     {o.label}
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-900 mb-2">
+              <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">
                 Mülk Tipi <span className="text-slate-400 text-xs">({propertyTypes.length} seçili)</span>
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {PROPERTY_TYPES.map(t => (
                   <button type="button" key={t.id} onClick={() => toggleType(t.id)}
-                    className={`py-2 rounded-lg text-xs font-medium border-2 ${propertyTypes.includes(t.id) ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
+                    className={`py-2 rounded-lg text-xs font-medium border-2 ${propertyTypes.includes(t.id) ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}>
                     {t.label}
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-900 mb-2">
+              <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">
                 Oda <span className="text-slate-400 text-xs">({rooms.length} seçili)</span>
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {ROOMS.map(r => (
                   <button type="button" key={r} onClick={() => toggleRoom(r)}
-                    className={`py-2 rounded-lg text-sm font-medium border-2 ${rooms.includes(r) ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
+                    className={`py-2 rounded-lg text-sm font-medium border-2 ${rooms.includes(r) ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}>
                     {r}
                   </button>
                 ))}
@@ -251,7 +251,7 @@ export default function MusteriEkleFormPage() {
             <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Müşteri tercihleri, özel notlar..." className={inputCls} />
           </Section>
 
-          {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
+          {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
           <div className="grid grid-cols-2 gap-2">
             <button type="submit" disabled={status === "saving"}
@@ -259,7 +259,7 @@ export default function MusteriEkleFormPage() {
               {status === "saving" ? "Kaydediliyor..." : (isEdit ? "✅ Güncelle" : "✅ Kaydet")}
             </button>
             <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`}
-              className="flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition">
+              className="flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition">
               🖥 Panele
             </a>
           </div>
@@ -269,29 +269,29 @@ export default function MusteriEkleFormPage() {
   );
 }
 
-const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 placeholder:text-slate-400";
+const inputCls = "w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 text-base text-slate-900 dark:text-slate-100 placeholder:text-slate-400";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
-    <h2 className="font-semibold text-slate-900 text-sm">{title}</h2>
+    <h2 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{title}</h2>
     {children}
   </section>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div>
-    <label className="block text-sm font-medium text-slate-900 mb-2">{label}</label>
+    <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">{label}</label>
     {children}
   </div>;
 }
 
 function Pills({ label, value, options, onPick, cols }: { label: string; value: string; options: { id: string; label: string }[]; onPick: (v: string) => void; cols?: number }) {
   return <div>
-    <label className="block text-sm font-medium text-slate-900 mb-2">{label}</label>
+    <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">{label}</label>
     <div className={`grid gap-2 ${cols === 3 ? "grid-cols-3" : cols === 4 ? "grid-cols-4" : "grid-cols-2"}`}>
       {options.map(o => (
         <button type="button" key={o.id} onClick={() => onPick(o.id)}
-          className={`py-2.5 rounded-lg text-sm font-medium border-2 ${value === o.id ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
+          className={`py-2.5 rounded-lg text-sm font-medium border-2 ${value === o.id ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}>
           {o.label}
         </button>
       ))}
@@ -300,7 +300,7 @@ function Pills({ label, value, options, onPick, cols }: { label: string; value: 
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

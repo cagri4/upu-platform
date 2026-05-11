@@ -96,24 +96,24 @@ export default function EklentiPage() {
           <button
             onClick={() => void regenerate()}
             disabled={status === "regenerating"}
-            className="bg-white dark:bg-slate-800 border border-slate-300 hover:bg-slate-50 text-slate-700 py-3 rounded-xl text-sm font-medium disabled:opacity-60"
+            className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 text-slate-700 dark:text-slate-300 py-3 rounded-xl text-sm font-medium disabled:opacity-60"
           >
             {status === "regenerating" ? "..." : "🔄 Yeni Kod Üret"}
           </button>
         </div>
         {error && (
-          <div className="mt-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">⚠️ {error}</div>
+          <div className="mt-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-3 py-2 rounded text-sm">⚠️ {error}</div>
         )}
       </div>
 
       {/* Tutorial */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
-        <p className="text-sm font-bold text-slate-900 mb-3">📋 Kurulum Adımları</p>
+        <p className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3">📋 Kurulum Adımları</p>
         <ol className="space-y-3 text-sm">
           <li className="flex gap-3">
             <span className="flex-shrink-0 text-base">1️⃣</span>
             <div className="flex-1">
-              <p className="font-medium text-slate-900">Chrome Web Store&apos;dan eklentiyi yükle</p>
+              <p className="font-medium text-slate-900 dark:text-slate-100">Chrome Web Store&apos;dan eklentiyi yükle</p>
               <a
                 href={EXTENSION_URL}
                 target="_blank"
@@ -127,23 +127,23 @@ export default function EklentiPage() {
           <li className="flex gap-3">
             <span className="flex-shrink-0 text-base">2️⃣</span>
             <div className="flex-1">
-              <p className="font-medium text-slate-900">Chrome&apos;da eklenti ikonuna tıkla</p>
+              <p className="font-medium text-slate-900 dark:text-slate-100">Chrome&apos;da eklenti ikonuna tıkla</p>
               <p className="text-xs text-slate-500 mt-0.5">Sağ üstte yeni eklenti simgesi (🧩) gözükür.</p>
             </div>
           </li>
           <li className="flex gap-3">
             <span className="flex-shrink-0 text-base">3️⃣</span>
             <div className="flex-1">
-              <p className="font-medium text-slate-900">Yukarıdaki kodu yapıştır</p>
+              <p className="font-medium text-slate-900 dark:text-slate-100">Yukarıdaki kodu yapıştır</p>
               <p className="text-xs text-slate-500 mt-0.5">
-                Eklenti penceresinde &quot;Bağlantı Kodu&quot; alanına <span className="font-mono font-semibold text-slate-700">{code}</span> kodunu girip Bağlan&apos;a basın.
+                Eklenti penceresinde &quot;Bağlantı Kodu&quot; alanına <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">{code}</span> kodunu girip Bağlan&apos;a basın.
               </p>
             </div>
           </li>
           <li className="flex gap-3">
             <span className="flex-shrink-0 text-base">4️⃣</span>
             <div className="flex-1">
-              <p className="font-medium text-slate-900">sahibinden.com/ilan-ver&apos;e gidin</p>
+              <p className="font-medium text-slate-900 dark:text-slate-100">sahibinden.com/ilan-ver&apos;e gidin</p>
               <p className="text-xs text-slate-500 mt-0.5">
                 Eklenti üstte gözükür → mülkünüzü seçin → form 30 saniyede dolar.
               </p>
@@ -161,7 +161,7 @@ export default function EklentiPage() {
 function Center({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
-      <p className="text-slate-600">{children}</p>
+      <p className="text-slate-600 dark:text-slate-400">{children}</p>
     </div>
   );
 }

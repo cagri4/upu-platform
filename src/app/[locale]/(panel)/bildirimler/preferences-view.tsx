@@ -110,27 +110,27 @@ export function PreferencesView() {
   if (status === "loading") return <Center>⏳ Yükleniyor...</Center>;
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
-    <p className="text-slate-600 text-sm">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm">{error}</p>
   </Center>;
 
   return (
     <div className="space-y-5 pb-24">
       {tier === "free" && (
-        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+        <p className="text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg px-3 py-2">
           Pro üyelik ile 19 ek bildirim açılabilir.
         </p>
       )}
 
       {/* Preset selector */}
       <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-        <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-3">Hızlı Seçim</p>
+        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">Hızlı Seçim</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {(["yogun", "kritik", "sessiz", "ozel"] as PresetName[]).map(name => (
             <button
               key={name}
               type="button"
               onClick={() => applyPreset(name)}
-              className={`py-2.5 rounded-lg text-sm font-medium border-2 ${preset === name ? "bg-amber-600 text-white border-amber-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}
+              className={`py-2.5 rounded-lg text-sm font-medium border-2 ${preset === name ? "bg-amber-600 text-white border-amber-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}
             >
               {PRESET_LABELS[name]}
             </button>
@@ -142,7 +142,7 @@ export function PreferencesView() {
       {/* Toggle list grouped by category */}
       {Array.from(grouped.entries()).map(([cat, items]) => (
         <section key={cat} className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-          <p className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+          <p className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
             <span>{CATEGORY_META[cat].icon}</span>
             {CATEGORY_META[cat].label}
           </p>
@@ -154,7 +154,7 @@ export function PreferencesView() {
                 <div key={t.type} className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-sm font-medium ${isProLocked ? "text-slate-400" : "text-slate-900"}`}>
+                      <span className={`text-sm font-medium ${isProLocked ? "text-slate-400" : "text-slate-900 dark:text-slate-100"}`}>
                         {t.label}
                       </span>
                       {t.tier === "pro" && (
@@ -195,7 +195,7 @@ export function PreferencesView() {
       <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <p className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <span>🌙</span> Sessiz saat
             </p>
             <p className="text-xs text-slate-500 mt-0.5">Belirlediğin saatlerde bildirim alma.</p>
@@ -214,31 +214,31 @@ export function PreferencesView() {
         {dnd.enabled && (
           <div className="grid grid-cols-2 gap-3 mt-4">
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">Başlangıç</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Başlangıç</label>
               <input
                 type="time"
                 value={dnd.start || "23:00"}
                 onChange={e => setDnd(d => ({ ...d, start: e.target.value }))}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-base"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">Bitiş</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Bitiş</label>
               <input
                 type="time"
                 value={dnd.end || "08:00"}
                 onChange={e => setDnd(d => ({ ...d, end: e.target.value }))}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-base"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base"
               />
             </div>
           </div>
         )}
       </section>
 
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
+      {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
       {/* Sticky save bar */}
-      <div className="fixed bottom-0 inset-x-0 bg-white dark:bg-slate-800 border-t border-slate-200 p-3 shadow-lg z-30">
+      <div className="fixed bottom-0 inset-x-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-800/50 p-3 shadow-lg z-30">
         <div className="max-w-md mx-auto flex items-center gap-2">
           {savedFlash && (
             <span className="text-sm text-emerald-700 font-medium flex-1">✅ Kaydedildi</span>

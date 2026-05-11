@@ -55,7 +55,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
   if (!customer) return (
     <div>
       <Link href="/tr/customers" className="inline-flex items-center gap-1 text-indigo-600 mb-4"><ArrowLeft size={16} /> Geri</Link>
-      <Card className="p-8 text-center"><p className="text-slate-600">Müşteri bulunamadı.</p></Card>
+      <Card className="p-8 text-center"><p className="text-slate-600 dark:text-slate-400">Müşteri bulunamadı.</p></Card>
     </div>
   );
 
@@ -72,7 +72,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             <div className="w-16 h-16 bg-indigo-100 rounded-full mx-auto flex items-center justify-center text-2xl font-bold text-indigo-700">
               {customer.name.charAt(0).toUpperCase()}
             </div>
-            <h1 className="text-xl font-bold text-slate-900 mt-3">{customer.name}</h1>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mt-3">{customer.name}</h1>
             <span className="inline-block mt-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md">
               {customer.pipeline_stage || 'yeni'}
             </span>
@@ -98,14 +98,14 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
           {customer.notes && (
             <div className="border-t mt-4 pt-4">
               <div className="text-xs text-slate-500 mb-1">Notlar</div>
-              <p className="text-sm text-slate-700 whitespace-pre-wrap">{customer.notes}</p>
+              <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{customer.notes}</p>
             </div>
           )}
         </Card>
 
         {/* Right: Contact history */}
         <Card className="p-6 lg:col-span-2">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
             <MessageSquare size={18} /> Temas Geçmişi
           </h2>
 
@@ -118,18 +118,18 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
           ) : (
             <div className="space-y-3">
               {contacts.map((c) => (
-                <div key={c.id} className="border-l-2 border-indigo-200 pl-4 py-1">
+                <div key={c.id} className="border-l-2 border-indigo-200 dark:border-indigo-800/50 pl-4 py-1">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="font-medium text-slate-800 flex items-center gap-2">
+                    <div className="font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
                       <span>{CONTACT_TYPE_EMOJI[c.contact_type] || '•'}</span>
                       <span className="capitalize">{c.contact_type}</span>
-                      {c.result && <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{c.result}</span>}
+                      {c.result && <span className="text-xs bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded">{c.result}</span>}
                     </div>
                     <div className="text-xs text-slate-500 whitespace-nowrap">
                       {new Date(c.created_at).toLocaleDateString('tr-TR')}
                     </div>
                   </div>
-                  {c.note && <p className="text-sm text-slate-600 mt-1">{c.note}</p>}
+                  {c.note && <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{c.note}</p>}
                 </div>
               ))}
             </div>
@@ -144,7 +144,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
       <span className="text-slate-500">{label}</span>
-      <span className="text-slate-800 font-medium">{value}</span>
+      <span className="text-slate-800 dark:text-slate-200 font-medium">{value}</span>
     </div>
   );
 }

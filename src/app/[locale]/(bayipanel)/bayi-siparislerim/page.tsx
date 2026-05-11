@@ -24,13 +24,13 @@ interface OrderRow {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  pending:    "bg-amber-50 text-amber-700",
-  preparing:  "bg-sky-50 text-sky-700",
-  shipped:    "bg-indigo-50 text-indigo-700",
-  in_transit: "bg-indigo-50 text-indigo-700",
-  delivering: "bg-indigo-50 text-indigo-700",
-  delivered:  "bg-emerald-50 text-emerald-700",
-  cancelled:  "bg-rose-50 text-rose-700",
+  pending:    "bg-amber-50 dark:bg-amber-950/30 text-amber-700",
+  preparing:  "bg-sky-50 dark:bg-sky-950/30 text-sky-700",
+  shipped:    "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700",
+  in_transit: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700",
+  delivering: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700",
+  delivered:  "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700",
+  cancelled:  "bg-rose-50 dark:bg-rose-950/30 text-rose-700",
 };
 
 function formatTry(n: number): string {
@@ -78,7 +78,7 @@ export default function SiparislerimPage() {
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div>
-            <h1 className="text-xl font-bold text-slate-900">📋 Siparişlerim</h1>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">📋 Siparişlerim</h1>
             <p className="text-xs text-slate-500 mt-0.5">{rows.length} sipariş</p>
           </div>
           <a
@@ -94,30 +94,30 @@ export default function SiparislerimPage() {
           value={searchInput}
           onChange={e => setSearchInput(e.target.value)}
           placeholder="🔍 Bayi adı, sipariş no…"
-          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
+          className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
         />
       </div>
 
       {error ? (
-        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-rose-700">
+        <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl p-4 text-sm text-rose-700">
           {error}
         </div>
       ) : loading ? (
         <div className="text-center text-sm text-slate-500 py-8">Yükleniyor…</div>
       ) : rows.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-8 text-center text-sm text-slate-500">
           {q ? "Bu aramayla eşleşen sipariş yok." : "Henüz sipariş yok."}
         </div>
       ) : (
         <div className="space-y-2">
           {rows.map(o => {
-            const badgeCls = (o.statusCode && STATUS_BADGE[o.statusCode]) || "bg-slate-100 text-slate-600";
+            const badgeCls = (o.statusCode && STATUS_BADGE[o.statusCode]) || "bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400";
             return (
-              <div key={o.id} className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-3 hover:border-indigo-300 transition">
+              <div key={o.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-3 hover:border-indigo-300 transition">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-semibold text-slate-900 text-sm">{o.orderNumber}</span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{o.orderNumber}</span>
                       {o.statusName && (
                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap ${badgeCls}`}>
                           {o.statusName}
@@ -129,7 +129,7 @@ export default function SiparislerimPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-slate-900">{formatTry(o.total)}</div>
+                    <div className="font-bold text-slate-900 dark:text-slate-100">{formatTry(o.total)}</div>
                   </div>
                 </div>
               </div>

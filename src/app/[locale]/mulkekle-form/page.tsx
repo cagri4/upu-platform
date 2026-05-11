@@ -248,13 +248,13 @@ export default function MulkEkleFormPage() {
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp'a dön</a>
   </Center>;
   if (status === "done") return <Center>
     <div className="text-5xl mb-3">{isEdit ? "✅" : "🎉"}</div>
-    <h1 className="text-xl font-bold mb-2 text-slate-900">{isEdit ? "Mülk güncellendi!" : "Mülk eklendi!"}</h1>
-    <p className="text-slate-600 text-sm mb-6">
+    <h1 className="text-xl font-bold mb-2 text-slate-900 dark:text-slate-100">{isEdit ? "Mülk güncellendi!" : "Mülk eklendi!"}</h1>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">
       {isEdit
         ? "Değişiklikler kaydedildi."
         : "Bu mülke ait sunumu sizin için hazırlamaya başladım bile.. Birazdan panel > Sunumlarım bölümünden inceleyebilirsiniz."}
@@ -275,7 +275,7 @@ export default function MulkEkleFormPage() {
   </Center>;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">{isEdit ? "✏️" : "🏠"}</div>
@@ -352,7 +352,7 @@ export default function MulkEkleFormPage() {
                   disabled={photoUploading || photoUrls.length >= 15}
                   className="hidden"
                 />
-                <span className={`block w-full text-center py-3 rounded-lg font-medium border-2 border-dashed cursor-pointer ${photoUploading ? "border-amber-400 bg-amber-50 text-amber-800 animate-pulse" : photoUrls.length >= 15 ? "border-slate-300 bg-slate-100 text-slate-400" : "border-indigo-400 bg-indigo-50 text-indigo-700 active:bg-indigo-100"}`}>
+                <span className={`block w-full text-center py-3 rounded-lg font-medium border-2 border-dashed cursor-pointer ${photoUploading ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-800 animate-pulse" : photoUrls.length >= 15 ? "border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-900 text-slate-400" : "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 active:bg-indigo-100"}`}>
                   {photoUploading
                     ? photoProgress
                       ? `⏳ Yükleniyor... ${photoProgress.done}/${photoProgress.total}`
@@ -368,14 +368,14 @@ export default function MulkEkleFormPage() {
                   WebView dışı durumda ipucu gereksiz; rare WebView fallback
                   case için tutuldu. */}
               {isInAppBrowser && (
-                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <p className="text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg px-3 py-2">
                   💡 Tek seferde en fazla <strong>4 fotoğraf</strong> ekleyin, ya da <ChromeOpenInlineLink /> ve hepsini birden ekleyin.
                 </p>
               )}
               <ChromeSuggest />
 
               {photoError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
+                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-3 py-2 rounded-lg text-sm">
                   ⚠️ {photoError}
                 </div>
               )}
@@ -405,7 +405,7 @@ export default function MulkEkleFormPage() {
             </div>
           </Section>
 
-          {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
+          {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
           <div className="grid grid-cols-2 gap-2">
             <button type="submit" disabled={status === "saving"}
@@ -413,7 +413,7 @@ export default function MulkEkleFormPage() {
               {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet"}
             </button>
             <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`}
-              className="flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition">
+              className="flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition">
               🖥 Panele
             </a>
           </div>
@@ -423,24 +423,24 @@ export default function MulkEkleFormPage() {
   );
 }
 
-const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 placeholder:text-slate-400";
+const inputCls = "w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 text-base text-slate-900 dark:text-slate-100 placeholder:text-slate-400";
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm space-y-4">
-    <h2 className="font-bold text-slate-900">{title}</h2>
+    <h2 className="font-bold text-slate-900 dark:text-slate-100">{title}</h2>
     {children}
   </section>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div>
-    <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
+    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>
     {children}
   </div>;
 }
@@ -452,11 +452,11 @@ function Row({ children }: { children: React.ReactNode }) {
 function Pills({ label, value, options, onPick, cols = 2 }: { label: string; value: string; options: {id:string;label:string}[]; onPick: (v:string)=>void; cols?: number }) {
   const colClass = cols === 4 ? "grid-cols-4" : cols === 3 ? "grid-cols-3" : "grid-cols-2";
   return <div>
-    <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
+    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>
     <div className={`grid ${colClass} gap-2`}>
       {options.map(o => (
         <button type="button" key={o.id} onClick={() => onPick(value === o.id ? "" : o.id)}
-          className={`py-2 rounded-lg text-sm font-medium border-2 ${value === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 border-slate-300"}`}>
+          className={`py-2 rounded-lg text-sm font-medium border-2 ${value === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600"}`}>
           {o.label}
         </button>
       ))}
@@ -467,11 +467,11 @@ function Pills({ label, value, options, onPick, cols = 2 }: { label: string; val
 function MultiPills({ label, values, options, onToggle, cols = 2 }: { label: string; values: string[]; options: string[]; onToggle: (v:string)=>void; cols?: number }) {
   const colClass = cols === 4 ? "grid-cols-4" : cols === 3 ? "grid-cols-3" : "grid-cols-2";
   return <div>
-    <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
+    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>
     <div className={`grid ${colClass} gap-2`}>
       {options.map(o => (
         <button type="button" key={o} onClick={() => onToggle(o)}
-          className={`py-2 rounded-lg text-xs font-medium border-2 ${values.includes(o) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 border-slate-300"}`}>
+          className={`py-2 rounded-lg text-xs font-medium border-2 ${values.includes(o) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600"}`}>
           {o}
         </button>
       ))}
@@ -501,25 +501,25 @@ function GeoPicker({ city, district, neighborhood, onCity, onDistrict, onNeighbo
       .then(r => r.json()).then(d => setMahalleler(d.mahalleler || []));
   }, [city, district]);
 
-  const sel = "w-full border border-slate-300 rounded-lg px-3 py-3 mb-4 text-base text-slate-900 bg-white dark:bg-slate-800";
+  const sel = "w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 mb-4 text-base text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800";
   return (
     <>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Şehir</label>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Şehir</label>
         <select value={city} onChange={e => { onCity(e.target.value); onDistrict(""); onNeighborhood(""); }} className={sel}>
           <option value="">— Seç —</option>
           {iller.map(i => <option key={i} value={i}>{i}</option>)}
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">İlçe</label>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">İlçe</label>
         <select value={district} onChange={e => { onDistrict(e.target.value); onNeighborhood(""); }} disabled={!city} className={sel}>
           <option value="">— Seç —</option>
           {ilceler.map(i => <option key={i} value={i}>{i}</option>)}
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Mahalle</label>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Mahalle</label>
         <select value={neighborhood} onChange={e => onNeighborhood(e.target.value)} disabled={!district} className={sel}>
           <option value="">— Seç —</option>
           {mahalleler.map(m => <option key={m} value={m}>{m}</option>)}
@@ -531,14 +531,14 @@ function GeoPicker({ city, district, neighborhood, onCity, onDistrict, onNeighbo
 
 function YesNo({ label, value, onPick }: { label: string; value: boolean | null; onPick: (v: boolean | null) => void }) {
   return <div>
-    <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
+    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>
     <div className="grid grid-cols-3 gap-2">
       <button type="button" onClick={() => onPick(true)}
-        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === true ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 border-slate-300"}`}>Evet</button>
+        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === true ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600"}`}>Evet</button>
       <button type="button" onClick={() => onPick(false)}
-        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === false ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 border-slate-300"}`}>Hayır</button>
+        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === false ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600"}`}>Hayır</button>
       <button type="button" onClick={() => onPick(null)}
-        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === null ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 border-slate-300"}`}>Belirtme</button>
+        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === null ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600"}`}>Belirtme</button>
     </div>
   </div>;
 }

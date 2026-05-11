@@ -8,7 +8,7 @@ export default function MarketHakkindaPage() {
         <p className="text-amber-100 text-sm mt-2">Türk diaspora KOBİ&apos;leri için WhatsApp + AI destekli SaaS platformu.</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm space-y-4 text-sm text-slate-700 leading-relaxed">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm space-y-4 text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
         <p>
           <strong>UPU</strong>, Hollanda ve Avrupa&apos;daki Türk küçük işletmelerinin (market, restoran, emlak, dağıtım, otel) günlük operasyonlarını WhatsApp + yapay zeka ile yönetmesini sağlayan bir platformdur.
         </p>
@@ -19,8 +19,8 @@ export default function MarketHakkindaPage() {
           <strong>Pazar:</strong> NL Türk diasporası özelinde sıcak Türk dilinde, KvK/BTW uyumlu, EUR para biriminde çalışırız. NL, BE, DE, TR pazarına yayılma planlanıyor.
         </p>
         <div className="pt-3 border-t border-slate-100">
-          <p className="font-semibold text-slate-900 mb-1">İletişim</p>
-          <p className="text-slate-600">
+          <p className="font-semibold text-slate-900 dark:text-slate-100 mb-1">İletişim</p>
+          <p className="text-slate-600 dark:text-slate-400">
             Web: <span className="font-mono">upudev.nl</span><br />
             E-posta: <span className="font-mono">info@upudev.nl</span>
           </p>

@@ -97,14 +97,14 @@ export default function BayiKampanyaPage() {
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
 
   if (status === "done") return <Center>
     <div className="text-4xl mb-3">🎉</div>
     <h1 className="text-xl font-bold mb-2">Kampanya başlatıldı!</h1>
-    <p className="text-slate-600 text-sm mb-4">
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
       {broadcast > 0 ? `${broadcast} bayiye WhatsApp duyurusu gitti.` : "Kampanya kaydedildi."}
     </p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
@@ -123,61 +123,61 @@ export default function BayiKampanyaPage() {
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Kampanya Adı *</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Kampanya Adı *</label>
             <input value={name} onChange={e => setName(e.target.value)}
               placeholder="Örn. Nisan Fırsatları"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Açıklama</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Açıklama</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)}
               rows={2} placeholder="Kısa kampanya açıklaması"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm" />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Başlangıç</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Başlangıç</label>
               <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Bitiş</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Bitiş</label>
               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm" />
             </div>
           </div>
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-2">İndirim Tipi</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">İndirim Tipi</label>
             <div className="grid grid-cols-2 gap-2">
               {(["percent", "price"] as const).map(t => (
                 <button key={t} type="button" onClick={() => setDiscountType(t)}
-                  className={`py-2 rounded-lg text-sm font-medium border-2 ${discountType === t ? "bg-orange-600 text-white border-orange-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
+                  className={`py-2 rounded-lg text-sm font-medium border-2 ${discountType === t ? "bg-orange-600 text-white border-orange-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}>
                   {t === "percent" ? "% Yüzde" : "₺ Sabit Tutar"}
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">İndirim Değeri *</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">İndirim Değeri *</label>
             <input type="number" value={discountValue} onChange={e => setDiscountValue(e.target.value)}
               min={0.01} step={discountType === "percent" ? 1 : 0.01}
               placeholder={discountType === "percent" ? "Örn. 10" : "Örn. 50"}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm" />
           </div>
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-slate-800">Ürünler</h2>
+            <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200">Ürünler</h2>
             <span className="text-xs text-slate-500">{selectedProducts.size} seçili</span>
           </div>
           <div className="space-y-1.5 max-h-60 overflow-y-auto">
             {products.map(p => (
               <label key={p.id}
-                className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm ${selectedProducts.has(p.id) ? "bg-orange-50 border-orange-300" : "bg-white dark:bg-slate-800 border-slate-200"}`}>
+                className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm ${selectedProducts.has(p.id) ? "bg-orange-50 dark:bg-orange-950/30 border-orange-300" : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800/50"}`}>
                 <input type="checkbox" checked={selectedProducts.has(p.id)}
                   onChange={() => toggle(selectedProducts, setSelectedProducts, p.id)}
                   className="w-4 h-4 accent-orange-600" />
@@ -189,11 +189,11 @@ export default function BayiKampanyaPage() {
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4">
-          <label className="block text-xs font-medium text-slate-600 mb-2">Hedef Bayiler</label>
+          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Hedef Bayiler</label>
           <div className="grid grid-cols-2 gap-2 mb-3">
             {(["all", "selected"] as const).map(t => (
               <button key={t} type="button" onClick={() => setTarget(t)}
-                className={`py-2 rounded-lg text-sm font-medium border-2 ${target === t ? "bg-orange-600 text-white border-orange-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
+                className={`py-2 rounded-lg text-sm font-medium border-2 ${target === t ? "bg-orange-600 text-white border-orange-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}>
                 {t === "all" ? "Tüm bayiler" : "Seçili bayiler"}
               </button>
             ))}
@@ -202,7 +202,7 @@ export default function BayiKampanyaPage() {
             <div className="space-y-1.5 max-h-52 overflow-y-auto">
               {dealers.map(d => (
                 <label key={d.id}
-                  className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm ${selectedDealers.has(d.id) ? "bg-orange-50 border-orange-300" : "bg-white dark:bg-slate-800 border-slate-200"}`}>
+                  className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm ${selectedDealers.has(d.id) ? "bg-orange-50 dark:bg-orange-950/30 border-orange-300" : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800/50"}`}>
                   <input type="checkbox" checked={selectedDealers.has(d.id)}
                     onChange={() => toggle(selectedDealers, setSelectedDealers, d.id)}
                     className="w-4 h-4 accent-orange-600" />
@@ -220,20 +220,20 @@ export default function BayiKampanyaPage() {
           </button>
           <a
             href={token ? `/tr/bayi-panel?t=${encodeURIComponent(token)}` : `https://wa.me/${BOT_WA_NUMBER}`}
-            className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-center active:scale-95 hover:bg-slate-50 flex items-center justify-center"
+            className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-semibold text-center active:scale-95 hover:bg-slate-50 flex items-center justify-center"
           >
             🏠 Panele Dön
           </a>
         </div>
 
-        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
+        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
       </div>
     </div>
   );
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

@@ -27,7 +27,7 @@ export default function YardimIndexPage() {
   if (status === "error") return <Center><div className="text-red-600">⚠️ {error}</div></Center>;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-emerald-700 to-teal-900 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">❓</div>
@@ -42,7 +42,7 @@ export default function YardimIndexPage() {
               href={`/tr/yardim/${e.command}${token ? `?t=${token}` : ""}`}
               className="block bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-4 hover:bg-slate-100 active:scale-95 transition"
             >
-              <div className="font-semibold text-slate-900">{e.title}</div>
+              <div className="font-semibold text-slate-900 dark:text-slate-100">{e.title}</div>
               <div className="text-xs text-slate-500 mt-1">{e.summary}</div>
               <div className="text-xs text-emerald-700 mt-2">WhatsApp: <span className="font-mono">{e.waCommand}</span> →</div>
             </a>
@@ -58,7 +58,7 @@ export default function YardimIndexPage() {
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

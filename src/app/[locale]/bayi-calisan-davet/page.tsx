@@ -117,19 +117,19 @@ export default function BayiCalisanDavetPage() {
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
 
   if (status === "done") return <Center>
     <div className="text-4xl mb-3">✅</div>
     <h1 className="text-xl font-bold mb-2">Davet gönderildi!</h1>
-    <p className="text-slate-600 text-sm mb-4">{name} kişisine kayıt kodu WhatsApp&apos;tan gitti. Çalışan kodu yazınca sisteme girecek.</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{name} kişisine kayıt kodu WhatsApp&apos;tan gitti. Çalışan kodu yazınca sisteme girecek.</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-emerald-600 to-teal-600 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">👤</div>
@@ -141,23 +141,23 @@ export default function BayiCalisanDavetPage() {
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">İsim Soyisim *</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">İsim Soyisim *</label>
             <input value={name} onChange={e => setName(e.target.value)}
               placeholder="Örn. Ahmet Yılmaz"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Telefon (WhatsApp) *</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Telefon (WhatsApp) *</label>
             <input value={phone} onChange={e => setPhone(e.target.value)}
               placeholder="Örn. 5321234567"
               type="tel"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm" />
             <p className="text-[11px] text-slate-500 mt-1">Başında 0 veya ülke kodu olsun, boşluk önemli değil.</p>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Pozisyon</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Pozisyon</label>
             <select value={position} onChange={e => applyPositionPreset(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm">
               <option value="">Özel — yetkileri sen seç</option>
               {init?.positions.map(p => (
                 <option key={p.id} value={p.id}>{p.label}</option>
@@ -171,7 +171,7 @@ export default function BayiCalisanDavetPage() {
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-slate-800">Yetkiler</h2>
+            <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200">Yetkiler</h2>
             <span className="text-xs text-slate-500">{selected.size} seçili</span>
           </div>
 
@@ -191,8 +191,8 @@ export default function BayiCalisanDavetPage() {
                     <label key={it.id}
                       className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm ${
                         selected.has(it.id)
-                          ? "bg-emerald-50 border-emerald-300"
-                          : "bg-white dark:bg-slate-800 border-slate-200"
+                          ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300"
+                          : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800/50"
                       }`}>
                       <input type="checkbox"
                         checked={selected.has(it.id)}
@@ -214,20 +214,20 @@ export default function BayiCalisanDavetPage() {
           </button>
           <a
             href={token ? `/tr/bayi-panel?t=${encodeURIComponent(token)}` : `https://wa.me/${BOT_WA_NUMBER}`}
-            className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-center active:scale-95 hover:bg-slate-50 flex items-center justify-center"
+            className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-semibold text-center active:scale-95 hover:bg-slate-50 flex items-center justify-center"
           >
             🏠 Panele Dön
           </a>
         </div>
 
-        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
+        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
       </div>
     </div>
   );
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

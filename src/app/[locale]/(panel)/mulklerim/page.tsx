@@ -100,7 +100,7 @@ export default function MulklerimPage() {
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
 
@@ -127,7 +127,7 @@ export default function MulklerimPage() {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="🔍 Mülk ara (başlık, bölge, tip)"
-              className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
               aria-label="Mülk ara"
             />
             <ViewDensityToggle
@@ -142,7 +142,7 @@ export default function MulklerimPage() {
         {items.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
             <div className="text-5xl mb-3">🏢</div>
-            <p className="font-semibold text-slate-900 mb-1">Henüz mülk yok</p>
+            <p className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Henüz mülk yok</p>
             <p className="text-slate-500 text-sm">İlk mülkünüzü eklemek için yukarıdaki butonu kullanın.</p>
           </div>
         ) : filtered.length === 0 ? (
@@ -168,7 +168,7 @@ export default function MulklerimPage() {
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <h3 className={`font-semibold text-slate-900 leading-tight ${mini ? "text-xs line-clamp-1" : "line-clamp-2"}`}>{p.title || "Mülk"}</h3>
+                    <h3 className={`font-semibold text-slate-900 dark:text-slate-100 leading-tight ${mini ? "text-xs line-clamp-1" : "line-clamp-2"}`}>{p.title || "Mülk"}</h3>
                     {!mini && (
                       <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap gap-x-2">
                         {p.listing_type && <span>{p.listing_type === "satilik" ? "Satılık" : "Kiralık"}</span>}
@@ -236,7 +236,7 @@ export default function MulklerimPage() {
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

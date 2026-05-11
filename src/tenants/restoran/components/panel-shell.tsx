@@ -72,7 +72,7 @@ export function RestoranPanelShell({
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-slate-500 text-sm">Yükleniyor…</div>
       </div>
     );
@@ -80,11 +80,11 @@ export function RestoranPanelShell({
 
   if (status === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
         <div className="max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow p-8 text-center">
           <div className="text-5xl mb-4">⚠️</div>
-          <h1 className="text-xl font-semibold text-slate-900 mb-2">Bir sorun var</h1>
-          <p className="text-slate-600 mb-4">{errorMsg}</p>
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">Bir sorun var</h1>
+          <p className="text-slate-600 dark:text-slate-400 mb-4">{errorMsg}</p>
           <a
             href="https://wa.me/31644967207?text=panel"
             className="inline-block bg-amber-600 text-white font-medium px-5 py-2.5 rounded-xl hover:bg-amber-700 transition"

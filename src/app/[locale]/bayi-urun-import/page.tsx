@@ -313,10 +313,10 @@ export default function BayiUrunImportPage() {
 
   if (initError) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-        <div className="max-w-md w-full bg-white dark:bg-slate-800 border border-rose-200 rounded-xl p-6 text-center">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800/50 rounded-xl p-6 text-center">
           <h1 className="text-lg font-semibold text-rose-700 mb-2">Bağlantı hatası</h1>
-          <p className="text-sm text-slate-600">{initError}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">{initError}</p>
         </div>
       </div>
     );
@@ -324,18 +324,18 @@ export default function BayiUrunImportPage() {
 
   if (screen === "init") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950">
         <div className="text-sm text-slate-500">Yükleniyor...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8 px-4">
       <div className="max-w-3xl mx-auto">
         <header className="mb-6">
-          <h1 className="text-xl font-bold text-slate-900">Toplu Ürün Yükleme</h1>
-          <p className="text-sm text-slate-600 mt-1">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Toplu Ürün Yükleme</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
             CSV veya Excel dosyasıyla katalogunuza tek seferde yüzlerce ürün ekleyin.
           </p>
         </header>
@@ -343,9 +343,9 @@ export default function BayiUrunImportPage() {
         {/* SCREEN 1 — SELECT */}
         {screen === "select" && (
           <div className="space-y-4">
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-5">
-              <h2 className="text-sm font-semibold text-slate-900 mb-2">1. Şablonu indirin</h2>
-              <p className="text-xs text-slate-600 mb-3">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-5">
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">1. Şablonu indirin</h2>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
                 Doğru sütun başlıkları ve örnek 5 ürün ile hazır şablonu kullanın.
               </p>
               <a
@@ -357,9 +357,9 @@ export default function BayiUrunImportPage() {
               </a>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-5">
-              <h2 className="text-sm font-semibold text-slate-900 mb-2">2. Dosyanızı yükleyin</h2>
-              <p className="text-xs text-slate-600 mb-3">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-5">
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">2. Dosyanızı yükleyin</h2>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
                 Desteklenen formatlar: <strong>CSV</strong>, <strong>Excel (.xlsx, .xls)</strong>.
                 Excel dosyaları tarayıcıda lokal olarak okunur, Microsoft hesabı gerekmez.
               </p>
@@ -370,7 +370,7 @@ export default function BayiUrunImportPage() {
                   const file = e.target.files?.[0];
                   if (file) handleFile(file);
                 }}
-                className="block w-full text-sm text-slate-700 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white file:font-medium hover:file:bg-indigo-700 cursor-pointer"
+                className="block w-full text-sm text-slate-700 dark:text-slate-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white file:font-medium hover:file:bg-indigo-700 cursor-pointer"
               />
               {parseError && (
                 <p className="text-xs text-rose-600 mt-2">{parseError}</p>
@@ -378,7 +378,7 @@ export default function BayiUrunImportPage() {
             </div>
 
             {existingCount > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg p-3 text-xs text-amber-800">
                 ℹ️ Sisteminizde zaten <strong>{existingCount}</strong> ürün mevcut. Yeni yüklenen ürünler eklenir, mevcut ürünler etkilenmez.
                 {existingCategories.length > 0 && (
                   <> Kullanılan kategoriler: {existingCategories.slice(0, 5).join(", ")}{existingCategories.length > 5 ? "..." : ""}.</>
@@ -391,11 +391,11 @@ export default function BayiUrunImportPage() {
         {/* SCREEN 2 — PREVIEW */}
         {screen === "preview" && (
           <div className="space-y-4">
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-5">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-5">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h2 className="text-sm font-semibold text-slate-900">Önizleme — {fileName}</h2>
-                  <p className="text-xs text-slate-600 mt-0.5">
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Önizleme — {fileName}</h2>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                     {normalizedRows.length} satır okundu — {summary.valid} geçerli
                     {summary.invalid > 0 && <>, <span className="text-rose-600">{summary.invalid} hatalı</span></>}
                   </p>
@@ -416,7 +416,7 @@ export default function BayiUrunImportPage() {
 
               <div className="overflow-x-auto -mx-1">
                 <table className="w-full text-xs">
-                  <thead className="bg-slate-50">
+                  <thead className="bg-slate-50 dark:bg-slate-950">
                     <tr>
                       <th className="px-2 py-1.5 text-left font-medium text-slate-500">Satır</th>
                       <th className="px-2 py-1.5 text-left font-medium text-slate-500">Ad</th>
@@ -429,12 +429,12 @@ export default function BayiUrunImportPage() {
                   </thead>
                   <tbody>
                     {normalizedRows.slice(0, 10).map((r) => (
-                      <tr key={r.__row} className={`border-t border-slate-100 ${!r.__valid ? "bg-rose-50" : ""}`}>
+                      <tr key={r.__row} className={`border-t border-slate-100 ${!r.__valid ? "bg-rose-50 dark:bg-rose-950/30" : ""}`}>
                         <td className="px-2 py-1.5 text-slate-400">{r.__row}</td>
-                        <td className="px-2 py-1.5 text-slate-900 font-medium truncate max-w-[12rem]">{r.name || <span className="text-rose-500">—</span>}</td>
-                        <td className="px-2 py-1.5 text-slate-600">{r.category || "—"}</td>
+                        <td className="px-2 py-1.5 text-slate-900 dark:text-slate-100 font-medium truncate max-w-[12rem]">{r.name || <span className="text-rose-500">—</span>}</td>
+                        <td className="px-2 py-1.5 text-slate-600 dark:text-slate-400">{r.category || "—"}</td>
                         <td className="px-2 py-1.5 text-right font-medium">{r.base_price > 0 ? r.base_price.toLocaleString("tr-TR") : <span className="text-rose-500">—</span>}</td>
-                        <td className="px-2 py-1.5 text-right text-slate-600">{r.stock_quantity}</td>
+                        <td className="px-2 py-1.5 text-right text-slate-600 dark:text-slate-400">{r.stock_quantity}</td>
                         <td className="px-2 py-1.5 text-slate-500 truncate max-w-[8rem]">{r.sku || "—"}</td>
                         <td className="px-2 py-1.5">
                           {r.__valid ? (
@@ -465,7 +465,7 @@ export default function BayiUrunImportPage() {
               </button>
               <button
                 onClick={() => { setScreen("select"); setNormalizedRows([]); setParsedHeaders([]); setFileName(""); }}
-                className="px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50"
+                className="px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-medium rounded-lg hover:bg-slate-50"
               >
                 İptal
               </button>
@@ -475,9 +475,9 @@ export default function BayiUrunImportPage() {
 
         {/* SCREEN — SAVING */}
         {screen === "saving" && (
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-8 text-center">
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-8 text-center">
             <div className="inline-block w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-sm text-slate-700">Ürünler kaydediliyor...</p>
+            <p className="text-sm text-slate-700 dark:text-slate-300">Ürünler kaydediliyor...</p>
             <p className="text-xs text-slate-500 mt-1">Büyük dosyalar 30 saniyeyi bulabilir.</p>
           </div>
         )}
@@ -485,32 +485,32 @@ export default function BayiUrunImportPage() {
         {/* SCREEN 3 — RESULT */}
         {screen === "result" && saveResult && (
           <div className="space-y-4">
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-5">
-              <h2 className="text-base font-semibold text-slate-900 mb-3">Yükleme Sonucu</h2>
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-5">
+              <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-3">Yükleme Sonucu</h2>
               <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
+                <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-lg p-3 text-center">
                   <div className="text-xl font-bold text-emerald-700">{saveResult.inserted}</div>
                   <div className="text-xs text-emerald-600 mt-0.5">Başarılı</div>
                 </div>
-                <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 text-center">
+                <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-lg p-3 text-center">
                   <div className="text-xl font-bold text-rose-700">{saveResult.errors.length}</div>
                   <div className="text-xs text-rose-600 mt-0.5">Hatalı</div>
                 </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
-                  <div className="text-xl font-bold text-slate-700">{saveResult.totalRows}</div>
-                  <div className="text-xs text-slate-600 mt-0.5">Toplam</div>
+                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/50 rounded-lg p-3 text-center">
+                  <div className="text-xl font-bold text-slate-700 dark:text-slate-300">{saveResult.totalRows}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Toplam</div>
                 </div>
               </div>
 
               {saveResult.errors.length > 0 && (
                 <>
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xs font-medium text-slate-700">Hata Listesi (ilk 20)</h3>
+                    <h3 className="text-xs font-medium text-slate-700 dark:text-slate-300">Hata Listesi (ilk 20)</h3>
                     <button onClick={downloadErrorsCsv} className="text-xs text-indigo-600 hover:underline">
                       Tam listeyi CSV indir
                     </button>
                   </div>
-                  <ul className="text-xs text-rose-700 space-y-1 max-h-48 overflow-y-auto bg-rose-50 rounded-lg p-3">
+                  <ul className="text-xs text-rose-700 space-y-1 max-h-48 overflow-y-auto bg-rose-50 dark:bg-rose-950/30 rounded-lg p-3">
                     {saveResult.errors.slice(0, 20).map((e, i) => (
                       <li key={i}>
                         <span className="font-mono text-rose-500">satır {e.row}:</span> {e.reason}

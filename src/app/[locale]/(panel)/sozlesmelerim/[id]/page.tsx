@@ -34,8 +34,8 @@ type Status = "loading" | "ready" | "deleting" | "error";
 function renderMarkdown(text: string): string {
   let html = text
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  html = html.replace(/^### (.+)$/gm, '<h4 class="text-sm font-semibold text-slate-900 mt-3 mb-1">$1</h4>');
-  html = html.replace(/^## (.+)$/gm, '<h3 class="text-base font-bold text-slate-900 mt-5 mb-2 pb-1 border-b border-slate-200">$1</h3>');
+  html = html.replace(/^### (.+)$/gm, '<h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-3 mb-1">$1</h4>');
+  html = html.replace(/^## (.+)$/gm, '<h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mt-5 mb-2 pb-1 border-b border-slate-200 dark:border-slate-800/50">$1</h3>');
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, '<em>$1</em>');
   return html;
@@ -111,7 +111,7 @@ export default function ContractDetailPage() {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow-sm">
         <div className="text-4xl mb-3">⚠️</div>
-        <p className="text-slate-600 text-sm">{error}</p>
+        <p className="text-slate-600 dark:text-slate-400 text-sm">{error}</p>
         <a href={token ? `/tr/sozlesmelerim?t=${encodeURIComponent(token)}` : `/tr/sozlesmelerim`} className="inline-block mt-4 text-emerald-600 underline text-sm">
           ← Sözleşmelerim
         </a>
@@ -149,19 +149,19 @@ export default function ContractDetailPage() {
         <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
           <div>
             <p className="text-slate-500">Komisyon</p>
-            <p className="font-semibold text-slate-900">%{cd.commission ?? 2} + KDV</p>
+            <p className="font-semibold text-slate-900 dark:text-slate-100">%{cd.commission ?? 2} + KDV</p>
           </div>
           <div>
             <p className="text-slate-500">Süre</p>
-            <p className="font-semibold text-slate-900">{cd.duration ?? 3} ay</p>
+            <p className="font-semibold text-slate-900 dark:text-slate-100">{cd.duration ?? 3} ay</p>
           </div>
           <div>
             <p className="text-slate-500">Münhasır</p>
-            <p className="font-semibold text-slate-900">{cd.exclusive ? "Evet" : "Hayır"}</p>
+            <p className="font-semibold text-slate-900 dark:text-slate-100">{cd.exclusive ? "Evet" : "Hayır"}</p>
           </div>
           <div>
             <p className="text-slate-500">Oluşturuldu</p>
-            <p className="font-semibold text-slate-900">{createdDate}</p>
+            <p className="font-semibold text-slate-900 dark:text-slate-100">{createdDate}</p>
           </div>
           {signedDate && (
             <div className="col-span-2">
@@ -196,14 +196,14 @@ export default function ContractDetailPage() {
         </button>
       </div>
 
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
+      {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
       {/* Tam sözleşme metni */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
         <p className="text-xs text-slate-500 font-semibold mb-3">📝 Sözleşme Metni</p>
         {generatedText ? (
           <div
-            className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap"
+            className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap"
             dangerouslySetInnerHTML={{ __html: renderMarkdown(generatedText) }}
           />
         ) : (
@@ -218,7 +218,7 @@ export default function ContractDetailPage() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
           <p className="text-xs text-slate-500 font-semibold mb-2">✍️ Müşteri İmzası</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={contract.owner_signature_url} alt="İmza" className="max-w-full h-auto border border-slate-200 rounded-lg" />
+          <img src={contract.owner_signature_url} alt="İmza" className="max-w-full h-auto border border-slate-200 dark:border-slate-800/50 rounded-lg" />
           <p className="text-xs text-slate-500 mt-2">{ownerName} — {signedDate}</p>
         </div>
       )}
@@ -226,7 +226,7 @@ export default function ContractDetailPage() {
       {/* Geri buton */}
       <a
         href={token ? `/tr/sozlesmelerim?t=${encodeURIComponent(token)}` : `/tr/sozlesmelerim`}
-        className="block w-full bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium text-center hover:bg-slate-50 transition"
+        className="block w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl text-sm font-medium text-center hover:bg-slate-50 transition"
       >
         ← Sözleşmelerime Dön
       </a>

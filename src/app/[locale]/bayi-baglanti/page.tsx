@@ -161,11 +161,11 @@ export default function BayiBaglantiPage() {
   if (step === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <h1 className="text-xl font-bold mb-2">Yardıma ihtiyacınız var</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <div className="grid grid-cols-2 gap-2">
       <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="bg-emerald-600 text-white py-3 rounded-lg text-center font-semibold">💬 WA Destek</a>
       {token && (
-        <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`} className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-lg text-center font-semibold hover:bg-slate-50">
+        <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`} className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-lg text-center font-semibold hover:bg-slate-50">
           🏠 Panele Dön
         </a>
       )}
@@ -193,7 +193,7 @@ export default function BayiBaglantiPage() {
         </Footnote>
         {token && (
           <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`}
-            className="block w-full text-center bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-50 mt-3">
+            className="block w-full text-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-semibold hover:bg-slate-50 mt-3">
             🏠 Panele Dön
           </a>
         )}
@@ -229,12 +229,12 @@ export default function BayiBaglantiPage() {
 
         <div className="grid grid-cols-2 gap-2 mt-2">
           <button onClick={() => setStep("select_method")}
-            className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-sm">
+            className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-semibold text-sm">
             ← Geri
           </button>
           {token && (
             <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`}
-              className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-sm text-center flex items-center justify-center">
+              className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-semibold text-sm text-center flex items-center justify-center">
               🏠 Panele Dön
             </a>
           )}
@@ -252,16 +252,16 @@ export default function BayiBaglantiPage() {
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 space-y-3 mb-4">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Server URL</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Server URL</label>
             <input value={serverUrl} onChange={e => setServerUrl(e.target.value)}
               placeholder="http://192.168.1.100:8080"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Customer Code</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Customer Code</label>
             <input value={customerCode} onChange={e => setCustomerCode(e.target.value)}
               placeholder="001"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm" />
           </div>
           {error && <p className="text-xs text-red-600">{error}</p>}
         </div>
@@ -272,13 +272,13 @@ export default function BayiBaglantiPage() {
             ✅ Bağlan
           </button>
           <button onClick={() => setStep("select_software")}
-            className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-sm">
+            className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-semibold text-sm">
             ← Geri
           </button>
         </div>
         {token && (
           <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`}
-            className="block w-full text-center bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-50 mt-2 text-sm">
+            className="block w-full text-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-semibold hover:bg-slate-50 mt-2 text-sm">
             🏠 Panele Dön
           </a>
         )}
@@ -297,9 +297,9 @@ export default function BayiBaglantiPage() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center">
           <div className="text-5xl mb-4 animate-pulse">🔄</div>
           <h2 className="text-xl font-bold mb-2">{selectedSoftware?.name}</h2>
-          <p className="text-sm text-slate-600 mb-6 min-h-[1.5em]">{progressLabel}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-6 min-h-[1.5em]">{progressLabel}</p>
 
-          <div className="w-full bg-slate-100 rounded-full h-2 mb-2">
+          <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-2 mb-2">
             <div className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }} />
           </div>
@@ -316,18 +316,18 @@ export default function BayiBaglantiPage() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center">
           <div className="text-6xl mb-4">✅</div>
           <h2 className="text-2xl font-bold text-emerald-700 mb-2">Bağlandı!</h2>
-          <p className="text-sm text-slate-600 mb-6">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
             <strong>{selectedSoftware?.name}</strong> sisteminizden bayiler ve ürünler senkronlandı.
           </p>
 
           <div className="grid grid-cols-2 gap-3 mb-6">
-            <div className="bg-emerald-50 rounded-xl p-4">
+            <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-xl p-4">
               <div className="text-3xl font-bold text-emerald-700">{counts.dealers}</div>
-              <div className="text-xs text-slate-600 mt-1">bayi</div>
+              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">bayi</div>
             </div>
-            <div className="bg-emerald-50 rounded-xl p-4">
+            <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-xl p-4">
               <div className="text-3xl font-bold text-emerald-700">{counts.products}</div>
-              <div className="text-xs text-slate-600 mt-1">ürün</div>
+              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">ürün</div>
             </div>
           </div>
 
@@ -345,7 +345,7 @@ export default function BayiBaglantiPage() {
               <span />
             )}
             <a href={`https://wa.me/${BOT_WA_NUMBER}`}
-              className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-center hover:bg-slate-50">
+              className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-semibold text-center hover:bg-slate-50">
               💬 WhatsApp&apos;a Dön
             </a>
           </div>
@@ -367,7 +367,7 @@ export default function BayiBaglantiPage() {
 
 function Page({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8 px-4">
       <div className="max-w-md mx-auto">{children}</div>
     </div>
   );
@@ -386,15 +386,15 @@ function Header({ icon, title, subtitle }: { icon: string; title: string; subtit
 function Card({ icon, title, desc, onClick, badge }: { icon: string; title: string; desc: string; onClick: () => void; badge?: string }) {
   return (
     <button onClick={onClick}
-      className="w-full text-left bg-white dark:bg-slate-800 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-2xl p-5 transition group">
+      className="w-full text-left bg-white dark:bg-slate-800 hover:bg-emerald-50 border border-slate-200 dark:border-slate-800/50 hover:border-emerald-300 rounded-2xl p-5 transition group">
       <div className="flex items-start gap-3">
         <div className="text-3xl">{icon}</div>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-semibold text-slate-900">{title}</h3>
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
             {badge && <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-medium">{badge}</span>}
           </div>
-          <p className="text-xs text-slate-600 leading-relaxed">{desc}</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{desc}</p>
         </div>
         <div className="text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition">→</div>
       </div>
@@ -414,9 +414,9 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 function SoftwareCard({ sw, onClick }: { sw: SoftwareOption; onClick: () => void }) {
   return (
     <button onClick={onClick}
-      className="bg-white dark:bg-slate-800 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl p-3 text-left transition">
+      className="bg-white dark:bg-slate-800 hover:bg-emerald-50 border border-slate-200 dark:border-slate-800/50 hover:border-emerald-300 rounded-xl p-3 text-left transition">
       <div className="text-lg">{sw.flag}</div>
-      <div className="font-semibold text-sm text-slate-900 mt-1">{sw.name}</div>
+      <div className="font-semibold text-sm text-slate-900 dark:text-slate-100 mt-1">{sw.name}</div>
       <div className="text-[10px] text-slate-500 mt-0.5">
         {sw.type === "cloud" ? "☁️ Cloud — tek tıkla" : "🖥️ On-prem — sunucu bilgisi"}
       </div>
@@ -431,7 +431,7 @@ function Footnote({ children }: { children: React.ReactNode }) {
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

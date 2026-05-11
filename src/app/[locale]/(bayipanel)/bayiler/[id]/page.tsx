@@ -134,11 +134,11 @@ function relativeTime(iso: string): string {
 }
 
 const ORDER_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
-  pending:    { label: "Bekliyor",   cls: "bg-amber-50 text-amber-700" },
-  preparing:  { label: "Hazırlanıyor", cls: "bg-sky-50 text-sky-700" },
-  shipped:    { label: "Yolda",      cls: "bg-indigo-50 text-indigo-700" },
-  delivered:  { label: "Teslim",     cls: "bg-emerald-50 text-emerald-700" },
-  cancelled:  { label: "İptal",      cls: "bg-rose-50 text-rose-700" },
+  pending:    { label: "Bekliyor",   cls: "bg-amber-50 dark:bg-amber-950/30 text-amber-700" },
+  preparing:  { label: "Hazırlanıyor", cls: "bg-sky-50 dark:bg-sky-950/30 text-sky-700" },
+  shipped:    { label: "Yolda",      cls: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700" },
+  delivered:  { label: "Teslim",     cls: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700" },
+  cancelled:  { label: "İptal",      cls: "bg-rose-50 dark:bg-rose-950/30 text-rose-700" },
 };
 
 export default function BayiDetayPage() {
@@ -201,14 +201,14 @@ export default function BayiDetayPage() {
   }, [data, tour]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-sm text-slate-500">Yükleniyor...</div>;
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-sm text-slate-500">Yükleniyor...</div>;
   }
   if (error || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-        <div className="max-w-md w-full bg-white dark:bg-slate-800 border border-rose-200 rounded-xl p-6 text-center">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800/50 rounded-xl p-6 text-center">
           <h1 className="text-lg font-semibold text-rose-700 mb-2">Hata</h1>
-          <p className="text-sm text-slate-600">{error || "Bayi bulunamadı."}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">{error || "Bayi bulunamadı."}</p>
         </div>
       </div>
     );
@@ -220,19 +220,19 @@ export default function BayiDetayPage() {
   const backHref = `/tr/bayiler?t=${encodeURIComponent(token)}`;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       {/* Breadcrumb */}
-      <div className="bg-white dark:bg-slate-800 border-b border-slate-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800/50">
         <div className="max-w-6xl mx-auto px-4 py-3 text-sm">
           <Link href={backHref} className="text-indigo-600 hover:underline">Bayilerim</Link>
           <span className="text-slate-400 mx-2">›</span>
-          <span className="text-slate-700 font-medium">{dealer.name}</span>
+          <span className="text-slate-700 dark:text-slate-300 font-medium">{dealer.name}</span>
         </div>
       </div>
 
       {/* Tour banner */}
       {tourBanner && (
-        <div className="bg-amber-50 border-b border-amber-200">
+        <div className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800/50">
           <div className="max-w-6xl mx-auto px-4 py-3 flex items-start gap-3">
             <div className="flex-1">
               <h2 className="font-semibold text-amber-900 text-sm">{tourBanner.title}</h2>
@@ -249,7 +249,7 @@ export default function BayiDetayPage() {
       )}
 
       {/* Üst özet kartı */}
-      <div className="bg-white dark:bg-slate-800 border-b border-slate-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800/50">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-start gap-4">
             <div className={`flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center font-bold text-white text-xl ${finance.isCritical ? "bg-rose-500" : dealer.isActive ? "bg-indigo-500" : "bg-slate-400"}`}>
@@ -257,7 +257,7 @@ export default function BayiDetayPage() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl font-bold text-slate-900">{dealer.name}</h1>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">{dealer.name}</h1>
                 {finance.isCritical && (
                   <Chip color="rose" label="KRİTİK" />
                 )}
@@ -271,7 +271,7 @@ export default function BayiDetayPage() {
                   <Chip key={t} color="slate" label={t} />
                 ))}
               </div>
-              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-600">
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
                 {dealer.contactName && <div>👤 {dealer.contactName}</div>}
                 {dealer.contactPhone && (
                   <div>
@@ -297,15 +297,15 @@ export default function BayiDetayPage() {
         {/* Sol — Finansal */}
         <section className="space-y-3">
           {/* Finansal Durum */}
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-4">
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-slate-700">💳 Finansal Durum</h3>
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">💳 Finansal Durum</h3>
               <RiskBadge status={finance.riskStatus} />
             </div>
 
             <div>
               <div className="text-xs text-slate-500">Toplam Bakiye</div>
-              <div className={`text-2xl font-bold ${finance.balance > 0 ? "text-rose-600" : finance.balance < 0 ? "text-emerald-600" : "text-slate-700"}`}>
+              <div className={`text-2xl font-bold ${finance.balance > 0 ? "text-rose-600" : finance.balance < 0 ? "text-emerald-600" : "text-slate-700 dark:text-slate-300"}`}>
                 {formatTry(finance.balance)}
               </div>
             </div>
@@ -316,7 +316,7 @@ export default function BayiDetayPage() {
                   <span>Kredi limiti</span>
                   <span>{formatTry(Math.max(0, finance.balance))} / {formatTry(finance.creditLimit)}</span>
                 </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden">
                   <div
                     className={`h-full ${finance.balance / finance.creditLimit > 0.8 ? "bg-rose-500" : finance.balance / finance.creditLimit > 0.5 ? "bg-amber-500" : "bg-emerald-500"}`}
                     style={{ width: `${Math.min(100, Math.max(0, finance.balance / finance.creditLimit) * 100)}%` }}
@@ -327,22 +327,22 @@ export default function BayiDetayPage() {
 
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
               {finance.paymentTermDays !== null && (
-                <div className="p-2 bg-slate-50 rounded-lg">
+                <div className="p-2 bg-slate-50 dark:bg-slate-950 rounded-lg">
                   <div className="text-[10px] text-slate-500 uppercase">Vade Günü</div>
-                  <div className="text-sm font-semibold text-slate-800">{finance.paymentTermDays} gün</div>
+                  <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{finance.paymentTermDays} gün</div>
                 </div>
               )}
               {finance.discountRate !== null && finance.discountRate > 0 && (
-                <div className="p-2 bg-violet-50 rounded-lg">
+                <div className="p-2 bg-violet-50 dark:bg-violet-950/30 rounded-lg">
                   <div className="text-[10px] text-violet-600 uppercase">İskonto</div>
                   <div className="text-sm font-semibold text-violet-700">%{finance.discountRate}</div>
                 </div>
               )}
-              <div className="p-2 bg-amber-50 rounded-lg">
+              <div className="p-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
                 <div className="text-[10px] text-amber-600 uppercase">Açık Vade</div>
                 <div className="text-sm font-semibold text-amber-700">{formatTry(finance.openTotal)}</div>
               </div>
-              <div className="p-2 bg-emerald-50 rounded-lg">
+              <div className="p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
                 <div className="text-[10px] text-emerald-600 uppercase">Ödenen</div>
                 <div className="text-sm font-semibold text-emerald-700">{formatTry(finance.paidTotal)}</div>
               </div>
@@ -354,21 +354,21 @@ export default function BayiDetayPage() {
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div className="text-center">
                   <div className="text-slate-400">30 gün</div>
-                  <div className="font-semibold text-slate-800">{formatTry(finance.revenue30)}</div>
+                  <div className="font-semibold text-slate-800 dark:text-slate-200">{formatTry(finance.revenue30)}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-slate-400">60 gün</div>
-                  <div className="font-semibold text-slate-800">{formatTry(finance.revenue60)}</div>
+                  <div className="font-semibold text-slate-800 dark:text-slate-200">{formatTry(finance.revenue60)}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-slate-400">90 gün</div>
-                  <div className="font-semibold text-slate-800">{formatTry(finance.revenue90)}</div>
+                  <div className="font-semibold text-slate-800 dark:text-slate-200">{formatTry(finance.revenue90)}</div>
                 </div>
               </div>
             </div>
 
             {finance.mostOverdueDays !== null && finance.mostOverdueDays >= 0 && (
-              <div className={`mt-3 p-2 rounded-lg text-xs ${finance.isCritical ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700"}`}>
+              <div className={`mt-3 p-2 rounded-lg text-xs ${finance.isCritical ? "bg-rose-50 dark:bg-rose-950/30 text-rose-700" : "bg-amber-50 dark:bg-amber-950/30 text-amber-700"}`}>
                 ⏰ En geç vade: <strong>{finance.mostOverdueDays} gün</strong> {finance.mostOverdueDays > 0 ? "geçmiş" : "kaldı"}
               </div>
             )}
@@ -376,8 +376,8 @@ export default function BayiDetayPage() {
 
           {/* Vergi & Banka */}
           {(dealer.taxNumber || dealer.taxOffice || dealer.iban || dealer.contactName) && (
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-4">
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">🏦 Vergi & Banka</h3>
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">🏦 Vergi & Banka</h3>
               <div className="space-y-1.5 text-xs">
                 <KeyVal label="Vergi No" value={dealer.taxNumber} mono />
                 <KeyVal label="Vergi Dairesi" value={dealer.taxOffice} />
@@ -389,13 +389,13 @@ export default function BayiDetayPage() {
 
           {/* Vade hareketleri (faturalar) */}
           {invoices.length > 0 && (
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-4">
-              <h3 className="text-sm font-semibold text-slate-700 mb-2">Vade Hareketleri</h3>
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Vade Hareketleri</h3>
               <div className="space-y-1.5">
                 {invoices.slice(0, 5).map(inv => (
                   <div key={inv.id} className="flex items-center justify-between text-xs">
                     <div>
-                      <div className="font-medium text-slate-700">{inv.invoiceNo}</div>
+                      <div className="font-medium text-slate-700 dark:text-slate-300">{inv.invoiceNo}</div>
                       <div className="text-slate-400">Vade: {formatDate(inv.dueDate)}</div>
                     </div>
                     <div className="text-right">
@@ -418,20 +418,20 @@ export default function BayiDetayPage() {
         </section>
 
         {/* Orta — Sipariş geçmişi */}
-        <section className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-4 lg:col-span-1">
-          <h3 className="text-sm font-semibold text-slate-700 mb-3">🛒 Sipariş Geçmişi</h3>
+        <section className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-4 lg:col-span-1">
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">🛒 Sipariş Geçmişi</h3>
           {orders.length === 0 ? (
             <p className="text-xs text-slate-400 text-center py-6">Henüz sipariş yok.</p>
           ) : (
             <div className="space-y-2 max-h-[480px] overflow-y-auto">
               {orders.map(o => {
-                const stat = ORDER_STATUS_LABEL[o.status] || { label: o.status, cls: "bg-slate-100 text-slate-600" };
+                const stat = ORDER_STATUS_LABEL[o.status] || { label: o.status, cls: "bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400" };
                 return (
                   <div key={o.id} className="border border-slate-100 rounded-lg p-2.5 hover:bg-slate-50">
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-slate-500">{formatDateTime(o.createdAt)}</div>
-                        <div className="text-sm font-medium text-slate-800 truncate">
+                        <div className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
                           {o.quantity} adet × {formatTry(o.unitPrice)}
                         </div>
                       </div>
@@ -448,9 +448,9 @@ export default function BayiDetayPage() {
         </section>
 
         {/* Sağ — Timeline */}
-        <section className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-4">
+        <section className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-slate-700">📜 Timeline</h3>
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">📜 Timeline</h3>
             <button
               onClick={() => setActiveModal("not")}
               className="text-xs text-indigo-600 hover:underline"
@@ -466,7 +466,7 @@ export default function BayiDetayPage() {
                 <div key={idx} className="flex items-start gap-2 text-xs">
                   <span className="flex-shrink-0">{item.icon}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-slate-700 font-medium">{item.title}</div>
+                    <div className="text-slate-700 dark:text-slate-300 font-medium">{item.title}</div>
                     {item.detail && <div className="text-slate-500 truncate">{item.detail}</div>}
                     <div className="text-[10px] text-slate-400 mt-0.5">{relativeTime(item.timestamp)}</div>
                   </div>
@@ -478,7 +478,7 @@ export default function BayiDetayPage() {
       </div>
 
       {/* Sticky aksiyon barı */}
-      <div className="fixed bottom-0 inset-x-0 bg-white dark:bg-slate-800 border-t border-slate-200 shadow-lg z-30">
+      <div className="fixed bottom-0 inset-x-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-800/50 shadow-lg z-30">
         <div className="max-w-6xl mx-auto px-2 py-2 flex gap-1 overflow-x-auto">
           {[
             { key: "wa" as ModalKey, icon: "📩", label: "WA Mesaj" },
@@ -493,7 +493,7 @@ export default function BayiDetayPage() {
               key={btn.key}
               onClick={() => setActiveModal(btn.key)}
               className={`flex-shrink-0 flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[11px] whitespace-nowrap ${
-                btn.primary ? "bg-amber-500 text-white" : "text-slate-700 hover:bg-slate-100"
+                btn.primary ? "bg-amber-500 text-white" : "text-slate-700 dark:text-slate-300 hover:bg-slate-100"
               }`}
             >
               <span className="text-base">{btn.icon}</span>
@@ -542,7 +542,7 @@ export default function BayiDetayPage() {
 function Chip({ color, label }: { color: "rose" | "slate" | "violet" | "sky" | "emerald" | "amber"; label: string }) {
   const cls = {
     rose:    "bg-rose-100 text-rose-700 font-semibold",
-    slate:   "bg-slate-100 text-slate-600",
+    slate:   "bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400",
     violet:  "bg-violet-100 text-violet-700 font-semibold",
     sky:     "bg-sky-100 text-sky-700",
     emerald: "bg-emerald-100 text-emerald-700",
@@ -553,9 +553,9 @@ function Chip({ color, label }: { color: "rose" | "slate" | "violet" | "sky" | "
 
 function RiskBadge({ status }: { status: "clean" | "watch" | "blacklist" }) {
   const map = {
-    clean:     { label: "🟢 Temiz",      cls: "bg-emerald-50 text-emerald-700" },
-    watch:     { label: "🟡 İzlemede",   cls: "bg-amber-50 text-amber-700" },
-    blacklist: { label: "🔴 Kara liste", cls: "bg-rose-50 text-rose-700 font-semibold" },
+    clean:     { label: "🟢 Temiz",      cls: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700" },
+    watch:     { label: "🟡 İzlemede",   cls: "bg-amber-50 dark:bg-amber-950/30 text-amber-700" },
+    blacklist: { label: "🔴 Kara liste", cls: "bg-rose-50 dark:bg-rose-950/30 text-rose-700 font-semibold" },
   }[status];
   return <span className={`text-[10px] px-2 py-0.5 rounded-full ${map.cls}`}>{map.label}</span>;
 }
@@ -572,7 +572,7 @@ function KeyVal({ label, value, mono }: { label: string; value: string | null; m
   return (
     <div className="flex items-center justify-between gap-2">
       <span className="text-slate-500">{label}</span>
-      <span className={`text-slate-800 ${mono ? "font-mono" : ""} text-right break-all`}>{value}</span>
+      <span className={`text-slate-800 dark:text-slate-200 ${mono ? "font-mono" : ""} text-right break-all`}>{value}</span>
     </div>
   );
 }
@@ -611,8 +611,8 @@ function ActionModal({ modalKey, dealer, finance, onClose, onSuccess }: ActionMo
 function ModalShell({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
     <>
-      <div className="flex items-center justify-between p-4 border-b border-slate-200 sticky top-0 bg-white dark:bg-slate-800">
-        <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+      <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800/50 sticky top-0 bg-white dark:bg-slate-800">
+        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
         <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
       </div>
       <div className="p-4">{children}</div>
@@ -661,24 +661,24 @@ function WaMessageForm({ dealer, onClose, onSuccess }: { dealer: Dealer; onClose
   return (
     <ModalShell title="📩 WA Mesaj Gönder" onClose={onClose}>
       <p className="text-xs text-slate-500 mb-3">Alıcı: <strong>{dealer.name}</strong> {dealer.contactPhone && `(${dealer.contactPhone})`}</p>
-      <label className="text-xs font-medium text-slate-700 block mb-1">Şablon seç</label>
-      <select value={tmpl} onChange={e => applyTemplate(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-3">
+      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">Şablon seç</label>
+      <select value={tmpl} onChange={e => applyTemplate(e.target.value)} className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm mb-3">
         <option value="custom">Özel mesaj</option>
         <option value="greeting">Selamlama</option>
         <option value="yeni_urun">Yeni ürün bildirimi</option>
         <option value="kampanya">Kampanya duyurusu</option>
         <option value="vade">Vade hatırlatma</option>
       </select>
-      <label className="text-xs font-medium text-slate-700 block mb-1">Mesaj</label>
+      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">Mesaj</label>
       <textarea
         value={content}
         onChange={e => setContent(e.target.value)}
         rows={5}
         placeholder="Mesajınızı yazın…"
-        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+        className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm"
       />
       <div className="flex gap-2 mt-4 justify-end">
-        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-800/50 rounded-lg hover:bg-slate-50">İptal</button>
         <button
           onClick={handleSend}
           disabled={sending || !content.trim()}
@@ -725,20 +725,20 @@ function VadeHatirlatmaForm({ dealer, finance, onClose, onSuccess }: { dealer: D
 
   return (
     <ModalShell title="💰 Vade Hatırlatma" onClose={onClose}>
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3 text-xs text-amber-800">
+      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg p-3 mb-3 text-xs text-amber-800">
         <div><strong>{dealer.name}</strong></div>
         <div>Açık vade: <strong>{formatTry(tutar)}</strong></div>
         {days > 0 && <div className="text-rose-700 font-semibold">⏰ {days} gün geçmiş</div>}
       </div>
-      <label className="text-xs font-medium text-slate-700 block mb-1">Hatırlatma metni (AI hazır şablon)</label>
+      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">Hatırlatma metni (AI hazır şablon)</label>
       <textarea
         value={msg}
         onChange={e => setMsg(e.target.value)}
         rows={5}
-        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+        className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm"
       />
       <div className="flex gap-2 mt-4 justify-end">
-        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-800/50 rounded-lg hover:bg-slate-50">İptal</button>
         <button
           onClick={handleSend}
           disabled={sending || !msg.trim()}
@@ -777,10 +777,10 @@ function NotEkleForm({ onClose, onSuccess }: { dealer: Dealer; onClose: () => vo
         onChange={e => setContent(e.target.value)}
         rows={5}
         placeholder="Bu bayi hakkında not… (örn. ziyaret özeti, müzakere notu, ödeme uzlaşması)"
-        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+        className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm"
       />
       <div className="flex gap-2 mt-4 justify-end">
-        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-800/50 rounded-lg hover:bg-slate-50">İptal</button>
         <button onClick={handleSave} disabled={saving || !content.trim()} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
           {saving ? "Kaydediliyor…" : "Kaydet"}
         </button>
@@ -817,39 +817,39 @@ function KampanyaForm({ onClose, onSuccess }: { dealer: Dealer; onClose: () => v
     <ModalShell title="🎁 Özel Kampanya" onClose={onClose}>
       <div className="space-y-3">
         <div>
-          <label className="text-xs font-medium text-slate-700 block mb-1">Kampanya adı</label>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="örn: Bahar İndirimi" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+          <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">Kampanya adı</label>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="örn: Bahar İndirimi" className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm" />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs font-medium text-slate-700 block mb-1">İndirim tipi</label>
-            <select value={type} onChange={e => setType(e.target.value as "percent" | "fixed")} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+            <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">İndirim tipi</label>
+            <select value={type} onChange={e => setType(e.target.value as "percent" | "fixed")} className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm">
               <option value="percent">%</option>
               <option value="fixed">Sabit ₺</option>
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-700 block mb-1">Tutar</label>
-            <input type="number" value={value} onChange={e => setValue(Number(e.target.value))} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+            <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">Tutar</label>
+            <input type="number" value={value} onChange={e => setValue(Number(e.target.value))} className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm" />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs font-medium text-slate-700 block mb-1">Başlangıç</label>
-            <input type="date" value={start} onChange={e => setStart(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+            <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">Başlangıç</label>
+            <input type="date" value={start} onChange={e => setStart(e.target.value)} className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm" />
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-700 block mb-1">Bitiş</label>
-            <input type="date" value={end} onChange={e => setEnd(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+            <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">Bitiş</label>
+            <input type="date" value={end} onChange={e => setEnd(e.target.value)} className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm" />
           </div>
         </div>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
           <input type="checkbox" checked={notify} onChange={e => setNotify(e.target.checked)} className="accent-indigo-600" />
           Bayiye WA bildirimi gönder
         </label>
       </div>
       <div className="flex gap-2 mt-4 justify-end">
-        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-800/50 rounded-lg hover:bg-slate-50">İptal</button>
         <button onClick={handleSave} disabled={saving || !name.trim()} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
           {saving ? "Tanımlanıyor…" : "Kampanyayı Tanımla"}
         </button>
@@ -918,17 +918,17 @@ function DuzenleForm({ dealer, finance, onClose, onSuccess }: { dealer: Dealer; 
     <ModalShell title="✏️ Bayi Düzenle" onClose={onClose}>
       {/* Mod banner */}
       {isDemoMode ? (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 mb-3 text-xs text-emerald-800">
+        <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-lg p-2.5 mb-3 text-xs text-emerald-800">
           🎓 <strong>Demo modu aktif</strong> — Tüm alanlar düzenlenebilir. Production'da Logo entegrasyonu açıldığında bazı alanlar read-only olur.
         </div>
       ) : (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 mb-3 text-xs text-amber-800">
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg p-2.5 mb-3 text-xs text-amber-800">
           🔒 <strong>Logo entegrasyonu aktif</strong> — bazı alanlar muhasebe sisteminizden senkron, buradan değiştirilemez. Değişiklik için Logo'dan güncelleyin.
         </div>
       )}
 
       {/* 🔒 Logo grubu */}
-      <div className={`rounded-xl p-3 mb-3 ${logoLocked ? "bg-slate-50 border border-slate-200" : "bg-white dark:bg-slate-800 border border-slate-200"}`}>
+      <div className={`rounded-xl p-3 mb-3 ${logoLocked ? "bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/50" : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50"}`}>
         <h4 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
           🔒 Logo'dan Gelen
           {logoLocked && <span className="text-[10px] font-normal normal-case text-slate-400">(read-only)</span>}
@@ -953,14 +953,14 @@ function DuzenleForm({ dealer, finance, onClose, onSuccess }: { dealer: Dealer; 
           <FieldInput label="E-posta" value={email} onChange={setEmail} />
           <FieldInput label="Şehir" value={city} onChange={setCity} />
           <div>
-            <label className="text-xs font-medium text-slate-700 block mb-1">Adres</label>
-            <textarea value={address} onChange={e => setAddress(e.target.value)} rows={2} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+            <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">Adres</label>
+            <textarea value={address} onChange={e => setAddress(e.target.value)} rows={2} className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm" />
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-700 block mb-1">Etiketler</label>
+            <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">Etiketler</label>
             <div className="flex flex-wrap gap-2">
               {TAG_OPTIONS.map(t => (
-                <label key={t} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border cursor-pointer ${tags.includes(t) ? "bg-indigo-50 border-indigo-300 text-indigo-700" : "bg-white dark:bg-slate-800 border-slate-200 text-slate-600"}`}>
+                <label key={t} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border cursor-pointer ${tags.includes(t) ? "bg-indigo-50 dark:bg-indigo-950/30 border-indigo-300 text-indigo-700" : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800/50 text-slate-600 dark:text-slate-400"}`}>
                   <input type="checkbox" checked={tags.includes(t)} onChange={() => toggleTag(t)} className="accent-indigo-600 w-3 h-3" />
                   {t}
                 </label>
@@ -968,10 +968,10 @@ function DuzenleForm({ dealer, finance, onClose, onSuccess }: { dealer: Dealer; 
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-700 block mb-1">Risk durumu (UPU hesaplı)</label>
+            <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">Risk durumu (UPU hesaplı)</label>
             <div className="flex gap-2 flex-wrap">
               {RISK_OPTIONS.map(opt => (
-                <label key={opt.id} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg border cursor-pointer ${riskStatus === opt.id ? "bg-indigo-50 border-indigo-300" : "bg-white dark:bg-slate-800 border-slate-200"}`}>
+                <label key={opt.id} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg border cursor-pointer ${riskStatus === opt.id ? "bg-indigo-50 dark:bg-indigo-950/30 border-indigo-300" : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800/50"}`}>
                   <input type="radio" name="risk" checked={riskStatus === opt.id} onChange={() => setRiskStatus(opt.id)} className="accent-indigo-600" />
                   {opt.label}
                 </label>
@@ -982,7 +982,7 @@ function DuzenleForm({ dealer, finance, onClose, onSuccess }: { dealer: Dealer; 
       </div>
 
       <div className="flex gap-2 justify-end">
-        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-800/50 rounded-lg hover:bg-slate-50">İptal</button>
         <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
           {saving ? "Kaydediliyor…" : "Kaydet"}
         </button>
@@ -994,7 +994,7 @@ function DuzenleForm({ dealer, finance, onClose, onSuccess }: { dealer: Dealer; 
 function LogoField({ label, value, onChange, disabled, mono }: { label: string; value: string; onChange: (v: string) => void; disabled: boolean; mono?: boolean }) {
   return (
     <div>
-      <label className="text-xs font-medium text-slate-700 mb-1 flex items-center gap-1">
+      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
         {label}
         <span
           title="Muhasebe sisteminizden senkron — değiştirmek için oradan güncelleyin"
@@ -1005,7 +1005,7 @@ function LogoField({ label, value, onChange, disabled, mono }: { label: string; 
         value={value}
         onChange={e => onChange(e.target.value)}
         disabled={disabled}
-        className={`w-full border border-slate-200 rounded-lg px-3 py-2 text-sm ${mono ? "font-mono" : ""} ${disabled ? "bg-slate-100 text-slate-500 cursor-not-allowed" : ""}`}
+        className={`w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm ${mono ? "font-mono" : ""} ${disabled ? "bg-slate-100 dark:bg-slate-900 text-slate-500 cursor-not-allowed" : ""}`}
       />
     </div>
   );
@@ -1014,8 +1014,8 @@ function LogoField({ label, value, onChange, disabled, mono }: { label: string; 
 function FieldInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div>
-      <label className="text-xs font-medium text-slate-700 block mb-1">{label}</label>
-      <input value={value} onChange={e => onChange(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">{label}</label>
+      <input value={value} onChange={e => onChange(e.target.value)} className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm" />
     </div>
   );
 }
@@ -1046,14 +1046,14 @@ function DurumForm({ dealer, onClose, onSuccess }: { dealer: Dealer; onClose: ()
           { id: "dondurulmus",  label: "⏸ Dondurulmuş — sadece okuma, yeni sipariş kapalı" },
           { id: "pasif",        label: "❌ Pasif — listeden gizlenir, etkileşim kapalı" },
         ].map(opt => (
-          <label key={opt.id} className="flex items-start gap-2 p-2 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+          <label key={opt.id} className="flex items-start gap-2 p-2 border border-slate-200 dark:border-slate-800/50 rounded-lg hover:bg-slate-50 cursor-pointer">
             <input type="radio" name="status" value={opt.id} checked={status === opt.id} onChange={() => setStatus(opt.id)} className="mt-0.5 accent-indigo-600" />
             <span className="text-sm">{opt.label}</span>
           </label>
         ))}
       </div>
       <div className="flex gap-2 mt-4 justify-end">
-        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-800/50 rounded-lg hover:bg-slate-50">İptal</button>
         <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
           {saving ? "Güncelleniyor…" : "Onayla"}
         </button>
@@ -1082,22 +1082,22 @@ function SilForm({ dealer, onClose, onSuccess }: { dealer: Dealer; onClose: () =
 
   return (
     <ModalShell title="🗑 Bayi Sil" onClose={onClose}>
-      <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 mb-3">
+      <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-lg p-3 mb-3">
         <p className="text-sm text-rose-800">
           <strong>{dealer.name}</strong> arşivlenecek. Sipariş geçmişi ve faturalar korunur, ancak bayi listede görünmez.
           İstediğinizde geri alabilirsiniz.
         </p>
       </div>
-      <label className="text-xs font-medium text-slate-700 block mb-1">
+      <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">
         Onaylamak için &quot;<strong>SIL</strong>&quot; yazın
       </label>
       <input
         value={confirmText}
         onChange={e => setConfirmText(e.target.value)}
-        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono"
+        className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm font-mono"
       />
       <div className="flex gap-2 mt-4 justify-end">
-        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-800/50 rounded-lg hover:bg-slate-50">İptal</button>
         <button
           onClick={handleDelete}
           disabled={deleting || confirmText !== "SIL"}

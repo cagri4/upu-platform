@@ -153,7 +153,7 @@ export function QrScannerModal({ open, tenantKey, onClose }: QrScannerModalProps
     <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold text-slate-900">🖥 Bilgisayardan Aç</h2>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">🖥 Bilgisayardan Aç</h2>
           <button
             onClick={() => void safeClose()}
             className="text-slate-400 hover:text-slate-600 text-2xl leading-none w-8 h-8 flex items-center justify-center"
@@ -163,8 +163,8 @@ export function QrScannerModal({ open, tenantKey, onClose }: QrScannerModalProps
           </button>
         </div>
 
-        <p className="text-xs text-slate-600 mb-4 leading-relaxed">
-          Bilgisayarınızda <span className="font-semibold text-slate-900">qr.upudev.nl</span> adresini açın ve oradaki QR kodu kameraya doğrultun.
+        <p className="text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+          Bilgisayarınızda <span className="font-semibold text-slate-900 dark:text-slate-100">qr.upudev.nl</span> adresini açın ve oradaki QR kodu kameraya doğrultun.
         </p>
 
         <div className="bg-slate-900 rounded-xl overflow-hidden aspect-square relative">
@@ -200,7 +200,7 @@ export function QrScannerModal({ open, tenantKey, onClose }: QrScannerModalProps
           )}
           <button
             onClick={() => void safeClose()}
-            className={`${state === "error" ? "flex-1" : "w-full"} bg-slate-100 hover:bg-slate-200 text-slate-900 py-2.5 rounded-lg text-sm font-medium`}
+            className={`${state === "error" ? "flex-1" : "w-full"} bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 text-slate-900 dark:text-slate-100 py-2.5 rounded-lg text-sm font-medium`}
           >
             {state === "success" ? "Kapat" : "Vazgeç"}
           </button>

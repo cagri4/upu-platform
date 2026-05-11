@@ -16,11 +16,11 @@ export default function YardimCommandPage({ params }: { params: Promise<{ comman
 
   if (!entry) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">
           <div className="text-4xl mb-3">🔍</div>
           <h1 className="text-xl font-bold mb-2">Bu komut için yardım yok</h1>
-          <p className="text-slate-600 text-sm mb-4">
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
             <span className="font-mono">{command}</span> için tutorial bulunamadı.
           </p>
           <a href={`/tr/yardim${token ? `?t=${token}` : ""}`} className="inline-block bg-emerald-600 text-white px-6 py-3 rounded-lg">
@@ -32,7 +32,7 @@ export default function YardimCommandPage({ params }: { params: Promise<{ comman
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <div className="max-w-md mx-auto p-4">
         <a href={`/tr/yardim${token ? `?t=${token}` : ""}`} className="text-emerald-700 text-sm font-medium mb-2 inline-block">
           ← Yardım Merkezi
@@ -48,11 +48,11 @@ export default function YardimCommandPage({ params }: { params: Promise<{ comman
         </div>
 
         <Section title="📌 Ne işe yarar?">
-          <p className="text-slate-700 text-sm leading-relaxed">{entry.what}</p>
+          <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">{entry.what}</p>
         </Section>
 
         <Section title="🚀 Nasıl kullanılır?">
-          <ol className="space-y-2 text-slate-700 text-sm">
+          <ol className="space-y-2 text-slate-700 dark:text-slate-300 text-sm">
             {entry.how.map((step, i) => (
               <li key={i} className="flex gap-2">
                 <span className="font-bold text-emerald-700 flex-shrink-0">{i + 1}.</span>
@@ -63,7 +63,7 @@ export default function YardimCommandPage({ params }: { params: Promise<{ comman
         </Section>
 
         <Section title="💡 Örnek senaryo">
-          <p className="text-slate-700 text-sm leading-relaxed italic">{entry.example}</p>
+          <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed italic">{entry.example}</p>
         </Section>
 
         {entry.faq.length > 0 && (
@@ -71,8 +71,8 @@ export default function YardimCommandPage({ params }: { params: Promise<{ comman
             <div className="space-y-3">
               {entry.faq.map((f, i) => (
                 <div key={i}>
-                  <div className="font-semibold text-slate-900 text-sm">{f.q}</div>
-                  <div className="text-slate-600 text-sm mt-0.5">{f.a}</div>
+                  <div className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{f.q}</div>
+                  <div className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">{f.a}</div>
                 </div>
               ))}
             </div>
@@ -91,7 +91,7 @@ export default function YardimCommandPage({ params }: { params: Promise<{ comman
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm mb-3">
-      <h2 className="font-semibold text-slate-900 text-sm mb-2">{title}</h2>
+      <h2 className="font-semibold text-slate-900 dark:text-slate-100 text-sm mb-2">{title}</h2>
       {children}
     </section>
   );

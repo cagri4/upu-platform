@@ -51,7 +51,7 @@ export default function MarketStokPage() {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow">
         <div className="text-3xl mb-3">⚠️</div>
-        <p className="text-slate-700">{error}</p>
+        <p className="text-slate-700 dark:text-slate-300">{error}</p>
       </div>
     );
   }
@@ -72,11 +72,11 @@ export default function MarketStokPage() {
           <h1 className="text-2xl font-bold">Stok</h1>
           <p className="text-amber-100 text-sm mt-2">Henüz ürün eklenmemiş.</p>
         </div>
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 text-sm text-slate-600 shadow-sm">
-          <p className="font-semibold text-slate-900 mb-2">📦 İlk ürününüzü ekleyin</p>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 text-sm text-slate-600 dark:text-slate-400 shadow-sm">
+          <p className="font-semibold text-slate-900 dark:text-slate-100 mb-2">📦 İlk ürününüzü ekleyin</p>
           <p>
             WhatsApp&apos;tan{" "}
-            <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">stokekle</span>
+            <span className="font-mono bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">stokekle</span>
             {" "}komutu ile ürün ekleyebilirsiniz. Ürün adı, miktar ve birim adımlarını sırayla girin.
           </p>
         </div>
@@ -106,7 +106,7 @@ export default function MarketStokPage() {
             return (
               <div key={p.id} className="px-4 py-3 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-slate-900 truncate">{p.name}</div>
+                  <div className="font-semibold text-slate-900 dark:text-slate-100 truncate">{p.name}</div>
                   <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap gap-2">
                     {p.category && <span>{p.category}</span>}
                     {p.expiry_date && (
@@ -117,7 +117,7 @@ export default function MarketStokPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className={`font-bold ${low ? "text-rose-600" : "text-slate-900"}`}>
+                  <div className={`font-bold ${low ? "text-rose-600" : "text-slate-900 dark:text-slate-100"}`}>
                     {p.quantity} {p.unit || "adet"}
                   </div>
                   {p.price != null && (
@@ -133,10 +133,10 @@ export default function MarketStokPage() {
       </div>
 
       {/* Hint */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 text-sm text-slate-600 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 text-sm text-slate-600 dark:text-slate-400 shadow-sm">
         <p>
           Yeni ürün eklemek için WhatsApp&apos;tan{" "}
-          <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">stokekle</span>
+          <span className="font-mono bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">stokekle</span>
           {" "}komutunu kullanın. Düşük stoklar kırmızı, son kullanma tarihi yaklaşanlar sarı renkle işaretlenir.
         </p>
       </div>

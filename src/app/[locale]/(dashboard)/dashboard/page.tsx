@@ -106,7 +106,7 @@ export default function DashboardPage() {
   if (tenantKey === 'bayi' && userId && userRole === 'dealer') {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 mb-6">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6">
           {tenant?.icon} Bayi Paneli
         </h1>
         <DealerDashboardContent userId={userId} />
@@ -118,7 +118,7 @@ export default function DashboardPage() {
   if (tenantKey === 'bayi' && userId) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 mb-6">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6">
           {tenant?.icon} {tenant?.name || 'Panel'}
         </h1>
         <BayiDashboardContent userId={userId} />
@@ -130,7 +130,7 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6">
         {tenant?.icon} {tenant?.name || 'Panel'}
       </h1>
 
@@ -138,11 +138,11 @@ export default function DashboardPage() {
         {cards.map((card) => (
           <Card key={card.title}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-700">{card.title}</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">{card.title}</CardTitle>
               <card.icon className={`h-5 w-5 ${card.color}`} />
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-slate-900">{card.value}</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{card.value}</p>
             </CardContent>
           </Card>
         ))}

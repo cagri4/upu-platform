@@ -15,10 +15,10 @@ interface Contract {
 }
 
 const STATUS_META: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  pending_signature: { label: 'İmza bekliyor', color: 'text-amber-600 bg-amber-50', icon: Clock },
-  signed:            { label: 'İmzalandı',    color: 'text-emerald-600 bg-emerald-50', icon: CheckCircle2 },
-  cancelled:         { label: 'İptal',        color: 'text-red-600 bg-red-50', icon: XCircle },
-  expired:           { label: 'Süresi doldu', color: 'text-slate-500 bg-slate-100', icon: XCircle },
+  pending_signature: { label: 'İmza bekliyor', color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30', icon: Clock },
+  signed:            { label: 'İmzalandı',    color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30', icon: CheckCircle2 },
+  cancelled:         { label: 'İptal',        color: 'text-red-600 bg-red-50 dark:bg-red-950/30', icon: XCircle },
+  expired:           { label: 'Süresi doldu', color: 'text-slate-500 bg-slate-100 dark:bg-slate-900', icon: XCircle },
 };
 
 export default function ContractsPage() {
@@ -37,14 +37,14 @@ export default function ContractsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">📄 Sözleşmeler</h1>
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6">📄 Sözleşmeler</h1>
 
       {loading ? (
         <p className="text-slate-500">Yükleniyor...</p>
       ) : items.length === 0 ? (
         <Card className="p-8 text-center">
           <FileText className="mx-auto mb-3 h-10 w-10 text-slate-400" />
-          <p className="text-slate-600">Henüz sözleşme yok.</p>
+          <p className="text-slate-600 dark:text-slate-400">Henüz sözleşme yok.</p>
           <p className="text-sm text-slate-500 mt-1">WhatsApp'tan "sözleşme" komutuyla oluşturun.</p>
         </Card>
       ) : (
@@ -61,12 +61,12 @@ export default function ContractsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 flex-wrap">
-                      <h3 className="font-semibold text-slate-900">
+                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">
                         {c.type === 'yetkilendirme' ? 'Yetkilendirme Sözleşmesi' : c.type}
                       </h3>
                       <span className={`text-xs px-2 py-1 rounded-md ${meta.color}`}>{meta.label}</span>
                     </div>
-                    <div className="text-sm text-slate-600 mt-1 space-y-0.5">
+                    <div className="text-sm text-slate-600 dark:text-slate-400 mt-1 space-y-0.5">
                       {data?.customer_name && <div>Müşteri: {data.customer_name}</div>}
                       {data?.property_title && <div>Mülk: {data.property_title}</div>}
                       {data?.commission && <div>Komisyon: %{data.commission}</div>}

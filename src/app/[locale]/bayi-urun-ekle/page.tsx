@@ -133,20 +133,20 @@ export default function BayiUrunEklePage() {
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
   if (status === "done") return <Center>
     <div className="text-4xl mb-3">✅</div>
     <h1 className="text-xl font-bold mb-2">Ürün eklendi!</h1>
-    <p className="text-slate-600 text-sm mb-4">Sıradaki adım WhatsApp&apos;a düştü.</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">Sıradaki adım WhatsApp&apos;a düştü.</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
 
-  const inputCls = "w-full px-3 py-2 border border-slate-300 rounded-lg text-sm";
+  const inputCls = "w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm";
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-emerald-600 to-teal-600 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">📦</div>
@@ -175,7 +175,7 @@ export default function BayiUrunEklePage() {
         <Section title="📷 Fotoğraflar (en fazla 5)">
           <div className="grid grid-cols-3 gap-2">
             {photos.map((p, i) => (
-              <div key={i} className="relative aspect-square bg-slate-100 rounded-lg overflow-hidden">
+              <div key={i} className="relative aspect-square bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden">
                 {p.uploading ? (
                   <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500">⏳</div>
                 ) : p.error ? (
@@ -190,7 +190,7 @@ export default function BayiUrunEklePage() {
             ))}
             {photos.length < 5 && (
               <button type="button" onClick={() => fileInputRef.current?.click()}
-                className="aspect-square border-2 border-dashed border-slate-300 rounded-lg text-2xl text-slate-400">
+                className="aspect-square border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-2xl text-slate-400">
                 ＋
               </button>
             )}
@@ -260,13 +260,13 @@ export default function BayiUrunEklePage() {
           </button>
           <a
             href={token ? `/tr/bayi-panel?t=${encodeURIComponent(token)}` : `https://wa.me/${BOT_WA_NUMBER}`}
-            className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-center active:scale-95 hover:bg-slate-50 flex items-center justify-center"
+            className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-semibold text-center active:scale-95 hover:bg-slate-50 flex items-center justify-center"
           >
             🏠 Panele Dön
           </a>
         </div>
 
-        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
+        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
       </div>
     </div>
   );
@@ -275,7 +275,7 @@ export default function BayiUrunEklePage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-3 space-y-3">
-      <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wide">{title}</h2>
+      <h2 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">{title}</h2>
       {children}
     </div>
   );
@@ -284,14 +284,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-xs font-medium text-slate-600 mb-1">{label}</span>
+      <span className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{label}</span>
       {children}
     </label>
   );
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

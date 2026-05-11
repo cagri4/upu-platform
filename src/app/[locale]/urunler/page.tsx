@@ -69,9 +69,9 @@ function formatTry(n: number): string {
 }
 
 function stockBadge(p: ProductRow): { text: string; cls: string } {
-  if (p.stockStatus === "out") return { text: "Tükendi", cls: "bg-rose-50 text-rose-700 font-semibold" };
-  if (p.stockStatus === "critical") return { text: `${p.stockQuantity} kaldı`, cls: "bg-amber-50 text-amber-700" };
-  return { text: `${p.stockQuantity} ${p.unit}`, cls: "bg-emerald-50 text-emerald-700" };
+  if (p.stockStatus === "out") return { text: "Tükendi", cls: "bg-rose-50 dark:bg-rose-950/30 text-rose-700 font-semibold" };
+  if (p.stockStatus === "critical") return { text: `${p.stockQuantity} kaldı`, cls: "bg-amber-50 dark:bg-amber-950/30 text-amber-700" };
+  return { text: `${p.stockQuantity} ${p.unit}`, cls: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700" };
 }
 
 export default function UrunlerPage() {
@@ -153,26 +153,26 @@ export default function UrunlerPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-        <div className="max-w-md w-full bg-white dark:bg-slate-800 border border-rose-200 rounded-xl p-6 text-center">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800/50 rounded-xl p-6 text-center">
           <h1 className="text-lg font-semibold text-rose-700 mb-2">Bağlantı hatası</h1>
-          <p className="text-sm text-slate-600">{error}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">{error}</p>
         </div>
       </div>
     );
   }
 
   if (!init) {
-    return <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 text-sm text-slate-500">Yükleniyor...</div>;
+    return <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950 text-sm text-slate-500">Yükleniyor...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800/50 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h1 className="text-xl font-bold text-slate-900">📦 Ürün Kataloğu</h1>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">📦 Ürün Kataloğu</h1>
               {init.user.ticariUnvan && (
                 <p className="text-xs text-slate-500 mt-0.5">{init.user.ticariUnvan}</p>
               )}
@@ -190,12 +190,12 @@ export default function UrunlerPage() {
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
               placeholder="🔍 İsim, kod, marka, barkod..."
-              className="flex-1 min-w-[180px] border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
+              className="flex-1 min-w-[180px] border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
             />
             <select
               value={category}
               onChange={e => pushParams({ category: e.target.value || null, page: "1" })}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
+              className="border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
             >
               <option value="">Tüm kategoriler</option>
               {init.categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -203,7 +203,7 @@ export default function UrunlerPage() {
             <select
               value={stock}
               onChange={e => pushParams({ stock: e.target.value, page: "1" })}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
+              className="border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
             >
               {STOCK_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
@@ -215,7 +215,7 @@ export default function UrunlerPage() {
         {loading && !data ? (
           <div className="text-center text-sm text-slate-500 py-8">Yükleniyor...</div>
         ) : data && data.rows.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-8 text-center text-sm text-slate-500">
             Bu filtreyle eşleşen ürün yok.
           </div>
         ) : (
@@ -227,10 +227,10 @@ export default function UrunlerPage() {
                 <Link
                   key={p.id}
                   href={detailHref}
-                  className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-3 hover:border-indigo-300 hover:shadow-sm transition flex flex-col"
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-3 hover:border-indigo-300 hover:shadow-sm transition flex flex-col"
                 >
                   {/* Görsel */}
-                  <div className="aspect-square bg-slate-50 rounded-lg mb-2 overflow-hidden flex items-center justify-center">
+                  <div className="aspect-square bg-slate-50 dark:bg-slate-950 rounded-lg mb-2 overflow-hidden flex items-center justify-center">
                     {p.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
@@ -242,12 +242,12 @@ export default function UrunlerPage() {
                   {/* Bilgi */}
                   <div className="flex-1 flex flex-col">
                     {p.brand && <div className="text-[10px] text-slate-400 uppercase truncate">{p.brand}</div>}
-                    <h3 className="text-sm font-semibold text-slate-900 line-clamp-2 leading-tight mt-0.5 mb-1">{p.name}</h3>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight mt-0.5 mb-1">{p.name}</h3>
                     {p.code && <div className="text-[10px] text-slate-400 font-mono truncate">{p.code}</div>}
 
                     <div className="mt-auto pt-2 flex items-end justify-between">
                       <div>
-                        <div className="text-base font-bold text-slate-900">{formatTry(p.unitPrice)}</div>
+                        <div className="text-base font-bold text-slate-900 dark:text-slate-100">{formatTry(p.unitPrice)}</div>
                         <div className="text-[10px] text-slate-400">/ {p.unit}</div>
                       </div>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap ${badge.cls}`}>
@@ -266,7 +266,7 @@ export default function UrunlerPage() {
             <select
               value={pageSize}
               onChange={e => pushParams({ pageSize: e.target.value, page: "1" })}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
+              className="border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
             >
               {PAGE_SIZE_OPTIONS.map(s => <option key={s} value={s}>{s} / sayfa</option>)}
             </select>
@@ -275,17 +275,17 @@ export default function UrunlerPage() {
               <button
                 onClick={() => pushParams({ page: String(Math.max(1, page - 1)) })}
                 disabled={page <= 1}
-                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white dark:bg-slate-800 disabled:opacity-40"
+                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-800 disabled:opacity-40"
               >
                 ‹ Önceki
               </button>
-              <span className="text-sm text-slate-600">
+              <span className="text-sm text-slate-600 dark:text-slate-400">
                 {page} / {data.pages}
               </span>
               <button
                 onClick={() => pushParams({ page: String(Math.min(data.pages, page + 1)) })}
                 disabled={page >= data.pages}
-                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white dark:bg-slate-800 disabled:opacity-40"
+                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-800 disabled:opacity-40"
               >
                 Sonraki ›
               </button>

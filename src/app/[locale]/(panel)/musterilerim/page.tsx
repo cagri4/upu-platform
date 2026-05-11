@@ -104,7 +104,7 @@ export default function MusterilerimPage() {
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
 
@@ -131,7 +131,7 @@ export default function MusterilerimPage() {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="🔍 Müşteri ara (isim, telefon, bölge)"
-              className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
               aria-label="Müşteri ara"
             />
             <ViewDensityToggle
@@ -146,7 +146,7 @@ export default function MusterilerimPage() {
         {items.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
             <div className="text-5xl mb-3">👥</div>
-            <p className="font-semibold text-slate-900 mb-1">Henüz müşteri yok</p>
+            <p className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Henüz müşteri yok</p>
             <p className="text-slate-500 text-sm">İlk müşterinizi eklemek için yukarıdaki butonu kullanın.</p>
           </div>
         ) : filtered.length === 0 ? (
@@ -165,12 +165,12 @@ export default function MusterilerimPage() {
                 <div key={c.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
                   <div className={mini ? "p-2" : compact ? "p-3" : "p-4"}>
                     <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <h3 className={`font-semibold text-slate-900 leading-tight flex-1 ${mini ? "text-xs line-clamp-1" : compact ? "text-sm line-clamp-1" : "text-base"}`}>{c.name}</h3>
+                      <h3 className={`font-semibold text-slate-900 dark:text-slate-100 leading-tight flex-1 ${mini ? "text-xs line-clamp-1" : compact ? "text-sm line-clamp-1" : "text-base"}`}>{c.name}</h3>
                       {!mini && (
-                        <span className={`bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full whitespace-nowrap ${compact ? "text-[10px]" : "text-xs"}`}>{lf}</span>
+                        <span className={`bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 px-2 py-0.5 rounded-full whitespace-nowrap ${compact ? "text-[10px]" : "text-xs"}`}>{lf}</span>
                       )}
                     </div>
-                    {!mini && c.phone && <div className={`text-slate-600 ${compact ? "text-xs" : "text-sm"}`}>📱 {c.phone}</div>}
+                    {!mini && c.phone && <div className={`text-slate-600 dark:text-slate-400 ${compact ? "text-xs" : "text-sm"}`}>📱 {c.phone}</div>}
                     {!compact && (pt || c.rooms) && (
                       <div className="text-xs text-slate-500 mt-1 flex flex-wrap gap-x-2">
                         {pt && <span>🏠 {pt}</span>}
@@ -208,7 +208,7 @@ export default function MusterilerimPage() {
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

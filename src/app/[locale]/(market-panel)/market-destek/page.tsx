@@ -9,8 +9,8 @@ export default function MarketDestekPage() {
       </div>
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow-sm">
         <div className="text-4xl mb-3">🛟</div>
-        <p className="font-semibold text-slate-900 mb-2">Yakında</p>
-        <p className="text-sm text-slate-600 mb-3">
+        <p className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Yakında</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
           Destek talebi formu yakında burada açılacak. Acil bir sorun varsa WhatsApp üzerinden bize ulaşabilirsiniz.
         </p>
         <a

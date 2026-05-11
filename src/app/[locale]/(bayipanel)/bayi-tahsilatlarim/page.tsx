@@ -73,7 +73,7 @@ export default function TahsilatlarimPage() {
     <div className="space-y-4">
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4">
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-          <h1 className="text-xl font-bold text-slate-900">💰 Tahsilatlarım</h1>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">💰 Tahsilatlarım</h1>
           <a
             href={`/tr/bayi-vade-hatirlatma?t=${encodeURIComponent(token)}`}
             className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-3 py-2 rounded-lg transition"
@@ -103,27 +103,27 @@ export default function TahsilatlarimPage() {
       </div>
 
       {error ? (
-        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-rose-700">{error}</div>
+        <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl p-4 text-sm text-rose-700">{error}</div>
       ) : loading ? (
         <div className="text-center text-sm text-slate-500 py-8">Yükleniyor…</div>
       ) : unpaid.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-8 text-center text-sm text-slate-500">
           Şu an ödenmemiş faturanız yok. 🎉
         </div>
       ) : (
         <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-slate-700 mt-2">Ödenmemiş Faturalar</h2>
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-2">Ödenmemiş Faturalar</h2>
           {unpaid.slice(0, 50).map(inv => {
             const days = daysFromNow(inv.due_date);
             const isOverdue = days < 0;
             return (
-              <div key={inv.id} className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-3">
+              <div key={inv.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-900 text-sm">{inv.invoice_no || "—"}</span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{inv.invoice_no || "—"}</span>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap ${
-                        isOverdue ? "bg-rose-50 text-rose-700 font-semibold" : "bg-amber-50 text-amber-700"
+                        isOverdue ? "bg-rose-50 dark:bg-rose-950/30 text-rose-700 font-semibold" : "bg-amber-50 dark:bg-amber-950/30 text-amber-700"
                       }`}>
                         {isOverdue ? `${Math.abs(days)} gün geçmiş` : `${days} gün kaldı`}
                       </span>
@@ -133,7 +133,7 @@ export default function TahsilatlarimPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-slate-900">{formatTry(inv.amount)}</div>
+                    <div className="font-bold text-slate-900 dark:text-slate-100">{formatTry(inv.amount)}</div>
                   </div>
                 </div>
               </div>

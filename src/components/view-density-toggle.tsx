@@ -124,7 +124,7 @@ export function ViewDensityToggle({
   onColumnsChange,
 }: ViewDensityToggleProps) {
   return (
-    <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 rounded-lg p-1 text-xs">
+    <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-lg p-1 text-xs">
       <span className="text-slate-500 text-[11px] pl-1">Sütun:</span>
       <div className="inline-flex rounded-md overflow-hidden">
         {([1, 2, 3, 4] as ColumnCount[]).map((c) => (
@@ -138,7 +138,7 @@ export function ViewDensityToggle({
             className={`px-2.5 py-1.5 transition font-medium ${
               columns === c
                 ? "bg-slate-900 text-white"
-                : "text-slate-600 hover:bg-slate-100"
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100"
             }`}
           >
             {c}

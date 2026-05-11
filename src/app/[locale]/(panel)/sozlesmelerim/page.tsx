@@ -43,7 +43,7 @@ export default function SozlesmelerimPage() {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow-sm">
         <div className="text-4xl mb-3">⚠️</div>
-        <p className="text-slate-600 text-sm">{error}</p>
+        <p className="text-slate-600 dark:text-slate-400 text-sm">{error}</p>
       </div>
     );
   }
@@ -67,7 +67,7 @@ export default function SozlesmelerimPage() {
       {items.length === 0 ? (
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
           <div className="text-5xl mb-3">📋</div>
-          <p className="font-semibold text-slate-900 mb-1">Henüz sözleşme eklemediniz</p>
+          <p className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Henüz sözleşme eklemediniz</p>
           <p className="text-slate-500 text-sm">İlk sözleşmenizi oluşturmak için yukarıdaki butonu kullanın.</p>
         </div>
       ) : (
@@ -77,7 +77,7 @@ export default function SozlesmelerimPage() {
             const ownerName = (cd.owner_name as string) || "İsimsiz";
             const propTitle = (cd.property_title as string) || (cd.property_address as string) || "Mülk";
             const statusLabel = c.status === "signed" ? "✅ İmzalı" : c.status === "pending_signature" ? "⏳ İmza bekliyor" : "📝 Taslak";
-            const statusBg = c.status === "signed" ? "bg-emerald-100 text-emerald-700" : c.status === "pending_signature" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600";
+            const statusBg = c.status === "signed" ? "bg-emerald-100 text-emerald-700" : c.status === "pending_signature" ? "bg-amber-100 text-amber-700" : "bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400";
             const date = new Date(c.created_at).toLocaleDateString("tr-TR");
             const commission = cd.commission as number | undefined;
             const duration = cd.duration as number | undefined;
@@ -86,8 +86,8 @@ export default function SozlesmelerimPage() {
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-slate-900 truncate">🏠 {propTitle}</p>
-                      <p className="text-sm text-slate-600 mt-0.5">👤 {ownerName}</p>
+                      <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">🏠 {propTitle}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">👤 {ownerName}</p>
                     </div>
                     <span className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${statusBg}`}>
                       {statusLabel}

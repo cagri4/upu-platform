@@ -22,7 +22,7 @@ interface Customer {
 }
 
 const STAGE_LABELS: Record<string, { label: string; color: string }> = {
-  yeni:           { label: 'Yeni',          color: 'bg-slate-200 text-slate-700' },
+  yeni:           { label: 'Yeni',          color: 'bg-slate-200 text-slate-700 dark:text-slate-300' },
   ilk_temas:      { label: 'İlk Temas',     color: 'bg-blue-100 text-blue-700' },
   sunum_yapildi:  { label: 'Sunum Yapıldı', color: 'bg-indigo-100 text-indigo-700' },
   gosterim:       { label: 'Gösterim',      color: 'bg-purple-100 text-purple-700' },
@@ -52,11 +52,11 @@ export default function CustomersPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h1 className="text-2xl font-bold text-slate-900">👥 Müşterilerim</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">👥 Müşterilerim</h1>
         <select
           value={stageFilter}
           onChange={(e) => setStageFilter(e.target.value)}
-          className="px-3 py-1.5 rounded-md border border-slate-300 text-sm"
+          className="px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 text-sm"
         >
           <option value="all">Tüm aşamalar</option>
           {Object.entries(STAGE_LABELS).map(([k, v]) => (
@@ -70,7 +70,7 @@ export default function CustomersPage() {
       ) : filtered.length === 0 ? (
         <Card className="p-8 text-center">
           <Users className="mx-auto mb-3 h-10 w-10 text-slate-400" />
-          <p className="text-slate-600">Bu filtreye uygun müşteri yok.</p>
+          <p className="text-slate-600 dark:text-slate-400">Bu filtreye uygun müşteri yok.</p>
           <p className="text-sm text-slate-500 mt-1">WhatsApp'tan "müşteri ekle" yazarak başlayın.</p>
         </Card>
       ) : (
@@ -82,7 +82,7 @@ export default function CustomersPage() {
                 <Card className="p-4 hover:shadow-lg transition cursor-pointer">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-semibold text-slate-900">{c.name}</h3>
+                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">{c.name}</h3>
                       {c.phone && (
                         <div className="flex items-center gap-1 text-sm text-slate-500 mt-0.5">
                           <Phone size={12} /> {c.phone}
@@ -93,13 +93,13 @@ export default function CustomersPage() {
                   </div>
 
                   {(c.property_type || c.rooms || c.location) && (
-                    <div className="text-sm text-slate-600 mt-3">
+                    <div className="text-sm text-slate-600 dark:text-slate-400 mt-3">
                       {[c.property_type, c.rooms, c.location].filter(Boolean).join(' · ')}
                     </div>
                   )}
 
                   {(c.budget_min || c.budget_max) && (
-                    <div className="text-sm text-slate-700 mt-1">
+                    <div className="text-sm text-slate-700 dark:text-slate-300 mt-1">
                       💰 {c.budget_min ? new Intl.NumberFormat('tr-TR').format(c.budget_min) : '0'}–{c.budget_max ? new Intl.NumberFormat('tr-TR').format(c.budget_max) : '?'} ₺
                     </div>
                   )}

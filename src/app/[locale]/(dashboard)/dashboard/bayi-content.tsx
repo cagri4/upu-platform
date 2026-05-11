@@ -105,7 +105,7 @@ export default function BayiDashboardContent({ userId }: { userId: string }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-200">
+      <div className="flex gap-1 border-b border-slate-200 dark:border-slate-800/50">
         {[
           { key: 'dealers' as const, label: 'Bayiler', count: data.dealers.length },
           { key: 'orders' as const, label: 'Son Siparisler', count: data.recentOrders.length },
@@ -123,7 +123,7 @@ export default function BayiDashboardContent({ userId }: { userId: string }) {
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
-            {tab.label} {tab.count > 0 && <span className="ml-1 text-xs bg-slate-100 px-1.5 py-0.5 rounded-full">{tab.count}</span>}
+            {tab.label} {tab.count > 0 && <span className="ml-1 text-xs bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded-full">{tab.count}</span>}
           </button>
         ))}
       </div>
@@ -155,7 +155,7 @@ export default function BayiDashboardContent({ userId }: { userId: string }) {
               {data.recentActivity.map((a, i) => (
                 <div key={i} className="flex items-center justify-between text-sm py-1.5 border-b border-slate-50 last:border-0">
                   <div>
-                    <span className="font-medium text-slate-700">{a.action}</span>
+                    <span className="font-medium text-slate-700 dark:text-slate-300">{a.action}</span>
                     {a.detail && <span className="text-slate-400 ml-2">{a.detail.substring(0, 60)}</span>}
                   </div>
                   <span className="text-xs text-slate-400 whitespace-nowrap">
@@ -178,7 +178,7 @@ function SummaryCard({ title, value, icon: Icon, color, small, highlight }: {
   color: string; small?: boolean; highlight?: boolean;
 }) {
   return (
-    <Card className={highlight ? "border-red-200 bg-red-50/50" : ""}>
+    <Card className={highlight ? "border-red-200 dark:border-red-800/50 bg-red-50/50" : ""}>
       <CardContent className="pt-4 pb-3 px-4">
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs text-slate-500">{title}</p>
@@ -195,7 +195,7 @@ function DealersTable({ dealers }: { dealers: BayiData['dealers'] }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="bg-slate-50 border-b border-slate-200">
+        <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800/50">
           <tr>
             <th className="text-left px-4 py-3 font-medium text-slate-500">Bayi Adi</th>
             <th className="text-left px-4 py-3 font-medium text-slate-500">Sehir</th>
@@ -228,7 +228,7 @@ function OrdersTable({ orders }: { orders: BayiData['recentOrders'] }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="bg-slate-50 border-b border-slate-200">
+        <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800/50">
           <tr>
             <th className="text-left px-4 py-3 font-medium text-slate-500">Tarih</th>
             <th className="text-left px-4 py-3 font-medium text-slate-500">Bayi</th>
@@ -261,7 +261,7 @@ function StockTable({ items }: { items: BayiData['criticalStock'] }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="bg-slate-50 border-b border-slate-200">
+        <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800/50">
           <tr>
             <th className="text-left px-4 py-3 font-medium text-slate-500">Urun</th>
             <th className="text-left px-4 py-3 font-medium text-slate-500">SKU</th>
@@ -304,11 +304,11 @@ function InsightPanel({ userId, data, loading, onLoad }: {
     <div className="space-y-4">
       {/* Trend + Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-slate-50 rounded-lg p-4">
+        <div className="bg-slate-50 dark:bg-slate-950 rounded-lg p-4">
           <p className="text-xs text-slate-500">Toplam Komut (30g)</p>
           <p className="text-2xl font-bold">{data.totalCommands}</p>
         </div>
-        <div className="bg-slate-50 rounded-lg p-4">
+        <div className="bg-slate-50 dark:bg-slate-950 rounded-lg p-4">
           <p className="text-xs text-slate-500">Haftalik Trend</p>
           <div className="flex items-center gap-1">
             <TrendIcon className={`w-5 h-5 ${trendColor}`} />
@@ -316,19 +316,19 @@ function InsightPanel({ userId, data, loading, onLoad }: {
           </div>
           <p className="text-xs text-slate-400">Bu hafta: {data.thisWeek} | Gecen: {data.lastWeek}</p>
         </div>
-        <div className="bg-slate-50 rounded-lg p-4">
+        <div className="bg-slate-50 dark:bg-slate-950 rounded-lg p-4">
           <p className="text-xs text-slate-500">Aylik Ciro</p>
           <p className="text-xl font-bold text-emerald-600">{formatPrice(data.orders.revenue)} TL</p>
         </div>
-        <div className="bg-slate-50 rounded-lg p-4">
+        <div className="bg-slate-50 dark:bg-slate-950 rounded-lg p-4">
           <p className="text-xs text-slate-500">Toplam Alacak</p>
           <p className="text-xl font-bold text-orange-600">{formatPrice(data.totalDebt)} TL</p>
         </div>
       </div>
 
       {/* Daily Orders Chart */}
-      <div className="bg-slate-50 rounded-lg p-4">
-        <p className="text-sm font-medium text-slate-600 mb-3">Gunluk Siparisler (14 Gun)</p>
+      <div className="bg-slate-50 dark:bg-slate-950 rounded-lg p-4">
+        <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Gunluk Siparisler (14 Gun)</p>
         <div className="flex items-end gap-1 h-24">
           {data.dailyOrders.map(day => (
             <div key={day.date} className="flex-1 flex flex-col items-center gap-0.5">
@@ -346,12 +346,12 @@ function InsightPanel({ userId, data, loading, onLoad }: {
       </div>
 
       {/* Top Commands */}
-      <div className="bg-slate-50 rounded-lg p-4">
-        <p className="text-sm font-medium text-slate-600 mb-2">En Cok Kullanilan Komutlar</p>
+      <div className="bg-slate-50 dark:bg-slate-950 rounded-lg p-4">
+        <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">En Cok Kullanilan Komutlar</p>
         <div className="space-y-1.5">
           {data.topCommands.map(cmd => (
             <div key={cmd.name} className="flex justify-between text-sm">
-              <span className="text-slate-600">{cmd.name}</span>
+              <span className="text-slate-600 dark:text-slate-400">{cmd.name}</span>
               <span className="text-slate-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded text-xs">{cmd.count}</span>
             </div>
           ))}
@@ -367,7 +367,7 @@ function CollectionsTable({ items }: { items: BayiData['collections'] }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="bg-slate-50 border-b border-slate-200">
+        <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800/50">
           <tr>
             <th className="text-left px-4 py-3 font-medium text-slate-500">Bayi</th>
             <th className="text-right px-4 py-3 font-medium text-slate-500">Borc</th>

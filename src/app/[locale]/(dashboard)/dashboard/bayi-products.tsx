@@ -123,7 +123,7 @@ export default function BayiProductsPanel({ userId }: { userId: string }) {
 
       {/* CSV Import */}
       {showCsvImport && (
-        <Card className="border-blue-200">
+        <Card className="border-blue-200 dark:border-blue-800/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center justify-between">
               CSV Toplu Urun Yukleme
@@ -133,14 +133,14 @@ export default function BayiProductsPanel({ userId }: { userId: string }) {
           <CardContent>
             <p className="text-xs text-slate-500 mb-2">
               CSV formatı (ilk satir baslik):<br/>
-              <code className="bg-slate-100 px-1">ad,kategori,fiyat,stok,birim,marka,sku,barkod,aciklama</code><br/>
+              <code className="bg-slate-100 dark:bg-slate-900 px-1">ad,kategori,fiyat,stok,birim,marka,sku,barkod,aciklama</code><br/>
               Ayrac: virgul, noktali virgul veya tab. Minimum: ad ve fiyat.
             </p>
             <textarea
               value={csvText}
               onChange={e => setCsvText(e.target.value)}
               placeholder={"ad,kategori,fiyat,stok,birim,marka\nBoya 10L Beyaz,Ic Cephe,450,100,adet,Marshall\nVernik 2.5L,Vernik,280,50,adet,Polisan"}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono resize-none mb-2"
+              className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-xs font-mono resize-none mb-2"
               rows={5}
             />
             <div className="flex items-center gap-2">
@@ -165,7 +165,7 @@ export default function BayiProductsPanel({ userId }: { userId: string }) {
               </Button>
             </div>
             {csvResult && (
-              <div className={`mt-2 text-xs p-2 rounded ${csvResult.error ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+              <div className={`mt-2 text-xs p-2 rounded ${csvResult.error ? 'bg-red-50 dark:bg-red-950/30 text-red-600' : 'bg-green-50 dark:bg-green-950/30 text-green-600'}`}>
                 {csvResult.error ? `Hata: ${csvResult.error}` : `${csvResult.imported} urun yuklendi${csvResult.errors ? `, ${csvResult.errors} hata` : ''}`}
               </div>
             )}
@@ -180,7 +180,7 @@ export default function BayiProductsPanel({ userId }: { userId: string }) {
           <Input placeholder="Urun ara..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-          className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800">
+          className="border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800">
           <option value="">Tum Kategoriler</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
@@ -188,7 +188,7 @@ export default function BayiProductsPanel({ userId }: { userId: string }) {
 
       {/* Product Form */}
       {showForm && (
-        <Card className="border-indigo-200">
+        <Card className="border-indigo-200 dark:border-indigo-800/50">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center justify-between">
               {editing.id ? "Urun Duzenle" : "Yeni Urun"}
@@ -206,7 +206,7 @@ export default function BayiProductsPanel({ userId }: { userId: string }) {
               <div>
                 <Label>Birim</Label>
                 <select value={editing.unit || "adet"} onChange={e => setEditing({ ...editing, unit: e.target.value })}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                  className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm">
                   {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
                 </select>
               </div>
@@ -218,7 +218,7 @@ export default function BayiProductsPanel({ userId }: { userId: string }) {
               <div className="md:col-span-2 lg:col-span-3">
                 <Label>Aciklama</Label>
                 <textarea value={editing.description || ""} onChange={e => setEditing({ ...editing, description: e.target.value })}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none" rows={2} />
+                  className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm resize-none" rows={2} />
               </div>
             </div>
             <div className="flex gap-2 mt-4">
@@ -240,8 +240,8 @@ export default function BayiProductsPanel({ userId }: { userId: string }) {
         </Card>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm bg-white dark:bg-slate-800 rounded-lg border border-slate-200">
-            <thead className="bg-slate-50 border-b">
+          <table className="w-full text-sm bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-800/50">
+            <thead className="bg-slate-50 dark:bg-slate-950 border-b">
               <tr>
                 <th className="text-left px-3 py-2.5 font-medium text-slate-500">Urun</th>
                 <th className="text-left px-3 py-2.5 font-medium text-slate-500">Kategori</th>
@@ -260,7 +260,7 @@ export default function BayiProductsPanel({ userId }: { userId: string }) {
                       {p.image_url ? (
                         <img src={p.image_url} alt="" className="w-8 h-8 rounded object-cover" />
                       ) : (
-                        <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
                           <Package className="w-4 h-4 text-slate-300" />
                         </div>
                       )}

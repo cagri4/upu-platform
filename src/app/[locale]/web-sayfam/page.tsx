@@ -78,18 +78,18 @@ export default function WebSayfamPage() {
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
   if (status === "not-ready") return <Center>
     <div className="text-4xl mb-3">🪪</div>
     <h1 className="text-xl font-bold mb-2">Profil eksik</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-violet-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-fuchsia-600 to-rose-600 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">🌐</div>
@@ -100,12 +100,12 @@ export default function WebSayfamPage() {
         {/* URL display */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm mb-4">
           <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-2">Sayfa Adresiniz</p>
-          <div className="bg-slate-100 rounded-lg p-3 break-all text-sm font-mono text-slate-800 mb-3">
+          <div className="bg-slate-100 dark:bg-slate-900 rounded-lg p-3 break-all text-sm font-mono text-slate-800 dark:text-slate-200 mb-3">
             {fullUrl}
           </div>
           <button
             onClick={() => void copyUrl()}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-medium text-sm"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 active:bg-slate-300 text-slate-800 dark:text-slate-200 font-medium text-sm"
           >
             {copied ? "✅ Kopyalandı!" : "🔗 Linki Kopyala"}
           </button>
@@ -129,7 +129,7 @@ export default function WebSayfamPage() {
           </button>
           <a
             href={token ? `/tr/profil-duzenle?t=${encodeURIComponent(token)}` : `/tr/profil-duzenle`}
-            className="block bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-medium text-sm text-center active:scale-95"
+            className="block bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-medium text-sm text-center active:scale-95"
           >
             ✏️ Profil bilgilerini düzenle
           </a>
@@ -148,7 +148,7 @@ export default function WebSayfamPage() {
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

@@ -43,34 +43,34 @@ interface CardDef {
 // App-icon stilinde pastel arka plan tonları (her kategoriye özel renk)
 const CARD_DEFS: Array<CardDef & { bg: string; valueColor: string; labelColor: string }> = [
   { key: "properties",   label: "Mülklerim",   icon: "🏢", iconSrc: "/icons/emlak/mulkler.png",    color: "from-indigo-500 to-blue-600",
-    bg: "bg-gradient-to-br from-indigo-100 to-blue-200",      valueColor: "text-indigo-900",  labelColor: "text-indigo-800",
+    bg: "bg-gradient-to-br from-indigo-100 dark:from-indigo-950/40 to-blue-200 dark:to-blue-900/30",      valueColor: "text-indigo-900",  labelColor: "text-indigo-800",
     href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}` },
   { key: "customers",    label: "Müşterilerim", icon: "👥", iconSrc: "/icons/emlak/musteriler.png", color: "from-emerald-500 to-teal-600",
-    bg: "bg-gradient-to-br from-emerald-100 to-teal-200",     valueColor: "text-emerald-900", labelColor: "text-emerald-800",
+    bg: "bg-gradient-to-br from-emerald-100 dark:from-emerald-950/40 to-teal-200 dark:to-teal-900/30",     valueColor: "text-emerald-900", labelColor: "text-emerald-800",
     href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}` },
   { key: "contracts",    label: "Sözleşmeler", icon: "📋", iconSrc: "/icons/emlak/sozlesme.png",   color: "from-amber-500 to-orange-600",
-    bg: "bg-gradient-to-br from-amber-100 to-orange-200",     valueColor: "text-amber-900",   labelColor: "text-amber-800",
+    bg: "bg-gradient-to-br from-amber-100 dark:from-amber-950/40 to-orange-200 dark:to-orange-900/30",     valueColor: "text-amber-900",   labelColor: "text-amber-800",
     href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}` },
   { key: "tracking",     label: "Takiplerim",  icon: "🎯", iconSrc: "/icons/emlak/takip.png",      color: "from-rose-500 to-pink-600",
-    bg: "bg-gradient-to-br from-rose-100 to-pink-200",        valueColor: "text-rose-900",    labelColor: "text-rose-800",
+    bg: "bg-gradient-to-br from-rose-100 dark:from-rose-950/40 to-pink-200 dark:to-pink-900/30",        valueColor: "text-rose-900",    labelColor: "text-rose-800",
     href: t => `/tr/takip?t=${encodeURIComponent(t)}` },
   { key: "presentations", label: "Sunumlarım", icon: "📊", iconSrc: "/icons/emlak/sunumlar.png",   color: "from-violet-500 to-fuchsia-600",
-    bg: "bg-gradient-to-br from-violet-100 to-fuchsia-200",   valueColor: "text-violet-900",  labelColor: "text-violet-800",
+    bg: "bg-gradient-to-br from-violet-100 dark:from-violet-950/40 to-fuchsia-200 dark:to-fuchsia-900/30",   valueColor: "text-violet-900",  labelColor: "text-violet-800",
     href: t => `/tr/sunumlarim?t=${encodeURIComponent(t)}` },
   { key: "calendar",     label: "Takvim",      icon: "📅", iconSrc: "/icons/emlak/takvim.png",     color: "from-sky-500 to-cyan-600",
-    bg: "bg-gradient-to-br from-sky-100 to-cyan-200",         valueColor: "text-sky-900",     labelColor: "text-sky-800",
+    bg: "bg-gradient-to-br from-sky-100 dark:from-sky-950/40 to-cyan-200 dark:to-cyan-900/30",         valueColor: "text-sky-900",     labelColor: "text-sky-800",
     href: t => `/tr/takvim?t=${encodeURIComponent(t)}` },
   { key: "profil",       label: "Profilim",    icon: "👤", iconSrc: "/icons/emlak/profil.png",     color: "from-stone-600 to-stone-800",
-    bg: "bg-gradient-to-br from-stone-100 to-stone-300",      valueColor: "text-stone-900",   labelColor: "text-stone-800",
+    bg: "bg-gradient-to-br from-stone-100 dark:from-stone-950/40 to-stone-300",      valueColor: "text-stone-900",   labelColor: "text-stone-800",
     href: t => `/tr/profil-duzenle?t=${encodeURIComponent(t)}`, staticValue: () => "Düzenle" },
   { key: "websitem",     label: "Web Sitem",   icon: "🌐", iconSrc: "/icons/emlak/websitem.png",   color: "from-teal-500 to-emerald-700",
-    bg: "bg-gradient-to-br from-teal-100 to-emerald-200",     valueColor: "text-teal-900",    labelColor: "text-teal-800",
+    bg: "bg-gradient-to-br from-teal-100 dark:from-teal-950/40 to-emerald-200 dark:to-emerald-900/30",     valueColor: "text-teal-900",    labelColor: "text-teal-800",
     href: (t, slug) => slug ? `/u/${slug}` : `/api/panel/web-sitem?t=${encodeURIComponent(t)}`, staticValue: (slug) => slug ? "Aktif" : "Kur" },
   { key: "bildirimler",  label: "Bildirimler", icon: "🔔",                                       color: "from-yellow-500 to-amber-600",
-    bg: "bg-gradient-to-br from-yellow-100 to-amber-200",     valueColor: "text-amber-900",   labelColor: "text-amber-800",
+    bg: "bg-gradient-to-br from-yellow-100 dark:from-yellow-950/40 to-amber-200 dark:to-amber-900/30",     valueColor: "text-amber-900",   labelColor: "text-amber-800",
     href: t => t ? `/tr/bildirimler?t=${encodeURIComponent(t)}` : `/tr/bildirimler`, staticValue: () => "Ayarla" },
   { key: "uyelik",       label: "Üyelik",      icon: "💎",                                       color: "from-violet-500 to-fuchsia-700",
-    bg: "bg-gradient-to-br from-violet-100 to-fuchsia-200",   valueColor: "text-violet-900",  labelColor: "text-violet-800",
+    bg: "bg-gradient-to-br from-violet-100 dark:from-violet-950/40 to-fuchsia-200 dark:to-fuchsia-900/30",   valueColor: "text-violet-900",  labelColor: "text-violet-800",
     href: t => t ? `/tr/uyelik?t=${encodeURIComponent(t)}` : `/tr/uyelik` },
 ];
 
@@ -160,7 +160,7 @@ export default function PanelimPage() {
               }`}
             >
               {card.comingSoon && (
-                <span className={`absolute right-1.5 ${mini ? "top-1 text-[9px] px-1" : "top-2 text-[10px] px-1.5 py-0.5"} bg-white/70 text-slate-700 rounded-full uppercase tracking-wide font-medium`}>
+                <span className={`absolute right-1.5 ${mini ? "top-1 text-[9px] px-1" : "top-2 text-[10px] px-1.5 py-0.5"} bg-white/70 text-slate-700 dark:text-slate-300 rounded-full uppercase tracking-wide font-medium`}>
                   Yakında
                 </span>
               )}
@@ -190,13 +190,13 @@ export default function PanelimPage() {
       <SahibindenTutorialCard />
 
       {/* Bilgisayardan Kullan — feature highlight */}
-      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5 shadow-sm">
+      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl p-5 shadow-sm">
         <div className="flex items-start gap-4">
           <div className="text-3xl flex-shrink-0">🖥</div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-slate-900 mb-1">Bilgisayardan Kullanın</h3>
-            <p className="text-sm text-slate-600 leading-relaxed mb-3">
-              Bilgisayarınızda <span className="font-semibold text-slate-900">qr.upudev.nl</span> sayfasını açın, telefonunuzdaki QR kodu kameraya tutun — saniyeler içinde panel masaüstünüzde de açılır.
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Bilgisayardan Kullanın</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
+              Bilgisayarınızda <span className="font-semibold text-slate-900 dark:text-slate-100">qr.upudev.nl</span> sayfasını açın, telefonunuzdaki QR kodu kameraya tutun — saniyeler içinde panel masaüstünüzde de açılır.
             </p>
             <button
               onClick={openQrScanner}
@@ -210,37 +210,37 @@ export default function PanelimPage() {
 
       {/* İpucu — killer özellikler kısa anlatım */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
-        <p className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+        <p className="font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
           <span className="text-lg">💡</span> İpucu
         </p>
         <ul className="space-y-3 text-sm">
           <li>
-            <p className="font-semibold text-slate-900">🎯 Takiplerim</p>
-            <p className="text-slate-600 leading-snug mt-0.5">
+            <p className="font-semibold text-slate-900 dark:text-slate-100">🎯 Takiplerim</p>
+            <p className="text-slate-600 dark:text-slate-400 leading-snug mt-0.5">
               Kart ekle, her sabah Bodrum&apos;daki yeni sahibi ilanları WhatsApp&apos;ınıza gelir.
             </p>
           </li>
           <li>
-            <p className="font-semibold text-slate-900">🤖 Mülklerim</p>
-            <p className="text-slate-600 leading-snug mt-0.5">
+            <p className="font-semibold text-slate-900 dark:text-slate-100">🤖 Mülklerim</p>
+            <p className="text-slate-600 dark:text-slate-400 leading-snug mt-0.5">
               Mülk ekledikçe AI saniyelerde profesyonel sunum hazırlar.
             </p>
           </li>
           <li>
-            <p className="font-semibold text-slate-900">📋 Sözleşmelerim</p>
-            <p className="text-slate-600 leading-snug mt-0.5">
+            <p className="font-semibold text-slate-900 dark:text-slate-100">📋 Sözleşmelerim</p>
+            <p className="text-slate-600 dark:text-slate-400 leading-snug mt-0.5">
               Mülk + müşteri seç, AI hukuki taslak metni üretir, paylaşılabilir link ile imzalanır.
             </p>
           </li>
           <li>
-            <p className="font-semibold text-slate-900">🌐 Profilim</p>
-            <p className="text-slate-600 leading-snug mt-0.5">
+            <p className="font-semibold text-slate-900 dark:text-slate-100">🌐 Profilim</p>
+            <p className="text-slate-600 dark:text-slate-400 leading-snug mt-0.5">
               Bilgileriniz kişisel web sayfanıza otomatik yansır, müşterilere paylaşın.
             </p>
           </li>
           <li>
-            <p className="font-semibold text-slate-900">📅 Takvim</p>
-            <p className="text-slate-600 leading-snug mt-0.5">
+            <p className="font-semibold text-slate-900 dark:text-slate-100">📅 Takvim</p>
+            <p className="text-slate-600 dark:text-slate-400 leading-snug mt-0.5">
               Tarih ve saat girerek hatırlatıcı kurun, WhatsApp&apos;ınıza zamanı geldiğinde gönderirim.
             </p>
           </li>
@@ -261,13 +261,13 @@ function SahibindenTutorialCard() {
     { n: "6️⃣", title: "Eklenti üst köşede görünecek", desc: "Mülk seçin, tek tıkla form otomatik dolar." },
   ];
   return (
-    <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-5 shadow-sm">
+    <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-5 shadow-sm">
       <div className="flex items-start gap-4">
         <div className="text-3xl flex-shrink-0">📋</div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-slate-900 mb-1">Sahibinden Otomatik Form</h3>
-          <p className="text-sm text-slate-600 leading-relaxed mb-3">
-            Mülk bilgilerinizi <span className="font-semibold text-slate-900">sahibinden.com</span> ilan formuna otomatik doldurur. Chrome eklentimizi yükleyin — 30 dakikalık ilan girişi 3 dakikaya iner.
+          <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Sahibinden Otomatik Form</h3>
+          <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
+            Mülk bilgilerinizi <span className="font-semibold text-slate-900 dark:text-slate-100">sahibinden.com</span> ilan formuna otomatik doldurur. Chrome eklentimizi yükleyin — 30 dakikalık ilan girişi 3 dakikaya iner.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <a
@@ -287,13 +287,13 @@ function SahibindenTutorialCard() {
             </button>
           </div>
           {open && (
-            <ol className="mt-4 space-y-3 text-sm border-t border-amber-200 pt-3">
+            <ol className="mt-4 space-y-3 text-sm border-t border-amber-200 dark:border-amber-800/50 pt-3">
               {STEPS.map((s) => (
                 <li key={s.n} className="flex gap-3">
                   <span className="flex-shrink-0 text-base">{s.n}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-900 leading-tight">{s.title}</p>
-                    <p className="text-slate-600 text-xs mt-0.5">{s.desc}</p>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100 leading-tight">{s.title}</p>
+                    <p className="text-slate-600 dark:text-slate-400 text-xs mt-0.5">{s.desc}</p>
                     {s.link && (
                       <a
                         href={s.link.url}

@@ -24,8 +24,8 @@ const STATUS_BADGE: Record<string, { label: string; bg: string }> = {
   open: { label: "🔴 Yeni", bg: "bg-rose-100 text-rose-700" },
   in_progress: { label: "🟡 İşlemde", bg: "bg-amber-100 text-amber-700" },
   replied: { label: "🟢 Yanıtlandı", bg: "bg-emerald-100 text-emerald-700" },
-  resolved: { label: "✅ Çözüldü", bg: "bg-slate-200 text-slate-700" },
-  closed: { label: "Kapalı", bg: "bg-slate-100 text-slate-500" },
+  resolved: { label: "✅ Çözüldü", bg: "bg-slate-200 text-slate-700 dark:text-slate-300" },
+  closed: { label: "Kapalı", bg: "bg-slate-100 dark:bg-slate-900 text-slate-500" },
 };
 
 function fmtDate(iso: string): string {
@@ -98,7 +98,7 @@ export default function DestekDetayPage() {
   if (status === "loading") return <Center>⏳ Yükleniyor...</Center>;
   if (status === "error" || !ticket) return <Center>
     <div className="text-4xl mb-3">⚠️</div>
-    <p className="text-slate-600 text-sm">{error || "Talep bulunamadı."}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm">{error || "Talep bulunamadı."}</p>
     <a href={backHref} className="inline-block mt-4 text-emerald-600 underline text-sm">← Destek</a>
   </Center>;
 
@@ -137,7 +137,7 @@ export default function DestekDetayPage() {
                 <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 shadow-sm ${
                   fromUser
                     ? "bg-emerald-600 text-white rounded-br-sm"
-                    : "bg-white dark:bg-slate-800 text-slate-900 rounded-bl-sm border border-slate-200"
+                    : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-bl-sm border border-slate-200 dark:border-slate-800/50"
                 }`}>
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.message}</p>
                   <p className={`text-[10px] mt-1.5 ${fromUser ? "text-emerald-100" : "text-slate-400"}`}>
@@ -151,7 +151,7 @@ export default function DestekDetayPage() {
       </div>
 
       {isClosed ? (
-        <div className="bg-slate-100 rounded-2xl p-4 text-center text-sm text-slate-600">
+        <div className="bg-slate-100 dark:bg-slate-900 rounded-2xl p-4 text-center text-sm text-slate-600 dark:text-slate-400">
           Bu talep çözüldü. Yeni bir konu için "Destek" sayfasından yeni talep açabilirsiniz.
         </div>
       ) : (
@@ -162,10 +162,10 @@ export default function DestekDetayPage() {
             rows={3}
             maxLength={2000}
             placeholder="Mesaj yazın..."
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm"
           />
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs">⚠️ {error}</div>
+            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-3 py-2 rounded-lg text-xs">⚠️ {error}</div>
           )}
           <button
             type="submit"

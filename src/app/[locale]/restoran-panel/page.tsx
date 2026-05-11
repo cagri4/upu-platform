@@ -66,7 +66,7 @@ function Dashboard({ token, restaurantName }: { token: string; restaurantName: s
 
       {loading && <div className="text-slate-500 text-sm">KPI'lar yükleniyor…</div>}
       {errorMsg && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-6">
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 rounded-lg px-4 py-3 text-sm mb-6">
           {errorMsg}
         </div>
       )}
@@ -120,14 +120,14 @@ function Dashboard({ token, restaurantName }: { token: string; restaurantName: s
 
           {/* Kritik stok detay */}
           {kpis.critical_stock_items.length > 0 && (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 p-5 mb-6">
-              <h2 className="text-base font-semibold text-slate-900 mb-3 flex items-center gap-2">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 dark:border-slate-800/50 p-5 mb-6">
+              <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
                 🔴 Kritik Stok Kalemleri
               </h2>
               <ul className="space-y-1.5">
                 {kpis.critical_stock_items.map((item, i) => (
                   <li key={i} className="flex items-center justify-between text-sm">
-                    <span className="text-slate-700">{item.name}</span>
+                    <span className="text-slate-700 dark:text-slate-300">{item.name}</span>
                     <span className="text-slate-500 font-medium">
                       {item.quantity} {item.unit}
                     </span>
@@ -138,8 +138,8 @@ function Dashboard({ token, restaurantName }: { token: string; restaurantName: s
           )}
 
           {/* Quick actions */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 p-5">
-            <h2 className="text-base font-semibold text-slate-900 mb-3">Hızlı İşlemler</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 dark:border-slate-800/50 p-5">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-3">Hızlı İşlemler</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <QuickAction icon="📅" label="Yeni rezervasyon" href={`https://wa.me/31644967207?text=rezervasyonekle`} external />
               <QuickAction icon="💝" label="Müdavim panosu" href={`/tr/restoran-mudavimler?t=${token}`} />
@@ -171,7 +171,7 @@ function QuickAction({ icon, label, href, external }: { icon: string; label: str
       href={href}
       target={external ? "_blank" : undefined}
       rel={external ? "noopener noreferrer" : undefined}
-      className="flex items-center gap-3 px-4 py-3 bg-slate-50 hover:bg-amber-50 rounded-xl border border-slate-200 transition text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+      className="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-950 hover:bg-amber-50 rounded-xl border border-slate-200 dark:border-slate-800/50 transition text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
     >
       <span className="text-xl">{icon}</span>
       <span>{label}</span>

@@ -311,7 +311,7 @@ function GenelTab({ stats, inviteLinks, linkLoading, getOrCreateLink, copied, co
                       <td className="px-4 py-3">
                         {u.whatsapp_phone ? (
                           <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">{u.whatsapp_phone}</span>
-                        ) : <span className="text-slate-600">-</span>}
+                        ) : <span className="text-slate-600 dark:text-slate-400">-</span>}
                       </td>
                       <td className="px-4 py-3 text-slate-400">{tenantName}</td>
                       <td className="px-4 py-3 text-slate-500">{new Date(u.created_at).toLocaleDateString('tr-TR')}</td>

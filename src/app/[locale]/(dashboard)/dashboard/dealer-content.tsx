@@ -127,7 +127,7 @@ export default function DealerDashboardContent({ userId }: { userId: string }) {
   return (
     <div className="space-y-4">
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-200">
+      <div className="flex gap-1 border-b border-slate-200 dark:border-slate-800/50">
         {([
           { key: 'catalog' as Tab, label: 'Katalog', icon: <Package className="w-4 h-4" /> },
           { key: 'cart' as Tab, label: `Sepet (${cart.length})`, icon: <ShoppingCart className="w-4 h-4" /> },
@@ -152,7 +152,7 @@ export default function DealerDashboardContent({ userId }: { userId: string }) {
               <Input placeholder="Urun ara..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
             </div>
             <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800">
+              className="border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800">
               <option value="">Tum Kategoriler</option>
               {categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -169,7 +169,7 @@ export default function DealerDashboardContent({ userId }: { userId: string }) {
                     {p.image_url ? (
                       <img src={p.image_url} alt={p.name} className="w-full h-32 object-cover" />
                     ) : (
-                      <div className="w-full h-32 bg-slate-100 flex items-center justify-center">
+                      <div className="w-full h-32 bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
                         <Package className="w-8 h-8 text-slate-300" />
                       </div>
                     )}
@@ -177,14 +177,14 @@ export default function DealerDashboardContent({ userId }: { userId: string }) {
                       {p.category && <p className="text-xs text-indigo-500 mb-0.5">{p.category}</p>}
                       <h3 className="font-medium text-sm mb-1">{p.name}</h3>
                       {p.brand && <p className="text-xs text-slate-400 mb-1">{p.brand}</p>}
-                      <p className="text-lg font-bold text-slate-900 mb-2">{fmt(p.unit_price || p.base_price)} TL <span className="text-xs text-slate-400 font-normal">/ {p.unit || "adet"}</span></p>
+                      <p className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">{fmt(p.unit_price || p.base_price)} TL <span className="text-xs text-slate-400 font-normal">/ {p.unit || "adet"}</span></p>
                       {inCart ? (
                         <div className="flex items-center gap-2">
-                          <button onClick={() => updateCartQty(p.id, -1)} className="w-7 h-7 rounded bg-slate-100 flex items-center justify-center hover:bg-slate-200">
+                          <button onClick={() => updateCartQty(p.id, -1)} className="w-7 h-7 rounded bg-slate-100 dark:bg-slate-900 flex items-center justify-center hover:bg-slate-200">
                             <Minus className="w-3 h-3" />
                           </button>
                           <span className="text-sm font-medium w-8 text-center">{inCart.quantity}</span>
-                          <button onClick={() => updateCartQty(p.id, 1)} className="w-7 h-7 rounded bg-slate-100 flex items-center justify-center hover:bg-slate-200">
+                          <button onClick={() => updateCartQty(p.id, 1)} className="w-7 h-7 rounded bg-slate-100 dark:bg-slate-900 flex items-center justify-center hover:bg-slate-200">
                             <Plus className="w-3 h-3" />
                           </button>
                           <button onClick={() => removeFromCart(p.id)} className="ml-auto text-xs text-red-500 hover:underline">Kaldir</button>
@@ -218,7 +218,7 @@ export default function DealerDashboardContent({ userId }: { userId: string }) {
                         {c.product.image_url ? (
                           <img src={c.product.image_url} alt="" className="w-10 h-10 rounded object-cover" />
                         ) : (
-                          <div className="w-10 h-10 rounded bg-slate-100 flex items-center justify-center"><Package className="w-4 h-4 text-slate-300" /></div>
+                          <div className="w-10 h-10 rounded bg-slate-100 dark:bg-slate-900 flex items-center justify-center"><Package className="w-4 h-4 text-slate-300" /></div>
                         )}
                         <div>
                           <p className="font-medium text-sm">{c.product.name}</p>
@@ -227,9 +227,9 @@ export default function DealerDashboardContent({ userId }: { userId: string }) {
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1">
-                          <button onClick={() => updateCartQty(c.product.id, -1)} className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center"><Minus className="w-3 h-3" /></button>
+                          <button onClick={() => updateCartQty(c.product.id, -1)} className="w-6 h-6 rounded bg-slate-100 dark:bg-slate-900 flex items-center justify-center"><Minus className="w-3 h-3" /></button>
                           <span className="text-sm font-medium w-6 text-center">{c.quantity}</span>
-                          <button onClick={() => updateCartQty(c.product.id, 1)} className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center"><Plus className="w-3 h-3" /></button>
+                          <button onClick={() => updateCartQty(c.product.id, 1)} className="w-6 h-6 rounded bg-slate-100 dark:bg-slate-900 flex items-center justify-center"><Plus className="w-3 h-3" /></button>
                         </div>
                         <p className="font-bold text-sm w-24 text-right">{fmt((c.product.unit_price || c.product.base_price) * c.quantity)} TL</p>
                         <button onClick={() => removeFromCart(c.product.id)} className="text-red-400 hover:text-red-600"><XCircle className="w-4 h-4" /></button>
@@ -272,7 +272,7 @@ export default function DealerDashboardContent({ userId }: { userId: string }) {
                   </div>
                   {o.items?.map((item, i) => (
                     <div key={i} className="flex justify-between text-sm py-0.5">
-                      <span className="text-slate-600">{item.product_name} x{item.quantity}</span>
+                      <span className="text-slate-600 dark:text-slate-400">{item.product_name} x{item.quantity}</span>
                       <span className="text-slate-500">{fmt(item.unit_price * item.quantity)} TL</span>
                     </div>
                   ))}

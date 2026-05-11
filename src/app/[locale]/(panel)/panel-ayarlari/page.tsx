@@ -95,10 +95,10 @@ export default function PanelAyarlariPage() {
 
       <section className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5">
         <div className="flex items-baseline justify-between flex-wrap gap-2 mb-1">
-          <h2 className="text-lg font-bold text-slate-900">Alt Sekme Çubuğu</h2>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Alt Sekme Çubuğu</h2>
           <span className="text-xs text-slate-500">{selected.length} / {MAX_TABS} sekme seçili</span>
         </div>
-        <p className="text-sm text-slate-600 leading-relaxed mb-4">
+        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
           Mobil ekranınızın altındaki hızlı erişim sekmelerini seçin. En sık kullandığınız 4 sayfayı belirleyin —
           ayarladıktan sonra alt çubukta görünür olacak. Seçtiğiniz sıraya göre soldan sağa dizilir.
         </p>
@@ -117,14 +117,14 @@ export default function PanelAyarlariPage() {
                 disabled={disabled}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl border transition text-left ${
                   isSel
-                    ? "border-emerald-500 bg-emerald-50"
+                    ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
                     : disabled
-                    ? "border-slate-200 bg-slate-50 opacity-50 cursor-not-allowed"
-                    : "border-slate-200 bg-white dark:bg-slate-800 hover:border-emerald-300 hover:bg-emerald-50/50"
+                    ? "border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-950 opacity-50 cursor-not-allowed"
+                    : "border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-800 hover:border-emerald-300 hover:bg-emerald-50/50"
                 }`}
               >
                 <span className="text-2xl">{item.icon}</span>
-                <span className="flex-1 font-medium text-slate-900">{item.label}</span>
+                <span className="flex-1 font-medium text-slate-900 dark:text-slate-100">{item.label}</span>
                 {isSel ? (
                   <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-600 text-white text-sm font-bold">
                     {order}
@@ -149,14 +149,14 @@ export default function PanelAyarlariPage() {
           <button
             type="button"
             onClick={reset}
-            className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 hover:bg-slate-50 text-slate-700 py-3 rounded-lg font-medium transition"
+            className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium transition"
           >
             ↺ Varsayılana Dön
           </button>
         </div>
 
         {savedAt && (
-          <div className="mt-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-lg px-3 py-2">
+          <div className="mt-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 text-emerald-800 text-sm rounded-lg px-3 py-2">
             ✅ Kaydedildi. Değişikliği görmek için panel sayfasını yenileyin.
           </div>
         )}

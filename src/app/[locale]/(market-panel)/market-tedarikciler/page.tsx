@@ -9,15 +9,15 @@ export default function MarketTedarikcilerPage() {
       </div>
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow-sm">
         <div className="text-4xl mb-3">🚚</div>
-        <p className="font-semibold text-slate-900 mb-2">Yakında</p>
-        <p className="text-sm text-slate-600 mb-3">
+        <p className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Yakında</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
           Tedarikçi listesi ve sipariş geçmişi web panel üzerinden burada gösterilecek.
         </p>
         <p className="text-sm text-slate-500">
           Şimdilik WhatsApp&apos;tan{" "}
-          <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">tedarikciler</span>
+          <span className="font-mono bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">tedarikciler</span>
           {" "}veya{" "}
-          <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">tedarikciekle</span>
+          <span className="font-mono bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">tedarikciekle</span>
           {" "}komutlarını kullanabilirsiniz.
         </p>
       </div>

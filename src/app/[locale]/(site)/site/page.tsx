@@ -85,14 +85,14 @@ export default function SiteDashboardPage() {
       </div>
 
       {/* Quick actions hint */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm text-sm text-slate-600">
-        <p className="font-semibold text-slate-900 mb-2">💡 Hızlı işlem</p>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm text-sm text-slate-600 dark:text-slate-400">
+        <p className="font-semibold text-slate-900 dark:text-slate-100 mb-2">💡 Hızlı işlem</p>
         <p>
           Sakinleri sisteme bağlamak için sol menüden <strong>Sakinler</strong> (bina kodu),
           aidat hatırlatması için <strong>Aidat</strong>, ya da WhatsApp&apos;ta doğrudan komut yazın
-          (örn. <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">aidat</span>,{" "}
-          <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">bakim</span>,{" "}
-          <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">duyuru</span>).
+          (örn. <span className="font-mono bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">aidat</span>,{" "}
+          <span className="font-mono bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">bakim</span>,{" "}
+          <span className="font-mono bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">duyuru</span>).
         </p>
       </div>
     </div>

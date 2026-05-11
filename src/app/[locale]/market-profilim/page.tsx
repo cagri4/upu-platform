@@ -108,7 +108,7 @@ export default function MarketProfilimPage() {
 
   if (state === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-4xl">⏳</div>
       </div>
     );
@@ -116,11 +116,11 @@ export default function MarketProfilimPage() {
 
   if (state === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">
           <div className="text-4xl mb-3">⚠️</div>
           <h1 className="text-xl font-bold mb-2">Hata</h1>
-          <p className="text-slate-600 text-sm mb-4">{errorMsg}</p>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{errorMsg}</p>
           <a
             href="https://wa.me/31644967207"
             className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg"
@@ -134,11 +134,11 @@ export default function MarketProfilimPage() {
 
   if (state === "saved") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">
           <div className="text-5xl mb-3">✅</div>
           <h1 className="text-xl font-bold mb-2">Kaydedildi</h1>
-          <p className="text-slate-600 text-sm mb-4">Market profiliniz güncellendi.</p>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">Market profiliniz güncellendi.</p>
           <button
             onClick={handleBack}
             className="inline-block bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg"
@@ -151,7 +151,7 @@ export default function MarketProfilimPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4">
       <div className="max-w-md mx-auto">
         <div className="bg-gradient-to-br from-amber-600 to-orange-700 text-white rounded-2xl p-5 shadow-lg mb-4">
           <h1 className="text-xl font-bold">Profilim</h1>
@@ -160,24 +160,24 @@ export default function MarketProfilimPage() {
 
         <form onSubmit={handleSave} className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
           {errorMsg && (
-            <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 text-sm text-rose-700">
+            <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-lg p-3 text-sm text-rose-700">
               {errorMsg}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Adınız</label>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Adınız</label>
             <input
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none"
               placeholder="Mehmet Yılmaz"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Market / Mağaza Adı <span className="text-rose-600">*</span>
             </label>
             <input
@@ -185,13 +185,13 @@ export default function MarketProfilimPage() {
               value={marketAdi}
               onChange={(e) => setMarketAdi(e.target.value)}
               required
-              className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none"
               placeholder="ABC Market"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Sektör</label>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Sektör</label>
             <div className="space-y-1.5">
               {SEKTOR_OPTIONS.map((opt) => (
                 <label key={opt.value} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
@@ -203,14 +203,14 @@ export default function MarketProfilimPage() {
                     onChange={(e) => setSektor(e.target.value)}
                     className="text-amber-600 focus:ring-amber-400"
                   />
-                  <span className="text-sm text-slate-700">{opt.label}</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-300">{opt.label}</span>
                 </label>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Ürün Sayısı</label>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Ürün Sayısı</label>
             <div className="space-y-1.5">
               {URUN_SAYISI_OPTIONS.map((opt) => (
                 <label key={opt.value} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
@@ -222,19 +222,19 @@ export default function MarketProfilimPage() {
                     onChange={(e) => setUrunSayisi(e.target.value)}
                     className="text-amber-600 focus:ring-amber-400"
                   />
-                  <span className="text-sm text-slate-700">{opt.label}</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-300">{opt.label}</span>
                 </label>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Adres (Opsiyonel)</label>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Adres (Opsiyonel)</label>
             <textarea
               value={adres}
               onChange={(e) => setAdres(e.target.value)}
               rows={2}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none resize-none"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none resize-none"
               placeholder="Den Haag, Hollanda"
             />
           </div>
@@ -246,7 +246,7 @@ export default function MarketProfilimPage() {
               onChange={(e) => setBriefingEnabled(e.target.checked)}
               className="mt-0.5 text-amber-600 focus:ring-amber-400"
             />
-            <span className="text-sm text-slate-700">
+            <span className="text-sm text-slate-700 dark:text-slate-300">
               Sabah günlük brifing göndersin (dünkü ciro, kritik stok, vade durumu).
             </span>
           </label>
@@ -255,7 +255,7 @@ export default function MarketProfilimPage() {
             <button
               type="button"
               onClick={handleBack}
-              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-3 rounded-lg text-sm font-semibold transition"
+              className="flex-1 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 text-slate-700 dark:text-slate-300 px-4 py-3 rounded-lg text-sm font-semibold transition"
             >
               İptal
             </button>

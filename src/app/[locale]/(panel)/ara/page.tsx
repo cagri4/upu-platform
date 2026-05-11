@@ -105,12 +105,12 @@ export default function AraPage() {
   if (status === "loading") return <Center><div className="text-4xl mb-3">⏳</div><p>Yükleniyor...</p></Center>;
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div><h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp'a dön</a>
   </Center>;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">🔍</div>
@@ -121,11 +121,11 @@ export default function AraPage() {
         <form onSubmit={handleSearch} className="space-y-5">
           {/* İlan tipi */}
           <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-            <label className="block text-sm font-medium text-slate-900 mb-2">İlan Tipi *</label>
+            <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">İlan Tipi *</label>
             <div className="grid grid-cols-2 gap-2">
               {[{id:"satilik",label:"Satılık"},{id:"kiralik",label:"Kiralık"}].map(o => (
                 <button type="button" key={o.id} onClick={() => setListingType(o.id)}
-                  className={`py-3 rounded-lg text-sm font-medium border-2 ${listingType === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
+                  className={`py-3 rounded-lg text-sm font-medium border-2 ${listingType === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}>
                   {o.label}
                 </button>
               ))}
@@ -134,13 +134,13 @@ export default function AraPage() {
 
           {/* Mülk Tipi */}
           <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-            <label className="block text-sm font-medium text-slate-900 mb-2">
+            <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">
               Mülk Tipi * <span className="text-slate-400 text-xs">({propertyTypes.length} seçili)</span>
             </label>
             <div className="grid grid-cols-3 gap-2">
               {PROPERTY_TYPES.map(t => (
                 <button type="button" key={t.id} onClick={() => toggleType(t.id)}
-                  className={`py-2 rounded-lg text-xs font-medium border-2 ${propertyTypes.includes(t.id) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
+                  className={`py-2 rounded-lg text-xs font-medium border-2 ${propertyTypes.includes(t.id) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}>
                   {t.label}
                 </button>
               ))}
@@ -150,13 +150,13 @@ export default function AraPage() {
           {/* Oda (koşullu: sadece konut tipi seçildiyse) */}
           {showRooms && (
             <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-              <label className="block text-sm font-medium text-slate-900 mb-2">
+              <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">
                 Oda Sayısı <span className="text-slate-400 text-xs">({rooms.length} seçili)</span>
               </label>
               <div className="grid grid-cols-4 gap-2">
                 {ROOMS.map(r => (
                   <button type="button" key={r} onClick={() => toggleRoom(r)}
-                    className={`py-2 rounded-lg text-xs font-medium border-2 ${rooms.includes(r) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
+                    className={`py-2 rounded-lg text-xs font-medium border-2 ${rooms.includes(r) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}>
                     {r}
                   </button>
                 ))}
@@ -167,16 +167,16 @@ export default function AraPage() {
 
           {/* Fiyat */}
           <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-            <label className="block text-sm font-medium text-slate-900 mb-2">Fiyat Aralığı (₺)</label>
+            <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">Fiyat Aralığı (₺)</label>
             <div className="grid grid-cols-2 gap-2">
               <input type="number" value={priceMin} onChange={e => setPriceMin(e.target.value)} placeholder="Min" min="0"
-                className="border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 placeholder:text-slate-400" />
+                className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 text-base text-slate-900 dark:text-slate-100 placeholder:text-slate-400" />
               <input type="number" value={priceMax} onChange={e => setPriceMax(e.target.value)} placeholder="Max" min="0"
-                className="border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 placeholder:text-slate-400" />
+                className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 text-base text-slate-900 dark:text-slate-100 placeholder:text-slate-400" />
             </div>
           </section>
 
-          {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
+          {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
           <button type="submit" disabled={status === "searching"}
             className="w-full bg-indigo-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95">
@@ -188,7 +188,7 @@ export default function AraPage() {
         {status === "results" && results && (
           <div className="mt-6 space-y-3">
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-              <h2 className="font-bold text-slate-900 mb-1">📋 Uyan İlanlar</h2>
+              <h2 className="font-bold text-slate-900 dark:text-slate-100 mb-1">📋 Uyan İlanlar</h2>
               <p className="text-xs text-slate-500">{results.length} sonuç (son 24 saat)</p>
             </div>
 
@@ -199,14 +199,14 @@ export default function AraPage() {
             ) : (
               results.map(r => (
                 <div key={r.source_id} className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-                  <h3 className="font-semibold text-slate-900 mb-1 leading-tight">{r.title}</h3>
-                  <div className="text-sm text-slate-600 mb-2">
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1 leading-tight">{r.title}</h3>
+                  <div className="text-sm text-slate-600 dark:text-slate-400 mb-2">
                     📍 {r.location_neighborhood || "Bodrum"}
                   </div>
                   <div className="flex flex-wrap gap-3 text-sm mb-2">
-                    {r.rooms && <span className="text-slate-700">🏠 {r.rooms}</span>}
-                    {r.area && <span className="text-slate-700">📐 {r.area} m²</span>}
-                    {r.price && <span className="font-bold text-slate-900">💰 {new Intl.NumberFormat("tr-TR").format(r.price)} ₺</span>}
+                    {r.rooms && <span className="text-slate-700 dark:text-slate-300">🏠 {r.rooms}</span>}
+                    {r.area && <span className="text-slate-700 dark:text-slate-300">📐 {r.area} m²</span>}
+                    {r.price && <span className="font-bold text-slate-900 dark:text-slate-100">💰 {new Intl.NumberFormat("tr-TR").format(r.price)} ₺</span>}
                   </div>
                   <SahibindenLink href={r.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline break-all">
                     🔗 Sahibinden'de gör
@@ -225,7 +225,7 @@ export default function AraPage() {
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

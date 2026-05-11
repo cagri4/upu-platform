@@ -26,7 +26,7 @@ export default function BildirimlerPage() {
   }, [tab]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="max-w-md mx-auto p-4 space-y-4">
         {/* Hero */}
         <div className="bg-gradient-to-br from-yellow-500 to-amber-600 text-white rounded-2xl p-5">
@@ -48,7 +48,7 @@ export default function BildirimlerPage() {
               className={`py-3 text-sm font-medium transition ${
                 tab === t
                   ? "bg-amber-600 text-white"
-                  : "bg-white dark:bg-slate-800 text-slate-600 hover:bg-slate-50"
+                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
               }`}
             >
               {t === "history" ? "Geçmiş" : "Tercihler"}

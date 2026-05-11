@@ -132,7 +132,7 @@ export default function UyelikPage() {
   if (status === "loading") return <Center>⏳ Yükleniyor...</Center>;
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
-    <p className="text-slate-600 text-sm">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm">{error}</p>
   </Center>;
   if (!sub) return <Center>—</Center>;
 
@@ -162,10 +162,10 @@ export default function UyelikPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-12">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-12">
       <div className="max-w-md mx-auto p-4 space-y-5">
         {successFlash && (
-          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-sm">
+          <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 text-emerald-800 px-4 py-3 rounded-xl text-sm">
             ✅ Ödeme alındı — Pro üyelik aktif olabilir. Birkaç saniye sürebilir.
           </div>
         )}
@@ -185,17 +185,17 @@ export default function UyelikPage() {
         {/* Plan selector — sadece Free veya Trial user için */}
         {!isPaidPro && (
           <section>
-            <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-3 px-1">Pro Planlar</p>
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 px-1">Pro Planlar</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {plans.map(p => (
-                <div key={p.id} className={`relative bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border-2 ${p.id === "pro_yearly" ? "border-violet-400" : "border-slate-200"}`}>
+                <div key={p.id} className={`relative bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border-2 ${p.id === "pro_yearly" ? "border-violet-400" : "border-slate-200 dark:border-slate-800/50"}`}>
                   {p.badge && (
                     <span className="absolute -top-2 right-4 bg-violet-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
                       {p.badge}
                     </span>
                   )}
                   <p className="text-xs uppercase tracking-wide font-semibold text-slate-500 mb-1">{p.label}</p>
-                  <p className="text-3xl font-black text-slate-900 leading-none">€{Number(p.amount).toFixed(0)}</p>
+                  <p className="text-3xl font-black text-slate-900 dark:text-slate-100 leading-none">€{Number(p.amount).toFixed(0)}</p>
                   <p className="text-xs text-slate-500 mt-1">/ {p.interval}</p>
                   <button
                     type="button"
@@ -220,11 +220,11 @@ export default function UyelikPage() {
 
         {/* Plan Karşılaştırması — 3-sütun tablo */}
         <section>
-          <p className="text-sm font-bold text-slate-900 mb-3 px-1">Plan Karşılaştırması</p>
-          <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-sm bg-white dark:bg-slate-800">
+          <p className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 px-1">Plan Karşılaştırması</p>
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800/50 overflow-hidden shadow-sm bg-white dark:bg-slate-800">
             <table className="w-full text-sm table-fixed">
               <thead>
-                <tr className="bg-slate-50 text-slate-700">
+                <tr className="bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300">
                   <th className="text-left font-semibold px-3 py-3 w-auto">Özellik</th>
                   <th className="text-center font-semibold px-2 py-3 w-14 sm:w-20">Free</th>
                   <th className="text-center font-semibold px-2 py-3 w-14 sm:w-20 bg-gradient-to-br from-violet-50 to-fuchsia-50 text-violet-800">
@@ -235,7 +235,7 @@ export default function UyelikPage() {
               <tbody>
                 {FEATURE_ROWS.map((row, i) => (
                   <tr key={i} className="border-t border-slate-100 even:bg-slate-50/40">
-                    <td className="px-3 py-3 text-slate-800 leading-snug">{row.label}</td>
+                    <td className="px-3 py-3 text-slate-800 dark:text-slate-200 leading-snug">{row.label}</td>
                     <td className="text-center px-2 py-3" aria-label={row.free ? "Var" : "Yok"}>
                       {row.free
                         ? <span className="text-emerald-600 text-base font-bold">✓</span>
@@ -264,14 +264,14 @@ export default function UyelikPage() {
             type="button"
             onClick={() => void handleCancel()}
             disabled={canceling}
-            className="w-full bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium hover:bg-slate-50 disabled:opacity-60"
+            className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl text-sm font-medium hover:bg-slate-50 disabled:opacity-60"
           >
             {canceling ? "İptal ediliyor..." : "Aboneliği iptal et"}
           </button>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">
             ⚠️ {error}
           </div>
         )}
@@ -281,7 +281,7 @@ export default function UyelikPage() {
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

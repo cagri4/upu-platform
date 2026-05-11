@@ -79,13 +79,13 @@ function initials(name: string): string {
 }
 
 function vadeBadge(row: BayiRow): { text: string; cls: string } {
-  if (!row.isActive) return { text: "Pasif", cls: "bg-slate-100 text-slate-500" };
-  if (row.riskStatus === "blacklist") return { text: "Kara liste", cls: "bg-rose-50 text-rose-700 font-semibold" };
-  if (row.criticalDays !== null && row.criticalDays >= 7) return { text: `${row.criticalDays} gün geçmiş`, cls: "bg-rose-50 text-rose-700 font-semibold" };
-  if (row.riskStatus === "watch") return { text: "İzlemede", cls: "bg-amber-50 text-amber-700 font-semibold" };
-  if (row.criticalDays !== null && row.criticalDays >= 0) return { text: row.balance > 0 ? "Bekleyen" : "Vade öncesi", cls: "bg-amber-50 text-amber-700" };
-  if (row.balance > 0) return { text: "Borçlu", cls: "bg-amber-50 text-amber-700" };
-  return { text: "Temiz", cls: "bg-emerald-50 text-emerald-700" };
+  if (!row.isActive) return { text: "Pasif", cls: "bg-slate-100 dark:bg-slate-900 text-slate-500" };
+  if (row.riskStatus === "blacklist") return { text: "Kara liste", cls: "bg-rose-50 dark:bg-rose-950/30 text-rose-700 font-semibold" };
+  if (row.criticalDays !== null && row.criticalDays >= 7) return { text: `${row.criticalDays} gün geçmiş`, cls: "bg-rose-50 dark:bg-rose-950/30 text-rose-700 font-semibold" };
+  if (row.riskStatus === "watch") return { text: "İzlemede", cls: "bg-amber-50 dark:bg-amber-950/30 text-amber-700 font-semibold" };
+  if (row.criticalDays !== null && row.criticalDays >= 0) return { text: row.balance > 0 ? "Bekleyen" : "Vade öncesi", cls: "bg-amber-50 dark:bg-amber-950/30 text-amber-700" };
+  if (row.balance > 0) return { text: "Borçlu", cls: "bg-amber-50 dark:bg-amber-950/30 text-amber-700" };
+  return { text: "Temiz", cls: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700" };
 }
 
 function formatTry(n: number): string {
@@ -180,17 +180,17 @@ export default function BayilerPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-        <div className="max-w-md w-full bg-white dark:bg-slate-800 border border-rose-200 rounded-xl p-6 text-center">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800/50 rounded-xl p-6 text-center">
           <h1 className="text-lg font-semibold text-rose-700 mb-2">Bağlantı hatası</h1>
-          <p className="text-sm text-slate-600">{error}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">{error}</p>
         </div>
       </div>
     );
   }
 
   if (!init) {
-    return <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 text-sm text-slate-500">Yükleniyor...</div>;
+    return <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950 text-sm text-slate-500">Yükleniyor...</div>;
   }
 
   return (
@@ -198,7 +198,7 @@ export default function BayilerPage() {
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div>
-            <h1 className="text-xl font-bold text-slate-900">📋 Bayilerim</h1>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">📋 Bayilerim</h1>
             {init.ticariUnvan && (
               <p className="text-xs text-slate-500 mt-0.5">{init.ticariUnvan}</p>
             )}
@@ -225,19 +225,19 @@ export default function BayilerPage() {
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             placeholder="🔍 İsim, şehir, telefon ara…"
-            className="flex-1 min-w-[180px] border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
+            className="flex-1 min-w-[180px] border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
           />
           <select
             value={status}
             onChange={e => pushParams({ status: e.target.value, page: "1" })}
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
+            className="border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
           >
             {STATUS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
           <select
             value={vade}
             onChange={e => pushParams({ vade: e.target.value, page: "1" })}
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
+            className="border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
           >
             {VADE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
@@ -248,7 +248,7 @@ export default function BayilerPage() {
         {loading && !data ? (
           <div className="text-center text-sm text-slate-500 py-8">Yükleniyor...</div>
         ) : data && data.rows.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-8 text-center text-sm text-slate-500">
             Bu filtreyle eşleşen bayi yok.
           </div>
         ) : (
@@ -260,7 +260,7 @@ export default function BayilerPage() {
                 <Link
                   key={row.id}
                   href={detailHref}
-                  className="block bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-3 hover:border-indigo-300 hover:shadow-sm transition"
+                  className="block bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-3 hover:border-indigo-300 hover:shadow-sm transition"
                 >
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
@@ -271,7 +271,7 @@ export default function BayilerPage() {
                     {/* Bilgi */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <h3 className="font-semibold text-slate-900 truncate">{row.name}</h3>
+                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">{row.name}</h3>
                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap ${badge.cls}`}>
                           {badge.text}
                         </span>
@@ -281,8 +281,8 @@ export default function BayilerPage() {
                         {row.contactPhone && <span>📞 {row.contactPhone}</span>}
                         {row.contactName && <span>👤 {row.contactName}</span>}
                       </div>
-                      <div className="text-xs text-slate-600 mt-1 flex items-center gap-3">
-                        <span><strong className={row.balance > 0 ? "text-rose-600" : "text-slate-700"}>{formatTry(row.balance)}</strong> bakiye</span>
+                      <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex items-center gap-3">
+                        <span><strong className={row.balance > 0 ? "text-rose-600" : "text-slate-700 dark:text-slate-300"}>{formatTry(row.balance)}</strong> bakiye</span>
                         {row.lastOrderDate && (
                           <span className="text-slate-400">son sipariş {formatDate(row.lastOrderDate)}</span>
                         )}
@@ -330,7 +330,7 @@ export default function BayilerPage() {
             <select
               value={pageSize}
               onChange={e => pushParams({ pageSize: e.target.value, page: "1" })}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
+              className="border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
             >
               {PAGE_SIZE_OPTIONS.map(s => <option key={s} value={s}>{s} / sayfa</option>)}
             </select>
@@ -339,17 +339,17 @@ export default function BayilerPage() {
               <button
                 onClick={() => pushParams({ page: String(Math.max(1, page - 1)) })}
                 disabled={page <= 1}
-                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white dark:bg-slate-800 disabled:opacity-40"
+                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-800 disabled:opacity-40"
               >
                 ‹ Önceki
               </button>
-              <span className="text-sm text-slate-600">
+              <span className="text-sm text-slate-600 dark:text-slate-400">
                 {page} / {data.pages}
               </span>
               <button
                 onClick={() => pushParams({ page: String(Math.min(data.pages, page + 1)) })}
                 disabled={page >= data.pages}
-                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white dark:bg-slate-800 disabled:opacity-40"
+                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-800 disabled:opacity-40"
               >
                 Sonraki ›
               </button>

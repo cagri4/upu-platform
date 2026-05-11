@@ -130,14 +130,14 @@ export default function OtelCekinPage() {
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-rose-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
 
   if (status === "done") return <Center>
     <div className="text-4xl mb-3">✅</div>
     <h1 className="text-xl font-bold mb-2">Online check-in tamamlandı!</h1>
-    <p className="text-slate-600 text-sm mb-4">Otele geldiğinizde anahtar kartınız hazır olacak. İyi konaklamalar.</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">Otele geldiğinizde anahtar kartınız hazır olacak. İyi konaklamalar.</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-rose-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
 
@@ -147,7 +147,7 @@ export default function OtelCekinPage() {
   const co = new Date(init.reservation.check_out).toLocaleDateString("tr-TR");
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-rose-600 to-amber-600 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">🏨</div>
@@ -168,10 +168,10 @@ export default function OtelCekinPage() {
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4">
-          <h2 className="text-sm font-bold text-slate-800 mb-3">Kimlik Fotoğrafı *</h2>
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3">Kimlik Fotoğrafı *</h2>
           {idPhotoUrl ? (
             <div className="space-y-2">
-              <img src={idPhotoUrl} alt="Kimlik" className="w-full rounded-lg border border-slate-200" />
+              <img src={idPhotoUrl} alt="Kimlik" className="w-full rounded-lg border border-slate-200 dark:border-slate-800/50" />
               <button onClick={() => setIdPhotoUrl("")} className="text-xs text-rose-700 hover:underline">Değiştir</button>
             </div>
           ) : (
@@ -192,19 +192,19 @@ export default function OtelCekinPage() {
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 space-y-3">
-          <h2 className="text-sm font-bold text-slate-800">Tercihleriniz (opsiyonel)</h2>
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200">Tercihleriniz (opsiyonel)</h2>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Tahmini varış saati</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Tahmini varış saati</label>
             <input value={eta} onChange={e => setEta(e.target.value)}
               placeholder="Örn. 16:30 — uçaktan sonra"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Kahvaltı tercihi</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Kahvaltı tercihi</label>
             <select value={breakfastDiet} onChange={e => setBreakfastDiet(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm">
               <option value="">— Seçilmedi —</option>
               <option value="standard">Standart</option>
               <option value="vegetarian">Vejetaryen</option>
@@ -215,28 +215,28 @@ export default function OtelCekinPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Alerjiler</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Alerjiler</label>
             <input value={allergies} onChange={e => setAllergies(e.target.value)}
               placeholder="Örn. fıstık, deniz ürünü"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Yastık tercihi</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Yastık tercihi</label>
             <input value={pillow} onChange={e => setPillow(e.target.value)}
               placeholder="Örn. yumuşak / sert / hipoalerjenik"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Sigara</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Sigara</label>
             <div className="flex gap-2">
               <button type="button" onClick={() => setSmoking(smoking === "no" ? "" : "no")}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm border ${smoking === "no" ? "bg-rose-50 border-rose-300" : "bg-white dark:bg-slate-800 border-slate-200"}`}>
+                className={`flex-1 px-3 py-2 rounded-lg text-sm border ${smoking === "no" ? "bg-rose-50 dark:bg-rose-950/30 border-rose-300" : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800/50"}`}>
                 Sigarasız oda
               </button>
               <button type="button" onClick={() => setSmoking(smoking === "yes" ? "" : "yes")}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm border ${smoking === "yes" ? "bg-rose-50 border-rose-300" : "bg-white dark:bg-slate-800 border-slate-200"}`}>
+                className={`flex-1 px-3 py-2 rounded-lg text-sm border ${smoking === "yes" ? "bg-rose-50 dark:bg-rose-950/30 border-rose-300" : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800/50"}`}>
                 Sigara serbest
               </button>
             </div>
@@ -252,7 +252,7 @@ export default function OtelCekinPage() {
           </label>
           <label className="flex items-start gap-2">
             <input type="checkbox" checked={marketing} onChange={e => setMarketing(e.target.checked)} className="w-4 h-4 mt-0.5 accent-rose-600" />
-            <span className="flex-1 text-slate-600">
+            <span className="flex-1 text-slate-600 dark:text-slate-400">
               {init.hotel?.name || "Otel"}'in özel kampanya ve sezon fırsatlarından WhatsApp üzerinden haberdar olmak istiyorum (opsiyonel — istediğiniz an iptal edebilirsiniz).
             </span>
           </label>
@@ -263,7 +263,7 @@ export default function OtelCekinPage() {
           {status === "saving" ? "Kaydediliyor..." : "✅ Tamamla"}
         </button>
 
-        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
+        {error && <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm shadow-lg">⚠️ {error}</div>}
 
         <div className="mt-6 text-center">
           <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="text-xs text-slate-500 hover:underline">
@@ -276,7 +276,7 @@ export default function OtelCekinPage() {
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

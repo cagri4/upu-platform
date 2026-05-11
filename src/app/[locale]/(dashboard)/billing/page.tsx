@@ -69,7 +69,7 @@ export default function BillingPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">Abonelik</h1>
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6">Abonelik</h1>
 
       {/* Current Plan */}
       <Card className="mb-8">
@@ -103,7 +103,7 @@ export default function BillingPage() {
       </Card>
 
       {/* Plans */}
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">Planlar</h2>
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Planlar</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {PLANS.map((plan) => {
           const isCurrent = currentPlan === plan.key;
@@ -127,7 +127,7 @@ export default function BillingPage() {
               <CardContent>
                 <ul className="space-y-2 mb-6">
                   {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-slate-600">
+                    <li key={f} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                       <Check className={`w-4 h-4 shrink-0 ${plan.popular ? 'text-indigo-500' : 'text-green-500'}`} />
                       {f}
                     </li>

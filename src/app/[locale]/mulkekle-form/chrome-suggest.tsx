@@ -89,7 +89,7 @@ export function ChromeSuggest() {
   }
 
   return (
-    <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 mb-4 text-sm relative">
+    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-300 rounded-2xl p-4 mb-4 text-sm relative">
       <button
         onClick={dismiss}
         aria-label="Kapat"

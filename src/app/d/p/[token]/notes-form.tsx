@@ -77,7 +77,7 @@ export default function NotesForm({ token, propertyTitles, existingNotes }: Note
               onClick={() => setReaction(opt.value)}
               className={`flex-1 py-2 px-1 rounded-lg border text-center transition text-xs ${
                 reaction === opt.value
-                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700"
                   : "border-gray-200 hover:border-gray-300 text-gray-600"
               }`}
             >
@@ -116,7 +116,7 @@ export default function NotesForm({ token, propertyTitles, existingNotes }: Note
               onClick={() => setNextStep(step)}
               className={`px-3 py-1.5 rounded-full text-xs border transition ${
                 nextStep === step
-                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700"
                   : "border-gray-200 hover:border-gray-300 text-gray-600"
               }`}
             >
@@ -136,7 +136,7 @@ export default function NotesForm({ token, propertyTitles, existingNotes }: Note
               onClick={() => setSaleStatus(status)}
               className={`px-3 py-1.5 rounded-full text-xs border transition ${
                 saleStatus === status
-                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700"
                   : "border-gray-200 hover:border-gray-300 text-gray-600"
               }`}
             >

@@ -76,12 +76,12 @@ export function PwaInstallCard() {
 
   return (
     <>
-      <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-5 shadow-sm">
+      <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 dark:border-emerald-800/50 rounded-2xl p-5 shadow-sm">
         <div className="flex items-start gap-4">
           <div className="text-3xl flex-shrink-0">📲</div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-slate-900 mb-1">Uygulama Olarak Yükleyin</h3>
-            <p className="text-sm text-slate-600 leading-relaxed mb-3">
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Uygulama Olarak Yükleyin</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
               UPU Emlak&apos;ı ana ekranınıza ekleyin — tarayıcı çubuğu olmadan, gerçek uygulama gibi açılsın.
             </p>
             <button
@@ -98,7 +98,7 @@ export function PwaInstallCard() {
         <div className="fixed inset-0 z-[60] bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true">
           <div className="bg-white dark:bg-slate-800 rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-bold text-slate-900">📲 Ana Ekrana Ekle</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">📲 Ana Ekrana Ekle</h2>
               <button
                 onClick={() => setIosInstructionsOpen(false)}
                 className="text-slate-400 hover:text-slate-600 text-2xl leading-none w-8 h-8 flex items-center justify-center"
@@ -109,10 +109,10 @@ export function PwaInstallCard() {
             </div>
 
             {platform === "ios" ? (
-              <ol className="space-y-3 text-sm text-slate-700">
+              <ol className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-xs">1</span>
-                  <span>Ekranın altındaki <span className="inline-block bg-slate-100 px-1.5 rounded">⤴</span> <span className="font-semibold">Paylaş</span> ikonuna dokunun.</span>
+                  <span>Ekranın altındaki <span className="inline-block bg-slate-100 dark:bg-slate-900 px-1.5 rounded">⤴</span> <span className="font-semibold">Paylaş</span> ikonuna dokunun.</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-xs">2</span>
@@ -124,7 +124,7 @@ export function PwaInstallCard() {
                 </li>
               </ol>
             ) : (
-              <ol className="space-y-3 text-sm text-slate-700">
+              <ol className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-xs">1</span>
                   <span>Tarayıcının sağ üstündeki <span className="font-semibold">⋮ (üç nokta)</span> menüsünü açın.</span>
@@ -142,7 +142,7 @@ export function PwaInstallCard() {
 
             <button
               onClick={() => setIosInstructionsOpen(false)}
-              className="mt-5 w-full bg-slate-100 hover:bg-slate-200 text-slate-900 py-2.5 rounded-lg text-sm font-medium"
+              className="mt-5 w-full bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 text-slate-900 dark:text-slate-100 py-2.5 rounded-lg text-sm font-medium"
             >
               Anladım
             </button>

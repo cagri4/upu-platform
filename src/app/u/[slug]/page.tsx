@@ -202,7 +202,7 @@ export default async function AgentLandingPage({ params, searchParams }: PagePro
 
   return (
     <html lang="tr">
-      <body className="bg-stone-50 text-stone-900 antialiased">
+      <body className="bg-stone-50 dark:bg-stone-950/30 text-stone-900 antialiased">
         {isOwner && <OwnerToolbar slug={slug} ownerToken={ownerToken} />}
 
         <div className={`max-w-5xl mx-auto px-4 py-8 space-y-8 ${isOwner ? "pt-20" : ""}`}>

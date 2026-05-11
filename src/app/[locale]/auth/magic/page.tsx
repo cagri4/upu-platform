@@ -49,21 +49,21 @@ export default function MagicLinkPage() {
         {status === 'loading' && (
           <>
             <div className="text-4xl mb-4">⏳</div>
-            <h1 className="text-xl font-bold text-slate-900 mb-2">Giriş yapılıyor...</h1>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Giriş yapılıyor...</h1>
             <p className="text-slate-500 text-sm">Lütfen bekleyin.</p>
           </>
         )}
         {status === 'success' && (
           <>
             <div className="text-4xl mb-4">✅</div>
-            <h1 className="text-xl font-bold text-slate-900 mb-2">Giriş başarılı!</h1>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Giriş başarılı!</h1>
             <p className="text-slate-500 text-sm">Panele yönlendiriliyorsunuz...</p>
           </>
         )}
         {status === 'error' && (
           <>
             <div className="text-4xl mb-4">❌</div>
-            <h1 className="text-xl font-bold text-slate-900 mb-2">Giriş başarısız</h1>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Giriş başarısız</h1>
             <p className="text-slate-500 text-sm mb-4">{error}</p>
             <a href="/tr/login" className="text-indigo-600 hover:underline text-sm">Normal giriş yapın →</a>
           </>

@@ -19,26 +19,26 @@ export default async function PrivacyPage({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4">
-      <div className="max-w-3xl mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4">
+      <div className="max-w-3xl mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800/50 p-8">
         <Link href={`/${locale}`} className="text-sm text-slate-500 hover:text-slate-800 mb-6 inline-block">
           {t("back")}
         </Link>
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">{t("privacy_title")}</h1>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">{t("privacy_title")}</h1>
         <p className="text-xs text-slate-400 mb-6">{t("last_updated")}</p>
-        <p className="text-slate-700 leading-relaxed mb-8">{t("privacy_intro")}</p>
+        <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-8">{t("privacy_intro")}</p>
 
         <div className="space-y-6">
           {sections.map(([h, b]) => (
             <section key={h}>
-              <h2 className="text-lg font-semibold text-slate-900 mb-2">{t(h as "privacy_data_h")}</h2>
-              <p className="text-slate-700 leading-relaxed">{t(b as "privacy_data_b")}</p>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">{t(h as "privacy_data_h")}</h2>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{t(b as "privacy_data_b")}</p>
             </section>
           ))}
         </div>
 
-        <div className="mt-10 pt-6 border-t border-slate-200">
-          <p className="text-sm text-slate-600">{t("privacy_contact")}</p>
+        <div className="mt-10 pt-6 border-t border-slate-200 dark:border-slate-800/50">
+          <p className="text-sm text-slate-600 dark:text-slate-400">{t("privacy_contact")}</p>
         </div>
       </div>
     </div>

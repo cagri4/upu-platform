@@ -107,13 +107,13 @@ export default function ProfilDuzenlePage() {
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 text-sm mb-4">{error}</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
   if (status === "done") return <Center>
     <div className="text-5xl mb-3">✨</div>
-    <h1 className="text-xl font-bold mb-2 text-slate-900">Profil kaydedildi!</h1>
-    <p className="text-slate-600 text-sm mb-6">Web sayfanız hazır.</p>
+    <h1 className="text-xl font-bold mb-2 text-slate-900 dark:text-slate-100">Profil kaydedildi!</h1>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">Web sayfanız hazır.</p>
     <div className="space-y-2">
       <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`} className="block w-full bg-violet-600 hover:bg-violet-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
         🖥 Panele Dön
@@ -125,7 +125,7 @@ export default function ProfilDuzenlePage() {
   </Center>;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-violet-600 to-fuchsia-700 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">🪪</div>
@@ -149,7 +149,7 @@ export default function ProfilDuzenlePage() {
               <div className="flex-1">
                 <label className="block">
                   <input type="file" accept="image/*" onChange={handlePhotoChange} disabled={photoUploading} className="hidden" />
-                  <span className={`block text-center py-2.5 px-4 rounded-lg text-sm font-medium border-2 border-dashed cursor-pointer ${photoUploading ? "border-amber-400 bg-amber-50 text-amber-800 animate-pulse" : "border-violet-400 bg-violet-50 text-violet-700"}`}>
+                  <span className={`block text-center py-2.5 px-4 rounded-lg text-sm font-medium border-2 border-dashed cursor-pointer ${photoUploading ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-800 animate-pulse" : "border-violet-400 bg-violet-50 dark:bg-violet-950/30 text-violet-700"}`}>
                     {photoUploading ? "⏳ Yükleniyor..." : photoUrl ? "🔄 Değiştir" : "📷 Foto Ekle"}
                   </span>
                 </label>
@@ -204,7 +204,7 @@ export default function ProfilDuzenlePage() {
             </p>
           </Section>
 
-          {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
+          {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
           <div className="grid grid-cols-2 gap-2">
             <button type="submit" disabled={status === "saving"}
@@ -213,7 +213,7 @@ export default function ProfilDuzenlePage() {
             </button>
             <a
               href={`/tr/panel${token ? `?t=${encodeURIComponent(token)}` : ""}`}
-              className="flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition"
+              className="flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition"
             >
               🖥 Panele
             </a>
@@ -224,24 +224,24 @@ export default function ProfilDuzenlePage() {
   );
 }
 
-const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 placeholder:text-slate-400";
+const inputCls = "w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 text-base text-slate-900 dark:text-slate-100 placeholder:text-slate-400";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
-    <h2 className="font-semibold text-slate-900 text-sm">{title}</h2>
+    <h2 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{title}</h2>
     {children}
   </section>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div>
-    <label className="block text-sm font-medium text-slate-900 mb-2">{label}</label>
+    <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">{label}</label>
     {children}
   </div>;
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

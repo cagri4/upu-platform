@@ -9,8 +9,8 @@ export default function MarketMusteriSadakatiPage() {
       </div>
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow-sm">
         <div className="text-4xl mb-3">💛</div>
-        <p className="font-semibold text-slate-900 mb-2">Yakında</p>
-        <p className="text-sm text-slate-600 mb-3">
+        <p className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Yakında</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
           Sadık müşterileriniz, vade defteri, doğum günü kutlamaları ve kampanya broadcast paneli yakında burada açılacak.
         </p>
         <p className="text-sm text-slate-500 italic">

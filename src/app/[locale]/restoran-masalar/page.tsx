@@ -16,7 +16,7 @@ const STATUS_INFO: Record<string, { label: string; cls: string; icon: string }> 
   free:     { label: "Boş",          cls: "bg-emerald-100 text-emerald-700 border-emerald-300", icon: "🟢" },
   occupied: { label: "Dolu",         cls: "bg-rose-100 text-rose-700 border-rose-300", icon: "🔴" },
   reserved: { label: "Rezerve",      cls: "bg-amber-100 text-amber-700 border-amber-300", icon: "🟡" },
-  cleaning: { label: "Temizleniyor", cls: "bg-slate-100 text-slate-700 border-slate-300", icon: "🧹" },
+  cleaning: { label: "Temizleniyor", cls: "bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600", icon: "🧹" },
 };
 
 export default function TablesPage() {
@@ -55,17 +55,17 @@ function Grid({ token }: { token: string }) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-1">🍽 Masalar</h1>
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">🍽 Masalar</h1>
       {items && (
         <p className="text-sm text-slate-500 mb-5">
           {total} masa · {free} boş · {occupied} dolu
         </p>
       )}
 
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4">{error}</div>}
+      {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 rounded-lg px-4 py-3 text-sm mb-4">{error}</div>}
       {!items && !error && <div className="text-slate-500">Yükleniyor…</div>}
       {items && items.length === 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 p-8 text-center text-slate-500">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 dark:border-slate-800/50 p-8 text-center text-slate-500">
           Henüz masa tanımlanmamış.
         </div>
       )}
@@ -79,14 +79,14 @@ function Grid({ token }: { token: string }) {
               return (
                 <div
                   key={t.id}
-                  className={`bg-white dark:bg-slate-800 rounded-xl border-2 ${s.cls.split(" ").find(c => c.startsWith("border-")) || "border-slate-200"} p-4 text-center shadow-sm`}
+                  className={`bg-white dark:bg-slate-800 rounded-xl border-2 ${s.cls.split(" ").find(c => c.startsWith("border-")) || "border-slate-200 dark:border-slate-800/50"} p-4 text-center shadow-sm`}
                 >
                   <div className="text-3xl mb-1">{s.icon}</div>
-                  <div className="text-xl font-bold text-slate-900">Masa {t.label}</div>
+                  <div className="text-xl font-bold text-slate-900 dark:text-slate-100">Masa {t.label}</div>
                   {t.capacity && <div className="text-xs text-slate-500 mt-0.5">{t.capacity} kişilik</div>}
                   <div className={`text-xs font-medium mt-2 inline-block px-2 py-0.5 rounded-full ${s.cls}`}>{s.label}</div>
                   {t.current_check_amount && t.current_check_amount > 0 && (
-                    <div className="text-xs text-slate-700 font-semibold mt-1">
+                    <div className="text-xs text-slate-700 dark:text-slate-300 font-semibold mt-1">
                       €{t.current_check_amount.toLocaleString("tr-NL", { maximumFractionDigits: 0 })}
                     </div>
                   )}

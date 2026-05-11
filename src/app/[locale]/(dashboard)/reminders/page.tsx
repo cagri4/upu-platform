@@ -61,17 +61,17 @@ export default function RemindersPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h1 className="text-2xl font-bold text-slate-900">⏰ Hatırlatmalar</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">⏰ Hatırlatmalar</h1>
         <div className="flex gap-2 text-sm">
           <button
             onClick={() => setShowTriggered(false)}
-            className={`px-3 py-1 rounded-md ${!showTriggered ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}
+            className={`px-3 py-1 rounded-md ${!showTriggered ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700 dark:text-slate-300'}`}
           >
             Bekleyen ({items.filter((r) => !r.triggered).length})
           </button>
           <button
             onClick={() => setShowTriggered(true)}
-            className={`px-3 py-1 rounded-md ${showTriggered ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}
+            className={`px-3 py-1 rounded-md ${showTriggered ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700 dark:text-slate-300'}`}
           >
             Tetiklenen ({items.filter((r) => r.triggered).length})
           </button>
@@ -83,7 +83,7 @@ export default function RemindersPage() {
       ) : visible.length === 0 ? (
         <Card className="p-8 text-center">
           <Calendar className="mx-auto mb-3 h-10 w-10 text-slate-400" />
-          <p className="text-slate-600">{showTriggered ? 'Tetiklenmiş hatırlatma yok.' : 'Bekleyen hatırlatma yok.'}</p>
+          <p className="text-slate-600 dark:text-slate-400">{showTriggered ? 'Tetiklenmiş hatırlatma yok.' : 'Bekleyen hatırlatma yok.'}</p>
           <p className="text-sm text-slate-500 mt-1">WhatsApp'tan "hatırlatma" yazarak kurabilirsiniz.</p>
         </Card>
       ) : (
@@ -96,7 +96,7 @@ export default function RemindersPage() {
                   const t = new Date(r.remind_at);
                   const overdue = !r.triggered && t.getTime() < now;
                   return (
-                    <Card key={r.id} className={`p-4 ${overdue ? 'border-red-200 bg-red-50' : ''}`}>
+                    <Card key={r.id} className={`p-4 ${overdue ? 'border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-950/30' : ''}`}>
                       <div className="flex items-start gap-3">
                         {r.triggered ? (
                           <CheckCircle2 className="text-emerald-500 shrink-0 mt-0.5" size={18} />
@@ -104,8 +104,8 @@ export default function RemindersPage() {
                           <Clock className={`shrink-0 mt-0.5 ${overdue ? 'text-red-500' : 'text-indigo-500'}`} size={18} />
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-slate-900">{r.topic}</div>
-                          {r.note && <p className="text-sm text-slate-600 mt-1">{r.note}</p>}
+                          <div className="font-medium text-slate-900 dark:text-slate-100">{r.topic}</div>
+                          {r.note && <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{r.note}</p>}
                           <div className="text-xs text-slate-500 mt-1">
                             {t.toLocaleDateString('tr-TR', { weekday: 'short', day: 'numeric', month: 'short' })}
                             {' · '}

@@ -121,17 +121,17 @@ export default function QrGirisPage() {
   }, [state, code]);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg max-w-md w-full p-6 sm:p-8">
         <div className="text-center mb-6">
           <div className="text-4xl mb-2">🖥</div>
-          <h1 className="text-2xl font-bold text-slate-900">Bilgisayardan Giriş</h1>
-          <p className="text-sm text-slate-600 mt-2 leading-relaxed">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Bilgisayardan Giriş</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
             Telefonunuzdaki UPU panelinden bu QR kodunu tarayın
           </p>
         </div>
 
-        <div className="relative bg-slate-50 border-2 border-slate-200 rounded-xl p-4 flex items-center justify-center min-h-[300px]">
+        <div className="relative bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800/50 rounded-xl p-4 flex items-center justify-center min-h-[300px]">
           {state === "loading" && (
             <div className="text-center text-slate-500 text-sm">QR oluşturuluyor…</div>
           )}
@@ -140,7 +140,7 @@ export default function QrGirisPage() {
             <div className="text-center">
               <canvas ref={canvasRef} className="mx-auto rounded" />
               <div className="text-xs text-slate-500 mt-3">
-                Bu kod <span className="font-semibold text-slate-700">{secondsLeft}</span> saniye sonra yenilenecek
+                Bu kod <span className="font-semibold text-slate-700 dark:text-slate-300">{secondsLeft}</span> saniye sonra yenilenecek
               </div>
             </div>
           )}
@@ -155,7 +155,7 @@ export default function QrGirisPage() {
           {state === "expired" && (
             <div className="text-center">
               <div className="text-3xl mb-2">⏰</div>
-              <div className="text-sm text-slate-600 mb-4">QR kodun süresi doldu.</div>
+              <div className="text-sm text-slate-600 dark:text-slate-400 mb-4">QR kodun süresi doldu.</div>
               <button
                 onClick={createQr}
                 className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition"
@@ -179,8 +179,8 @@ export default function QrGirisPage() {
           )}
         </div>
 
-        <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4 text-xs text-slate-700 leading-relaxed">
-          <div className="font-semibold text-slate-900 mb-2">📱 Nasıl yapılır?</div>
+        <div className="mt-6 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 rounded-lg p-4 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+          <div className="font-semibold text-slate-900 dark:text-slate-100 mb-2">📱 Nasıl yapılır?</div>
           <ol className="space-y-1 list-decimal list-inside">
             <li>Telefonunuzdaki WhatsApp&apos;tan UPU panelinizi açın</li>
             <li>Sol menüden <span className="font-semibold">🖥 Bilgisayardan Aç</span> seçeneğine dokunun</li>
