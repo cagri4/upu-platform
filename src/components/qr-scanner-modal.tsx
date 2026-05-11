@@ -29,6 +29,42 @@ export function QrScannerModal({ open, tenantKey, onClose }: QrScannerModalProps
   const [errorMsg, setErrorMsg] = useState("");
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
+  // C: success → 2.5s sonra otomatik kapan. Kullanıcı "Kapat" tıklamak
+  // zorunda kalmadan modal kendi unmount eder, scanner cleanly destroy edilir.
+  useEffect(() => {
+    if (state !== "success") return;
+    const t = setTimeout(() => {
+      void safeClose();
+    }, 2500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
+
+  // A: "Kapat" butonu güvenli — scanner explicit stop sonra onClose, son
+  // olarak underlying /tr/panel sayfasına navigate. Bu sıralama "This page
+  // couldn't load" Chrome hatasını engelliyor (async cleanup race fix).
+  async function safeClose() {
+    const scanner = scannerRef.current;
+    if (scanner) {
+      try {
+        await scanner.stop();
+        await scanner.clear();
+      } catch {
+        /* ignore — zaten kapalı */
+      }
+      scannerRef.current = null;
+    }
+    onClose();
+    if (typeof window !== "undefined") {
+      // Halen /tr/panel dışında bir yerden açıldıysa panele dön.
+      // /tr/panel'de zaten açıldıysa no-op (URL aynı, sayfa yeniden yüklenmez).
+      const path = window.location.pathname;
+      if (!path.endsWith("/panel") && !path.endsWith("/panel/")) {
+        window.location.href = "/tr/panel";
+      }
+    }
+  }
+
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -119,7 +155,7 @@ export function QrScannerModal({ open, tenantKey, onClose }: QrScannerModalProps
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold text-slate-900">🖥 Bilgisayardan Aç</h2>
           <button
-            onClick={onClose}
+            onClick={() => void safeClose()}
             className="text-slate-400 hover:text-slate-600 text-2xl leading-none w-8 h-8 flex items-center justify-center"
             aria-label="Kapat"
           >
@@ -163,7 +199,7 @@ export function QrScannerModal({ open, tenantKey, onClose }: QrScannerModalProps
             </button>
           )}
           <button
-            onClick={onClose}
+            onClick={() => void safeClose()}
             className={`${state === "error" ? "flex-1" : "w-full"} bg-slate-100 hover:bg-slate-200 text-slate-900 py-2.5 rounded-lg text-sm font-medium`}
           >
             {state === "success" ? "Kapat" : "Vazgeç"}
