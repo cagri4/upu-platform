@@ -25,6 +25,8 @@ type Status = "loading" | "form" | "saving" | "done" | "error";
 export default function MusteriEkleFormPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token");
+  const editId = searchParams.get("id");
+  const isEdit = !!editId;
   const waReturnHref = useWhatsappDeeplink(BOT_WA_NUMBER);
 
   const [status, setStatus] = useState<Status>("loading");
@@ -42,6 +44,33 @@ export default function MusteriEkleFormPage() {
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
+    // Düzenleme modu: mevcut müşterinin verilerini yükle
+    if (isEdit) {
+      const tokenQs = token ? `&t=${encodeURIComponent(token)}` : "";
+      fetch(`/api/musteri/get?id=${encodeURIComponent(editId!)}${tokenQs}`, { credentials: "same-origin" })
+        .then(async (r) => {
+          const d = await r.json();
+          if (!r.ok) { setStatus("error"); setError(d.error || "Müşteri yüklenemedi."); return; }
+          const c = d.customer as Record<string, unknown>;
+          setName(String(c.name || ""));
+          setPhone(String(c.phone || ""));
+          setEmail(String(c.email || ""));
+          if (Array.isArray(c.looking_for)) setLookingFor(c.looking_for as string[]);
+          if (Array.isArray(c.property_type)) setPropertyTypes(c.property_type as string[]);
+          // rooms DB'de string ("3+1, 4+1") olarak tutuluyor — array'e çevir
+          if (typeof c.rooms === "string" && c.rooms) {
+            setRooms(c.rooms.split(",").map(s => s.trim()).filter(Boolean));
+          }
+          setBudgetMin(c.budget_min != null ? String(c.budget_min) : "");
+          setBudgetMax(c.budget_max != null ? String(c.budget_max) : "");
+          setLocation(String(c.location || ""));
+          setNotes(String(c.notes || ""));
+          setStatus("form");
+        })
+        .catch(() => { setStatus("error"); setError("Bağlantı hatası."); });
+      return;
+    }
+
     const tokenQs = token ? `?t=${encodeURIComponent(token)}` : "";
     fetch(`/api/musteri/init${tokenQs}`, { credentials: "same-origin" })
       .then(async (r) => {
@@ -50,7 +79,7 @@ export default function MusteriEkleFormPage() {
         setStatus("form");
       })
       .catch(() => { setStatus("error"); setError("Bağlantı hatası."); });
-  }, [token]);
+  }, [token, isEdit, editId]);
 
   function toggleType(t: string) {
     setError("");
@@ -81,6 +110,7 @@ export default function MusteriEkleFormPage() {
         credentials: "same-origin",
         body: JSON.stringify({
           token,
+          ...(isEdit ? { id: editId } : {}),
           name: name.trim(),
           phone: phone.trim(),
           email: email.trim() || null,
@@ -110,9 +140,9 @@ export default function MusteriEkleFormPage() {
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
   if (status === "done") return <Center>
-    <div className="text-5xl mb-3">🎉</div>
-    <h1 className="text-xl font-bold mb-2 text-slate-900">Müşteri kaydedildi!</h1>
-    <p className="text-slate-600 text-sm mb-6">Müşterileriniz panelde listelenir.</p>
+    <div className="text-5xl mb-3">{isEdit ? "✅" : "🎉"}</div>
+    <h1 className="text-xl font-bold mb-2 text-slate-900">{isEdit ? "Müşteri güncellendi!" : "Müşteri kaydedildi!"}</h1>
+    <p className="text-slate-600 text-sm mb-6">{isEdit ? "Değişiklikler kaydedildi." : "Müşterileriniz panelde listelenir."}</p>
     <div className="space-y-2">
       <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`} className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
         🖥 Panele Dön
@@ -130,9 +160,11 @@ export default function MusteriEkleFormPage() {
     <div className="min-h-screen bg-slate-50 pb-24">
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-5 mb-5">
-          <div className="text-3xl mb-1">🤝</div>
-          <h1 className="text-xl font-bold">Müşteri Ekle</h1>
-          <p className="text-emerald-100 text-sm mt-1">💡 İpucu: Ne kadar bilgi girerseniz AI eşleştirmesi o kadar isabetli olur.</p>
+          <div className="text-3xl mb-1">{isEdit ? "✏️" : "🤝"}</div>
+          <h1 className="text-xl font-bold">{isEdit ? "Müşteriyi Düzenle" : "Müşteri Ekle"}</h1>
+          <p className="text-emerald-100 text-sm mt-1">
+            {isEdit ? "Bilgileri güncelleyin ve kaydedin." : "💡 İpucu: Ne kadar bilgi girerseniz AI eşleştirmesi o kadar isabetli olur."}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -224,7 +256,7 @@ export default function MusteriEkleFormPage() {
           <div className="grid grid-cols-2 gap-2">
             <button type="submit" disabled={status === "saving"}
               className="bg-emerald-600 text-white py-4 rounded-xl font-semibold text-base shadow-lg disabled:opacity-60 active:scale-95 transition">
-              {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet"}
+              {status === "saving" ? "Kaydediliyor..." : (isEdit ? "✅ Güncelle" : "✅ Kaydet")}
             </button>
             <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`}
               className="flex items-center justify-center bg-white border border-slate-300 text-slate-700 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition">

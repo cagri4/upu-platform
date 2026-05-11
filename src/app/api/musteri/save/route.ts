@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
 
     const supabase = getServiceClient();
     const userId = auth.userId;
+    const editId = body.id ? String(body.id) : null;
+    const isEdit = !!editId;
 
     const name = String(body.name || "").trim();
     if (name.length < 2) {
@@ -59,22 +61,41 @@ export async function POST(req: NextRequest) {
     }
     const listingTypeDerived = lookingFor.length === 2 ? "hepsi" : lookingFor[0];
 
+    const fields = {
+      name,
+      phone,
+      email: body.email ? String(body.email).trim() : null,
+      looking_for: lookingFor,
+      listing_type: listingTypeDerived,
+      property_type: propertyType.length > 0 ? propertyType : null,
+      rooms: body.rooms || null,
+      budget_min: body.budget_min ? Number(body.budget_min) : null,
+      budget_max: body.budget_max ? Number(body.budget_max) : null,
+      location: body.location || null,
+      notes: body.notes || null,
+    };
+
+    if (isEdit) {
+      // UPDATE — sadece kullanıcının kendi müşterisi
+      const { error: updErr } = await supabase
+        .from("emlak_customers")
+        .update(fields)
+        .eq("id", editId)
+        .eq("user_id", userId);
+      if (updErr) {
+        console.error("[musteri:save:update]", updErr);
+        return NextResponse.json({ error: updErr.message }, { status: 500 });
+      }
+      // Edit'te WA notification yok — sade UI feedback yeter.
+      return NextResponse.json({ success: true, customerId: editId, updated: true });
+    }
+
     const { data: inserted, error } = await supabase
       .from("emlak_customers")
       .insert({
+        ...fields,
         tenant_id: tenantId,
         user_id: userId,
-        name,
-        phone,
-        email: body.email ? String(body.email).trim() : null,
-        looking_for: lookingFor,
-        listing_type: listingTypeDerived,
-        property_type: propertyType.length > 0 ? propertyType : null,
-        rooms: body.rooms || null,
-        budget_min: body.budget_min ? Number(body.budget_min) : null,
-        budget_max: body.budget_max ? Number(body.budget_max) : null,
-        location: body.location || null,
-        notes: body.notes || null,
         status: "aktif",
         pipeline_stage: "yeni",
       })
