@@ -116,7 +116,11 @@ export default function TakvimPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Bu hatırlatıcıyı iptal etmek istediğinize emin misiniz?")) return;
+    const ev = items.find(e => e.id === id);
+    const msg = ev && ev.status !== "pending"
+      ? "Bu hatırlatıcıyı listeden kaldırmak istediğinize emin misiniz?"
+      : "Bu hatırlatıcıyı iptal etmek istediğinize emin misiniz?";
+    if (!confirm(msg)) return;
     setBusyId(id);
     try {
       await fetch("/api/calendar/delete", {
@@ -227,7 +231,7 @@ export default function TakvimPage() {
             <div className="space-y-3 pt-2">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Geçmiş</p>
               {past.map(ev => (
-                <EventCard key={ev.id} ev={ev} busy={false} onEdit={() => {}} onDelete={() => void handleDelete(ev.id)} past />
+                <EventCard key={ev.id} ev={ev} busy={busyId === ev.id} onEdit={() => {}} onDelete={() => void handleDelete(ev.id)} past />
               ))}
             </div>
           )}
@@ -264,7 +268,7 @@ function EventCard({ ev, busy, onEdit, onDelete, past = false }: {
         <p className="text-xs text-slate-500">⏰ {fmtDate(ev.scheduled_at)}</p>
         {ev.description && <p className="text-sm text-slate-600 mt-2 leading-relaxed">{ev.description}</p>}
       </div>
-      {!past && (
+      {!past ? (
         <div className="border-t border-slate-100 grid grid-cols-2">
           <button
             onClick={onEdit}
@@ -278,6 +282,17 @@ function EventCard({ ev, busy, onEdit, onDelete, past = false }: {
             className="py-3 text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100 transition border-l border-slate-100 disabled:opacity-50"
           >
             🗑 {busy ? "..." : "Sil"}
+          </button>
+        </div>
+      ) : (
+        // Geçmiş hatırlatma: değiştirilemez, sadece listeden kaldırılabilir.
+        <div className="border-t border-slate-100">
+          <button
+            onClick={onDelete}
+            disabled={busy}
+            className="w-full py-3 text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100 transition disabled:opacity-50"
+          >
+            🗑 {busy ? "Siliniyor..." : "Listeden kaldır"}
           </button>
         </div>
       )}
