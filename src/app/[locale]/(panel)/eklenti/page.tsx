@@ -79,7 +79,7 @@ export default function EklentiPage() {
       </div>
 
       {/* Big code box */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm">
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 text-center">
           Bağlantı Kodunuz
         </p>
@@ -96,7 +96,7 @@ export default function EklentiPage() {
           <button
             onClick={() => void regenerate()}
             disabled={status === "regenerating"}
-            className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 py-3 rounded-xl text-sm font-medium disabled:opacity-60"
+            className="bg-white dark:bg-slate-800 border border-slate-300 hover:bg-slate-50 text-slate-700 py-3 rounded-xl text-sm font-medium disabled:opacity-60"
           >
             {status === "regenerating" ? "..." : "🔄 Yeni Kod Üret"}
           </button>
@@ -107,7 +107,7 @@ export default function EklentiPage() {
       </div>
 
       {/* Tutorial */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
         <p className="text-sm font-bold text-slate-900 mb-3">📋 Kurulum Adımları</p>
         <ol className="space-y-3 text-sm">
           <li className="flex gap-3">
@@ -160,7 +160,7 @@ export default function EklentiPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
       <p className="text-slate-600">{children}</p>
     </div>
   );

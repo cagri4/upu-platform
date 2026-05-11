@@ -68,7 +68,7 @@ function List({ token }: { token: string }) {
       {!items && !error && <div className="text-slate-500">Yükleniyor…</div>}
 
       {items && items.length === 0 && (
-        <div className="bg-white rounded-2xl shadow border border-slate-200 p-8 text-center text-slate-500">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 p-8 text-center text-slate-500">
           Henüz müdavim yok. WA&apos;dan <code>uye ol</code> davet linki paylaşabilirsiniz.
         </div>
       )}
@@ -94,7 +94,7 @@ function List({ token }: { token: string }) {
       )}
 
       {items && items.length > 0 && (
-        <div className="bg-white rounded-2xl shadow border border-slate-200 divide-y divide-slate-100">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 divide-y divide-slate-100">
           {items.map(m => {
             const d = daysSince(m.last_visit_at);
             return (

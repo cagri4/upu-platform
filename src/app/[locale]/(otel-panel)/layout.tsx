@@ -85,7 +85,7 @@ export default function OtelPanelGroupLayout({ children }: { children: ReactNode
   if (state === "error") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-        <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">
           <div className="text-4xl mb-3">⚠️</div>
           <h1 className="text-xl font-bold mb-2">Hata</h1>
           <p className="text-slate-600 text-sm mb-4">{error}</p>

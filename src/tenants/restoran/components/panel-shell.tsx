@@ -81,7 +81,7 @@ export function RestoranPanelShell({
   if (status === "error") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-        <div className="max-w-md bg-white rounded-2xl shadow p-8 text-center">
+        <div className="max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow p-8 text-center">
           <div className="text-5xl mb-4">⚠️</div>
           <h1 className="text-xl font-semibold text-slate-900 mb-2">Bir sorun var</h1>
           <p className="text-slate-600 mb-4">{errorMsg}</p>

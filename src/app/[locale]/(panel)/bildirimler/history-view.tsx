@@ -91,7 +91,7 @@ export function HistoryView() {
             className={`px-3 py-1.5 rounded-full text-xs font-medium border-2 whitespace-nowrap ${
               filter === f.id
                 ? "bg-amber-600 text-white border-amber-600"
-                : "bg-white text-slate-700 border-slate-300"
+                : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"
             }`}
           >
             {f.label}
@@ -108,11 +108,11 @@ export function HistoryView() {
       </div>
 
       {status === "loading" ? (
-        <div className="bg-white rounded-2xl p-8 text-center text-slate-500 text-sm shadow-sm">⏳ Yükleniyor...</div>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center text-slate-500 text-sm shadow-sm">⏳ Yükleniyor...</div>
       ) : status === "error" ? (
-        <div className="bg-white rounded-2xl p-8 text-center text-rose-600 text-sm shadow-sm">⚠️ {error}</div>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center text-rose-600 text-sm shadow-sm">⚠️ {error}</div>
       ) : items.length === 0 ? (
-        <div className="bg-white rounded-2xl p-8 text-center text-slate-500 text-sm shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center text-slate-500 text-sm shadow-sm">
           {filter === "unread" ? "Okunmamış bildiriminiz yok." : "Henüz bildiriminiz yok."}
         </div>
       ) : (
@@ -128,7 +128,7 @@ export function HistoryView() {
                 key={n.id}
                 href={href}
                 onClick={(e) => handleClick(n, e)}
-                className={`block bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition border-l-4 ${
+                className={`block bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md transition border-l-4 ${
                   n.is_read ? "border-slate-200" : "border-amber-500 bg-amber-50/30"
                 }`}
               >

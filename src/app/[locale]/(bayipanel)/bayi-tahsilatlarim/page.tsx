@@ -71,7 +71,7 @@ export default function TahsilatlarimPage() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4">
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
           <h1 className="text-xl font-bold text-slate-900">💰 Tahsilatlarım</h1>
           <a
@@ -107,7 +107,7 @@ export default function TahsilatlarimPage() {
       ) : loading ? (
         <div className="text-center text-sm text-slate-500 py-8">Yükleniyor…</div>
       ) : unpaid.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
           Şu an ödenmemiş faturanız yok. 🎉
         </div>
       ) : (
@@ -117,7 +117,7 @@ export default function TahsilatlarimPage() {
             const days = daysFromNow(inv.due_date);
             const isOverdue = days < 0;
             return (
-              <div key={inv.id} className="bg-white border border-slate-200 rounded-xl p-3">
+              <div key={inv.id} className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">

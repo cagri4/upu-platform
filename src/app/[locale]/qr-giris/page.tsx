@@ -122,7 +122,7 @@ export default function QrGirisPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg max-w-md w-full p-6 sm:p-8">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg max-w-md w-full p-6 sm:p-8">
         <div className="text-center mb-6">
           <div className="text-4xl mb-2">🖥</div>
           <h1 className="text-2xl font-bold text-slate-900">Bilgisayardan Giriş</h1>

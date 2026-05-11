@@ -150,7 +150,7 @@ export default function BayiSiparisPage() {
         </div>
 
         {/* Dealer */}
-        <div className="bg-white rounded-2xl p-4 mb-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4">
           <label className="block text-xs font-medium text-slate-600 mb-2">Bayi</label>
           {init?.isDealer ? (
             <div className="text-sm font-medium text-slate-800">
@@ -168,7 +168,7 @@ export default function BayiSiparisPage() {
         </div>
 
         {/* Items */}
-        <div className="bg-white rounded-2xl p-4 mb-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-slate-800">Ürünler</h2>
             <button type="button" onClick={addLine}
@@ -225,7 +225,7 @@ export default function BayiSiparisPage() {
         </div>
 
         {/* Notes + delivery */}
-        <div className="bg-white rounded-2xl p-4 mb-4 space-y-3">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Not (opsiyonel)</label>
             <textarea value={notes} onChange={e => setNotes(e.target.value)}
@@ -259,6 +259,6 @@ export default function BayiSiparisPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

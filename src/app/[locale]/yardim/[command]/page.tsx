@@ -17,7 +17,7 @@ export default function YardimCommandPage({ params }: { params: Promise<{ comman
   if (!entry) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-        <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">
           <div className="text-4xl mb-3">🔍</div>
           <h1 className="text-xl font-bold mb-2">Bu komut için yardım yok</h1>
           <p className="text-slate-600 text-sm mb-4">
@@ -90,7 +90,7 @@ export default function YardimCommandPage({ params }: { params: Promise<{ comman
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="bg-white rounded-2xl p-4 shadow-sm mb-3">
+    <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm mb-3">
       <h2 className="font-semibold text-slate-900 text-sm mb-2">{title}</h2>
       {children}
     </section>

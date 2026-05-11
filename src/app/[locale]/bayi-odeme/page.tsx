@@ -93,7 +93,7 @@ export default function BayiOdemePage() {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 mb-4 space-y-3">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Bayi</label>
             {isOwner ? (
@@ -129,7 +129,7 @@ export default function BayiOdemePage() {
             <div className="grid grid-cols-2 gap-2">
               {METHODS.map(m => (
                 <button key={m.id} type="button" onClick={() => setMethod(m.id)}
-                  className={`py-2 rounded-lg text-sm font-medium border-2 ${method === m.id ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                  className={`py-2 rounded-lg text-sm font-medium border-2 ${method === m.id ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
                   {m.label}
                 </button>
               ))}
@@ -157,6 +157,6 @@ export default function BayiOdemePage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

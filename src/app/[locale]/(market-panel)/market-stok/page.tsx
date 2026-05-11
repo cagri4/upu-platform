@@ -49,7 +49,7 @@ export default function MarketStokPage() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-2xl p-6 text-center shadow">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow">
         <div className="text-3xl mb-3">⚠️</div>
         <p className="text-slate-700">{error}</p>
       </div>
@@ -58,7 +58,7 @@ export default function MarketStokPage() {
 
   if (!products) {
     return (
-      <div className="bg-white rounded-2xl p-6 text-center shadow">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow">
         <div className="text-3xl">⏳</div>
         <p className="text-slate-500 text-sm mt-2">Stok yükleniyor...</p>
       </div>
@@ -72,7 +72,7 @@ export default function MarketStokPage() {
           <h1 className="text-2xl font-bold">Stok</h1>
           <p className="text-amber-100 text-sm mt-2">Henüz ürün eklenmemiş.</p>
         </div>
-        <div className="bg-white rounded-2xl p-5 text-sm text-slate-600 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 text-sm text-slate-600 shadow-sm">
           <p className="font-semibold text-slate-900 mb-2">📦 İlk ürününüzü ekleyin</p>
           <p>
             WhatsApp&apos;tan{" "}
@@ -98,7 +98,7 @@ export default function MarketStokPage() {
       </div>
 
       {/* Liste */}
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
         <div className="divide-y divide-slate-100">
           {products.map((p) => {
             const low = isLowStock(p);
@@ -133,7 +133,7 @@ export default function MarketStokPage() {
       </div>
 
       {/* Hint */}
-      <div className="bg-white rounded-2xl p-4 text-sm text-slate-600 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 text-sm text-slate-600 shadow-sm">
         <p>
           Yeni ürün eklemek için WhatsApp&apos;tan{" "}
           <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">stokekle</span>

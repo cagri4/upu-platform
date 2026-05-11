@@ -56,7 +56,7 @@ export default function SunumlarimPage() {
         </div>
 
         {items.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center text-slate-500 text-sm shadow-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center text-slate-500 text-sm shadow-sm">
             Henüz hiç sunumunuz yok. WhatsApp&apos;tan bir mülk ekleyince otomatik sunum oluşur.
           </div>
         ) : (
@@ -67,7 +67,7 @@ export default function SunumlarimPage() {
                 href={`/d/p/${p.magic_token}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block bg-white rounded-2xl shadow-sm overflow-hidden active:scale-[0.99] transition"
+                className="block bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden active:scale-[0.99] transition"
               >
                 <div className="flex gap-3 p-3">
                   <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-slate-200">
@@ -108,6 +108,6 @@ export default function SunumlarimPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

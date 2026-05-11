@@ -121,7 +121,7 @@ export function NotificationBell({ accentColor = "indigo", token = "" }: {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-lg z-40 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 rounded-xl shadow-lg z-40 overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
             <p className="text-sm font-semibold text-slate-900">Bildirimler</p>
             {unread > 0 && (

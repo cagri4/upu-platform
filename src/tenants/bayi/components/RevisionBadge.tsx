@@ -72,7 +72,7 @@ export function RevisionBadge({ componentKey, locale, theme, labels }: Props) {
       </button>
 
       {open && (
-        <div className="absolute left-0 bottom-full mb-2 w-80 max-h-96 overflow-y-auto bg-white rounded-xl shadow-lg border border-slate-200 z-50 p-4">
+        <div className="absolute left-0 bottom-full mb-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 z-50 p-4">
           <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-3">{labels.title}</h3>
 
           {visible.length === 0 ? (

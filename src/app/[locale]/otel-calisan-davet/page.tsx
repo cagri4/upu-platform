@@ -150,7 +150,7 @@ export default function OtelCalisanDavetPage() {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 mb-4 space-y-3">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">İsim Soyisim *</label>
             <input value={name} onChange={e => setName(e.target.value)}
@@ -195,7 +195,7 @@ export default function OtelCalisanDavetPage() {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl p-4 mb-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-slate-800">Yetkiler</h2>
             <span className="text-xs text-slate-500">{selected.size} seçili</span>
@@ -218,7 +218,7 @@ export default function OtelCalisanDavetPage() {
                       className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm ${
                         selected.has(it.id)
                           ? "bg-rose-50 border-rose-300"
-                          : "bg-white border-slate-200"
+                          : "bg-white dark:bg-slate-800 border-slate-200"
                       }`}>
                       <input type="checkbox"
                         checked={selected.has(it.id)}
@@ -252,6 +252,6 @@ export default function OtelCalisanDavetPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

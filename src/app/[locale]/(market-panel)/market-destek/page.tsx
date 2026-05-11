@@ -7,7 +7,7 @@ export default function MarketDestekPage() {
         <h1 className="text-2xl font-bold">Destek Talebi</h1>
         <p className="text-amber-100 text-sm mt-2">Teknik sorun veya yardım için destek talebi açın.</p>
       </div>
-      <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow-sm">
         <div className="text-4xl mb-3">🛟</div>
         <p className="font-semibold text-slate-900 mb-2">Yakında</p>
         <p className="text-sm text-slate-600 mb-3">

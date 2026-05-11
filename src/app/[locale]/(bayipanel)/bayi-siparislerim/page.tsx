@@ -75,7 +75,7 @@ export default function SiparislerimPage() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div>
             <h1 className="text-xl font-bold text-slate-900">📋 Siparişlerim</h1>
@@ -94,7 +94,7 @@ export default function SiparislerimPage() {
           value={searchInput}
           onChange={e => setSearchInput(e.target.value)}
           placeholder="🔍 Bayi adı, sipariş no…"
-          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
         />
       </div>
 
@@ -105,7 +105,7 @@ export default function SiparislerimPage() {
       ) : loading ? (
         <div className="text-center text-sm text-slate-500 py-8">Yükleniyor…</div>
       ) : rows.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
           {q ? "Bu aramayla eşleşen sipariş yok." : "Henüz sipariş yok."}
         </div>
       ) : (
@@ -113,7 +113,7 @@ export default function SiparislerimPage() {
           {rows.map(o => {
             const badgeCls = (o.statusCode && STATUS_BADGE[o.statusCode]) || "bg-slate-100 text-slate-600";
             return (
-              <div key={o.id} className="bg-white border border-slate-200 rounded-xl p-3 hover:border-indigo-300 transition">
+              <div key={o.id} className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-3 hover:border-indigo-300 transition">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">

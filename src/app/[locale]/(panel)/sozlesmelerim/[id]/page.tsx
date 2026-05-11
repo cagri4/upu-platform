@@ -109,7 +109,7 @@ export default function ContractDetailPage() {
   }
   if (status === "error" || !contract) {
     return (
-      <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow-sm">
         <div className="text-4xl mb-3">⚠️</div>
         <p className="text-slate-600 text-sm">{error}</p>
         <a href={token ? `/tr/sozlesmelerim?t=${encodeURIComponent(token)}` : `/tr/sozlesmelerim`} className="inline-block mt-4 text-emerald-600 underline text-sm">
@@ -144,7 +144,7 @@ export default function ContractDetailPage() {
       </div>
 
       {/* Metadata */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
         <p className="text-xs text-slate-500 font-semibold mb-2">📊 Bilgiler</p>
         <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
           <div>
@@ -199,7 +199,7 @@ export default function ContractDetailPage() {
       {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
       {/* Tam sözleşme metni */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
         <p className="text-xs text-slate-500 font-semibold mb-3">📝 Sözleşme Metni</p>
         {generatedText ? (
           <div
@@ -215,7 +215,7 @@ export default function ContractDetailPage() {
 
       {/* İmza görseli */}
       {contract.owner_signature_url && (
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
           <p className="text-xs text-slate-500 font-semibold mb-2">✍️ Müşteri İmzası</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={contract.owner_signature_url} alt="İmza" className="max-w-full h-auto border border-slate-200 rounded-lg" />
@@ -226,7 +226,7 @@ export default function ContractDetailPage() {
       {/* Geri buton */}
       <a
         href={token ? `/tr/sozlesmelerim?t=${encodeURIComponent(token)}` : `/tr/sozlesmelerim`}
-        className="block w-full bg-white border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium text-center hover:bg-slate-50 transition"
+        className="block w-full bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium text-center hover:bg-slate-50 transition"
       >
         ← Sözleşmelerime Dön
       </a>

@@ -22,7 +22,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
       </div>
 
       {/* Right: Form */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-white">
+      <div className="flex-1 flex items-center justify-center p-6 bg-white dark:bg-slate-800">
         <div className="w-full max-w-md">
           {/* Mobile: show brand */}
           <div className="lg:hidden text-center mb-8">

@@ -126,7 +126,7 @@ export default function DestekDetayPage() {
 
       <div ref={threadRef} className="space-y-3 max-h-[60vh] overflow-y-auto px-1">
         {messages.length === 0 ? (
-          <div className="bg-white rounded-2xl p-6 text-center text-slate-500 text-sm shadow-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center text-slate-500 text-sm shadow-sm">
             Henüz mesaj yok.
           </div>
         ) : (
@@ -137,7 +137,7 @@ export default function DestekDetayPage() {
                 <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 shadow-sm ${
                   fromUser
                     ? "bg-emerald-600 text-white rounded-br-sm"
-                    : "bg-white text-slate-900 rounded-bl-sm border border-slate-200"
+                    : "bg-white dark:bg-slate-800 text-slate-900 rounded-bl-sm border border-slate-200"
                 }`}>
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.message}</p>
                   <p className={`text-[10px] mt-1.5 ${fromUser ? "text-emerald-100" : "text-slate-400"}`}>
@@ -155,7 +155,7 @@ export default function DestekDetayPage() {
           Bu talep çözüldü. Yeni bir konu için "Destek" sayfasından yeni talep açabilirsiniz.
         </div>
       ) : (
-        <form onSubmit={handleSend} className="bg-white rounded-2xl p-3 shadow-sm space-y-2 sticky bottom-0">
+        <form onSubmit={handleSend} className="bg-white dark:bg-slate-800 rounded-2xl p-3 shadow-sm space-y-2 sticky bottom-0">
           <textarea
             value={reply}
             onChange={e => setReply(e.target.value)}
@@ -182,7 +182,7 @@ export default function DestekDetayPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
       {children}
     </div>
   );

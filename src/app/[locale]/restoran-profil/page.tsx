@@ -136,7 +136,7 @@ export default function RestoranProfilPage() {
   if (status === "error") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="max-w-md bg-white rounded-2xl shadow p-8 text-center">
+        <div className="max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow p-8 text-center">
           <div className="text-5xl mb-4">⚠️</div>
           <h1 className="text-xl font-semibold text-gray-900 mb-2">Bir sorun var</h1>
           <p className="text-gray-600">{error || "Beklenmedik hata."}</p>
@@ -149,7 +149,7 @@ export default function RestoranProfilPage() {
     const waUrl = `https://wa.me/${BOT_WA_NUMBER}?text=brifing`;
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
-        <div className="max-w-md bg-white rounded-2xl shadow p-8 text-center">
+        <div className="max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow p-8 text-center">
           <div className="text-5xl mb-4">🎉</div>
           <h1 className="text-2xl font-semibold text-gray-900 mb-2">Hoş geldiniz!</h1>
           <p className="text-gray-600 mb-6">
@@ -175,7 +175,7 @@ export default function RestoranProfilPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-lg mx-auto bg-white rounded-2xl shadow p-6 sm:p-8">
+      <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow p-6 sm:p-8">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-900">Restoran Profili</h1>
           <p className="text-sm text-gray-500 mt-1">Sizi tanıyalım — 2-3 dakika sürer.</p>
@@ -310,7 +310,7 @@ function BriefingChip({ label, active, onClick }: { label: string; active: boole
       className={`flex-1 px-4 py-2 rounded-lg border text-sm font-medium transition ${
         active
           ? "bg-orange-600 text-white border-orange-600"
-          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+          : "bg-white dark:bg-slate-800 text-gray-700 border-gray-300 hover:bg-gray-50"
       }`}
     >
       {label}

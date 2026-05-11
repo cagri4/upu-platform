@@ -413,7 +413,7 @@ export default function MulkEkleFormPage() {
               {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet"}
             </button>
             <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`}
-              className="flex items-center justify-center bg-white border border-slate-300 text-slate-700 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition">
+              className="flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition">
               🖥 Panele
             </a>
           </div>
@@ -427,12 +427,12 @@ const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-3 text-base 
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
+  return <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm space-y-4">
     <h2 className="font-bold text-slate-900">{title}</h2>
     {children}
   </section>;
@@ -456,7 +456,7 @@ function Pills({ label, value, options, onPick, cols = 2 }: { label: string; val
     <div className={`grid ${colClass} gap-2`}>
       {options.map(o => (
         <button type="button" key={o.id} onClick={() => onPick(value === o.id ? "" : o.id)}
-          className={`py-2 rounded-lg text-sm font-medium border-2 ${value === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-900 border-slate-300"}`}>
+          className={`py-2 rounded-lg text-sm font-medium border-2 ${value === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 border-slate-300"}`}>
           {o.label}
         </button>
       ))}
@@ -471,7 +471,7 @@ function MultiPills({ label, values, options, onToggle, cols = 2 }: { label: str
     <div className={`grid ${colClass} gap-2`}>
       {options.map(o => (
         <button type="button" key={o} onClick={() => onToggle(o)}
-          className={`py-2 rounded-lg text-xs font-medium border-2 ${values.includes(o) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-900 border-slate-300"}`}>
+          className={`py-2 rounded-lg text-xs font-medium border-2 ${values.includes(o) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 border-slate-300"}`}>
           {o}
         </button>
       ))}
@@ -501,7 +501,7 @@ function GeoPicker({ city, district, neighborhood, onCity, onDistrict, onNeighbo
       .then(r => r.json()).then(d => setMahalleler(d.mahalleler || []));
   }, [city, district]);
 
-  const sel = "w-full border border-slate-300 rounded-lg px-3 py-3 mb-4 text-base text-slate-900 bg-white";
+  const sel = "w-full border border-slate-300 rounded-lg px-3 py-3 mb-4 text-base text-slate-900 bg-white dark:bg-slate-800";
   return (
     <>
       <div>
@@ -534,11 +534,11 @@ function YesNo({ label, value, onPick }: { label: string; value: boolean | null;
     <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
     <div className="grid grid-cols-3 gap-2">
       <button type="button" onClick={() => onPick(true)}
-        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === true ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-900 border-slate-300"}`}>Evet</button>
+        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === true ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 border-slate-300"}`}>Evet</button>
       <button type="button" onClick={() => onPick(false)}
-        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === false ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-900 border-slate-300"}`}>Hayır</button>
+        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === false ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 border-slate-300"}`}>Hayır</button>
       <button type="button" onClick={() => onPick(null)}
-        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === null ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-900 border-slate-300"}`}>Belirtme</button>
+        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === null ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 border-slate-300"}`}>Belirtme</button>
     </div>
   </div>;
 }

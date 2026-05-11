@@ -36,8 +36,19 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html className={`${inter.className} h-full antialiased bg-white`}>
-      <body className="min-h-full flex flex-col bg-white">
+    <html className={`${inter.className} h-full antialiased bg-white dark:bg-slate-900`} suppressHydrationWarning>
+      <head>
+        {/* FOUC engel — localStorage'tan tema oku, dark ise html'e class ekle.
+            React hydrate olmadan önce çalışır, sayfa beyazdan siyaha
+            "zıplamaz". */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();",
+          }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
         {children}
         <PwaUpdateBanner />
       </body>

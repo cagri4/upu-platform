@@ -40,7 +40,7 @@ export default function YardimIndexPage() {
             <a
               key={e.command}
               href={`/tr/yardim/${e.command}${token ? `?t=${token}` : ""}`}
-              className="block bg-white rounded-2xl shadow-sm p-4 hover:bg-slate-100 active:scale-95 transition"
+              className="block bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-4 hover:bg-slate-100 active:scale-95 transition"
             >
               <div className="font-semibold text-slate-900">{e.title}</div>
               <div className="text-xs text-slate-500 mt-1">{e.summary}</div>
@@ -59,6 +59,6 @@ export default function YardimIndexPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

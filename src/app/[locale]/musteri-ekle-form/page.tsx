@@ -188,7 +188,7 @@ export default function MusteriEkleFormPage() {
               <div className="grid grid-cols-2 gap-2">
                 {[{id:"satilik",label:"Satılık"},{id:"kiralik",label:"Kiralık"}].map(o => (
                   <button type="button" key={o.id} onClick={() => toggleLookingFor(o.id)}
-                    className={`py-2.5 rounded-lg text-sm font-medium border-2 ${lookingFor.includes(o.id) ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                    className={`py-2.5 rounded-lg text-sm font-medium border-2 ${lookingFor.includes(o.id) ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
                     {o.label}
                   </button>
                 ))}
@@ -201,7 +201,7 @@ export default function MusteriEkleFormPage() {
               <div className="grid grid-cols-3 gap-2">
                 {PROPERTY_TYPES.map(t => (
                   <button type="button" key={t.id} onClick={() => toggleType(t.id)}
-                    className={`py-2 rounded-lg text-xs font-medium border-2 ${propertyTypes.includes(t.id) ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                    className={`py-2 rounded-lg text-xs font-medium border-2 ${propertyTypes.includes(t.id) ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
                     {t.label}
                   </button>
                 ))}
@@ -214,7 +214,7 @@ export default function MusteriEkleFormPage() {
               <div className="grid grid-cols-3 gap-2">
                 {ROOMS.map(r => (
                   <button type="button" key={r} onClick={() => toggleRoom(r)}
-                    className={`py-2 rounded-lg text-sm font-medium border-2 ${rooms.includes(r) ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                    className={`py-2 rounded-lg text-sm font-medium border-2 ${rooms.includes(r) ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
                     {r}
                   </button>
                 ))}
@@ -259,7 +259,7 @@ export default function MusteriEkleFormPage() {
               {status === "saving" ? "Kaydediliyor..." : (isEdit ? "✅ Güncelle" : "✅ Kaydet")}
             </button>
             <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`}
-              className="flex items-center justify-center bg-white border border-slate-300 text-slate-700 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition">
+              className="flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition">
               🖥 Panele
             </a>
           </div>
@@ -272,7 +272,7 @@ export default function MusteriEkleFormPage() {
 const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 placeholder:text-slate-400";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+  return <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
     <h2 className="font-semibold text-slate-900 text-sm">{title}</h2>
     {children}
   </section>;
@@ -291,7 +291,7 @@ function Pills({ label, value, options, onPick, cols }: { label: string; value: 
     <div className={`grid gap-2 ${cols === 3 ? "grid-cols-3" : cols === 4 ? "grid-cols-4" : "grid-cols-2"}`}>
       {options.map(o => (
         <button type="button" key={o.id} onClick={() => onPick(o.id)}
-          className={`py-2.5 rounded-lg text-sm font-medium border-2 ${value === o.id ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-700 border-slate-300"}`}>
+          className={`py-2.5 rounded-lg text-sm font-medium border-2 ${value === o.id ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
           {o.label}
         </button>
       ))}
@@ -301,6 +301,6 @@ function Pills({ label, value, options, onPick, cols }: { label: string; value: 
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

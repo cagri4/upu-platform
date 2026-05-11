@@ -65,7 +65,7 @@ function Grid({ token }: { token: string }) {
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4">{error}</div>}
       {!items && !error && <div className="text-slate-500">Yükleniyor…</div>}
       {items && items.length === 0 && (
-        <div className="bg-white rounded-2xl shadow border border-slate-200 p-8 text-center text-slate-500">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 p-8 text-center text-slate-500">
           Henüz masa tanımlanmamış.
         </div>
       )}
@@ -79,7 +79,7 @@ function Grid({ token }: { token: string }) {
               return (
                 <div
                   key={t.id}
-                  className={`bg-white rounded-xl border-2 ${s.cls.split(" ").find(c => c.startsWith("border-")) || "border-slate-200"} p-4 text-center shadow-sm`}
+                  className={`bg-white dark:bg-slate-800 rounded-xl border-2 ${s.cls.split(" ").find(c => c.startsWith("border-")) || "border-slate-200"} p-4 text-center shadow-sm`}
                 >
                   <div className="text-3xl mb-1">{s.icon}</div>
                   <div className="text-xl font-bold text-slate-900">Masa {t.label}</div>

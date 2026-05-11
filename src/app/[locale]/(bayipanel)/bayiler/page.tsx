@@ -181,7 +181,7 @@ export default function BayilerPage() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-        <div className="max-w-md w-full bg-white border border-rose-200 rounded-xl p-6 text-center">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 border border-rose-200 rounded-xl p-6 text-center">
           <h1 className="text-lg font-semibold text-rose-700 mb-2">Bağlantı hatası</h1>
           <p className="text-sm text-slate-600">{error}</p>
         </div>
@@ -195,7 +195,7 @@ export default function BayilerPage() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div>
             <h1 className="text-xl font-bold text-slate-900">📋 Bayilerim</h1>
@@ -225,19 +225,19 @@ export default function BayilerPage() {
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             placeholder="🔍 İsim, şehir, telefon ara…"
-            className="flex-1 min-w-[180px] border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+            className="flex-1 min-w-[180px] border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
           />
           <select
             value={status}
             onChange={e => pushParams({ status: e.target.value, page: "1" })}
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
           >
             {STATUS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
           <select
             value={vade}
             onChange={e => pushParams({ vade: e.target.value, page: "1" })}
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
           >
             {VADE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
@@ -248,7 +248,7 @@ export default function BayilerPage() {
         {loading && !data ? (
           <div className="text-center text-sm text-slate-500 py-8">Yükleniyor...</div>
         ) : data && data.rows.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
             Bu filtreyle eşleşen bayi yok.
           </div>
         ) : (
@@ -260,7 +260,7 @@ export default function BayilerPage() {
                 <Link
                   key={row.id}
                   href={detailHref}
-                  className="block bg-white border border-slate-200 rounded-xl p-3 hover:border-indigo-300 hover:shadow-sm transition"
+                  className="block bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-3 hover:border-indigo-300 hover:shadow-sm transition"
                 >
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
@@ -330,7 +330,7 @@ export default function BayilerPage() {
             <select
               value={pageSize}
               onChange={e => pushParams({ pageSize: e.target.value, page: "1" })}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
             >
               {PAGE_SIZE_OPTIONS.map(s => <option key={s} value={s}>{s} / sayfa</option>)}
             </select>
@@ -339,7 +339,7 @@ export default function BayilerPage() {
               <button
                 onClick={() => pushParams({ page: String(Math.max(1, page - 1)) })}
                 disabled={page <= 1}
-                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white disabled:opacity-40"
+                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white dark:bg-slate-800 disabled:opacity-40"
               >
                 ‹ Önceki
               </button>
@@ -349,7 +349,7 @@ export default function BayilerPage() {
               <button
                 onClick={() => pushParams({ page: String(Math.min(data.pages, page + 1)) })}
                 disabled={page >= data.pages}
-                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white disabled:opacity-40"
+                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white dark:bg-slate-800 disabled:opacity-40"
               >
                 Sonraki ›
               </button>

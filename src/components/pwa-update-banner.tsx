@@ -84,7 +84,7 @@ export function PwaUpdateBanner() {
         </button>
         <button
           onClick={applyReload}
-          className="bg-white text-indigo-700 hover:bg-indigo-50 text-sm font-semibold px-3 py-1.5 rounded-lg shadow"
+          className="bg-white dark:bg-slate-800 text-indigo-700 hover:bg-indigo-50 text-sm font-semibold px-3 py-1.5 rounded-lg shadow"
         >
           Yenile
         </button>

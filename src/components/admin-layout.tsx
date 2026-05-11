@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { QrScannerModal } from "@/components/qr-scanner-modal";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
 import { NotificationBell } from "@/components/notification-bell";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 /**
  * AdminLayout chrome context — sayfalardan QR scanner modalı tetiklemek
@@ -294,7 +295,7 @@ export function AdminLayout({
       {/* Main column — tablet pushes 64px, desktop pushes 256px */}
       <div className="md:ml-16 lg:ml-64">
         {/* Topbar */}
-        <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
+        <header className="bg-white dark:bg-slate-800 border-b border-slate-200 sticky top-0 z-20">
           <div className="flex items-center gap-3 px-4 py-3">
             <button
               className={`md:hidden p-2 -ml-2 text-slate-700 focus:outline-none focus:ring-2 ${accent.focusRing} rounded-lg`}
@@ -307,6 +308,7 @@ export function AdminLayout({
             </button>
             <div className="flex-1" />
             <div className="flex items-center gap-2 text-slate-500">
+              <ThemeToggle />
               <NotificationBell token={searchParamsToken} />
               <a
                 href={`https://wa.me/${botPhone}`}

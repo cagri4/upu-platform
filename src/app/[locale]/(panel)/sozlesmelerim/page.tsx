@@ -41,7 +41,7 @@ export default function SozlesmelerimPage() {
   }
   if (status === "error") {
     return (
-      <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow-sm">
         <div className="text-4xl mb-3">⚠️</div>
         <p className="text-slate-600 text-sm">{error}</p>
       </div>
@@ -65,7 +65,7 @@ export default function SozlesmelerimPage() {
       </a>
 
       {items.length === 0 ? (
-        <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
           <div className="text-5xl mb-3">📋</div>
           <p className="font-semibold text-slate-900 mb-1">Henüz sözleşme eklemediniz</p>
           <p className="text-slate-500 text-sm">İlk sözleşmenizi oluşturmak için yukarıdaki butonu kullanın.</p>
@@ -82,7 +82,7 @@ export default function SozlesmelerimPage() {
             const commission = cd.commission as number | undefined;
             const duration = cd.duration as number | undefined;
             return (
-              <div key={c.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div key={c.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="min-w-0 flex-1">

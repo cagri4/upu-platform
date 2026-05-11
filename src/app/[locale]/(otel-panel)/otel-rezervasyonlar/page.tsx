@@ -50,13 +50,13 @@ export default function OtelRezervasyonlarPage() {
 
       {list === null && <div className="text-sm text-slate-500">⏳ Yükleniyor...</div>}
       {list?.length === 0 && (
-        <div className="bg-white rounded-2xl p-6 text-center text-sm text-slate-600 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center text-sm text-slate-600 shadow-sm">
           Henüz rezervasyon yok. WhatsApp&apos;ta <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">rezervasyonekle</span> komutuyla ekleyebilirsiniz.
         </div>
       )}
 
       {list && list.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
           <ul className="divide-y divide-slate-100">
             {list.map((r) => {
               const status = STATUS_LABEL[r.status || ""] || { label: r.status || "—", color: "bg-slate-100 text-slate-700" };

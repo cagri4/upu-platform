@@ -139,7 +139,7 @@ export default function BayiCalisanDavetPage() {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 mb-4 space-y-3">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">İsim Soyisim *</label>
             <input value={name} onChange={e => setName(e.target.value)}
@@ -169,7 +169,7 @@ export default function BayiCalisanDavetPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 mb-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-slate-800">Yetkiler</h2>
             <span className="text-xs text-slate-500">{selected.size} seçili</span>
@@ -192,7 +192,7 @@ export default function BayiCalisanDavetPage() {
                       className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm ${
                         selected.has(it.id)
                           ? "bg-emerald-50 border-emerald-300"
-                          : "bg-white border-slate-200"
+                          : "bg-white dark:bg-slate-800 border-slate-200"
                       }`}>
                       <input type="checkbox"
                         checked={selected.has(it.id)}
@@ -214,7 +214,7 @@ export default function BayiCalisanDavetPage() {
           </button>
           <a
             href={token ? `/tr/bayi-panel?t=${encodeURIComponent(token)}` : `https://wa.me/${BOT_WA_NUMBER}`}
-            className="bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-center active:scale-95 hover:bg-slate-50 flex items-center justify-center"
+            className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-center active:scale-95 hover:bg-slate-50 flex items-center justify-center"
           >
             🏠 Panele Dön
           </a>
@@ -228,6 +228,6 @@ export default function BayiCalisanDavetPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

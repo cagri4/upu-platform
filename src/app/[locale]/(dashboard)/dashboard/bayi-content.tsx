@@ -352,7 +352,7 @@ function InsightPanel({ userId, data, loading, onLoad }: {
           {data.topCommands.map(cmd => (
             <div key={cmd.name} className="flex justify-between text-sm">
               <span className="text-slate-600">{cmd.name}</span>
-              <span className="text-slate-400 bg-white px-2 py-0.5 rounded text-xs">{cmd.count}</span>
+              <span className="text-slate-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded text-xs">{cmd.count}</span>
             </div>
           ))}
           {data.topCommands.length === 0 && <p className="text-xs text-slate-400">Henuz veri yok</p>}

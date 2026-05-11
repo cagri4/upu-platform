@@ -120,7 +120,7 @@ function Dashboard({ token, restaurantName }: { token: string; restaurantName: s
 
           {/* Kritik stok detay */}
           {kpis.critical_stock_items.length > 0 && (
-            <div className="bg-white rounded-2xl shadow border border-slate-200 p-5 mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 p-5 mb-6">
               <h2 className="text-base font-semibold text-slate-900 mb-3 flex items-center gap-2">
                 🔴 Kritik Stok Kalemleri
               </h2>
@@ -138,7 +138,7 @@ function Dashboard({ token, restaurantName }: { token: string; restaurantName: s
           )}
 
           {/* Quick actions */}
-          <div className="bg-white rounded-2xl shadow border border-slate-200 p-5">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 p-5">
             <h2 className="text-base font-semibold text-slate-900 mb-3">Hızlı İşlemler</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <QuickAction icon="📅" label="Yeni rezervasyon" href={`https://wa.me/31644967207?text=rezervasyonekle`} external />

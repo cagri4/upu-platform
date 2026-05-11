@@ -15,7 +15,7 @@ export default function CirolarimPage() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4">
         <h1 className="text-xl font-bold text-slate-900">📊 Cirolarım</h1>
         <p className="text-xs text-slate-500 mt-0.5">Aylık ciro, sipariş trend, en çok satan ürünler.</p>
       </div>
@@ -25,7 +25,7 @@ export default function CirolarimPage() {
         <h2 className="font-semibold text-slate-900 mb-1">Yakında</h2>
         <p className="text-sm text-slate-600 leading-relaxed mb-3">
           Ciro grafikleri, satış trendleri ve detaylı raporlar yakında. Şimdilik WhatsApp&apos;ta
-          <span className="font-mono bg-white px-1.5 py-0.5 rounded mx-1 text-xs">rapor</span>
+          <span className="font-mono bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded mx-1 text-xs">rapor</span>
           komutu ile sektörel özet rapor alabilirsiniz.
         </p>
         {token && (

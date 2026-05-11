@@ -75,7 +75,7 @@ function List({ token }: { token: string }) {
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4">{error}</div>}
       {!items && !error && <div className="text-slate-500">Yükleniyor…</div>}
       {items && items.length === 0 && (
-        <div className="bg-white rounded-2xl shadow border border-slate-200 p-8 text-center text-slate-500">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 p-8 text-center text-slate-500">
           Bugün ve yarın için rezervasyon yok.
         </div>
       )}
@@ -87,7 +87,7 @@ function List({ token }: { token: string }) {
             {" · "}
             {groups[day].length} rezervasyon
           </h2>
-          <div className="bg-white rounded-2xl shadow border border-slate-200 divide-y divide-slate-100">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 divide-y divide-slate-100">
             {groups[day].map(r => {
               const t = new Date(r.reserved_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
               const badge = STATUS_BADGE[r.status] || { label: r.status, cls: "bg-slate-100 text-slate-700" };

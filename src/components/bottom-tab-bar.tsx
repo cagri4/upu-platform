@@ -31,7 +31,7 @@ export function BottomTabBar({ tabs, token, onMore, accentClass }: BottomTabBarP
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-slate-800 border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]"
       aria-label="Hızlı erişim"
     >
       <div className="grid grid-cols-5">

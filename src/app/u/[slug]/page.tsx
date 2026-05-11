@@ -208,13 +208,13 @@ export default async function AgentLandingPage({ params, searchParams }: PagePro
         <div className={`max-w-5xl mx-auto px-4 py-8 space-y-8 ${isOwner ? "pt-20" : ""}`}>
 
           {/* Hero — büyük foto + büyük tipografi */}
-          <section className="relative bg-white rounded-3xl shadow-sm overflow-hidden">
+          <section className="relative bg-white dark:bg-slate-800 rounded-3xl shadow-sm overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-5">
               {/* Sol: foto kolonu (2/5) */}
               <div className="md:col-span-2 bg-[#B89B89] flex items-center justify-center p-6 md:p-10 min-h-[280px] relative">
                 <div className="absolute top-4 left-4 w-6 h-6 bg-white/30"></div>
                 <div className="absolute bottom-4 right-4 w-10 h-10 bg-white/20"></div>
-                <div className="relative w-44 h-56 md:w-56 md:h-72 bg-white shadow-2xl overflow-hidden">
+                <div className="relative w-44 h-56 md:w-56 md:h-72 bg-white dark:bg-slate-800 shadow-2xl overflow-hidden">
                   {agent.photo_url ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={agent.photo_url} alt={name} className="w-full h-full object-cover" />
@@ -259,7 +259,7 @@ export default async function AgentLandingPage({ params, searchParams }: PagePro
           {stats.length > 0 && (
             <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {stats.map((s, i) => (
-                <div key={i} className="bg-white rounded-2xl shadow-sm p-5 text-center">
+                <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 text-center">
                   <p className="text-3xl md:text-4xl font-black text-[#B89B89] leading-none">{s.value}</p>
                   <p className="text-xs uppercase tracking-wider text-stone-500 mt-2 font-semibold">{s.label}</p>
                 </div>
@@ -268,7 +268,7 @@ export default async function AgentLandingPage({ params, searchParams }: PagePro
           )}
 
           {/* About — split: text sol + decorative photo sağ */}
-          <section className="bg-white rounded-3xl shadow-sm overflow-hidden">
+          <section className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2">
               <div className="p-8 md:p-12">
                 <p className="text-xs uppercase tracking-[0.25em] text-[#B89B89] mb-3 font-bold">Hakkımızda</p>
@@ -307,7 +307,7 @@ export default async function AgentLandingPage({ params, searchParams }: PagePro
                     href={p.sunum_token ? `/d/p/${p.sunum_token}` : "#"}
                     target={p.sunum_token ? "_blank" : undefined}
                     rel="noopener noreferrer"
-                    className={`bg-white rounded-2xl shadow-sm overflow-hidden ${p.sunum_token ? "hover:shadow-md active:scale-[0.99]" : "cursor-default"} transition`}
+                    className={`bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden ${p.sunum_token ? "hover:shadow-md active:scale-[0.99]" : "cursor-default"} transition`}
                   >
                     <div className="aspect-[4/3] bg-stone-100">
                       {p.cover ? (
@@ -344,7 +344,7 @@ export default async function AgentLandingPage({ params, searchParams }: PagePro
           )}
 
           {/* Contact closing — büyük "İLETİŞİM" + foto + dekoratif */}
-          <section className="bg-white rounded-3xl shadow-sm overflow-hidden">
+          <section className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2">
               <div className="relative p-8 md:p-12 flex flex-col justify-center">
                 <div className="absolute top-8 left-8 w-20 h-1.5 bg-[#B89B89]"></div>
@@ -383,7 +383,7 @@ export default async function AgentLandingPage({ params, searchParams }: PagePro
                 ) : (
                   <div className="h-full flex items-center justify-center text-6xl text-white/40">🏛️</div>
                 )}
-                <div className="absolute top-4 right-4 w-8 h-8 bg-white"></div>
+                <div className="absolute top-4 right-4 w-8 h-8 bg-white dark:bg-slate-800"></div>
                 <div className="absolute bottom-4 right-12 w-6 h-6 bg-white/50"></div>
               </div>
             </div>

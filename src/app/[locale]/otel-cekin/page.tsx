@@ -157,7 +157,7 @@ export default function OtelCekinPage() {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 mb-4 text-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 text-sm">
           <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Rezervasyon</div>
           <div className="space-y-1">
             <div>👤 <strong>{init.reservation.guest_name || "Misafir"}</strong></div>
@@ -167,7 +167,7 @@ export default function OtelCekinPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 mb-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4">
           <h2 className="text-sm font-bold text-slate-800 mb-3">Kimlik Fotoğrafı *</h2>
           {idPhotoUrl ? (
             <div className="space-y-2">
@@ -191,7 +191,7 @@ export default function OtelCekinPage() {
           {status === "uploading" && <p className="text-xs text-slate-500 mt-2">⏳ Yükleniyor...</p>}
         </div>
 
-        <div className="bg-white rounded-2xl p-4 mb-4 space-y-3">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 space-y-3">
           <h2 className="text-sm font-bold text-slate-800">Tercihleriniz (opsiyonel)</h2>
 
           <div>
@@ -232,18 +232,18 @@ export default function OtelCekinPage() {
             <label className="block text-xs font-medium text-slate-600 mb-1">Sigara</label>
             <div className="flex gap-2">
               <button type="button" onClick={() => setSmoking(smoking === "no" ? "" : "no")}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm border ${smoking === "no" ? "bg-rose-50 border-rose-300" : "bg-white border-slate-200"}`}>
+                className={`flex-1 px-3 py-2 rounded-lg text-sm border ${smoking === "no" ? "bg-rose-50 border-rose-300" : "bg-white dark:bg-slate-800 border-slate-200"}`}>
                 Sigarasız oda
               </button>
               <button type="button" onClick={() => setSmoking(smoking === "yes" ? "" : "yes")}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm border ${smoking === "yes" ? "bg-rose-50 border-rose-300" : "bg-white border-slate-200"}`}>
+                className={`flex-1 px-3 py-2 rounded-lg text-sm border ${smoking === "yes" ? "bg-rose-50 border-rose-300" : "bg-white dark:bg-slate-800 border-slate-200"}`}>
                 Sigara serbest
               </button>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 mb-4 space-y-3 text-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 space-y-3 text-sm">
           <label className="flex items-start gap-2">
             <input type="checkbox" checked={kvkk} onChange={e => setKvkk(e.target.checked)} className="w-4 h-4 mt-0.5 accent-rose-600" />
             <span className="flex-1">
@@ -277,6 +277,6 @@ export default function OtelCekinPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

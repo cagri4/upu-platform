@@ -102,7 +102,7 @@ export default function OtelDashboardPage() {
       </div>
 
       {/* Quick actions hint */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm text-sm text-slate-600">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm text-sm text-slate-600">
         <p className="font-semibold text-slate-900 mb-2">💡 Hızlı işlem</p>
         <p>
           Yeni rezervasyon eklemek için WhatsApp&apos;ta <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">rezervasyonekle</span> yazın, ya da telefon eden misafirin bilgilerini WA üzerinden tek seferde sisteme alın. Misafir geldiğinde online çek-in eksikse <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">cekinlink</span> komutuyla anında link gönderebilirsiniz.

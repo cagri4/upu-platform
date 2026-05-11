@@ -40,7 +40,7 @@ export default function BildirimlerPage() {
         </div>
 
         {/* Tab strip */}
-        <div className="grid grid-cols-2 bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="grid grid-cols-2 bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
           {(["history", "preferences"] as Tab[]).map(t => (
             <button
               key={t}
@@ -48,7 +48,7 @@ export default function BildirimlerPage() {
               className={`py-3 text-sm font-medium transition ${
                 tab === t
                   ? "bg-amber-600 text-white"
-                  : "bg-white text-slate-600 hover:bg-slate-50"
+                  : "bg-white dark:bg-slate-800 text-slate-600 hover:bg-slate-50"
               }`}
             >
               {t === "history" ? "Geçmiş" : "Tercihler"}

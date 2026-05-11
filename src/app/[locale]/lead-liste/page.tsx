@@ -112,14 +112,14 @@ export default function LeadListePage() {
         <div className="grid grid-cols-3 gap-2 mb-4">
           {(["pending", "done", "all"] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`py-2 rounded-lg text-sm font-medium border-2 ${filter === f ? "bg-orange-600 text-white border-orange-600" : "bg-white text-slate-700 border-slate-300"}`}>
+              className={`py-2 rounded-lg text-sm font-medium border-2 ${filter === f ? "bg-orange-600 text-white border-orange-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
               {f === "pending" ? "Aranacak" : f === "done" ? "İşaretli" : "Tümü"}
             </button>
           ))}
         </div>
 
         {visible.length === 0 && (
-          <div className="bg-white rounded-2xl p-8 text-center text-slate-500">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center text-slate-500">
             {filter === "pending" ? "✅ Tüm lead'ler işaretlenmiş. Aferin!" : "Liste boş."}
           </div>
         )}
@@ -145,7 +145,7 @@ function LeadCard({ lead, saving, onAction }: { lead: Lead; saving: boolean; onA
   const callMeta = lead.call ? STATUS_META[lead.call.status] : null;
 
   return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
       <div className="flex justify-between items-start gap-2 mb-2">
         <h3 className="font-bold text-slate-900 leading-tight flex-1">{lead.title}</h3>
         {callMeta && (
@@ -207,6 +207,6 @@ function LeadCard({ lead, saving, onAction }: { lead: Lead; saving: boolean; onA
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

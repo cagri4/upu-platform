@@ -56,7 +56,7 @@ export function ShareFAB({ title }: { title: string }) {
       </button>
 
       {open && (
-        <div className="fixed bottom-24 left-5 z-40 bg-white rounded-2xl shadow-xl p-3 w-64 space-y-2 border border-slate-200">
+        <div className="fixed bottom-24 left-5 z-40 bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-3 w-64 space-y-2 border border-slate-200">
           <button
             onClick={() => { whatsapp(); setOpen(false); }}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-green-50 active:bg-green-100 text-left"

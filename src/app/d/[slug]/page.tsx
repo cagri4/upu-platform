@@ -138,7 +138,7 @@ export default async function AgentWebsitePage({ params }: PageProps) {
 
   return (
     <html lang="tr">
-      <body className="min-h-screen bg-white text-gray-900 antialiased">
+      <body className="min-h-screen bg-white dark:bg-slate-800 text-gray-900 antialiased">
         {/* ── Sticky Header ─────────────────────────────────────── */}
         <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200">
           <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
@@ -326,7 +326,7 @@ function StatCard({
   theme: ReturnType<typeof getTheme>;
 }) {
   return (
-    <div className="bg-white rounded-xl p-4 text-center shadow-sm">
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 text-center shadow-sm">
       <div className="text-2xl font-bold" style={{ color: theme.primary }}>
         {value}
       </div>
@@ -347,7 +347,7 @@ function PropertyCard({
   const placeholderColor = isSale ? "bg-blue-100" : "bg-orange-100";
 
   return (
-    <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition">
+    <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition">
       <div
         className={`h-36 ${placeholderColor} flex items-center justify-center`}
       >

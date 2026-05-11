@@ -131,7 +131,7 @@ export default function MusterilerimPage() {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="🔍 Müşteri ara (isim, telefon, bölge)"
-              className="flex-1 bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
               aria-label="Müşteri ara"
             />
             <ViewDensityToggle
@@ -144,13 +144,13 @@ export default function MusterilerimPage() {
         )}
 
         {items.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
             <div className="text-5xl mb-3">👥</div>
             <p className="font-semibold text-slate-900 mb-1">Henüz müşteri yok</p>
             <p className="text-slate-500 text-sm">İlk müşterinizi eklemek için yukarıdaki butonu kullanın.</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow-sm">
             <p className="text-slate-500 text-sm">Eşleşen müşteri bulunamadı.</p>
           </div>
         ) : (
@@ -162,7 +162,7 @@ export default function MusterilerimPage() {
               const compact = columns >= 3;
               const mini = columns === 4;
               return (
-                <div key={c.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                <div key={c.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
                   <div className={mini ? "p-2" : compact ? "p-3" : "p-4"}>
                     <div className="flex items-start justify-between gap-2 mb-1.5">
                       <h3 className={`font-semibold text-slate-900 leading-tight flex-1 ${mini ? "text-xs line-clamp-1" : compact ? "text-sm line-clamp-1" : "text-base"}`}>{c.name}</h3>
@@ -209,6 +209,6 @@ export default function MusterilerimPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

@@ -18,7 +18,7 @@ export default function HakkindaPage() {
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl p-6 shadow-sm space-y-3 text-sm text-slate-700 leading-relaxed">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm space-y-3 text-sm text-slate-700 leading-relaxed">
         <p>
           UPUDev, Hollanda merkezli bir Türk teknoloji firmasıdır. Küçük ve orta ölçekli işletmelerin tekrar eden operasyonlarını yapay zeka ile otomatikleştirmek üzere kurulmuştur. Sektörel asistanlarımız (emlak, bayi, otel, market, restoran, site yönetimi) WhatsApp üzerinden çalışır — ekstra uygulama indirmenize gerek yoktur.
         </p>

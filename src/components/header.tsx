@@ -10,7 +10,7 @@ interface HeaderProps {
 
 export function Header({ onMenuClick, userName }: HeaderProps) {
   return (
-    <header className="h-14 border-b border-slate-200 bg-white flex items-center justify-between px-4 shrink-0">
+    <header className="h-14 border-b border-slate-200 bg-white dark:bg-slate-800 flex items-center justify-between px-4 shrink-0">
       <button onClick={onMenuClick} className="lg:hidden text-slate-600 hover:text-slate-900">
         <Menu size={22} />
       </button>

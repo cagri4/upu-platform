@@ -125,7 +125,7 @@ export default function SetupPage() {
   if (status === "error") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-        <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">
           <div className="text-4xl mb-3">⚠️</div>
           <h1 className="text-xl font-bold text-slate-900 mb-2">Hata</h1>
           <p className="text-slate-600 text-sm mb-4">{error}</p>
@@ -138,7 +138,7 @@ export default function SetupPage() {
   if (status === "done") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-        <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">
           <div className="text-5xl mb-3">🎉</div>
           <h1 className="text-xl font-bold text-slate-900 mb-2">Hazırsın!</h1>
           <p className="text-slate-600 text-sm mb-6">Profilin kaydedildi. Şimdi WhatsApp'a dönüp devam edelim.</p>
@@ -165,7 +165,7 @@ export default function SetupPage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Section 1: Search criteria */}
-          <section className="bg-white rounded-2xl p-4 shadow-sm">
+          <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
             <h2 className="font-bold text-slate-900 mb-1">🔍 Arama Kriterleri</h2>
             <p className="text-xs text-slate-500 mb-4">Her sabah sana uygun yeni ilanları göstereceğim.</p>
 
@@ -189,7 +189,7 @@ export default function SetupPage() {
                 { id: "hepsi", label: "Hepsi" },
               ].map((o) => (
                 <button type="button" key={o.id} onClick={() => setListingType(o.id)}
-                  className={`py-3 rounded-lg text-sm font-medium border-2 ${listingType === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                  className={`py-3 rounded-lg text-sm font-medium border-2 ${listingType === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
                   {o.label}
                 </button>
               ))}
@@ -203,7 +203,7 @@ export default function SetupPage() {
                 { id: "hepsi", label: "Hepsi" },
               ].map((o) => (
                 <button type="button" key={o.id} onClick={() => setListedBy(o.id)}
-                  className={`py-3 rounded-lg text-xs font-medium border-2 ${listedBy === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                  className={`py-3 rounded-lg text-xs font-medium border-2 ${listedBy === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
                   {o.label}
                 </button>
               ))}
@@ -211,7 +211,7 @@ export default function SetupPage() {
           </section>
 
           {/* Section 2: Profile */}
-          <section className="bg-white rounded-2xl p-4 shadow-sm">
+          <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
             <h2 className="font-bold text-slate-900 mb-1">👤 Profil Bilgileri</h2>
             <p className="text-xs text-slate-500 mb-4">Sunumlarda imza olarak kullanacağım.</p>
 

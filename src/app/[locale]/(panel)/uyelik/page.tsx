@@ -188,7 +188,7 @@ export default function UyelikPage() {
             <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-3 px-1">Pro Planlar</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {plans.map(p => (
-                <div key={p.id} className={`relative bg-white rounded-2xl p-5 shadow-sm border-2 ${p.id === "pro_yearly" ? "border-violet-400" : "border-slate-200"}`}>
+                <div key={p.id} className={`relative bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border-2 ${p.id === "pro_yearly" ? "border-violet-400" : "border-slate-200"}`}>
                   {p.badge && (
                     <span className="absolute -top-2 right-4 bg-violet-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
                       {p.badge}
@@ -221,7 +221,7 @@ export default function UyelikPage() {
         {/* Plan Karşılaştırması — 3-sütun tablo */}
         <section>
           <p className="text-sm font-bold text-slate-900 mb-3 px-1">Plan Karşılaştırması</p>
-          <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-sm bg-white">
+          <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-sm bg-white dark:bg-slate-800">
             <table className="w-full text-sm table-fixed">
               <thead>
                 <tr className="bg-slate-50 text-slate-700">
@@ -264,7 +264,7 @@ export default function UyelikPage() {
             type="button"
             onClick={() => void handleCancel()}
             disabled={canceling}
-            className="w-full bg-white border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium hover:bg-slate-50 disabled:opacity-60"
+            className="w-full bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium hover:bg-slate-50 disabled:opacity-60"
           >
             {canceling ? "İptal ediliyor..." : "Aboneliği iptal et"}
           </button>
@@ -282,6 +282,6 @@ export default function UyelikPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

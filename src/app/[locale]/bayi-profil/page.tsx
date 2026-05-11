@@ -410,7 +410,7 @@ export default function BayiProfilPage() {
           </button>
           <a
             href={token ? `/tr/bayi-panel?t=${encodeURIComponent(token)}` : `https://wa.me/${BOT_WA_NUMBER}`}
-            className="bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-center active:scale-95 hover:bg-slate-50 flex items-center justify-center"
+            className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-center active:scale-95 hover:bg-slate-50 flex items-center justify-center"
           >
             🏠 Panele Dön
           </a>
@@ -424,7 +424,7 @@ export default function BayiProfilPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl p-4 mb-3 space-y-3">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-3 space-y-3">
       <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wide">{title}</h2>
       {children}
     </div>
@@ -442,6 +442,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

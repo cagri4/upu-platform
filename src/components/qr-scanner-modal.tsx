@@ -151,7 +151,7 @@ export function QrScannerModal({ open, tenantKey, onClose }: QrScannerModalProps
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold text-slate-900">🖥 Bilgisayardan Aç</h2>
           <button

@@ -129,7 +129,7 @@ export default function SozlesmeYapPage() {
 
   if (status === "error") {
     return (
-      <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow-sm">
         <div className="text-4xl mb-3">⚠️</div>
         <h1 className="text-lg font-bold mb-2">Hata</h1>
         <p className="text-slate-600 text-sm">{error}</p>
@@ -145,7 +145,7 @@ export default function SozlesmeYapPage() {
           <h1 className="text-xl font-bold">Sözleşme hazırlanıyor...</h1>
           <p className="text-amber-200 text-sm mt-1">AI 5-10 saniyede taslak metni hazırlıyor.</p>
         </div>
-        <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 text-center shadow-sm">
           <div className="text-5xl animate-pulse mb-4">📝</div>
           <p className="text-sm text-slate-500">Yapay zeka çalışıyor...</p>
         </div>
@@ -167,10 +167,10 @@ export default function SozlesmeYapPage() {
             value={generatedText}
             onChange={e => { setGeneratedText(e.target.value); setEdited(true); }}
             rows={20}
-            className="w-full bg-white border border-slate-300 rounded-2xl p-4 text-sm text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="w-full bg-white dark:bg-slate-800 border border-slate-300 rounded-2xl p-4 text-sm text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-amber-400"
           />
         ) : (
-          <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
             <pre className="whitespace-pre-wrap text-sm text-slate-800 font-sans leading-relaxed">{generatedText}</pre>
           </div>
         )}
@@ -181,7 +181,7 @@ export default function SozlesmeYapPage() {
           <button
             onClick={() => setEditing(v => !v)}
             disabled={status === "saving"}
-            className="flex-1 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition"
+            className="flex-1 bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition"
           >
             {editing ? "👁 Önizleme" : "✏️ Düzenle"}
           </button>
@@ -196,7 +196,7 @@ export default function SozlesmeYapPage() {
 
         <button
           onClick={() => setStatus("select")}
-          className="w-full bg-white border border-slate-300 text-slate-600 py-2 rounded-xl text-xs hover:bg-slate-50 transition"
+          className="w-full bg-white dark:bg-slate-800 border border-slate-300 text-slate-600 py-2 rounded-xl text-xs hover:bg-slate-50 transition"
         >
           ← Geri (yeniden seç)
         </button>
@@ -207,7 +207,7 @@ export default function SozlesmeYapPage() {
   if (status === "done") {
     return (
       <div className="space-y-5">
-        <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
           <div className="text-5xl mb-3">📝</div>
           <h1 className="text-xl font-bold mb-2">Sözleşme oluşturuldu!</h1>
           <p className="text-slate-600 text-sm mb-4">İmza linki müşterinize iletilebilir.</p>
@@ -241,7 +241,7 @@ export default function SozlesmeYapPage() {
         </a>
         <a
           href={`/tr/panel?t=${encodeURIComponent(token)}`}
-          className="block w-full bg-white border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium text-center hover:bg-slate-50 transition"
+          className="block w-full bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium text-center hover:bg-slate-50 transition"
         >
           🖥 Panele Dön
         </a>
@@ -259,7 +259,7 @@ export default function SozlesmeYapPage() {
       </div>
 
       {/* Mülk seç */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
         <label className="block text-sm font-semibold text-slate-900 mb-2">🏠 Mülk seç *</label>
         {props.length === 0 ? (
           <p className="text-sm text-slate-500">Henüz mülk yok. Önce mülk eklemelisiniz.</p>
@@ -267,7 +267,7 @@ export default function SozlesmeYapPage() {
           <select
             value={selectedPropId}
             onChange={e => setSelectedPropId(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 bg-white"
+            className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 bg-white dark:bg-slate-800"
           >
             <option value="">— Seçin —</option>
             {props.map(p => {
@@ -284,7 +284,7 @@ export default function SozlesmeYapPage() {
       </div>
 
       {/* Müşteri seç */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
         <label className="block text-sm font-semibold text-slate-900 mb-2">👤 Müşteri seç *</label>
         {customers.length === 0 ? (
           <p className="text-sm text-slate-500">Henüz müşteri yok. Önce müşteri eklemelisiniz.</p>
@@ -292,7 +292,7 @@ export default function SozlesmeYapPage() {
           <select
             value={selectedCustId}
             onChange={e => setSelectedCustId(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 bg-white"
+            className="w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 bg-white dark:bg-slate-800"
           >
             <option value="">— Seçin —</option>
             {customers.map(c => (
@@ -305,7 +305,7 @@ export default function SozlesmeYapPage() {
       </div>
 
       {/* Parametreler */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
         <p className="text-sm font-semibold text-slate-900">⚙️ Sözleşme parametreleri</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -347,7 +347,7 @@ export default function SozlesmeYapPage() {
         </button>
         <a
           href={`/tr/panel?t=${encodeURIComponent(token)}`}
-          className="flex items-center justify-center bg-white border border-slate-300 text-slate-700 px-4 py-4 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition whitespace-nowrap"
+          className="flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 px-4 py-4 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition whitespace-nowrap"
         >
           🖥 Panele
         </a>

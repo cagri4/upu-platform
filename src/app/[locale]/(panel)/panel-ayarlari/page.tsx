@@ -93,7 +93,7 @@ export default function PanelAyarlariPage() {
         </p>
       </div>
 
-      <section className="bg-white rounded-2xl shadow-sm p-5">
+      <section className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5">
         <div className="flex items-baseline justify-between flex-wrap gap-2 mb-1">
           <h2 className="text-lg font-bold text-slate-900">Alt Sekme Çubuğu</h2>
           <span className="text-xs text-slate-500">{selected.length} / {MAX_TABS} sekme seçili</span>
@@ -120,7 +120,7 @@ export default function PanelAyarlariPage() {
                     ? "border-emerald-500 bg-emerald-50"
                     : disabled
                     ? "border-slate-200 bg-slate-50 opacity-50 cursor-not-allowed"
-                    : "border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/50"
+                    : "border-slate-200 bg-white dark:bg-slate-800 hover:border-emerald-300 hover:bg-emerald-50/50"
                 }`}
               >
                 <span className="text-2xl">{item.icon}</span>
@@ -149,7 +149,7 @@ export default function PanelAyarlariPage() {
           <button
             type="button"
             onClick={reset}
-            className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 py-3 rounded-lg font-medium transition"
+            className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 hover:bg-slate-50 text-slate-700 py-3 rounded-lg font-medium transition"
           >
             ↺ Varsayılana Dön
           </button>

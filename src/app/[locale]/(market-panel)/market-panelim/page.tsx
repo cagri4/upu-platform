@@ -110,7 +110,7 @@ export default function MarketPanelimPage() {
       </div>
 
       {/* Quick actions hint */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm text-sm text-slate-600">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm text-sm text-slate-600">
         <p className="font-semibold text-slate-900 mb-2">💡 Hızlı işlem</p>
         <p>
           Stok eklemek için sol menüden <strong>Stok</strong>, kasa raporu için <strong>Kasa Raporu</strong>, ya da WhatsApp&apos;ta doğrudan komut adını yazabilirsiniz (örn. <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">stokekle</span>, <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">brifing</span>).

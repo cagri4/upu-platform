@@ -165,7 +165,7 @@ export default function BayiBaglantiPage() {
     <div className="grid grid-cols-2 gap-2">
       <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="bg-emerald-600 text-white py-3 rounded-lg text-center font-semibold">💬 WA Destek</a>
       {token && (
-        <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`} className="bg-white border border-slate-300 text-slate-700 py-3 rounded-lg text-center font-semibold hover:bg-slate-50">
+        <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`} className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-lg text-center font-semibold hover:bg-slate-50">
           🏠 Panele Dön
         </a>
       )}
@@ -193,7 +193,7 @@ export default function BayiBaglantiPage() {
         </Footnote>
         {token && (
           <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`}
-            className="block w-full text-center bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-50 mt-3">
+            className="block w-full text-center bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-50 mt-3">
             🏠 Panele Dön
           </a>
         )}
@@ -229,12 +229,12 @@ export default function BayiBaglantiPage() {
 
         <div className="grid grid-cols-2 gap-2 mt-2">
           <button onClick={() => setStep("select_method")}
-            className="bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-sm">
+            className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-sm">
             ← Geri
           </button>
           {token && (
             <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`}
-              className="bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-sm text-center flex items-center justify-center">
+              className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-sm text-center flex items-center justify-center">
               🏠 Panele Dön
             </a>
           )}
@@ -250,7 +250,7 @@ export default function BayiBaglantiPage() {
         <Header icon="🔧" title={`${selectedSoftware.name} bağlantısı`}
           subtitle="Sunucu erişim bilgilerinizi girin. Veriler şifreli iletilir, bizim sistemde saklanmaz." />
 
-        <div className="bg-white rounded-2xl p-5 space-y-3 mb-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 space-y-3 mb-4">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Server URL</label>
             <input value={serverUrl} onChange={e => setServerUrl(e.target.value)}
@@ -272,13 +272,13 @@ export default function BayiBaglantiPage() {
             ✅ Bağlan
           </button>
           <button onClick={() => setStep("select_software")}
-            className="bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-sm">
+            className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-sm">
             ← Geri
           </button>
         </div>
         {token && (
           <a href={`/tr/bayi-panel?t=${encodeURIComponent(token)}`}
-            className="block w-full text-center bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-50 mt-2 text-sm">
+            className="block w-full text-center bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-50 mt-2 text-sm">
             🏠 Panele Dön
           </a>
         )}
@@ -294,7 +294,7 @@ export default function BayiBaglantiPage() {
   if (step === "connecting") {
     return (
       <Page>
-        <div className="bg-white rounded-2xl p-8 text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center">
           <div className="text-5xl mb-4 animate-pulse">🔄</div>
           <h2 className="text-xl font-bold mb-2">{selectedSoftware?.name}</h2>
           <p className="text-sm text-slate-600 mb-6 min-h-[1.5em]">{progressLabel}</p>
@@ -313,7 +313,7 @@ export default function BayiBaglantiPage() {
   if (step === "success") {
     return (
       <Page>
-        <div className="bg-white rounded-2xl p-8 text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center">
           <div className="text-6xl mb-4">✅</div>
           <h2 className="text-2xl font-bold text-emerald-700 mb-2">Bağlandı!</h2>
           <p className="text-sm text-slate-600 mb-6">
@@ -345,7 +345,7 @@ export default function BayiBaglantiPage() {
               <span />
             )}
             <a href={`https://wa.me/${BOT_WA_NUMBER}`}
-              className="bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-center hover:bg-slate-50">
+              className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-center hover:bg-slate-50">
               💬 WhatsApp&apos;a Dön
             </a>
           </div>
@@ -386,7 +386,7 @@ function Header({ icon, title, subtitle }: { icon: string; title: string; subtit
 function Card({ icon, title, desc, onClick, badge }: { icon: string; title: string; desc: string; onClick: () => void; badge?: string }) {
   return (
     <button onClick={onClick}
-      className="w-full text-left bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-2xl p-5 transition group">
+      className="w-full text-left bg-white dark:bg-slate-800 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-2xl p-5 transition group">
       <div className="flex items-start gap-3">
         <div className="text-3xl">{icon}</div>
         <div className="flex-1">
@@ -414,7 +414,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 function SoftwareCard({ sw, onClick }: { sw: SoftwareOption; onClick: () => void }) {
   return (
     <button onClick={onClick}
-      className="bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl p-3 text-left transition">
+      className="bg-white dark:bg-slate-800 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl p-3 text-left transition">
       <div className="text-lg">{sw.flag}</div>
       <div className="font-semibold text-sm text-slate-900 mt-1">{sw.name}</div>
       <div className="text-[10px] text-slate-500 mt-0.5">
@@ -432,6 +432,6 @@ function Footnote({ children }: { children: React.ReactNode }) {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

@@ -113,7 +113,7 @@ export function ChromeSuggest() {
         </a>
         <button
           onClick={() => void copy()}
-          className="inline-flex items-center justify-center gap-2 bg-white hover:bg-amber-100 text-amber-800 font-medium px-4 py-2.5 rounded-lg text-sm border border-amber-300"
+          className="inline-flex items-center justify-center gap-2 bg-white dark:bg-slate-800 hover:bg-amber-100 text-amber-800 font-medium px-4 py-2.5 rounded-lg text-sm border border-amber-300"
         >
           {copied ? "✅ Kopyalandı!" : "🔗 Linki Kopyala"}
         </button>

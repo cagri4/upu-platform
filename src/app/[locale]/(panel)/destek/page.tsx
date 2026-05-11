@@ -116,7 +116,7 @@ export default function DestekPage() {
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+        <form onSubmit={handleCreate} className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
           <div>
             <label className="block text-sm font-medium text-slate-900 mb-2">Konu *</label>
             <input
@@ -154,7 +154,7 @@ export default function DestekPage() {
             <button
               type="button"
               onClick={() => { setShowForm(false); setError(""); }}
-              className="bg-white border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium hover:bg-slate-50"
+              className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl text-sm font-medium hover:bg-slate-50"
             >
               İptal
             </button>
@@ -163,7 +163,7 @@ export default function DestekPage() {
       )}
 
       {tickets.length === 0 && !showForm ? (
-        <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
           <div className="text-5xl mb-3">🛟</div>
           <p className="font-semibold text-slate-900 mb-1">Henüz talebiniz yok</p>
           <p className="text-slate-500 text-sm">Sorularınızı veya geri bildirimlerinizi buradan iletebilirsiniz.</p>
@@ -176,7 +176,7 @@ export default function DestekPage() {
               <a
                 key={t.id}
                 href={detailHref(t.id)}
-                className="block bg-white rounded-2xl shadow-sm p-4 hover:shadow-md active:scale-[0.99] transition"
+                className="block bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-4 hover:shadow-md active:scale-[0.99] transition"
               >
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <h3 className="font-semibold text-slate-900 truncate flex-1">#{t.id} {t.subject}</h3>
@@ -204,7 +204,7 @@ export default function DestekPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
       <p className="text-slate-600">{children}</p>
     </div>
   );

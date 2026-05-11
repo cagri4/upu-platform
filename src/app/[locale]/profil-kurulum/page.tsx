@@ -86,7 +86,7 @@ export default function ProfilKurulumPage() {
           <p className="text-blue-100 text-sm mt-1">Sunumlarda imza olarak kullanacağım.</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-5">
-          <section className="bg-white rounded-2xl p-4 shadow-sm">
+          <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
             <label className="block text-sm font-medium text-slate-700 mb-1">Ad Soyad *</label>
             <input required type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Ahmet Yılmaz" className={inputCls} />
             <label className="block text-sm font-medium text-slate-700 mb-1">Ofis / Şirket</label>
@@ -115,6 +115,6 @@ export default function ProfilKurulumPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

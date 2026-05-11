@@ -101,7 +101,7 @@ export function SlideControls({ presToken, slideKey, initialText, editable }: Pr
       {/* Modal düzenleyici */}
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => !saving && setEditing(false)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full p-5" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-semibold text-slate-900 mb-3">Slaytı Düzenle</h3>
             <textarea
               rows={8}

@@ -67,7 +67,7 @@ export default function ProfilimPage() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4">
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
           <h1 className="text-xl font-bold text-slate-900">👤 Profilim</h1>
           <a
@@ -85,13 +85,13 @@ export default function ProfilimPage() {
         <div className="text-center text-sm text-slate-500 py-8">Yükleniyor…</div>
       ) : data ? (
         <>
-          <div className="bg-white rounded-xl shadow-sm p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4">
             <h2 className="text-sm font-semibold text-slate-700 mb-2">Hesap</h2>
             <Row label="Ad Soyad" value={data.displayName} />
             <Row label="WhatsApp" value={data.phone} />
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4">
             <h2 className="text-sm font-semibold text-slate-700 mb-2">Firma Bilgileri</h2>
             <Row label="Ticari Ünvan" value={data.firma.ticari_unvan} />
             <Row label="Yetkili" value={data.firma.yetkili_adi} />

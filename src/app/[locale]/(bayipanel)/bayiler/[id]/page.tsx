@@ -206,7 +206,7 @@ export default function BayiDetayPage() {
   if (error || !data) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-        <div className="max-w-md w-full bg-white border border-rose-200 rounded-xl p-6 text-center">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 border border-rose-200 rounded-xl p-6 text-center">
           <h1 className="text-lg font-semibold text-rose-700 mb-2">Hata</h1>
           <p className="text-sm text-slate-600">{error || "Bayi bulunamadı."}</p>
         </div>
@@ -222,7 +222,7 @@ export default function BayiDetayPage() {
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
       {/* Breadcrumb */}
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 py-3 text-sm">
           <Link href={backHref} className="text-indigo-600 hover:underline">Bayilerim</Link>
           <span className="text-slate-400 mx-2">›</span>
@@ -249,7 +249,7 @@ export default function BayiDetayPage() {
       )}
 
       {/* Üst özet kartı */}
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-start gap-4">
             <div className={`flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center font-bold text-white text-xl ${finance.isCritical ? "bg-rose-500" : dealer.isActive ? "bg-indigo-500" : "bg-slate-400"}`}>
@@ -297,7 +297,7 @@ export default function BayiDetayPage() {
         {/* Sol — Finansal */}
         <section className="space-y-3">
           {/* Finansal Durum */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4">
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-slate-700">💳 Finansal Durum</h3>
               <RiskBadge status={finance.riskStatus} />
@@ -376,7 +376,7 @@ export default function BayiDetayPage() {
 
           {/* Vergi & Banka */}
           {(dealer.taxNumber || dealer.taxOffice || dealer.iban || dealer.contactName) && (
-            <div className="bg-white border border-slate-200 rounded-xl p-4">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-4">
               <h3 className="text-sm font-semibold text-slate-700 mb-3">🏦 Vergi & Banka</h3>
               <div className="space-y-1.5 text-xs">
                 <KeyVal label="Vergi No" value={dealer.taxNumber} mono />
@@ -389,7 +389,7 @@ export default function BayiDetayPage() {
 
           {/* Vade hareketleri (faturalar) */}
           {invoices.length > 0 && (
-            <div className="bg-white border border-slate-200 rounded-xl p-4">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-4">
               <h3 className="text-sm font-semibold text-slate-700 mb-2">Vade Hareketleri</h3>
               <div className="space-y-1.5">
                 {invoices.slice(0, 5).map(inv => (
@@ -418,7 +418,7 @@ export default function BayiDetayPage() {
         </section>
 
         {/* Orta — Sipariş geçmişi */}
-        <section className="bg-white border border-slate-200 rounded-xl p-4 lg:col-span-1">
+        <section className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-4 lg:col-span-1">
           <h3 className="text-sm font-semibold text-slate-700 mb-3">🛒 Sipariş Geçmişi</h3>
           {orders.length === 0 ? (
             <p className="text-xs text-slate-400 text-center py-6">Henüz sipariş yok.</p>
@@ -448,7 +448,7 @@ export default function BayiDetayPage() {
         </section>
 
         {/* Sağ — Timeline */}
-        <section className="bg-white border border-slate-200 rounded-xl p-4">
+        <section className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-slate-700">📜 Timeline</h3>
             <button
@@ -478,7 +478,7 @@ export default function BayiDetayPage() {
       </div>
 
       {/* Sticky aksiyon barı */}
-      <div className="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 shadow-lg z-30">
+      <div className="fixed bottom-0 inset-x-0 bg-white dark:bg-slate-800 border-t border-slate-200 shadow-lg z-30">
         <div className="max-w-6xl mx-auto px-2 py-2 flex gap-1 overflow-x-auto">
           {[
             { key: "wa" as ModalKey, icon: "📩", label: "WA Mesaj" },
@@ -593,7 +593,7 @@ function ActionModal({ modalKey, dealer, finance, onClose, onSuccess }: ActionMo
   return (
     <div className="fixed inset-0 bg-black/40 z-40 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-slate-800 rounded-t-2xl sm:rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         {modalKey === "wa" && <WaMessageForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
@@ -611,7 +611,7 @@ function ActionModal({ modalKey, dealer, finance, onClose, onSuccess }: ActionMo
 function ModalShell({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
     <>
-      <div className="flex items-center justify-between p-4 border-b border-slate-200 sticky top-0 bg-white">
+      <div className="flex items-center justify-between p-4 border-b border-slate-200 sticky top-0 bg-white dark:bg-slate-800">
         <h3 className="text-base font-semibold text-slate-900">{title}</h3>
         <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
       </div>
@@ -928,7 +928,7 @@ function DuzenleForm({ dealer, finance, onClose, onSuccess }: { dealer: Dealer; 
       )}
 
       {/* 🔒 Logo grubu */}
-      <div className={`rounded-xl p-3 mb-3 ${logoLocked ? "bg-slate-50 border border-slate-200" : "bg-white border border-slate-200"}`}>
+      <div className={`rounded-xl p-3 mb-3 ${logoLocked ? "bg-slate-50 border border-slate-200" : "bg-white dark:bg-slate-800 border border-slate-200"}`}>
         <h4 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
           🔒 Logo'dan Gelen
           {logoLocked && <span className="text-[10px] font-normal normal-case text-slate-400">(read-only)</span>}
@@ -943,7 +943,7 @@ function DuzenleForm({ dealer, finance, onClose, onSuccess }: { dealer: Dealer; 
       </div>
 
       {/* ✏️ UPU grubu */}
-      <div className="rounded-xl p-3 mb-3 bg-white border border-indigo-100">
+      <div className="rounded-xl p-3 mb-3 bg-white dark:bg-slate-800 border border-indigo-100">
         <h4 className="text-[11px] font-semibold text-indigo-600 uppercase tracking-wide mb-2">
           ✏️ UPU'ya Özel <span className="text-[10px] font-normal normal-case text-slate-400">(her zaman editlenebilir)</span>
         </h4>
@@ -960,7 +960,7 @@ function DuzenleForm({ dealer, finance, onClose, onSuccess }: { dealer: Dealer; 
             <label className="text-xs font-medium text-slate-700 block mb-1">Etiketler</label>
             <div className="flex flex-wrap gap-2">
               {TAG_OPTIONS.map(t => (
-                <label key={t} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border cursor-pointer ${tags.includes(t) ? "bg-indigo-50 border-indigo-300 text-indigo-700" : "bg-white border-slate-200 text-slate-600"}`}>
+                <label key={t} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border cursor-pointer ${tags.includes(t) ? "bg-indigo-50 border-indigo-300 text-indigo-700" : "bg-white dark:bg-slate-800 border-slate-200 text-slate-600"}`}>
                   <input type="checkbox" checked={tags.includes(t)} onChange={() => toggleTag(t)} className="accent-indigo-600 w-3 h-3" />
                   {t}
                 </label>
@@ -971,7 +971,7 @@ function DuzenleForm({ dealer, finance, onClose, onSuccess }: { dealer: Dealer; 
             <label className="text-xs font-medium text-slate-700 block mb-1">Risk durumu (UPU hesaplı)</label>
             <div className="flex gap-2 flex-wrap">
               {RISK_OPTIONS.map(opt => (
-                <label key={opt.id} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg border cursor-pointer ${riskStatus === opt.id ? "bg-indigo-50 border-indigo-300" : "bg-white border-slate-200"}`}>
+                <label key={opt.id} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg border cursor-pointer ${riskStatus === opt.id ? "bg-indigo-50 border-indigo-300" : "bg-white dark:bg-slate-800 border-slate-200"}`}>
                   <input type="radio" name="risk" checked={riskStatus === opt.id} onChange={() => setRiskStatus(opt.id)} className="accent-indigo-600" />
                   {opt.label}
                 </label>

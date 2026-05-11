@@ -60,7 +60,7 @@ function List({ token }: { token: string }) {
       {!items && !error && <div className="text-slate-500">Yükleniyor…</div>}
 
       {items && items.length === 0 && (
-        <div className="bg-white rounded-2xl shadow border border-slate-200 p-8 text-center text-slate-500">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 p-8 text-center text-slate-500">
           Henüz menü kalemi yok.
         </div>
       )}
@@ -68,7 +68,7 @@ function List({ token }: { token: string }) {
       {Object.entries(cats).map(([cat, list]) => (
         <div key={cat} className="mb-6">
           <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">{cat}</h2>
-          <div className="bg-white rounded-2xl shadow border border-slate-200 divide-y divide-slate-100">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 divide-y divide-slate-100">
             {list.map(m => (
               <div key={m.id} className="p-4 sm:p-5 flex items-start gap-4">
                 <div className="flex-1 min-w-0">

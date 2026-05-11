@@ -43,7 +43,7 @@ export default function NotesForm({ token, propertyTitles, existingNotes }: Note
 
   if (saved) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-8 text-center">
         <p className="text-green-600 font-medium text-lg mb-2">✓ Notlar kaydedildi</p>
         <p className="text-sm text-gray-500">Sunum takibi guncellendi.</p>
         <button
@@ -57,7 +57,7 @@ export default function NotesForm({ token, propertyTitles, existingNotes }: Note
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-8">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-8">
       <h3 className="text-lg font-bold text-gray-900 mb-1">Sunum Notlari</h3>
       <p className="text-xs text-gray-400 mb-6">Sunum sonrasi notlarinizi buraya yazin. Sadece siz gorebilirsiniz.</p>
 

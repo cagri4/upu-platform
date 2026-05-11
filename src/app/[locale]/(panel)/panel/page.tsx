@@ -209,7 +209,7 @@ export default function PanelimPage() {
       </div>
 
       {/* İpucu — killer özellikler kısa anlatım */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
         <p className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
           <span className="text-lg">💡</span> İpucu
         </p>

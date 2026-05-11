@@ -139,7 +139,7 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
 
       {/* ── Features: bayi tenant'ı için 5 değer önerisi, diğer tenant'lar için sanal eleman gridi ── */}
       {tenant.key === "bayi" ? (
-        <section id="features" className="py-20 bg-white">
+        <section id="features" className="py-20 bg-white dark:bg-slate-800">
           <div className="max-w-6xl mx-auto px-6">
             <h2 className="text-3xl font-bold text-center text-slate-900 mb-4">{tt("value_title")}</h2>
             <p className="text-center text-slate-500 mb-12 max-w-2xl mx-auto">
@@ -157,7 +157,7 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
           </div>
         </section>
       ) : (
-        <section id="features" className="py-20 bg-white">
+        <section id="features" className="py-20 bg-white dark:bg-slate-800">
           <div className="max-w-6xl mx-auto px-6">
             <h2 className="text-3xl font-bold text-center text-slate-900 mb-4">{t("team_title")}</h2>
             <p className="text-center text-slate-500 mb-12 max-w-xl mx-auto">
@@ -211,7 +211,7 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
         <BayiPricing tenant={tenant} locale={locale} t={t} tt={tt}
           revisionLocale={localeShort} revisionLabels={revisionLabels} />
       ) : (
-        <section id="pricing" className="py-20 bg-white">
+        <section id="pricing" className="py-20 bg-white dark:bg-slate-800">
           <div className="max-w-4xl mx-auto px-6">
             <h2 className="text-3xl font-bold text-center text-slate-900 mb-4">{t("pricing_title")}</h2>
             <p className="text-center text-slate-500 mb-12">{t("pricing_subtitle")}</p>
@@ -341,7 +341,7 @@ function BayiPricing({
   const growth = tenant.pricing.growth!;
 
   return (
-    <section id="pricing" className="relative py-20 bg-white">
+    <section id="pricing" className="relative py-20 bg-white dark:bg-slate-800">
       <div className="max-w-5xl mx-auto px-6">
         <h2 className="text-3xl font-bold text-center text-slate-900 mb-4">{t("pricing_title")}</h2>
         <p className="text-center text-slate-500 mb-8">{t("pricing_subtitle")}</p>

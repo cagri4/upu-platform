@@ -180,7 +180,7 @@ export default function BayiProductsPanel({ userId }: { userId: string }) {
           <Input placeholder="Urun ara..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-          className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+          className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800">
           <option value="">Tum Kategoriler</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
@@ -240,7 +240,7 @@ export default function BayiProductsPanel({ userId }: { userId: string }) {
         </Card>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm bg-white rounded-lg border border-slate-200">
+          <table className="w-full text-sm bg-white dark:bg-slate-800 rounded-lg border border-slate-200">
             <thead className="bg-slate-50 border-b">
               <tr>
                 <th className="text-left px-3 py-2.5 font-medium text-slate-500">Urun</th>

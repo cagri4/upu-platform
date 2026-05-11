@@ -8,7 +8,7 @@ export default function CampaignsPage() {
       {() => (
         <div>
           <h1 className="text-2xl font-bold text-slate-900 mb-5">🎯 Kampanyalar</h1>
-          <div className="bg-white rounded-2xl shadow border border-slate-200 p-8 text-center">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 p-8 text-center">
             <div className="text-5xl mb-4">🎯</div>
             <h2 className="text-xl font-semibold text-slate-900 mb-2">Yakında</h2>
             <p className="text-slate-600 max-w-md mx-auto">

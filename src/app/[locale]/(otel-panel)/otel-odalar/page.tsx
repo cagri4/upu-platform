@@ -42,7 +42,7 @@ export default function OtelOdalarPage() {
 
       {list === null && <div className="text-sm text-slate-500">⏳ Yükleniyor...</div>}
       {list?.length === 0 && (
-        <div className="bg-white rounded-2xl p-6 text-center text-sm text-slate-600 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center text-sm text-slate-600 shadow-sm">
           Henüz oda tanımlanmamış. Otel kaydınıza bağlı odalar burada görünecek.
         </div>
       )}
@@ -52,7 +52,7 @@ export default function OtelOdalarPage() {
           {list.map((r) => {
             const status = STATUS_LABEL[r.status || ""] || { label: r.status || "—", color: "bg-slate-100 text-slate-700" };
             return (
-              <div key={r.id} className="bg-white rounded-2xl p-4 shadow-sm">
+              <div key={r.id} className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
                 <div className="flex items-start justify-between mb-2">
                   <div className="text-lg font-bold text-slate-900">🚪 {r.name}</div>
                   <span className={`text-[10px] px-2 py-0.5 rounded ${status.color}`}>{status.label}</span>

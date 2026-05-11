@@ -213,7 +213,7 @@ export default function ProfilDuzenlePage() {
             </button>
             <a
               href={`/tr/panel${token ? `?t=${encodeURIComponent(token)}` : ""}`}
-              className="flex items-center justify-center bg-white border border-slate-300 text-slate-700 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition"
+              className="flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition"
             >
               🖥 Panele
             </a>
@@ -227,7 +227,7 @@ export default function ProfilDuzenlePage() {
 const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-3 text-base text-slate-900 placeholder:text-slate-400";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+  return <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
     <h2 className="font-semibold text-slate-900 text-sm">{title}</h2>
     {children}
   </section>;
@@ -242,6 +242,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

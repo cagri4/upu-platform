@@ -37,13 +37,13 @@ export default function OtelKonuklarPage() {
 
       {list === null && <div className="text-sm text-slate-500">⏳ Yükleniyor...</div>}
       {list?.length === 0 && (
-        <div className="bg-white rounded-2xl p-6 text-center text-sm text-slate-600 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center text-sm text-slate-600 shadow-sm">
           Henüz müşteri kaydı yok. WhatsApp&apos;ta <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">misafirdavet &lt;telefon&gt;</span> komutuyla davet gönderdiğinizde otomatik kayıt oluşur.
         </div>
       )}
 
       {list && list.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
           <ul className="divide-y divide-slate-100">
             {list.map((g) => {
               const meta = g.metadata || {};

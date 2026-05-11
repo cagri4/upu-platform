@@ -20,7 +20,7 @@ export default async function PrivacyPage({
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4">
-      <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+      <div className="max-w-3xl mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 p-8">
         <Link href={`/${locale}`} className="text-sm text-slate-500 hover:text-slate-800 mb-6 inline-block">
           {t("back")}
         </Link>

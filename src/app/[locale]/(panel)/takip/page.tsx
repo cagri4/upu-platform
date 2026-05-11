@@ -225,7 +225,7 @@ export default function TakipPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <section className="bg-white rounded-2xl p-4 shadow-sm">
+            <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
               <label className="block text-sm font-medium text-slate-900 mb-2">İsim *</label>
               <input
                 value={name} onChange={e => setName(e.target.value)}
@@ -235,14 +235,14 @@ export default function TakipPage() {
               <p className="text-xs text-slate-500 mt-1">Listede tanımak için kısa etiket.</p>
             </section>
 
-            <section className="bg-white rounded-2xl p-4 shadow-sm">
+            <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
               <label className="block text-sm font-medium text-slate-900 mb-2">
                 Bölge <span className="text-slate-400 text-xs">({neighborhoods.length} seçili)</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {BODRUM_SUBAREAS.map(n => (
                   <button type="button" key={n} onClick={() => toggleNeighborhood(n)}
-                    className={`py-2 px-2 rounded-lg text-xs font-medium border-2 ${neighborhoods.includes(n) ? "bg-orange-600 text-white border-orange-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                    className={`py-2 px-2 rounded-lg text-xs font-medium border-2 ${neighborhoods.includes(n) ? "bg-orange-600 text-white border-orange-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
                     {n}
                   </button>
                 ))}
@@ -250,14 +250,14 @@ export default function TakipPage() {
               <p className="text-xs text-slate-500 mt-2">Hiç seçmezsen tüm Bodrum.</p>
             </section>
 
-            <section className="bg-white rounded-2xl p-4 shadow-sm">
+            <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
               <label className="block text-sm font-medium text-slate-900 mb-2">
                 Mülk Tipi <span className="text-slate-400 text-xs">({propertyTypes.length} seçili)</span>
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {PROPERTY_TYPES.map(t => (
                   <button type="button" key={t.id} onClick={() => toggleType(t.id)}
-                    className={`py-2 rounded-lg text-xs font-medium border-2 ${propertyTypes.includes(t.id) ? "bg-orange-600 text-white border-orange-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                    className={`py-2 rounded-lg text-xs font-medium border-2 ${propertyTypes.includes(t.id) ? "bg-orange-600 text-white border-orange-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
                     {t.label}
                   </button>
                 ))}
@@ -265,19 +265,19 @@ export default function TakipPage() {
               <p className="text-xs text-slate-500 mt-2">Hiç seçmezsen tüm tipler.</p>
             </section>
 
-            <section className="bg-white rounded-2xl p-4 shadow-sm">
+            <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
               <label className="block text-sm font-medium text-slate-900 mb-2">İlan Tipi</label>
               <div className="grid grid-cols-3 gap-2">
                 {[{id:"",label:"Hepsi"},{id:"satilik",label:"Satılık"},{id:"kiralik",label:"Kiralık"}].map(o => (
                   <button type="button" key={o.id || "all"} onClick={() => setListingType(o.id)}
-                    className={`py-3 rounded-lg text-sm font-medium border-2 ${listingType === o.id ? "bg-orange-600 text-white border-orange-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                    className={`py-3 rounded-lg text-sm font-medium border-2 ${listingType === o.id ? "bg-orange-600 text-white border-orange-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
                     {o.label}
                   </button>
                 ))}
               </div>
             </section>
 
-            <section className="bg-white rounded-2xl p-4 shadow-sm">
+            <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
               <label className="block text-sm font-medium text-slate-900 mb-2">Fiyat Aralığı (₺)</label>
               <div className="grid grid-cols-2 gap-2">
                 <input type="number" value={priceMin} onChange={e => setPriceMin(e.target.value)} placeholder="Min" min="0"
@@ -296,7 +296,7 @@ export default function TakipPage() {
                 {status === "saving" ? "Kaydediliyor..." : (editId ? "✅ Güncelle" : "✅ Kaydet")}
               </button>
               <button type="button" onClick={() => { setView("list"); setError(""); }}
-                className="flex items-center justify-center bg-white border border-slate-300 text-slate-700 px-4 py-4 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition whitespace-nowrap">
+                className="flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 px-4 py-4 rounded-xl text-sm font-medium hover:bg-slate-50 active:scale-95 transition whitespace-nowrap">
                 ← Geri
               </button>
             </div>
@@ -332,7 +332,7 @@ export default function TakipPage() {
       </button>
 
       {items.length === 0 ? (
-        <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
           <div className="text-5xl mb-3">🎯</div>
           <p className="font-semibold text-slate-900 mb-1">Şu an takip yok</p>
           <p className="text-slate-500 text-sm">İlk takibinizi eklemek için yukarıdaki butonu kullanın.</p>
@@ -351,7 +351,7 @@ export default function TakipPage() {
             const sonuc = sonucByTakip[t.id];
             const isExpanded = expandedId === t.id;
             return (
-              <div key={t.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div key={t.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <h3 className="font-semibold text-slate-900 truncate">{t.name}</h3>
@@ -426,7 +426,7 @@ export default function TakipPage() {
                               href={l.source_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="block bg-white rounded-lg p-3 shadow-sm hover:bg-emerald-50 transition"
+                              className="block bg-white dark:bg-slate-800 rounded-lg p-3 shadow-sm hover:bg-emerald-50 transition"
                             >
                               <p className="text-sm font-medium text-slate-900 leading-tight line-clamp-2">{l.title}</p>
                               <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-slate-600 mt-1">
@@ -455,6 +455,6 @@ export default function TakipPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

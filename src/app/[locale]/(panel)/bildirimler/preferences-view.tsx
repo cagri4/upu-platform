@@ -122,7 +122,7 @@ export function PreferencesView() {
       )}
 
       {/* Preset selector */}
-      <section className="bg-white rounded-2xl p-4 shadow-sm">
+      <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
         <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-3">Hızlı Seçim</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {(["yogun", "kritik", "sessiz", "ozel"] as PresetName[]).map(name => (
@@ -130,7 +130,7 @@ export function PreferencesView() {
               key={name}
               type="button"
               onClick={() => applyPreset(name)}
-              className={`py-2.5 rounded-lg text-sm font-medium border-2 ${preset === name ? "bg-amber-600 text-white border-amber-600" : "bg-white text-slate-700 border-slate-300"}`}
+              className={`py-2.5 rounded-lg text-sm font-medium border-2 ${preset === name ? "bg-amber-600 text-white border-amber-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}
             >
               {PRESET_LABELS[name]}
             </button>
@@ -141,7 +141,7 @@ export function PreferencesView() {
 
       {/* Toggle list grouped by category */}
       {Array.from(grouped.entries()).map(([cat, items]) => (
-        <section key={cat} className="bg-white rounded-2xl p-4 shadow-sm">
+        <section key={cat} className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
           <p className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
             <span>{CATEGORY_META[cat].icon}</span>
             {CATEGORY_META[cat].label}
@@ -182,7 +182,7 @@ export function PreferencesView() {
                         : "bg-slate-300"
                     }`}
                   >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled && !isProLocked ? "translate-x-6" : "translate-x-1"}`} />
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-800 transition-transform ${enabled && !isProLocked ? "translate-x-6" : "translate-x-1"}`} />
                   </button>
                 </div>
               );
@@ -192,7 +192,7 @@ export function PreferencesView() {
       ))}
 
       {/* DND */}
-      <section className="bg-white rounded-2xl p-4 shadow-sm">
+      <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -208,7 +208,7 @@ export function PreferencesView() {
             aria-label="Sessiz saat aktif"
             className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${dnd.enabled ? "bg-amber-600" : "bg-slate-300"}`}
           >
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${dnd.enabled ? "translate-x-6" : "translate-x-1"}`} />
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-800 transition-transform ${dnd.enabled ? "translate-x-6" : "translate-x-1"}`} />
           </button>
         </div>
         {dnd.enabled && (
@@ -238,7 +238,7 @@ export function PreferencesView() {
       {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
 
       {/* Sticky save bar */}
-      <div className="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 p-3 shadow-lg z-30">
+      <div className="fixed bottom-0 inset-x-0 bg-white dark:bg-slate-800 border-t border-slate-200 p-3 shadow-lg z-30">
         <div className="max-w-md mx-auto flex items-center gap-2">
           {savedFlash && (
             <span className="text-sm text-emerald-700 font-medium flex-1">✅ Kaydedildi</span>
@@ -273,5 +273,5 @@ const PRESET_DESCRIPTIONS: Record<PresetName, string> = {
 };
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-auto text-center shadow">{children}</div>;
+  return <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full mx-auto text-center shadow">{children}</div>;
 }

@@ -85,7 +85,7 @@ export default function SiteDashboardPage() {
       </div>
 
       {/* Quick actions hint */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm text-sm text-slate-600">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm text-sm text-slate-600">
         <p className="font-semibold text-slate-900 mb-2">💡 Hızlı işlem</p>
         <p>
           Sakinleri sisteme bağlamak için sol menüden <strong>Sakinler</strong> (bina kodu),

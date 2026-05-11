@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Tailwind v4 — class-based dark mode (manuel toggle).
+   System prefers-color-scheme honor edilmiyor (Bug 14 dersi: PWA
+   standalone'da OS dark mode kapsama dışı). Sadece html.dark class
+   set edildiğinde dark variant tetiklenir. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,17 +18,20 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* App'in proper bir dark theme'i yok — OS dark mode'da bg'yi siyah'a
-   çevirmek PWA standalone'da panel ve /u/[slug] sayfalarını "siyah ekran"
-   gibi gösteriyor (page wrapper'lar bg-stone-50/slate-50, ama html/body
-   gutter ve safe-area dark görünüyordu). Tüm kontekslerde explicit beyaz. */
 html, body {
   background: #ffffff;
+}
+html.dark, html.dark body {
+  background: #0f172a; /* slate-900 */
+  color: #e2e8f0; /* slate-200 */
 }
 
 @media (display-mode: standalone), (display-mode: fullscreen) {
   html, body {
-    background: #ffffff !important;
+    background: #ffffff;
+  }
+  html.dark, html.dark body {
+    background: #0f172a !important;
   }
 }
 
@@ -43,20 +52,26 @@ select {
   color: #0f172a;                    /* slate-900 — koyu metin */
 }
 
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark textarea,
+html.dark select {
+  color: #e2e8f0;                    /* slate-200 — dark mode value */
+  background-color: #1e293b;         /* slate-800 */
+  border-color: #334155;             /* slate-700 */
+}
+
 input::placeholder,
 textarea::placeholder {
   color: #64748b !important;        /* slate-500 */
   opacity: 1;                        /* Firefox default 0.54 — override */
 }
 
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #94a3b8 !important;        /* slate-400 */
+}
+
 select:invalid,
 select option[value=""] {
   color: #64748b;                    /* "Seçin..." varsayılan option */
-}
-
-@media (prefers-color-scheme: dark) {
-  input::placeholder,
-  textarea::placeholder {
-    color: #94a3b8 !important;       /* dark mode'da slate-400 yeter */
-  }
 }

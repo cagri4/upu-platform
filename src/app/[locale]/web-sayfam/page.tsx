@@ -98,7 +98,7 @@ export default function WebSayfamPage() {
         </div>
 
         {/* URL display */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm mb-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm mb-4">
           <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-2">Sayfa Adresiniz</p>
           <div className="bg-slate-100 rounded-lg p-3 break-all text-sm font-mono text-slate-800 mb-3">
             {fullUrl}
@@ -149,6 +149,6 @@ export default function WebSayfamPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

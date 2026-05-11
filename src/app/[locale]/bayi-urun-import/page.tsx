@@ -314,7 +314,7 @@ export default function BayiUrunImportPage() {
   if (initError) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-        <div className="max-w-md w-full bg-white border border-rose-200 rounded-xl p-6 text-center">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 border border-rose-200 rounded-xl p-6 text-center">
           <h1 className="text-lg font-semibold text-rose-700 mb-2">Bağlantı hatası</h1>
           <p className="text-sm text-slate-600">{initError}</p>
         </div>
@@ -343,7 +343,7 @@ export default function BayiUrunImportPage() {
         {/* SCREEN 1 — SELECT */}
         {screen === "select" && (
           <div className="space-y-4">
-            <div className="bg-white border border-slate-200 rounded-xl p-5">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-5">
               <h2 className="text-sm font-semibold text-slate-900 mb-2">1. Şablonu indirin</h2>
               <p className="text-xs text-slate-600 mb-3">
                 Doğru sütun başlıkları ve örnek 5 ürün ile hazır şablonu kullanın.
@@ -357,7 +357,7 @@ export default function BayiUrunImportPage() {
               </a>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl p-5">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-5">
               <h2 className="text-sm font-semibold text-slate-900 mb-2">2. Dosyanızı yükleyin</h2>
               <p className="text-xs text-slate-600 mb-3">
                 Desteklenen formatlar: <strong>CSV</strong>, <strong>Excel (.xlsx, .xls)</strong>.
@@ -391,7 +391,7 @@ export default function BayiUrunImportPage() {
         {/* SCREEN 2 — PREVIEW */}
         {screen === "preview" && (
           <div className="space-y-4">
-            <div className="bg-white border border-slate-200 rounded-xl p-5">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-5">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Önizleme — {fileName}</h2>
@@ -465,7 +465,7 @@ export default function BayiUrunImportPage() {
               </button>
               <button
                 onClick={() => { setScreen("select"); setNormalizedRows([]); setParsedHeaders([]); setFileName(""); }}
-                className="px-4 py-3 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50"
+                className="px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50"
               >
                 İptal
               </button>
@@ -475,7 +475,7 @@ export default function BayiUrunImportPage() {
 
         {/* SCREEN — SAVING */}
         {screen === "saving" && (
-          <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-8 text-center">
             <div className="inline-block w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3" />
             <p className="text-sm text-slate-700">Ürünler kaydediliyor...</p>
             <p className="text-xs text-slate-500 mt-1">Büyük dosyalar 30 saniyeyi bulabilir.</p>
@@ -485,7 +485,7 @@ export default function BayiUrunImportPage() {
         {/* SCREEN 3 — RESULT */}
         {screen === "result" && saveResult && (
           <div className="space-y-4">
-            <div className="bg-white border border-slate-200 rounded-xl p-5">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 rounded-xl p-5">
               <h2 className="text-base font-semibold text-slate-900 mb-3">Yükleme Sonucu</h2>
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">

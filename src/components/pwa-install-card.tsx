@@ -96,7 +96,7 @@ export function PwaInstallCard() {
 
       {iosInstructionsOpen && (
         <div className="fixed inset-0 z-[60] bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl">
+          <div className="bg-white dark:bg-slate-800 rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-bold text-slate-900">📲 Ana Ekrana Ekle</h2>
               <button

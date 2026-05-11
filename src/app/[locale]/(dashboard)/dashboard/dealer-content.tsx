@@ -152,7 +152,7 @@ export default function DealerDashboardContent({ userId }: { userId: string }) {
               <Input placeholder="Urun ara..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
             </div>
             <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800">
               <option value="">Tum Kategoriler</option>
               {categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>

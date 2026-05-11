@@ -8,7 +8,7 @@ export default function MarketHakkindaPage() {
         <p className="text-amber-100 text-sm mt-2">Türk diaspora KOBİ&apos;leri için WhatsApp + AI destekli SaaS platformu.</p>
       </div>
 
-      <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4 text-sm text-slate-700 leading-relaxed">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm space-y-4 text-sm text-slate-700 leading-relaxed">
         <p>
           <strong>UPU</strong>, Hollanda ve Avrupa&apos;daki Türk küçük işletmelerinin (market, restoran, emlak, dağıtım, otel) günlük operasyonlarını WhatsApp + yapay zeka ile yönetmesini sağlayan bir platformdur.
         </p>

@@ -121,7 +121,7 @@ export default function BayiKampanyaPage() {
 
         <p className="text-xs text-slate-500 mb-3 px-1">💡 İpucu: İndirim oranını belirledikten sonra hangi ürünlerin kampanyaya gireceğini ve hangi bayilere duyurulacağını seçin.</p>
 
-        <div className="bg-white rounded-2xl p-4 mb-4 space-y-3">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Kampanya Adı *</label>
             <input value={name} onChange={e => setName(e.target.value)}
@@ -148,13 +148,13 @@ export default function BayiKampanyaPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 mb-4 space-y-3">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-2">İndirim Tipi</label>
             <div className="grid grid-cols-2 gap-2">
               {(["percent", "price"] as const).map(t => (
                 <button key={t} type="button" onClick={() => setDiscountType(t)}
-                  className={`py-2 rounded-lg text-sm font-medium border-2 ${discountType === t ? "bg-orange-600 text-white border-orange-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                  className={`py-2 rounded-lg text-sm font-medium border-2 ${discountType === t ? "bg-orange-600 text-white border-orange-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
                   {t === "percent" ? "% Yüzde" : "₺ Sabit Tutar"}
                 </button>
               ))}
@@ -169,7 +169,7 @@ export default function BayiKampanyaPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 mb-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-slate-800">Ürünler</h2>
             <span className="text-xs text-slate-500">{selectedProducts.size} seçili</span>
@@ -177,7 +177,7 @@ export default function BayiKampanyaPage() {
           <div className="space-y-1.5 max-h-60 overflow-y-auto">
             {products.map(p => (
               <label key={p.id}
-                className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm ${selectedProducts.has(p.id) ? "bg-orange-50 border-orange-300" : "bg-white border-slate-200"}`}>
+                className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm ${selectedProducts.has(p.id) ? "bg-orange-50 border-orange-300" : "bg-white dark:bg-slate-800 border-slate-200"}`}>
                 <input type="checkbox" checked={selectedProducts.has(p.id)}
                   onChange={() => toggle(selectedProducts, setSelectedProducts, p.id)}
                   className="w-4 h-4 accent-orange-600" />
@@ -188,12 +188,12 @@ export default function BayiKampanyaPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 mb-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4">
           <label className="block text-xs font-medium text-slate-600 mb-2">Hedef Bayiler</label>
           <div className="grid grid-cols-2 gap-2 mb-3">
             {(["all", "selected"] as const).map(t => (
               <button key={t} type="button" onClick={() => setTarget(t)}
-                className={`py-2 rounded-lg text-sm font-medium border-2 ${target === t ? "bg-orange-600 text-white border-orange-600" : "bg-white text-slate-700 border-slate-300"}`}>
+                className={`py-2 rounded-lg text-sm font-medium border-2 ${target === t ? "bg-orange-600 text-white border-orange-600" : "bg-white dark:bg-slate-800 text-slate-700 border-slate-300"}`}>
                 {t === "all" ? "Tüm bayiler" : "Seçili bayiler"}
               </button>
             ))}
@@ -202,7 +202,7 @@ export default function BayiKampanyaPage() {
             <div className="space-y-1.5 max-h-52 overflow-y-auto">
               {dealers.map(d => (
                 <label key={d.id}
-                  className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm ${selectedDealers.has(d.id) ? "bg-orange-50 border-orange-300" : "bg-white border-slate-200"}`}>
+                  className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm ${selectedDealers.has(d.id) ? "bg-orange-50 border-orange-300" : "bg-white dark:bg-slate-800 border-slate-200"}`}>
                   <input type="checkbox" checked={selectedDealers.has(d.id)}
                     onChange={() => toggle(selectedDealers, setSelectedDealers, d.id)}
                     className="w-4 h-4 accent-orange-600" />
@@ -220,7 +220,7 @@ export default function BayiKampanyaPage() {
           </button>
           <a
             href={token ? `/tr/bayi-panel?t=${encodeURIComponent(token)}` : `https://wa.me/${BOT_WA_NUMBER}`}
-            className="bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-center active:scale-95 hover:bg-slate-50 flex items-center justify-center"
+            className="bg-white dark:bg-slate-800 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold text-center active:scale-95 hover:bg-slate-50 flex items-center justify-center"
           >
             🏠 Panele Dön
           </a>
@@ -234,6 +234,6 @@ export default function BayiKampanyaPage() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
   </div>;
 }

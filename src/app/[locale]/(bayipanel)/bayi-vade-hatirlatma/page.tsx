@@ -19,7 +19,7 @@ export default function VadeHatirlatmaPage() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4">
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
           <h1 className="text-xl font-bold text-slate-900">⏰ Vade Hatırlatma</h1>
           <button
@@ -37,7 +37,7 @@ export default function VadeHatirlatmaPage() {
         <h2 className="font-semibold text-slate-900 mb-1">Yakında</h2>
         <p className="text-sm text-slate-600 leading-relaxed mb-3">
           Multi-bayi vade hatırlatma kuralları yakında. Şimdilik WhatsApp&apos;ta
-          <span className="font-mono bg-white px-1.5 py-0.5 rounded mx-1 text-xs">vade-hatirlatma</span>
+          <span className="font-mono bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded mx-1 text-xs">vade-hatirlatma</span>
           komutu ile manuel olarak vadesi yaklaşan bayileri sorgulayabilirsiniz.
         </p>
         <div className="text-xs text-slate-500">

@@ -117,7 +117,7 @@ export default function MarketProfilimPage() {
   if (state === "error") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-        <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">
           <div className="text-4xl mb-3">⚠️</div>
           <h1 className="text-xl font-bold mb-2">Hata</h1>
           <p className="text-slate-600 text-sm mb-4">{errorMsg}</p>
@@ -135,7 +135,7 @@ export default function MarketProfilimPage() {
   if (state === "saved") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-        <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">
           <div className="text-5xl mb-3">✅</div>
           <h1 className="text-xl font-bold mb-2">Kaydedildi</h1>
           <p className="text-slate-600 text-sm mb-4">Market profiliniz güncellendi.</p>
@@ -158,7 +158,7 @@ export default function MarketProfilimPage() {
           <p className="text-amber-100 text-sm mt-1">Market bilgilerinizi düzenleyin.</p>
         </div>
 
-        <form onSubmit={handleSave} className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
+        <form onSubmit={handleSave} className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
           {errorMsg && (
             <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 text-sm text-rose-700">
               {errorMsg}
