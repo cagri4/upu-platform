@@ -256,7 +256,7 @@ function SahibindenTutorialCard() {
     { n: "1️⃣", title: "PC'de Chrome açın", desc: "Masaüstünden Chrome tarayıcısını başlatın." },
     { n: "2️⃣", title: "Eklentiyi indirin", desc: "Chrome Web Store'dan ‘UPU Sahibinden Form Doldurucu' eklentisini açın.", link: { url: "https://chromewebstore.google.com/detail/bcafoeijofbhelbanpfjhmhiokjnggbe", label: "🧩 Chrome Web Store →" } },
     { n: "3️⃣", title: "‘Chrome'a Ekle' butonuna tıklayın", desc: "Açılan onay penceresinde ‘Eklenti Ekle' deyin." },
-    { n: "4️⃣", title: "sahibinden.com'da ilan ver sayfasına gidin", desc: "Yeni sekmede ilan ver sayfasını açın.", link: { url: "https://www.sahibinden.com/ilan-ver", label: "🌐 Yeni sekme →" } },
+    { n: "4️⃣", title: "sahibinden.com'da ilan ver sayfasına gidin", desc: "Yeni sekmede ilan ver sayfasını açın.", link: { url: "https://banaozel.sahibinden.com/ilan-ver/adim-1/?state=new", label: "🌐 Yeni sekme →" } },
     { n: "5️⃣", title: "Eklenti üst köşede görünecek", desc: "Mülk seçin, tek tıkla form otomatik dolar." },
   ];
   return (
