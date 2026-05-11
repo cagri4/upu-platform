@@ -1,10 +1,11 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 import { QrScannerModal } from "@/components/qr-scanner-modal";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
+import { NotificationBell } from "@/components/notification-bell";
 
 /**
  * AdminLayout chrome context — sayfalardan QR scanner modalı tetiklemek
@@ -139,9 +140,10 @@ export function AdminLayout({
 }: AdminLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [qrScannerOpen, setQrScannerOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
   const firstName = (displayName || "").split(/\s+/)[0] || "";
   const pathname = usePathname() || "";
+  const searchParams = useSearchParams();
+  const searchParamsToken = searchParams?.get("t") || searchParams?.get("token") || "";
   const items = sidebarItems ?? DEFAULT_SIDEBAR_ITEMS;
   const accent = ACCENT_CLASSES[accentColor];
 
@@ -305,32 +307,7 @@ export function AdminLayout({
             </button>
             <div className="flex-1" />
             <div className="flex items-center gap-2 text-slate-500">
-              <div className="relative">
-                <button
-                  className={`p-2 hover:bg-slate-100 rounded-lg focus:outline-none focus:ring-2 ${accent.focusRing} min-w-[44px] min-h-[44px] flex items-center justify-center`}
-                  title="Bildirimler"
-                  aria-label="Bildirimler"
-                  aria-expanded={notifOpen}
-                  onClick={() => setNotifOpen(v => !v)}
-                  type="button"
-                >
-                  🔔
-                </button>
-                {notifOpen && (
-                  <>
-                    <button
-                      className="fixed inset-0 z-30 bg-transparent"
-                      aria-label="Kapat"
-                      onClick={() => setNotifOpen(false)}
-                    />
-                    <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-lg z-40 p-4">
-                      <p className="text-sm font-semibold text-slate-900 mb-1">🔔 Bildirimler</p>
-                      <p className="text-sm text-slate-600">Henüz bildiriminiz yok.</p>
-                      <p className="text-xs text-slate-400 mt-2 italic">İleride: önemli olaylar burada görünecek.</p>
-                    </div>
-                  </>
-                )}
-              </div>
+              <NotificationBell token={searchParamsToken} />
               <a
                 href={`https://wa.me/${botPhone}`}
                 target="_blank" rel="noopener noreferrer"
