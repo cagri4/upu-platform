@@ -193,10 +193,24 @@ export default function MusteriEkleFormPage() {
             </Field>
             <div className="grid grid-cols-2 gap-2">
               <Field label="Bütçe Min (₺)">
-                <input type="number" value={budgetMin} onChange={e => setBudgetMin(e.target.value)} placeholder="Min" min="0" className={inputCls} />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={budgetMin ? Number(budgetMin).toLocaleString("tr-TR") : ""}
+                  onChange={e => setBudgetMin(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Min"
+                  className={inputCls}
+                />
               </Field>
               <Field label="Bütçe Max (₺)">
-                <input type="number" value={budgetMax} onChange={e => setBudgetMax(e.target.value)} placeholder="Max" min="0" className={inputCls} />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={budgetMax ? Number(budgetMax).toLocaleString("tr-TR") : ""}
+                  onChange={e => setBudgetMax(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Max"
+                  className={inputCls}
+                />
               </Field>
             </div>
           </Section>

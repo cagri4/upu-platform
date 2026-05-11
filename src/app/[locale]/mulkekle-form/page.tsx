@@ -293,7 +293,15 @@ export default function MulkEkleFormPage() {
             <Pills label="İlan Tipi *" value={listingType} options={[{id:"satilik",label:"Satılık"},{id:"kiralik",label:"Kiralık"}]} onPick={setListingType} />
             <Pills label="Mülk Tipi *" value={type} options={TYPE_OPTIONS} onPick={setType} cols={3} />
             <Field label="Fiyat (TL) *">
-              <input required type="number" min="0" value={price} onChange={e => setPrice(e.target.value)} placeholder="4500000" className={inputCls} />
+              <input
+                required
+                type="text"
+                inputMode="numeric"
+                value={price ? Number(price).toLocaleString("tr-TR") : ""}
+                onChange={e => setPrice(e.target.value.replace(/\D/g, ""))}
+                placeholder="4.500.000"
+                className={inputCls}
+              />
             </Field>
             <Row>
               <Field label="m² Brüt"><input type="number" value={area} onChange={e => setArea(e.target.value)} className={inputCls} /></Field>
