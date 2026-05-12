@@ -20,6 +20,7 @@ import { getServiceClient } from "@/platform/auth/supabase";
 import { randomBytes } from "crypto";
 import { getYardimEntry } from "@/lib/yardim-content";
 import { resolvePanelAuth } from "@/platform/auth/panel-auth";
+import { getSessionFromCookies } from "@/platform/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${APP_URL}/tr/panel`);
   }
 
-  // Cookie session öncelik, token fallback (legacy WA link'ler)
+  // Auth resolution: cookie session öncelik, token fallback (legacy WA link'ler)
+  const session = await getSessionFromCookies();
+  const hasCookieSession = !!session?.uid;
   const auth = await resolvePanelAuth(req);
   if ("error" in auth) {
     return NextResponse.redirect(`${APP_URL}/tr/panel`);
@@ -48,8 +51,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // type === "web" — yeni magic token mint et + redirect (form sayfaları
-  // hâlâ ?t= query bekliyor; cookie session olsa bile fresh token üret)
+  // type === "web"
+  // Cookie fast-path: kullanıcı zaten oturumlu — token mint etmiyoruz,
+  // form sayfası cookie ile çalışır (/api/panel/cookie-check ile validate eder).
+  if (hasCookieSession) {
+    return NextResponse.redirect(`${APP_URL}${entry.startAction.path}`);
+  }
+
+  // Token path (legacy WA link). Yeni magic_link_token mint + redirect.
   const sb = getServiceClient();
   const newToken = randomBytes(16).toString("hex");
   const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();

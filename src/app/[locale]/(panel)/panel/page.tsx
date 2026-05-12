@@ -130,7 +130,11 @@ export default function PanelimPage() {
 
       {/* Quick Actions — yatay scroll row.
           Kullanıcı tercihi profiles.metadata.quick_actions ile (Panel Ayarları'ndan
-          değiştirilir); seçim yoksa DEFAULT_QUICK_ACTIONS (mevcut 6) gösterilir. */}
+          değiştirilir); seçim yoksa DEFAULT_QUICK_ACTIONS (mevcut 6) gösterilir.
+
+          Cookie fast-path: panel'e ulaşmış user zaten oturum sahibi. hrefFor'a
+          token geçirmiyoruz; form sayfaları ve /api/panel/start cookie ile
+          devam edebiliyor (legacy WA token akışı server tarafında korunuyor). */}
       {(() => {
         const keys = quickActions ?? DEFAULT_QUICK_ACTIONS;
         const items = keys
@@ -144,7 +148,7 @@ export default function PanelimPage() {
             </div>
             <div className="flex gap-3 overflow-x-auto -mx-1 px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {items.map((a) => (
-                <ActionCircle key={a.key} Icon={a.Icon} label={a.label} href={a.hrefFor(token)} />
+                <ActionCircle key={a.key} Icon={a.Icon} label={a.label} href={a.hrefFor("")} />
               ))}
             </div>
           </div>
