@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 import { ReturnButtons } from "@/components/return-buttons";
-import { LoadingState } from "@/components/banking";
+import { Skeleton } from "@/components/banking";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -44,7 +44,16 @@ export default function SunumlarimPage() {
       .catch(() => { setStatus("error"); setError("Bağlantı hatası."); });
   }, [token]);
 
-  if (status === "loading") return <LoadingState />;
+  if (status === "loading") {
+    return (
+      <div className="space-y-5 pb-24">
+        <Skeleton height="h-9" className="w-1/2" />
+        <Skeleton height="h-28" />
+        <Skeleton height="h-28" />
+        <Skeleton height="h-28" />
+      </div>
+    );
+  }
   if (status === "error") {
     return (
       <Center>

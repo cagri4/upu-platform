@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { LoadingState } from "@/components/banking";
+import { Skeleton } from "@/components/banking";
 
 interface Notification {
   id: number;
@@ -109,7 +109,11 @@ export function HistoryView() {
       </div>
 
       {status === "loading" ? (
-        <LoadingState variant="card" />
+        <div className="space-y-2">
+          <Skeleton height="h-20" />
+          <Skeleton height="h-20" />
+          <Skeleton height="h-20" />
+        </div>
       ) : status === "error" ? (
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center text-rose-600 text-sm shadow-sm">⚠️ {error}</div>
       ) : items.length === 0 ? (

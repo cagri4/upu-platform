@@ -17,7 +17,7 @@ import {
   Check,
 } from "lucide-react";
 import { ReturnButtons } from "@/components/return-buttons";
-import { LoadingState } from "@/components/banking";
+import { Skeleton } from "@/components/banking";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -156,7 +156,17 @@ export default function TakvimPage() {
     } finally { setBusyId(null); }
   }
 
-  if (status === "loading") return <LoadingState variant="card" />;
+  if (status === "loading") {
+    return (
+      <div className="space-y-5 pb-24">
+        <Skeleton height="h-9" className="w-1/2" />
+        <Skeleton height="h-14" />
+        <Skeleton height="h-24" />
+        <Skeleton height="h-24" />
+        <Skeleton height="h-24" />
+      </div>
+    );
+  }
   if (status === "error") {
     return (
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 text-center shadow-sm border border-slate-200/70 dark:border-slate-800">

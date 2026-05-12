@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { LoadingState } from "@/components/banking";
+import { Skeleton } from "@/components/banking";
 
 interface Plan {
   id: "pro_monthly" | "pro_yearly";
@@ -130,7 +130,16 @@ export default function UyelikPage() {
     }
   }
 
-  if (status === "loading") return <LoadingState />;
+  if (status === "loading") {
+    return (
+      <div className="space-y-5">
+        <Skeleton height="h-9" className="w-1/2" />
+        <Skeleton height="h-24" />
+        <Skeleton height="h-40" />
+        <Skeleton height="h-40" />
+      </div>
+    );
+  }
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <p className="text-slate-600 dark:text-slate-400 text-sm">{error}</p>
