@@ -148,37 +148,18 @@ export default function PanelimPage() {
   }
 
   const [heroIdx, setHeroIdx] = useState(0);
-  const [heroPaused, setHeroPaused] = useState(false);
-  // Manuel etkileşim sonrası auto-advance timer'ı resetlemek için kick counter
-  const [heroKick, setHeroKick] = useState(0);
 
-  // Auto-advance 6 sn — slides ≥ 2 ve hover/etkileşim pause değilse
-  useEffect(() => {
-    if (heroSlides.length < 2 || heroPaused) return;
-    const t = setInterval(
-      () => setHeroIdx((i) => (i + 1) % heroSlides.length),
-      6000,
-    );
-    return () => clearInterval(t);
-  }, [heroSlides.length, heroPaused, heroKick]);
-
-  // Slides sayısı azalırsa idx'i clamp et
+  // Slides sayısı azalırsa idx'i clamp et (örn trial → üyelik kaybı gibi
+  // pratikte olmayan durumlar için güvenlik)
   useEffect(() => {
     if (heroIdx >= heroSlides.length) setHeroIdx(0);
   }, [heroSlides.length, heroIdx]);
 
-  const heroPrev = () => {
+  const heroPrev = () =>
     setHeroIdx((i) => (i - 1 + heroSlides.length) % heroSlides.length);
-    setHeroKick((k) => k + 1);
-  };
-  const heroNext = () => {
+  const heroNext = () =>
     setHeroIdx((i) => (i + 1) % heroSlides.length);
-    setHeroKick((k) => k + 1);
-  };
-  const heroGoTo = (i: number) => {
-    setHeroIdx(i);
-    setHeroKick((k) => k + 1);
-  };
+  const heroGoTo = (i: number) => setHeroIdx(i);
 
   // Quick action items — kullanıcı tercihi (profiles.metadata.quick_actions)
   // yoksa default 6. Render aşağıda QuickActionsRow component'inde yapılır
@@ -190,18 +171,14 @@ export default function PanelimPage() {
   return (
     <div className="space-y-5 sm:space-y-6">
       {/* Hero slider — subscription fetch sürerken Skeleton (flicker fix).
-          Tek slide ise plain HeroBanner; ≥2 ise prev/next ok + dot indicator
-          + 6 sn auto-advance (hover ve manuel etkileşimde pause). */}
+          Tek slide ise plain HeroBanner; ≥2 ise prev/next ok + dot indicator.
+          Auto-advance YOK — sadece manuel kullanıcı kontrolü. */}
       {subscription === undefined ? (
         <Skeleton height="h-32" />
       ) : heroSlides.length === 1 ? (
         <HeroBanner {...heroSlides[0]} />
       ) : (
-        <div
-          className="relative"
-          onMouseEnter={() => setHeroPaused(true)}
-          onMouseLeave={() => setHeroPaused(false)}
-        >
+        <div className="relative">
           <HeroBanner {...heroSlides[heroIdx]} />
           <button
             type="button"
