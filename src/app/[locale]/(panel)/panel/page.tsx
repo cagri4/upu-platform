@@ -18,6 +18,7 @@ import {
   Monitor,
   ChevronLeft,
   ChevronRight,
+  type LucideIcon,
 } from "lucide-react";
 import { usePanelChrome } from "@/components/admin-layout";
 import { PwaInstallCard } from "@/components/pwa-install-card";
@@ -110,28 +111,74 @@ export default function PanelimPage() {
     return "Yükselt";
   };
 
-  // Hero içeriği — trial / pro / default
-  const heroProps = isTrial
-    ? {
-        title: `${subscription!.daysLeft} gün deneme kaldı`,
-        subtitle: "Pro'ya yükseltin, tüm özellikler kalıcı olarak açık kalsın.",
-        ctaLabel: "Pro'ya Geç",
-        ctaHref: q("/tr/uyelik"),
-        Icon: Crown,
-      }
-    : isPro
-      ? {
-          title: "Pro üye",
-          subtitle: "Tüm panel özellikleri ve AI işlemleri sınırsız kullanımda.",
-          Icon: Crown,
-        }
-      : {
-          title: "Hoş geldiniz",
-          subtitle: "Sisteminizi buradan yönetin. Pro üyelikle tüm özellikleri açın.",
-          ctaLabel: "Üyelik Planları",
-          ctaHref: q("/tr/uyelik"),
-          Icon: Sparkles,
-        };
+  // Hero slider — slide 1 her zaman "Hoş geldiniz". subscription trial/pro
+  // ise 2. slide olarak durum kartı eklenir. Üyelik yoksa tek slide → slider
+  // mantığı bypass (plain HeroBanner).
+  type HeroSlide = {
+    title: string;
+    subtitle: string;
+    ctaLabel?: string;
+    ctaHref?: string;
+    Icon: LucideIcon;
+  };
+  const heroSlides: HeroSlide[] = [
+    {
+      title: "Hoş geldiniz",
+      subtitle:
+        "Sisteminizi buradan yönetin. Hızlı işlemler ve mülk-müşteri akışı parmaklarınızın ucunda.",
+      ctaLabel: "Üyelik Planları",
+      ctaHref: q("/tr/uyelik"),
+      Icon: Sparkles,
+    },
+  ];
+  if (isTrial && subscription) {
+    heroSlides.push({
+      title: `${subscription.daysLeft} gün deneme kaldı`,
+      subtitle: "Pro'ya yükseltin, tüm özellikler kalıcı olarak açık kalsın.",
+      ctaLabel: "Pro'ya Geç",
+      ctaHref: q("/tr/uyelik"),
+      Icon: Crown,
+    });
+  } else if (isPro) {
+    heroSlides.push({
+      title: "Pro üye",
+      subtitle: "Tüm panel özellikleri ve AI işlemleri sınırsız kullanımda.",
+      Icon: Crown,
+    });
+  }
+
+  const [heroIdx, setHeroIdx] = useState(0);
+  const [heroPaused, setHeroPaused] = useState(false);
+  // Manuel etkileşim sonrası auto-advance timer'ı resetlemek için kick counter
+  const [heroKick, setHeroKick] = useState(0);
+
+  // Auto-advance 6 sn — slides ≥ 2 ve hover/etkileşim pause değilse
+  useEffect(() => {
+    if (heroSlides.length < 2 || heroPaused) return;
+    const t = setInterval(
+      () => setHeroIdx((i) => (i + 1) % heroSlides.length),
+      6000,
+    );
+    return () => clearInterval(t);
+  }, [heroSlides.length, heroPaused, heroKick]);
+
+  // Slides sayısı azalırsa idx'i clamp et
+  useEffect(() => {
+    if (heroIdx >= heroSlides.length) setHeroIdx(0);
+  }, [heroSlides.length, heroIdx]);
+
+  const heroPrev = () => {
+    setHeroIdx((i) => (i - 1 + heroSlides.length) % heroSlides.length);
+    setHeroKick((k) => k + 1);
+  };
+  const heroNext = () => {
+    setHeroIdx((i) => (i + 1) % heroSlides.length);
+    setHeroKick((k) => k + 1);
+  };
+  const heroGoTo = (i: number) => {
+    setHeroIdx(i);
+    setHeroKick((k) => k + 1);
+  };
 
   // Quick action items — kullanıcı tercihi (profiles.metadata.quick_actions)
   // yoksa default 6. Render aşağıda QuickActionsRow component'inde yapılır
@@ -142,12 +189,50 @@ export default function PanelimPage() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      {/* Hero — subscription fetch tamamlanmadan flicker'ı önlemek için
-          skeleton (default "Hoş geldiniz" → trial "X gün kaldı" sıçraması olmaz). */}
+      {/* Hero slider — subscription fetch sürerken Skeleton (flicker fix).
+          Tek slide ise plain HeroBanner; ≥2 ise prev/next ok + dot indicator
+          + 6 sn auto-advance (hover ve manuel etkileşimde pause). */}
       {subscription === undefined ? (
         <Skeleton height="h-32" />
+      ) : heroSlides.length === 1 ? (
+        <HeroBanner {...heroSlides[0]} />
       ) : (
-        <HeroBanner {...heroProps} />
+        <div
+          className="relative"
+          onMouseEnter={() => setHeroPaused(true)}
+          onMouseLeave={() => setHeroPaused(false)}
+        >
+          <HeroBanner {...heroSlides[heroIdx]} />
+          <button
+            type="button"
+            onClick={heroPrev}
+            aria-label="Önceki"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border border-white/20 dark:border-slate-700/30 rounded-full shadow-md hover:bg-white dark:hover:bg-slate-800 active:scale-95 transition"
+          >
+            <ChevronLeft className="w-4 h-4 text-slate-700 dark:text-slate-200" strokeWidth={2.4} />
+          </button>
+          <button
+            type="button"
+            onClick={heroNext}
+            aria-label="Sonraki"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border border-white/20 dark:border-slate-700/30 rounded-full shadow-md hover:bg-white dark:hover:bg-slate-800 active:scale-95 transition"
+          >
+            <ChevronRight className="w-4 h-4 text-slate-700 dark:text-slate-200" strokeWidth={2.4} />
+          </button>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+            {heroSlides.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => heroGoTo(i)}
+                aria-label={`Slayt ${i + 1}`}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === heroIdx ? "w-6 bg-white" : "w-1.5 bg-white/50 hover:bg-white/70"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Quick Actions — yatay scroll row. Cookie fast-path: panel'e ulaşan
@@ -293,7 +378,7 @@ function QuickActionsRow({ items }: { items: QuickActionDef[] }) {
               type="button"
               onClick={() => scrollByDelta(-120)}
               aria-label="Önceki"
-              className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-8 h-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition"
+              className="flex absolute left-0 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-7 h-7 sm:w-8 sm:h-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition"
             >
               <ChevronLeft className="w-4 h-4 text-slate-700 dark:text-slate-300" strokeWidth={2.2} />
             </button>
@@ -315,7 +400,7 @@ function QuickActionsRow({ items }: { items: QuickActionDef[] }) {
               type="button"
               onClick={() => scrollByDelta(120)}
               aria-label="Sonraki"
-              className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-8 h-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition"
+              className="flex absolute right-0 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-7 h-7 sm:w-8 sm:h-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition"
             >
               <ChevronRight className="w-4 h-4 text-slate-700 dark:text-slate-300" strokeWidth={2.2} />
             </button>
