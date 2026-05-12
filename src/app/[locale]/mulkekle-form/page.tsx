@@ -2,10 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import {
+  ArrowLeft,
+  ClipboardList,
+  Building2,
+  MapPin,
+  Wrench,
+  FileText,
+  Camera,
+  Loader2,
+  AlertTriangle,
+  Check,
+  Sparkles,
+  Plus,
+  MessageCircle,
+  X,
+  Info,
+} from "lucide-react";
 import { ChromeSuggest, ChromeOpenInlineLink } from "./chrome-suggest";
 import { useIsInAppBrowser } from "./use-in-app-browser";
-import { useWhatsappDeeplink } from "@/lib/whatsapp-deeplink";
-
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -33,6 +48,8 @@ const BUILDING_AGE = ["0 (Yeni)", "1", "2", "3", "4", "5-10", "11-15", "16-20", 
 const FLOOR_OPTIONS = ["Bodrum Kat", "Zemin Kat", "1", "2", "3", "4", "5", "6-10", "11+"];
 const TOTAL_FLOORS = ["1", "2", "3", "4", "5", "6-10", "11-15", "16-20", "21+"];
 
+const inputCls = "w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition";
+
 export default function MulkEkleFormPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token");
@@ -40,12 +57,10 @@ export default function MulkEkleFormPage() {
   const isEdit = !!editId;
 
   const { isInAppBrowser } = useIsInAppBrowser();
-  const waReturnHref = useWhatsappDeeplink(BOT_WA_NUMBER);
 
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState("");
 
-  // Form state
   const [title, setTitle] = useState("");
   const [listingType, setListingType] = useState("satilik");
   const [type, setType] = useState("daire");
@@ -79,7 +94,6 @@ export default function MulkEkleFormPage() {
   useEffect(() => {
     const tokenQs = token ? `&t=${encodeURIComponent(token)}` : "";
 
-    // Düzenleme modu: mevcut mülkün verilerini yükle
     if (isEdit) {
       fetch(`/api/mulklerim/get?id=${encodeURIComponent(editId!)}${tokenQs}`, { credentials: "same-origin" })
         .then(async (r) => {
@@ -135,7 +149,6 @@ export default function MulkEkleFormPage() {
   async function handlePhotoInput(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) {
-      // onChange fire etti ama files boş — WebView/mobil tarayıcı bug'ı
       setPhotoError(
         isInAppBrowser
           ? "Galeri foto seçemedi (mobil tarayıcı sınırı). Tek seferde 4 max foto deneyin veya yukarıdaki Chrome'da Aç butonunu kullanın."
@@ -146,10 +159,8 @@ export default function MulkEkleFormPage() {
     const remaining = 15 - photoUrls.length;
     if (remaining <= 0) { setPhotoError("Maksimum 15 fotoğraf."); return; }
 
-    // WebView'de 5+ foto silent fail riskli — cap=4. Standalone Chrome/desktop'ta
-    // limit yok, kullanıcı remaining kadar yükleyebilir (toplam 15'e dek).
     const cap = isInAppBrowser ? 4 : remaining;
-    let toUpload = files.slice(0, Math.min(remaining, cap));
+    const toUpload = files.slice(0, Math.min(remaining, cap));
     if (isInAppBrowser && files.length > cap) {
       setPhotoError(`${files.length} foto seçtiniz — sadece ilk ${cap}'ünü yüklüyorum. Geri kalanını "Fotoğraf Ekle"ye tekrar basıp ekleyin.`);
     } else if (files.length > remaining) {
@@ -158,7 +169,6 @@ export default function MulkEkleFormPage() {
     setPhotoUploading(true);
     setPhotoError("");
     setPhotoProgress({ done: 0, total: toUpload.length });
-    const uploaded: string[] = [];
     try {
       for (let i = 0; i < toUpload.length; i++) {
         const file = toUpload[i];
@@ -173,7 +183,6 @@ export default function MulkEkleFormPage() {
             break;
           }
           if (data.url) {
-            uploaded.push(data.url);
             setPhotoUrls(prev => [...prev, data.url]);
           }
         } catch (err) {
@@ -244,49 +253,61 @@ export default function MulkEkleFormPage() {
     }
   }
 
-  if (status === "loading") return <Center><div className="text-4xl mb-3">⏳</div><p>Link doğrulanıyor...</p></Center>;
-  if (status === "error") return <Center>
-    <div className="text-4xl mb-3">⚠️</div>
-    <h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
-    <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp'a dön</a>
-  </Center>;
-  if (status === "done") return <Center>
-    <div className="text-5xl mb-3">{isEdit ? "✅" : "🎉"}</div>
-    <h1 className="text-xl font-bold mb-2 text-slate-900 dark:text-slate-100">{isEdit ? "Mülk güncellendi!" : "Mülk eklendi!"}</h1>
-    <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">
-      {isEdit
-        ? "Değişiklikler kaydedildi."
-        : "Bu mülke ait sunumu sizin için hazırlamaya başladım bile.. Birazdan panel > Sunumlarım bölümünden inceleyebilirsiniz."}
-    </p>
-    <div className="space-y-2">
-      <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`} className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
-        🖥 Panele Dön
-      </a>
-      {!isEdit && (
-        <a href={token ? `/api/panel/start?cmd=mulkekle&t=${encodeURIComponent(token)}` : `/api/panel/start?cmd=mulkekle`} className="block w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
-          ➕ Yeni Mülk Ekle
+  if (status === "loading") {
+    return (
+      <Center>
+        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mx-auto mb-3" />
+        <p className="text-slate-600 dark:text-slate-400">Link doğrulanıyor...</p>
+      </Center>
+    );
+  }
+  if (status === "error") {
+    return (
+      <Center>
+        <AlertTriangle className="w-10 h-10 text-rose-600 mx-auto mb-3" />
+        <h1 className="text-xl font-bold mb-2 text-slate-900 dark:text-white">Hata</h1>
+        <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
+        <a
+          href={`https://wa.me/${BOT_WA_NUMBER}`}
+          className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition"
+        >
+          <MessageCircle className="w-4 h-4" /> WhatsApp&apos;a dön
         </a>
-      )}
-      <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="block w-full bg-green-600 hover:bg-green-700 text-white text-center font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition">
-        💬 WhatsApp&apos;a Dön
-      </a>
-    </div>
-  </Center>;
+      </Center>
+    );
+  }
+  if (status === "done") {
+    return (
+      <DoneState
+        isEdit={isEdit}
+        panelHref={token ? `/tr/panel?t=${encodeURIComponent(token)}` : "/tr/panel"}
+        addMoreHref={token ? `/api/panel/start?cmd=mulkekle&t=${encodeURIComponent(token)}` : "/api/panel/start?cmd=mulkekle"}
+      />
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
-      <div className="max-w-md mx-auto p-4">
-        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-2xl p-5 mb-5">
-          <div className="text-3xl mb-1">{isEdit ? "✏️" : "🏠"}</div>
-          <h1 className="text-xl font-bold">{isEdit ? "Mülkü Düzenle" : "Mülk Ekle"}</h1>
-          <p className="text-blue-100 text-sm mt-1">
-            {isEdit ? "Bilgileri güncelleyin ve kaydedin." : "💡 İpucu: Ne kadar bilgi girerseniz AI o kadar iyi sunum yazar."}
-          </p>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-32">
+      <div className="max-w-md mx-auto p-4 space-y-5">
+        {/* Hero */}
+        <div className="flex items-center gap-3">
+          <a
+            href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : "/tr/panel"}
+            className="p-2 -ml-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+            aria-label="Geri"
+          >
+            <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-300" strokeWidth={2.2} />
+          </a>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+            {isEdit ? "Mülk Düzenle" : "Yeni Mülk"}
+          </h1>
         </div>
+        <p className="text-sm text-slate-600 dark:text-slate-400 -mt-3">
+          {isEdit ? "Bilgileri güncelleyin ve kaydedin." : "Ne kadar bilgi girerseniz AI o kadar iyi sunum yazar."}
+        </p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <Section title="📋 Temel Bilgiler">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Section title="Temel Bilgiler" Icon={ClipboardList}>
             <Field label="Başlık *">
               <input required value={title} onChange={e => setTitle(e.target.value)} placeholder="Yalıkavak 2+1 Deniz Manzaralı" className={inputCls} />
             </Field>
@@ -303,25 +324,25 @@ export default function MulkEkleFormPage() {
                 className={inputCls}
               />
             </Field>
-            <Row>
+            <div className="grid grid-cols-2 gap-3">
               <Field label="m² Brüt"><input type="number" value={area} onChange={e => setArea(e.target.value)} className={inputCls} /></Field>
               <Field label="m² Net"><input type="number" value={netArea} onChange={e => setNetArea(e.target.value)} className={inputCls} /></Field>
-            </Row>
+            </div>
             <Pills label="Oda" value={rooms} options={ROOMS_OPTIONS.map(r => ({id:r,label:r}))} onPick={setRooms} cols={3} />
           </Section>
 
-          <Section title="🏢 Bina">
+          <Section title="Bina" Icon={Building2}>
             <Pills label="Kat" value={floor} options={FLOOR_OPTIONS.map(f => ({id:f,label:f}))} onPick={setFloor} cols={3} />
             <Pills label="Toplam Kat" value={totalFloors} options={TOTAL_FLOORS.map(f => ({id:f,label:f}))} onPick={setTotalFloors} cols={3} />
             <Pills label="Bina Yaşı" value={buildingAge} options={BUILDING_AGE.map(a => ({id:a,label:a}))} onPick={setBuildingAge} cols={3} />
           </Section>
 
-          <Section title="📍 Konum">
+          <Section title="Konum" Icon={MapPin}>
             <GeoPicker city={city} district={district} neighborhood={neighborhood}
               onCity={setCity} onDistrict={setDistrict} onNeighborhood={setNeighborhood} />
           </Section>
 
-          <Section title="🔧 Detaylar">
+          <Section title="Detaylar" Icon={Wrench}>
             <MultiPills label="Isıtma (birden fazla)" values={heating} options={HEATING_OPTIONS} onToggle={v => toggleArr(heating, v, setHeating)} cols={2} />
             <MultiPills label="Otopark (birden fazla)" values={parking} options={PARKING_OPTIONS} onToggle={v => toggleArr(parking, v, setParking)} cols={2} />
             <MultiPills label="Cephe (birden fazla)" values={facade} options={FACADE_OPTIONS} onToggle={v => toggleArr(facade, v, setFacade)} cols={4} />
@@ -335,13 +356,13 @@ export default function MulkEkleFormPage() {
             <YesNo label="Takas" value={swap} onPick={setSwap} />
           </Section>
 
-          <Section title="📝 Açıklama">
+          <Section title="Açıklama" Icon={FileText}>
             <Field label="İlan Açıklaması">
-              <textarea rows={5} value={description} onChange={e => setDescription(e.target.value)} placeholder="Serbest metin veya boş bırak, AI sonra yazar" className={inputCls} />
+              <textarea rows={5} value={description} onChange={e => setDescription(e.target.value)} placeholder="Serbest metin veya boş bırak, AI sonra yazar" className={`${inputCls} resize-none`} />
             </Field>
           </Section>
 
-          <Section title="📷 Fotoğraflar">
+          <Section title="Fotoğraflar" Icon={Camera}>
             <div className="space-y-3">
               <label className="block">
                 <input
@@ -352,49 +373,63 @@ export default function MulkEkleFormPage() {
                   disabled={photoUploading || photoUrls.length >= 15}
                   className="hidden"
                 />
-                <span className={`block w-full text-center py-3 rounded-lg font-medium border-2 border-dashed cursor-pointer ${photoUploading ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-800 animate-pulse" : photoUrls.length >= 15 ? "border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-900 text-slate-400" : "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 active:bg-indigo-100"}`}>
-                  {photoUploading
-                    ? photoProgress
-                      ? `⏳ Yükleniyor... ${photoProgress.done}/${photoProgress.total}`
-                      : "⏳ Yükleniyor..."
-                    : photoUrls.length >= 15
-                      ? "Maksimum 15 fotoğraf doldu"
-                      : `📷 Fotoğraf Ekle (${photoUrls.length}/15)`}
+                <span
+                  className={`flex items-center justify-center gap-2 w-full text-center py-3 rounded-xl font-medium border-2 border-dashed cursor-pointer transition ${
+                    photoUploading
+                      ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 animate-pulse"
+                      : photoUrls.length >= 15
+                        ? "border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-500 cursor-not-allowed"
+                        : "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
+                  }`}
+                >
+                  {photoUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {photoProgress ? `Yükleniyor... ${photoProgress.done}/${photoProgress.total}` : "Yükleniyor..."}
+                    </>
+                  ) : photoUrls.length >= 15 ? (
+                    "Maksimum 15 fotoğraf doldu"
+                  ) : (
+                    <>
+                      <Camera className="w-4 h-4" strokeWidth={2.2} />
+                      Fotoğraf Ekle ({photoUrls.length}/15)
+                    </>
+                  )}
                 </span>
               </label>
-              <p className="text-xs text-slate-500">Sunumda otomatik kullanılacak. İlk fotoğraf kapak olur.</p>
-              {/* Chrome ipucu yalnız WA/in-app WebView'da görünür. Seçenek A
-                  intent:// ile kullanıcıyı Chrome'a yönlendirdiği için
-                  WebView dışı durumda ipucu gereksiz; rare WebView fallback
-                  case için tutuldu. */}
+              <p className="text-xs text-slate-500 dark:text-slate-400">Sunumda otomatik kullanılacak. İlk fotoğraf kapak olur.</p>
               {isInAppBrowser && (
-                <p className="text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg px-3 py-2">
-                  💡 Tek seferde en fazla <strong>4 fotoğraf</strong> ekleyin, ya da <ChromeOpenInlineLink /> ve hepsini birden ekleyin.
+                <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl px-3 py-2 flex items-start gap-2">
+                  <Info className="w-4 h-4 flex-shrink-0 mt-0.5" strokeWidth={2.2} />
+                  <span>
+                    Tek seferde en fazla <strong>4 fotoğraf</strong> ekleyin, ya da <ChromeOpenInlineLink /> ve hepsini birden ekleyin.
+                  </span>
                 </p>
               )}
               <ChromeSuggest />
 
               {photoError && (
-                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-3 py-2 rounded-lg text-sm">
-                  ⚠️ {photoError}
+                <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 px-3 py-2 rounded-xl text-sm flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" strokeWidth={2.2} /> {photoError}
                 </div>
               )}
 
               {photoUrls.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">
                   {photoUrls.map((url, idx) => (
-                    <div key={url} className="relative aspect-square rounded-lg overflow-hidden bg-slate-200">
+                    <div key={url} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={url} alt={`Fotoğraf ${idx + 1}`} className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => removePhoto(idx)}
-                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 text-xs font-bold shadow"
-                        aria-label="Sil">
-                        ×
+                        className="absolute top-1.5 right-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md transition active:scale-90"
+                        aria-label="Sil"
+                      >
+                        <X className="w-3.5 h-3.5" strokeWidth={2.5} />
                       </button>
                       {idx === 0 && (
-                        <div className="absolute bottom-0 inset-x-0 bg-indigo-600 text-white text-xs text-center py-0.5 font-medium">
+                        <div className="absolute bottom-0 inset-x-0 bg-emerald-600 text-white text-xs text-center py-0.5 font-medium">
                           Kapak
                         </div>
                       )}
@@ -405,78 +440,155 @@ export default function MulkEkleFormPage() {
             </div>
           </Section>
 
-          {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
-
-          <div className="grid grid-cols-2 gap-2">
-            <button type="submit" disabled={status === "saving"}
-              className="bg-green-600 text-white py-4 rounded-xl font-semibold text-base shadow-lg disabled:opacity-60 active:scale-95 transition">
-              {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet"}
-            </button>
-            <a href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : `/tr/panel`}
-              className="flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-4 rounded-xl text-base font-medium hover:bg-slate-50 active:scale-95 transition">
-              🖥 Panele
-            </a>
-          </div>
+          {error && (
+            <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" strokeWidth={2.2} /> {error}
+            </div>
+          )}
         </form>
+      </div>
+
+      <StickyBottom>
+        <button
+          type="submit"
+          onClick={handleSubmit}
+          disabled={status === "saving"}
+          className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white py-4 rounded-2xl font-semibold shadow-sm active:scale-[0.98] transition"
+        >
+          <Check className="w-5 h-5" strokeWidth={2.5} />
+          {status === "saving" ? "Kaydediliyor..." : (isEdit ? "Güncelle" : "Kaydet")}
+        </button>
+      </StickyBottom>
+    </div>
+  );
+}
+
+function Section({ title, Icon, children }: { title: string; Icon: typeof Building2; children: React.ReactNode }) {
+  return (
+    <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 space-y-4">
+      <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+        <Icon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.2} />
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function StickyBottom({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="fixed bottom-0 inset-x-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800 p-3 z-10">
+      <div className="max-w-md mx-auto flex gap-2">{children}</div>
+    </div>
+  );
+}
+
+function Center({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-sm w-full text-center shadow-sm border border-slate-200/70 dark:border-slate-800">
+        {children}
       </div>
     </div>
   );
 }
 
-const inputCls = "w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 text-base text-slate-900 dark:text-slate-100 placeholder:text-slate-400";
-
-function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
-    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
-  </div>;
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm space-y-4">
-    <h2 className="font-bold text-slate-900 dark:text-slate-100">{title}</h2>
-    {children}
-  </section>;
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div>
-    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>
-    {children}
-  </div>;
-}
-
-function Row({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-2 gap-3">{children}</div>;
+function DoneState({ isEdit, panelHref, addMoreHref }: { isEdit: boolean; panelHref: string; addMoreHref: string }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 max-w-sm w-full shadow-sm border border-slate-200/70 dark:border-slate-800 flex flex-col items-center text-center">
+        <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
+          {isEdit ? (
+            <Check className="w-8 h-8 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
+          ) : (
+            <Sparkles className="w-8 h-8 text-emerald-600 dark:text-emerald-400" strokeWidth={2.2} />
+          )}
+        </div>
+        <h1 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">
+          {isEdit ? "Mülk güncellendi" : "Mülk eklendi"}
+        </h1>
+        <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">
+          {isEdit
+            ? "Değişiklikler kaydedildi."
+            : "Bu mülke ait sunumu sizin için hazırlamaya başladım. Birazdan panel > Sunumlarım bölümünden inceleyebilirsiniz."}
+        </p>
+        <div className="w-full space-y-2">
+          <a href={panelHref} className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center font-semibold py-4 rounded-2xl shadow-sm active:scale-[0.98] transition">
+            Panele Dön
+          </a>
+          {!isEdit && (
+            <a href={addMoreHref} className="flex items-center justify-center gap-2 w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-center font-semibold py-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] transition">
+              <Plus className="w-4 h-4" strokeWidth={2.5} /> Yeni Mülk Ekle
+            </a>
+          )}
+          <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="flex items-center justify-center gap-2 w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-center font-semibold py-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] transition">
+            <MessageCircle className="w-4 h-4" /> WhatsApp&apos;a Dön
+          </a>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function Pills({ label, value, options, onPick, cols = 2 }: { label: string; value: string; options: {id:string;label:string}[]; onPick: (v:string)=>void; cols?: number }) {
   const colClass = cols === 4 ? "grid-cols-4" : cols === 3 ? "grid-cols-3" : "grid-cols-2";
-  return <div>
-    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>
-    <div className={`grid ${colClass} gap-2`}>
-      {options.map(o => (
-        <button type="button" key={o.id} onClick={() => onPick(value === o.id ? "" : o.id)}
-          className={`py-2 rounded-lg text-sm font-medium border-2 ${value === o.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600"}`}>
-          {o.label}
-        </button>
-      ))}
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{label}</label>
+      <div className={`grid ${colClass} gap-2`}>
+        {options.map(o => (
+          <button
+            type="button"
+            key={o.id}
+            onClick={() => onPick(value === o.id ? "" : o.id)}
+            className={`px-3 py-2.5 rounded-xl text-sm font-medium transition active:scale-[0.97] ${
+              value === o.id
+                ? "bg-emerald-600 text-white border border-emerald-600"
+                : "bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-emerald-400 dark:hover:border-emerald-500"
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
     </div>
-  </div>;
+  );
 }
 
 function MultiPills({ label, values, options, onToggle, cols = 2 }: { label: string; values: string[]; options: string[]; onToggle: (v:string)=>void; cols?: number }) {
   const colClass = cols === 4 ? "grid-cols-4" : cols === 3 ? "grid-cols-3" : "grid-cols-2";
-  return <div>
-    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>
-    <div className={`grid ${colClass} gap-2`}>
-      {options.map(o => (
-        <button type="button" key={o} onClick={() => onToggle(o)}
-          className={`py-2 rounded-lg text-xs font-medium border-2 ${values.includes(o) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600"}`}>
-          {o}
-        </button>
-      ))}
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+        {label} <span className="text-slate-400 dark:text-slate-500 text-xs font-normal">({values.length} seçili)</span>
+      </label>
+      <div className={`grid ${colClass} gap-2`}>
+        {options.map(o => (
+          <button
+            type="button"
+            key={o}
+            onClick={() => onToggle(o)}
+            className={`px-3 py-2.5 rounded-xl text-xs font-medium transition active:scale-[0.97] ${
+              values.includes(o)
+                ? "bg-emerald-600 text-white border border-emerald-600"
+                : "bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-emerald-400 dark:hover:border-emerald-500"
+            }`}
+          >
+            {o}
+          </button>
+        ))}
+      </div>
     </div>
-  </div>;
+  );
 }
 
 function GeoPicker({ city, district, neighborhood, onCity, onDistrict, onNeighborhood }:
@@ -501,44 +613,51 @@ function GeoPicker({ city, district, neighborhood, onCity, onDistrict, onNeighbo
       .then(r => r.json()).then(d => setMahalleler(d.mahalleler || []));
   }, [city, district]);
 
-  const sel = "w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 mb-4 text-base text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800";
   return (
-    <>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Şehir</label>
-        <select value={city} onChange={e => { onCity(e.target.value); onDistrict(""); onNeighborhood(""); }} className={sel}>
+    <div className="space-y-3">
+      <Field label="Şehir">
+        <select value={city} onChange={e => { onCity(e.target.value); onDistrict(""); onNeighborhood(""); }} className={inputCls}>
           <option value="">— Seç —</option>
           {iller.map(i => <option key={i} value={i}>{i}</option>)}
         </select>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">İlçe</label>
-        <select value={district} onChange={e => { onDistrict(e.target.value); onNeighborhood(""); }} disabled={!city} className={sel}>
+      </Field>
+      <Field label="İlçe">
+        <select value={district} onChange={e => { onDistrict(e.target.value); onNeighborhood(""); }} disabled={!city} className={`${inputCls} disabled:opacity-60 disabled:cursor-not-allowed`}>
           <option value="">— Seç —</option>
           {ilceler.map(i => <option key={i} value={i}>{i}</option>)}
         </select>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Mahalle</label>
-        <select value={neighborhood} onChange={e => onNeighborhood(e.target.value)} disabled={!district} className={sel}>
+      </Field>
+      <Field label="Mahalle">
+        <select value={neighborhood} onChange={e => onNeighborhood(e.target.value)} disabled={!district} className={`${inputCls} disabled:opacity-60 disabled:cursor-not-allowed`}>
           <option value="">— Seç —</option>
           {mahalleler.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
-      </div>
-    </>
+      </Field>
+    </div>
   );
 }
 
 function YesNo({ label, value, onPick }: { label: string; value: boolean | null; onPick: (v: boolean | null) => void }) {
-  return <div>
-    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>
-    <div className="grid grid-cols-3 gap-2">
-      <button type="button" onClick={() => onPick(true)}
-        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === true ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600"}`}>Evet</button>
-      <button type="button" onClick={() => onPick(false)}
-        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === false ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600"}`}>Hayır</button>
-      <button type="button" onClick={() => onPick(null)}
-        className={`py-2 rounded-lg text-sm font-medium border-2 ${value === null ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600"}`}>Belirtme</button>
+  const opts: [string, boolean | null][] = [["Evet", true], ["Hayır", false], ["Belirtme", null]];
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{label}</label>
+      <div className="grid grid-cols-3 gap-2">
+        {opts.map(([lbl, v]) => (
+          <button
+            key={lbl}
+            type="button"
+            onClick={() => onPick(v)}
+            className={`px-3 py-2.5 rounded-xl text-sm font-medium transition active:scale-[0.97] ${
+              value === v
+                ? "bg-emerald-600 text-white border border-emerald-600"
+                : "bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-emerald-400 dark:hover:border-emerald-500"
+            }`}
+          >
+            {lbl}
+          </button>
+        ))}
+      </div>
     </div>
-  </div>;
+  );
 }
