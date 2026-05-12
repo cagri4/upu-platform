@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Share2, MessageCircle, Copy, Check, Send } from "lucide-react";
 
 export function ShareFAB({ title }: { title: string }) {
   const [copied, setCopied] = useState(false);
@@ -46,39 +47,40 @@ export function ShareFAB({ title }: { title: string }) {
     <>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-5 left-5 z-40 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-lg flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition"
+        className="fixed bottom-5 left-5 z-40 w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg flex items-center justify-center active:scale-95 transition"
         aria-label="Paylaş"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-        </svg>
+        <Share2 className="w-6 h-6" strokeWidth={2.2} />
       </button>
 
       {open && (
-        <div className="fixed bottom-24 left-5 z-40 bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-3 w-64 space-y-2 border border-slate-200 dark:border-slate-800/50">
+        <div className="fixed bottom-24 left-5 z-40 bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-3 w-64 space-y-1 border border-slate-200 dark:border-slate-800">
           <button
             onClick={() => { whatsapp(); setOpen(false); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-green-50 active:bg-green-100 text-left"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/30 active:bg-emerald-100 dark:active:bg-emerald-900/40 text-left transition"
           >
-            <span className="text-xl">💬</span>
+            <MessageCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" strokeWidth={2.2} />
             <span className="text-sm font-medium text-slate-800 dark:text-slate-200">WhatsApp ile paylaş</span>
           </button>
           <button
             onClick={() => { void copy(); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 active:bg-slate-100 text-left"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 text-left transition"
           >
-            <span className="text-xl">{copied ? "✅" : "🔗"}</span>
+            {copied ? (
+              <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" strokeWidth={2.5} />
+            ) : (
+              <Copy className="w-5 h-5 text-slate-600 dark:text-slate-400 flex-shrink-0" strokeWidth={2.2} />
+            )}
             <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
-              {copied ? "Kopyalandı!" : "Linki kopyala"}
+              {copied ? "Kopyalandı" : "Linki kopyala"}
             </span>
           </button>
           {typeof navigator !== "undefined" && (
             <button
               onClick={() => { void nativeShare(); setOpen(false); }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-indigo-50 active:bg-indigo-100 text-left"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 text-left transition"
             >
-              <span className="text-xl">📤</span>
+              <Send className="w-5 h-5 text-slate-600 dark:text-slate-400 flex-shrink-0" strokeWidth={2.2} />
               <span className="text-sm font-medium text-slate-800 dark:text-slate-200">Diğer uygulamalar</span>
             </button>
           )}

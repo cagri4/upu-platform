@@ -262,18 +262,22 @@ export default async function PresentationPage({ params }: PageProps) {
     <html lang="tr">
       <body className="bg-stone-50 dark:bg-stone-950/30 text-stone-900 antialiased overflow-hidden">
         {/* Owner-only fixed back bar — sticky parent overflow-x ile bozulduğu
-            için fixed konumlanmış; z-50 ile slide content'in üstünde kalır. */}
+            için fixed konumlanmış; z-50 ile slide content'in üstünde kalır.
+            Banking-style: beyaz/95 backdrop blur + Lucide ArrowLeft + emerald hover. */}
         {isOwner && (
-          <div className="fixed top-0 left-0 right-0 z-50 h-11 bg-white/95 backdrop-blur border-b border-stone-200 dark:border-stone-800/50 print:hidden">
+          <div className="fixed top-0 left-0 right-0 z-50 h-11 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 print:hidden">
             <div className="max-w-6xl mx-auto px-4 h-full flex items-center justify-between">
               <a
                 href="/tr/sunumlarim"
-                className="inline-flex items-center gap-2 text-sm font-medium text-stone-700 hover:text-stone-900"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-400 transition"
               >
-                <span aria-hidden="true">←</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4" aria-hidden="true">
+                  <path d="m12 19-7-7 7-7" />
+                  <path d="M19 12H5" />
+                </svg>
                 <span>Sunumlarım</span>
               </a>
-              <span className="text-xs text-stone-400">Sahip görünümü</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500">Sahip görünümü</span>
             </div>
           </div>
         )}

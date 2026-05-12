@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Pencil, Trash2, Loader2, AlertTriangle, Check } from "lucide-react";
 
 interface Props {
   presToken: string;
@@ -75,58 +76,67 @@ export function SlideControls({ presToken, slideKey, initialText, editable }: Pr
 
   return (
     <>
-      {/* Sağ üst köşedeki ufak kontrol kutusu */}
+      {/* Sağ üst köşedeki banking-style kontrol kutusu */}
       <div className="absolute top-3 right-3 z-10 flex gap-1.5 print:hidden">
         {editable && (
           <button
             onClick={() => setEditing(true)}
-            className="bg-white/95 hover:bg-white shadow-md rounded-full w-9 h-9 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-indigo-600 active:scale-95 border border-slate-200 dark:border-slate-800/50"
+            className="bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-md rounded-full w-9 h-9 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 border border-slate-200 dark:border-slate-800 transition"
             title="Düzenle"
             aria-label="Düzenle"
           >
-            ✏️
+            <Pencil className="w-4 h-4" strokeWidth={2.2} />
           </button>
         )}
         <button
           onClick={() => void del()}
           disabled={deleting}
-          className="bg-white/95 hover:bg-white shadow-md rounded-full w-9 h-9 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-red-600 active:scale-95 border border-slate-200 dark:border-slate-800/50 disabled:opacity-50"
+          className="bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-md rounded-full w-9 h-9 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 border border-slate-200 dark:border-slate-800 disabled:opacity-50 transition"
           title="Sayfayı sil"
           aria-label="Sayfayı sil"
         >
-          {deleting ? "⏳" : "🗑️"}
+          {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" strokeWidth={2.2} />}
         </button>
       </div>
 
-      {/* Modal düzenleyici */}
+      {/* Modal düzenleyici — banking style */}
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => !saving && setEditing(false)}>
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">Slaytı Düzenle</h3>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 max-w-lg w-full p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+              <Pencil className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.2} />
+              Slaytı Düzenle
+            </h3>
             <textarea
               rows={8}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-sm text-slate-900 dark:text-slate-100"
+              className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition resize-none"
               placeholder="Slayt metnini yazın..."
             />
             {error && (
-              <div className="mt-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-3 py-2 rounded text-sm">⚠️ {error}</div>
+              <div className="mt-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 px-3 py-2 rounded-xl text-sm flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" strokeWidth={2.2} /> {error}
+              </div>
             )}
             <div className="flex gap-2 mt-4">
               <button
                 onClick={() => setEditing(false)}
                 disabled={saving}
-                className="flex-1 px-4 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-medium disabled:opacity-50"
+                className="flex-1 px-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] disabled:opacity-50 transition"
               >
                 İptal
               </button>
               <button
                 onClick={() => void save()}
                 disabled={saving}
-                className="flex-1 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-50 active:scale-[0.98] transition shadow-sm"
               >
-                {saving ? "Kaydediliyor..." : "✅ Tamam"}
+                {saving ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Kaydediliyor</>
+                ) : (
+                  <><Check className="w-4 h-4" strokeWidth={2.5} /> Tamam</>
+                )}
               </button>
             </div>
           </div>
