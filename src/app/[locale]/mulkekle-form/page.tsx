@@ -133,8 +133,20 @@ export default function MulkEkleFormPage() {
       return;
     }
 
-    const setupQs = token ? `?token=${encodeURIComponent(token)}` : "";
-    fetch(`/api/setup/init${setupQs}`, { credentials: "same-origin" })
+    // Cookie fast-path — token yoksa setup/init (token-only) çağrısı gereksiz.
+    if (!token) {
+      fetch("/api/panel/cookie-check", { credentials: "same-origin" })
+        .then((r) => {
+          if (r.ok) { setStatus("form"); return; }
+          setStatus("error");
+          setError("Bu sayfayı görmek için panele giriş yapın.");
+        })
+        .catch(() => { setStatus("error"); setError("Bağlantı hatası."); });
+      return;
+    }
+
+    // Token varsa legacy WA magic link akışı aynen.
+    fetch(`/api/setup/init?token=${encodeURIComponent(token)}`, { credentials: "same-origin" })
       .then(async (r) => {
         const data = await r.json();
         if (!r.ok) { setStatus("error"); setError(data.error || "Link doğrulanamadı."); return; }
@@ -254,7 +266,7 @@ export default function MulkEkleFormPage() {
     }
   }
 
-  if (status === "loading") return <LoadingState label="Link doğrulanıyor" />;
+  if (status === "loading") return <LoadingState label={token ? "Link doğrulanıyor" : "Hazırlanıyor"} />;
   if (status === "error") {
     return (
       <Center>

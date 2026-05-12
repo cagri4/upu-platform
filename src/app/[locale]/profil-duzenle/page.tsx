@@ -116,7 +116,7 @@ export default function ProfilDuzenlePage() {
     }
   }
 
-  if (status === "loading") return <LoadingState />;
+  if (status === "loading") return <LoadingState label={token ? "Link doğrulanıyor" : "Hazırlanıyor"} />;
   if (status === "error") {
     return (
       <Center>

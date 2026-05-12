@@ -80,8 +80,20 @@ export default function MusteriEkleFormPage() {
       return;
     }
 
-    const tokenQs = token ? `?t=${encodeURIComponent(token)}` : "";
-    fetch(`/api/musteri/init${tokenQs}`, { credentials: "same-origin" })
+    // Cookie fast-path — musteri/init sadece auth validate eder, ek data dönmez.
+    if (!token) {
+      fetch("/api/panel/cookie-check", { credentials: "same-origin" })
+        .then((r) => {
+          if (r.ok) { setStatus("form"); return; }
+          setStatus("error");
+          setError("Bu sayfayı görmek için panele giriş yapın.");
+        })
+        .catch(() => { setStatus("error"); setError("Bağlantı hatası."); });
+      return;
+    }
+
+    // Token varsa legacy WA akışı aynen.
+    fetch(`/api/musteri/init?t=${encodeURIComponent(token)}`, { credentials: "same-origin" })
       .then(async (r) => {
         const d = await r.json();
         if (!r.ok) { setStatus("error"); setError(d.error || "Link doğrulanamadı."); return; }
@@ -141,7 +153,7 @@ export default function MusteriEkleFormPage() {
     }
   }
 
-  if (status === "loading") return <LoadingState />;
+  if (status === "loading") return <LoadingState label={token ? "Link doğrulanıyor" : "Hazırlanıyor"} />;
   if (status === "error") {
     return (
       <Center>

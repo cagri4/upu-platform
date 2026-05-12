@@ -136,7 +136,7 @@ export default function SozlesmeYapPage() {
     }).catch(() => {});
   }
 
-  if (status === "loading") return <LoadingState variant="card" />;
+  if (status === "loading") return <LoadingState variant="card" label={token ? "Link doğrulanıyor" : "Hazırlanıyor"} />;
 
   if (status === "error") {
     return (
