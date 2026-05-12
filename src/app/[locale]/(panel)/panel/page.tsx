@@ -190,7 +190,7 @@ export default function PanelimPage() {
       <SahibindenTutorialCard />
 
       {/* Bilgisayardan Kullan — feature highlight */}
-      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl p-5 shadow-sm">
+      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-900/30 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl p-5 shadow-sm">
         <div className="flex items-start gap-4">
           <div className="text-3xl flex-shrink-0">🖥</div>
           <div className="flex-1 min-w-0">
@@ -261,7 +261,7 @@ function SahibindenTutorialCard() {
     { n: "6️⃣", title: "Eklenti üst köşede görünecek", desc: "Mülk seçin, tek tıkla form otomatik dolar." },
   ];
   return (
-    <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-5 shadow-sm">
+    <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-900/30 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-5 shadow-sm">
       <div className="flex items-start gap-4">
         <div className="text-3xl flex-shrink-0">📋</div>
         <div className="flex-1 min-w-0">
