@@ -171,6 +171,70 @@ const TYPE_LABELS: Record<string, string> = {
   rezidans: "Rezidans", yazlik: "Yazlık", buro_ofis: "Ofis", dukkan: "Dükkan",
 };
 
+// Inline Lucide SVG'leri (server component → client primitive yerine sade SVG)
+function IconHome({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1V10.5Z" />
+    </svg>
+  );
+}
+function IconUser({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+function IconMessageCircle({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+    </svg>
+  );
+}
+function IconPhone({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+  );
+}
+function IconMapPin({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0 1 16 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+function IconAt({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" />
+    </svg>
+  );
+}
+function IconPresentation({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M2 3h20" />
+      <path d="M21 3v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3" />
+      <path d="m7 21 5-6 5 6" />
+      <path d="M12 15v6" />
+    </svg>
+  );
+}
+function IconChevronRight({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
 export default async function AgentLandingPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const sp = searchParams ? await searchParams : {};
@@ -182,7 +246,6 @@ export default async function AgentLandingPage({ params, searchParams }: PagePro
 
   // Owner kontrolü: cookie session uid'si site sahibinin user_id'si ile
   // eşleşirse veya legacy ?t=/?token= query'si verilmişse owner sayılır.
-  // Public ziyaretçide owner toolbar/EditFAB DOM'a hiç eklenmez.
   const session = await getSessionFromCookies();
   const isOwner = (!!session && session.uid === profile.id) || !!ownerToken;
   const name = agent.full_name || profile.display_name || "Emlak Danışmanı";
@@ -200,54 +263,67 @@ export default async function AgentLandingPage({ params, searchParams }: PagePro
     propertyTypeCount > 0 ? { label: "Mülk Tipi", value: `${propertyTypeCount}` } : null,
   ].filter((x): x is { label: string; value: string } => x !== null);
 
+  const waHref = phone ? `https://wa.me/${phone.replace(/\D/g, "")}` : null;
+  const telHref = phone ? `tel:${phone}` : null;
+
   return (
     <html lang="tr">
-      <body className="bg-stone-50 dark:bg-stone-950/30 text-stone-900 antialiased">
+      <body className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white antialiased">
         {isOwner && <OwnerToolbar slug={slug} ownerToken={ownerToken} />}
 
-        <div className={`max-w-5xl mx-auto px-4 py-8 space-y-8 ${isOwner ? "pt-20" : ""}`}>
+        <div className={`max-w-5xl mx-auto px-4 py-8 space-y-6 ${isOwner ? "pt-20" : ""}`}>
 
-          {/* Hero — büyük foto + büyük tipografi */}
-          <section className="relative bg-white dark:bg-slate-800 rounded-3xl shadow-sm overflow-hidden">
+          {/* Hero — banking beyaz minimal */}
+          <section className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-5">
-              {/* Sol: foto kolonu (2/5) */}
-              <div className="md:col-span-2 bg-[#B89B89] flex items-center justify-center p-6 md:p-10 min-h-[280px] relative">
-                <div className="absolute top-4 left-4 w-6 h-6 bg-white/30"></div>
-                <div className="absolute bottom-4 right-4 w-10 h-10 bg-white/20"></div>
-                <div className="relative w-44 h-56 md:w-56 md:h-72 bg-white dark:bg-slate-800 shadow-2xl overflow-hidden">
+              {/* Sol: foto */}
+              <div className="md:col-span-2 bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center p-6 md:p-10 min-h-[240px]">
+                <div className="w-40 h-40 md:w-48 md:h-48 rounded-2xl bg-white dark:bg-slate-900 shadow-md overflow-hidden ring-4 ring-white dark:ring-slate-900">
                   {agent.photo_url ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={agent.photo_url} alt={name} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-7xl text-stone-300">👤</div>
+                    <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800">
+                      <IconUser className="w-16 h-16 text-slate-400 dark:text-slate-500" />
+                    </div>
                   )}
                 </div>
               </div>
-              {/* Sağ: text kolonu (3/5) */}
-              <div className="md:col-span-3 relative p-8 md:p-12 flex flex-col justify-center">
-                <div className="absolute top-6 right-10 w-10 h-10 bg-[#B89B89]/30"></div>
-                <div className="absolute top-16 right-6 w-6 h-6 bg-[#B89B89]"></div>
-                <div className="absolute bottom-10 right-16 w-7 h-7 bg-[#B89B89]/40"></div>
-
-                <p className="text-xs uppercase tracking-[0.25em] text-[#B89B89] mb-3 font-bold">Real Estate Specialist</p>
-                <h1 className="text-4xl md:text-6xl font-black text-stone-900 mb-3 uppercase tracking-tight leading-[0.95]">{name}</h1>
+              {/* Sağ: text */}
+              <div className="md:col-span-3 p-6 md:p-10 flex flex-col justify-center">
+                <p className="text-xs uppercase tracking-wider text-emerald-700 dark:text-emerald-400 font-semibold mb-2">
+                  Emlak Danışmanı
+                </p>
+                <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white leading-tight mb-3">
+                  {name}
+                </h1>
                 {agent.bio && (
-                  <p className="text-base md:text-lg text-stone-600 mb-5 max-w-md italic">&quot;{agent.bio.split("\n")[0]}&quot;</p>
+                  <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 mb-4 leading-relaxed line-clamp-3">
+                    {agent.bio.split("\n")[0]}
+                  </p>
                 )}
                 {!agent.bio && agent.office_address && (
-                  <p className="text-base text-stone-600 mb-5">📍 {agent.office_address}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 flex items-center gap-1.5">
+                    <IconMapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> {agent.office_address}
+                  </p>
                 )}
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {phone && (
-                    <a href={`https://wa.me/${phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-md">
-                      💬 WhatsApp&apos;ta Yaz
+                  {waHref && (
+                    <a
+                      href={waHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm active:scale-[0.97] transition"
+                    >
+                      <IconMessageCircle className="w-4 h-4" /> WhatsApp&apos;ta Yaz
                     </a>
                   )}
-                  {phone && (
-                    <a href={`tel:${phone}`}
-                      className="inline-flex items-center gap-1.5 border-2 border-stone-900 text-stone-900 hover:bg-stone-100 text-sm font-semibold px-5 py-2.5 rounded-full">
-                      📞 Hemen Ara
+                  {telHref && (
+                    <a
+                      href={telHref}
+                      className="inline-flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-semibold px-4 py-2.5 rounded-xl active:scale-[0.97] transition"
+                    >
+                      <IconPhone className="w-4 h-4" /> Hemen Ara
                     </a>
                   )}
                 </div>
@@ -255,137 +331,175 @@ export default async function AgentLandingPage({ params, searchParams }: PagePro
             </div>
           </section>
 
-          {/* Stats card */}
+          {/* Stats — banking StatCard pattern */}
           {stats.length > 0 && (
             <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {stats.map((s, i) => (
-                <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 text-center">
-                  <p className="text-3xl md:text-4xl font-black text-[#B89B89] leading-none">{s.value}</p>
-                  <p className="text-xs uppercase tracking-wider text-stone-500 mt-2 font-semibold">{s.label}</p>
+                <div
+                  key={i}
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 flex flex-col gap-1"
+                >
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white leading-none tracking-tight">
+                    {s.value}
+                  </div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400 font-medium">{s.label}</div>
                 </div>
               ))}
             </section>
           )}
 
-          {/* About — split: text sol + decorative photo sağ */}
-          <section className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              <div className="p-8 md:p-12">
-                <p className="text-xs uppercase tracking-[0.25em] text-[#B89B89] mb-3 font-bold">Hakkımızda</p>
-                <h2 className="text-3xl md:text-4xl font-black text-stone-900 mb-5 uppercase leading-tight">
-                  Güvenilir<br/>Bir İş Ortağı
-                </h2>
-                <div className="text-stone-700 leading-relaxed whitespace-pre-line text-base">
-                  {aboutText}
-                </div>
-              </div>
-              <div className="bg-stone-100 hidden md:flex items-center justify-center p-6 relative">
-                {properties[0]?.cover ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={properties[0].cover} alt="" className="w-full h-full object-cover rounded-xl" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-6xl text-stone-300">🏛️</div>
-                )}
-                <div className="absolute top-4 right-4 w-6 h-6 bg-[#B89B89]"></div>
-              </div>
-            </div>
-          </section>
-
-          {/* Properties */}
-          {properties.length > 0 && (
-            <section>
-              <div className="px-2 mb-4">
-                <p className="text-xs uppercase tracking-[0.25em] text-[#B89B89] mb-2 font-bold">Aktif Portföy</p>
-                <h2 className="text-3xl md:text-4xl font-black text-stone-900 uppercase">
-                  Sunduğumuz Mülkler
-                </h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {properties.map(p => (
-                  <a
-                    key={p.id}
-                    href={p.sunum_token ? `/d/p/${p.sunum_token}` : "#"}
-                    target={p.sunum_token ? "_blank" : undefined}
-                    rel="noopener noreferrer"
-                    className={`bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden ${p.sunum_token ? "hover:shadow-md active:scale-[0.99]" : "cursor-default"} transition`}
-                  >
-                    <div className="aspect-[4/3] bg-stone-100">
-                      {p.cover ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={p.cover} alt={p.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl text-stone-300">🏠</div>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-stone-500 font-medium">
-                          {p.listing_type === "satilik" ? "Satılık" : p.listing_type === "kiralik" ? "Kiralık" : ""}
-                          {p.type ? ` · ${TYPE_LABELS[p.type] || p.type}` : ""}
-                        </span>
-                      </div>
-                      <h3 className="font-semibold text-stone-900 text-sm mb-1 line-clamp-2">{p.title}</h3>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-600 mb-2">
-                        {p.rooms && <span>{p.rooms}</span>}
-                        {p.area && <span>{p.area} m²</span>}
-                        {p.location && <span>📍 {p.location}</span>}
-                      </div>
-                      {p.price && (
-                        <p className="text-lg font-bold text-stone-900">{formatPrice(p.price)}</p>
-                      )}
-                      {p.sunum_token && (
-                        <p className="text-xs text-emerald-700 mt-2">📊 Sunumu Gör →</p>
-                      )}
-                    </div>
-                  </a>
-                ))}
+          {/* About — banking beyaz card */}
+          {aboutText && (
+            <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 md:p-8">
+              <p className="text-xs uppercase tracking-wider text-emerald-700 dark:text-emerald-400 font-semibold mb-2">
+                Hakkımızda
+              </p>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
+                Güvenilir bir iş ortağı
+              </h2>
+              <div className="text-sm md:text-base text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                {aboutText}
               </div>
             </section>
           )}
 
-          {/* Contact closing — büyük "İLETİŞİM" + foto + dekoratif */}
-          <section className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              <div className="relative p-8 md:p-12 flex flex-col justify-center">
-                <div className="absolute top-8 left-8 w-20 h-1.5 bg-[#B89B89]"></div>
-                <div className="absolute bottom-8 right-8 w-16 h-1.5 bg-[#B89B89]"></div>
-                <p className="text-xs uppercase tracking-[0.15em] text-stone-700 mb-3 font-bold">İletişim</p>
-                <h2 className="text-4xl md:text-6xl font-black text-stone-900 leading-[0.9] mb-6 uppercase tracking-tight">
-                  Sizinle<br/>Çalışmak<br/>İsterim
+          {/* Properties — banking ListCard pattern */}
+          {properties.length > 0 && (
+            <section>
+              <div className="px-1 mb-3 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  Aktif Portföy
                 </h2>
-                <div className="space-y-1.5 text-sm text-stone-700 mb-6">
-                  {phone && <p>📞 {phone}</p>}
-                  {email && <p>✉️ {email}</p>}
-                  {agent.office_address && <p>📍 {agent.office_address}</p>}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {phone && (
-                    <a href={`https://wa.me/${phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-semibold px-5 py-2.5 rounded-full">
-                      💬 WhatsApp&apos;ta Yaz
-                    </a>
-                  )}
-                  {phone && (
-                    <a href={`tel:${phone}`}
-                      className="inline-flex items-center gap-1.5 border-2 border-stone-900 text-stone-900 hover:bg-stone-100 text-sm font-semibold px-5 py-2.5 rounded-full">
-                      📞 Hemen Ara
-                    </a>
-                  )}
-                </div>
+                <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
+                  {properties.length} kayıt
+                </span>
               </div>
-              <div className="bg-[#B89B89] hidden md:block relative">
-                {agent.photo_url ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={agent.photo_url} alt={name} className="w-full h-full object-cover" />
-                ) : properties[0]?.cover ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={properties[0].cover} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="h-full flex items-center justify-center text-6xl text-white/40">🏛️</div>
-                )}
-                <div className="absolute top-4 right-4 w-8 h-8 bg-white dark:bg-slate-800"></div>
-                <div className="absolute bottom-4 right-12 w-6 h-6 bg-white/50"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {properties.map(p => {
+                  const ListingBadge = p.listing_type === "satilik"
+                    ? "Satılık"
+                    : p.listing_type === "kiralik" ? "Kiralık" : null;
+                  const typeLabel = p.type ? (TYPE_LABELS[p.type] || p.type) : null;
+                  const hasSunum = !!p.sunum_token;
+                  const cardClasses = `block bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden transition ${
+                    hasSunum ? "hover:shadow-md active:scale-[0.99]" : "cursor-default opacity-90"
+                  }`;
+                  const inner = (
+                    <>
+                      <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                        {p.cover ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={p.cover} alt={p.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <IconHome className="w-12 h-12 text-slate-400 dark:text-slate-500" />
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                          {ListingBadge && (
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
+                              {ListingBadge}
+                            </span>
+                          )}
+                          {typeLabel && (
+                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                              {typeLabel}
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="font-semibold text-slate-900 dark:text-white text-sm mb-1.5 line-clamp-2 leading-tight">
+                          {p.title}
+                        </h3>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-400 mb-2">
+                          {p.rooms && <span>{p.rooms}</span>}
+                          {p.area && <span>{p.area} m²</span>}
+                          {p.location && (
+                            <span className="flex items-center gap-1">
+                              <IconMapPin className="w-3 h-3" /> {p.location}
+                            </span>
+                          )}
+                        </div>
+                        {p.price && (
+                          <p className="text-lg font-bold text-slate-900 dark:text-white">
+                            {formatPrice(p.price)}
+                          </p>
+                        )}
+                        {hasSunum && (
+                          <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mt-2 flex items-center gap-1">
+                            <IconPresentation className="w-3.5 h-3.5" /> Sunumu Gör
+                            <IconChevronRight className="w-3 h-3" />
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  );
+                  return hasSunum ? (
+                    <a
+                      key={p.id}
+                      href={`/d/p/${p.sunum_token}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cardClasses}
+                    >
+                      {inner}
+                    </a>
+                  ) : (
+                    <div key={p.id} className={cardClasses}>
+                      {inner}
+                    </div>
+                  );
+                })}
               </div>
+            </section>
+          )}
+
+          {/* Contact closing — banking beyaz card */}
+          <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 md:p-8">
+            <p className="text-xs uppercase tracking-wider text-emerald-700 dark:text-emerald-400 font-semibold mb-2">
+              İletişim
+            </p>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
+              Sizinle çalışmak isterim
+            </h2>
+            <div className="space-y-2 text-sm text-slate-700 dark:text-slate-300 mb-5">
+              {phone && (
+                <p className="flex items-center gap-2">
+                  <IconPhone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  {phone}
+                </p>
+              )}
+              {email && (
+                <p className="flex items-center gap-2">
+                  <IconAt className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  {email}
+                </p>
+              )}
+              {agent.office_address && (
+                <p className="flex items-center gap-2">
+                  <IconMapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  {agent.office_address}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {waHref && (
+                <a
+                  href={waHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm active:scale-[0.97] transition"
+                >
+                  <IconMessageCircle className="w-4 h-4" /> WhatsApp&apos;ta Yaz
+                </a>
+              )}
+              {telHref && (
+                <a
+                  href={telHref}
+                  className="inline-flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-semibold px-4 py-2.5 rounded-xl active:scale-[0.97] transition"
+                >
+                  <IconPhone className="w-4 h-4" /> Hemen Ara
+                </a>
+              )}
             </div>
           </section>
 
