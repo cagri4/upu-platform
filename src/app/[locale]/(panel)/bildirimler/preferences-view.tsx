@@ -2,6 +2,13 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import {
+  Moon,
+  Check,
+  Loader2,
+  AlertTriangle,
+  Crown,
+} from "lucide-react";
 import { Skeleton } from "@/components/banking";
 import {
   NOTIFICATION_TYPES,
@@ -117,45 +124,57 @@ export function PreferencesView() {
       </div>
     );
   }
-  if (status === "error") return <Center>
-    <div className="text-4xl mb-3">⚠️</div>
-    <p className="text-slate-600 dark:text-slate-400 text-sm">{error}</p>
-  </Center>;
+  if (status === "error") {
+    return (
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 text-center shadow-sm border border-slate-200/70 dark:border-slate-800">
+        <AlertTriangle className="w-10 h-10 text-rose-600 mx-auto mb-3" />
+        <p className="text-slate-600 dark:text-slate-400 text-sm">{error}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-5 pb-24">
+    <div className="space-y-5 pb-28">
       {tier === "free" && (
-        <p className="text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg px-3 py-2">
+        <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl px-3 py-2.5 flex items-center gap-2">
+          <Crown className="w-4 h-4 flex-shrink-0" strokeWidth={2.2} />
           Pro üyelik ile 19 ek bildirim açılabilir.
         </p>
       )}
 
       {/* Preset selector */}
-      <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">Hızlı Seçim</p>
+      <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Hızlı Seçim</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {(["yogun", "kritik", "sessiz", "ozel"] as PresetName[]).map(name => (
             <button
               key={name}
               type="button"
               onClick={() => applyPreset(name)}
-              className={`py-2.5 rounded-lg text-sm font-medium border-2 ${preset === name ? "bg-amber-600 text-white border-amber-600" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"}`}
+              className={`py-2.5 rounded-xl text-sm font-medium transition active:scale-[0.97] ${
+                preset === name
+                  ? "bg-emerald-600 text-white border border-emerald-600"
+                  : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-emerald-400 dark:hover:border-emerald-500"
+              }`}
             >
               {PRESET_LABELS[name]}
             </button>
           ))}
         </div>
-        <p className="text-xs text-slate-500 mt-2">{PRESET_DESCRIPTIONS[preset]}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">{PRESET_DESCRIPTIONS[preset]}</p>
       </section>
 
       {/* Toggle list grouped by category */}
       {Array.from(grouped.entries()).map(([cat, items]) => (
-        <section key={cat} className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-          <p className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-            <span>{CATEGORY_META[cat].icon}</span>
+        <section
+          key={cat}
+          className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5"
+        >
+          <p className="text-sm font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <span aria-hidden="true">{CATEGORY_META[cat].icon}</span>
             {CATEGORY_META[cat].label}
           </p>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {items.map(t => {
               const isProLocked = t.tier === "pro" && tier === "free";
               const enabled = prefs.get(t.type) ?? false;
@@ -163,16 +182,20 @@ export function PreferencesView() {
                 <div key={t.type} className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-sm font-medium ${isProLocked ? "text-slate-400" : "text-slate-900 dark:text-slate-100"}`}>
+                      <span className={`text-sm font-medium ${isProLocked ? "text-slate-400 dark:text-slate-500" : "text-slate-900 dark:text-white"}`}>
                         {t.label}
                       </span>
                       {t.tier === "pro" && (
-                        <span className={`text-[10px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded ${isProLocked ? "bg-slate-200 text-slate-500" : "bg-violet-100 text-violet-700"}`}>
+                        <span className={`text-[10px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded ${
+                          isProLocked
+                            ? "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                            : "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
+                        }`}>
                           Pro
                         </span>
                       )}
                     </div>
-                    <p className={`text-xs mt-0.5 ${isProLocked ? "text-slate-400" : "text-slate-500"}`}>
+                    <p className={`text-xs mt-0.5 ${isProLocked ? "text-slate-400 dark:text-slate-500" : "text-slate-500 dark:text-slate-400"}`}>
                       {t.description}
                     </p>
                   </div>
@@ -183,15 +206,15 @@ export function PreferencesView() {
                     role="switch"
                     aria-checked={enabled}
                     aria-label={t.label}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors mt-0.5 ${
                       isProLocked
-                        ? "bg-slate-200 cursor-not-allowed"
+                        ? "bg-slate-200 dark:bg-slate-800 cursor-not-allowed"
                         : enabled
-                        ? "bg-amber-600"
-                        : "bg-slate-300"
+                        ? "bg-emerald-600"
+                        : "bg-slate-300 dark:bg-slate-700"
                     }`}
                   >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-800 transition-transform ${enabled && !isProLocked ? "translate-x-6" : "translate-x-1"}`} />
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${enabled && !isProLocked ? "translate-x-6" : "translate-x-1"}`} />
                   </button>
                 </div>
               );
@@ -201,13 +224,14 @@ export function PreferencesView() {
       ))}
 
       {/* DND */}
-      <section className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
+      <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <span>🌙</span> Sessiz saat
+            <p className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <Moon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.2} />
+              Sessiz saat
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">Belirlediğin saatlerde bildirim alma.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Belirlediğin saatlerde bildirim alma.</p>
           </div>
           <button
             type="button"
@@ -215,51 +239,65 @@ export function PreferencesView() {
             role="switch"
             aria-checked={!!dnd.enabled}
             aria-label="Sessiz saat aktif"
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${dnd.enabled ? "bg-amber-600" : "bg-slate-300"}`}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
+              dnd.enabled ? "bg-emerald-600" : "bg-slate-300 dark:bg-slate-700"
+            }`}
           >
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-800 transition-transform ${dnd.enabled ? "translate-x-6" : "translate-x-1"}`} />
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${dnd.enabled ? "translate-x-6" : "translate-x-1"}`} />
           </button>
         </div>
         {dnd.enabled && (
           <div className="grid grid-cols-2 gap-3 mt-4">
             <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Başlangıç</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Başlangıç</label>
               <input
                 type="time"
                 value={dnd.start || "23:00"}
                 onChange={e => setDnd(d => ({ ...d, start: e.target.value }))}
-                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base"
+                className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Bitiş</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Bitiş</label>
               <input
                 type="time"
                 value={dnd.end || "08:00"}
                 onChange={e => setDnd(d => ({ ...d, end: e.target.value }))}
-                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base"
+                className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition"
               />
             </div>
           </div>
         )}
       </section>
 
-      {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
+      {error && (
+        <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" strokeWidth={2.2} /> {error}
+        </div>
+      )}
 
-      {/* Sticky save bar */}
-      <div className="fixed bottom-0 inset-x-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-800/50 p-3 shadow-lg z-30">
+      {/* Sticky save bar — banking */}
+      <div className="fixed bottom-0 inset-x-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800 p-3 z-30">
         <div className="max-w-md mx-auto flex items-center gap-2">
-          {savedFlash && (
-            <span className="text-sm text-emerald-700 font-medium flex-1">✅ Kaydedildi</span>
+          {savedFlash ? (
+            <span className="text-sm text-emerald-700 dark:text-emerald-400 font-medium flex-1 flex items-center gap-1.5">
+              <Check className="w-4 h-4" strokeWidth={2.5} />
+              Kaydedildi
+            </span>
+          ) : (
+            <div className="flex-1" />
           )}
-          {!savedFlash && <div className="flex-1" />}
           <button
             type="button"
             onClick={() => void save()}
             disabled={status === "saving"}
-            className="bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white px-6 py-3 rounded-xl font-semibold text-sm shadow"
+            className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-6 py-3 rounded-2xl font-semibold text-sm shadow-sm active:scale-[0.98] transition"
           >
-            {status === "saving" ? "Kaydediliyor..." : "Kaydet"}
+            {status === "saving" ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Kaydediliyor</>
+            ) : (
+              <><Check className="w-4 h-4" strokeWidth={2.5} /> Kaydet</>
+            )}
           </button>
         </div>
       </div>
@@ -280,7 +318,3 @@ const PRESET_DESCRIPTIONS: Record<PresetName, string> = {
   sessiz: "Sadece sabah brifingi ve randevu hatırlatması.",
   ozel: "Toggle'ları tek tek istediğin gibi ayarla.",
 };
-
-function Center({ children }: { children: React.ReactNode }) {
-  return <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full mx-auto text-center shadow">{children}</div>;
-}
