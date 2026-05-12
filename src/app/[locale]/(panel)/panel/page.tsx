@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Building2,
@@ -16,6 +16,8 @@ import {
   Sparkles,
   Puzzle,
   Monitor,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { usePanelChrome } from "@/components/admin-layout";
 import { PwaInstallCard } from "@/components/pwa-install-card";
@@ -25,8 +27,9 @@ import {
   StatCard,
   ListCard,
   InfoChip,
+  Skeleton,
 } from "@/components/banking";
-import { QUICK_ACTIONS } from "@/platform/quick-actions/catalog";
+import { QUICK_ACTIONS, type QuickActionDef } from "@/platform/quick-actions/catalog";
 import {
   DEFAULT_QUICK_ACTIONS,
   type QuickActionKey,
@@ -57,7 +60,9 @@ export default function PanelimPage() {
 
   const [kpis, setKpis] = useState<KPIs | null>(null);
   const [webSlug, setWebSlug] = useState<string | null>(null);
-  const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null);
+  // undefined = henüz fetch edilmedi (skeleton), null = fetched ama kayıt yok,
+  // obj = aktif/trial. Hero flicker'ı önlemek için bu ayrım gerekli.
+  const [subscription, setSubscription] = useState<SubscriptionSummary | null | undefined>(undefined);
   const [quickActions, setQuickActions] = useState<QuickActionKey[] | null>(null);
 
   useEffect(() => {
@@ -67,18 +72,23 @@ export default function PanelimPage() {
     fetch(url, { credentials: "same-origin" })
       .then((r) => r.json())
       .then((d) => {
-        if (!d?.error) {
-          if (d?.kpis) setKpis(d.kpis);
-          if (d?.webSlug) setWebSlug(d.webSlug);
-          if (d?.subscription) setSubscription(d.subscription as SubscriptionSummary);
-          // quickActions null = kullanıcı seçmemiş → default'a fallback
-          if (Array.isArray(d?.quickActions)) {
-            setQuickActions(d.quickActions as QuickActionKey[]);
-          }
+        if (d?.error) {
+          // Fetch tamamlandı ama hata — skeleton'dan çık, default hero göster
+          setSubscription(null);
+          return;
+        }
+        if (d?.kpis) setKpis(d.kpis);
+        if (d?.webSlug) setWebSlug(d.webSlug);
+        // Subscription null da olabilir (üyelik kaydı yok); her durumda set et
+        // ki skeleton'dan çıkalım.
+        setSubscription((d?.subscription as SubscriptionSummary | null) ?? null);
+        // quickActions null = kullanıcı seçmemiş → default'a fallback
+        if (Array.isArray(d?.quickActions)) {
+          setQuickActions(d.quickActions as QuickActionKey[]);
         }
       })
       .catch(() => {
-        /* sessizce yut — layout zaten init'i validate etti */
+        setSubscription(null);
       });
   }, [token]);
 
@@ -123,37 +133,26 @@ export default function PanelimPage() {
           Icon: Sparkles,
         };
 
+  // Quick action items — kullanıcı tercihi (profiles.metadata.quick_actions)
+  // yoksa default 6. Render aşağıda QuickActionsRow component'inde yapılır
+  // (state hook'ları için ayrı component lazım).
+  const quickActionItems: QuickActionDef[] = (quickActions ?? DEFAULT_QUICK_ACTIONS)
+    .map((k) => QUICK_ACTIONS[k])
+    .filter((x): x is QuickActionDef => !!x);
+
   return (
     <div className="space-y-5 sm:space-y-6">
-      {/* Hero */}
-      <HeroBanner {...heroProps} />
+      {/* Hero — subscription fetch tamamlanmadan flicker'ı önlemek için
+          skeleton (default "Hoş geldiniz" → trial "X gün kaldı" sıçraması olmaz). */}
+      {subscription === undefined ? (
+        <Skeleton height="h-32" />
+      ) : (
+        <HeroBanner {...heroProps} />
+      )}
 
-      {/* Quick Actions — yatay scroll row.
-          Kullanıcı tercihi profiles.metadata.quick_actions ile (Panel Ayarları'ndan
-          değiştirilir); seçim yoksa DEFAULT_QUICK_ACTIONS (mevcut 6) gösterilir.
-
-          Cookie fast-path: panel'e ulaşmış user zaten oturum sahibi. hrefFor'a
-          token geçirmiyoruz; form sayfaları ve /api/panel/start cookie ile
-          devam edebiliyor (legacy WA token akışı server tarafında korunuyor). */}
-      {(() => {
-        const keys = quickActions ?? DEFAULT_QUICK_ACTIONS;
-        const items = keys
-          .map((k) => QUICK_ACTIONS[k])
-          .filter((x): x is (typeof QUICK_ACTIONS)[QuickActionKey] => !!x);
-        if (items.length === 0) return null;
-        return (
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4">
-            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3 px-1">
-              Hızlı işlem
-            </div>
-            <div className="flex gap-3 overflow-x-auto -mx-1 px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {items.map((a) => (
-                <ActionCircle key={a.key} Icon={a.Icon} label={a.label} href={a.hrefFor("")} />
-              ))}
-            </div>
-          </div>
-        );
-      })()}
+      {/* Quick Actions — yatay scroll row. Cookie fast-path: panel'e ulaşan
+          user zaten oturumlu; hrefFor("") ile token propage etmiyoruz. */}
+      {quickActionItems.length > 0 && <QuickActionsRow items={quickActionItems} />}
 
       {/* KPI grid — 2 sütun mobile, 3 desktop */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -245,6 +244,83 @@ export default function PanelimPage() {
           text="Bilgisayardan açın — QR ile saniyeler içinde"
           onClick={openQrScanner}
         />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Hızlı İşlem yatay scroll row — sol/sağ fade gradient + (desktop'ta görünür)
+ * chevron butonları ile kullanıcıya daha fazla aksiyon olduğunu sezdirir.
+ * Mobile'da swipe doğal; gradient ipucu yeter.
+ */
+function QuickActionsRow({ items }: { items: QuickActionDef[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canL, setCanL] = useState(false);
+  const [canR, setCanR] = useState(false);
+
+  const update = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanL(el.scrollLeft > 4);
+    setCanR(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    update();
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+    // items.length değişirse yeniden ölç (Panel Ayarları'ndan toggle sonrası)
+  }, [items.length]);
+
+  const scrollByDelta = (delta: number) => {
+    scrollRef.current?.scrollBy({ left: delta, behavior: "smooth" });
+  };
+
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4">
+      <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3 px-1">
+        Hızlı işlem
+      </div>
+      <div className="relative">
+        {canL && (
+          <>
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-slate-900 to-transparent z-10" />
+            <button
+              type="button"
+              onClick={() => scrollByDelta(-120)}
+              aria-label="Önceki"
+              className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-8 h-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition"
+            >
+              <ChevronLeft className="w-4 h-4 text-slate-700 dark:text-slate-300" strokeWidth={2.2} />
+            </button>
+          </>
+        )}
+        <div
+          ref={scrollRef}
+          onScroll={update}
+          className="flex gap-3 overflow-x-auto -mx-1 px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {items.map((a) => (
+            <ActionCircle key={a.key} Icon={a.Icon} label={a.label} href={a.hrefFor("")} />
+          ))}
+        </div>
+        {canR && (
+          <>
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-slate-900 to-transparent z-10" />
+            <button
+              type="button"
+              onClick={() => scrollByDelta(120)}
+              aria-label="Sonraki"
+              className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-8 h-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition"
+            >
+              <ChevronRight className="w-4 h-4 text-slate-700 dark:text-slate-300" strokeWidth={2.2} />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
