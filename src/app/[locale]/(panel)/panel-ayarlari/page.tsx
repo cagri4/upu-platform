@@ -3,19 +3,31 @@
 /**
  * /tr/panel-ayarlari — Emlak panel kişiselleştirme.
  *
- * Şu an: bottom tab bar 4 sekme özelleştirmesi.
- *   - Sidebar'daki 10 sektörel item arasından max 4 seç
- *   - localStorage `upu-bottom-tabs:emlak` → seçilen item id'leri
- *   - Kaydet → AdminLayout (panel)/layout.tsx mount'ta okur
- *   - Reset → varsayılan ilk 4 (panelim/mulkler/musteriler/sozlesme)
- *
- * Geleceğe açık: tema, font size, bildirim tercihleri burada toplanır.
+ *   1) Alt Sekme Çubuğu (localStorage `upu-bottom-tabs:emlak`, max 4)
+ *   2) Hızlı İşlemler (DB: profiles.metadata.quick_actions, max 8, sıralı)
  */
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import {
+  Check,
+  ArrowLeft,
+  RotateCcw,
+  Save,
+  ChevronUp,
+  ChevronDown,
+  Loader2,
+  AlertTriangle,
+} from "lucide-react";
+import { QUICK_ACTIONS } from "@/platform/quick-actions/catalog";
+import {
+  ALL_QUICK_ACTION_KEYS,
+  DEFAULT_QUICK_ACTIONS,
+  type QuickActionKey,
+} from "@/platform/quick-actions/keys";
 
-const STORAGE_KEY = "upu-bottom-tabs:emlak";
+// ── Alt sekme çubuğu (localStorage) ──────────────────────────────────
+const TAB_STORAGE_KEY = "upu-bottom-tabs:emlak";
 const MAX_TABS = 4;
 
 type ItemDef = {
@@ -24,8 +36,7 @@ type ItemDef = {
   icon: string;
 };
 
-// (panel)/layout.tsx'teki EMLAK_BOTTOM_TABS ve DEFAULT_SIDEBAR_ITEMS'le aynı set
-const ALL_ITEMS: ItemDef[] = [
+const ALL_TAB_ITEMS: ItemDef[] = [
   { id: "panelim",    label: "Panelim",       icon: "🏠" },
   { id: "mulkler",    label: "Mülklerim",     icon: "🏢" },
   { id: "musteriler", label: "Müşterilerim",  icon: "👥" },
@@ -38,99 +49,174 @@ const ALL_ITEMS: ItemDef[] = [
   { id: "websitem",   label: "Web Sitem",     icon: "🌐" },
 ];
 
-const DEFAULT_SELECTION = ["panelim", "mulkler", "musteriler", "sozlesme"];
+const DEFAULT_TAB_SELECTION = ["panelim", "mulkler", "musteriler", "sozlesme"];
 
 export default function PanelAyarlariPage() {
   const params = useSearchParams();
   const token = params.get("t") || params.get("token") || "";
 
-  const [selected, setSelected] = useState<string[]>(DEFAULT_SELECTION);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
+  // Alt sekme state
+  const [tabSelected, setTabSelected] = useState<string[]>(DEFAULT_TAB_SELECTION);
+  const [tabSavedAt, setTabSavedAt] = useState<number | null>(null);
 
+  // Hızlı işlemler state
+  const [qaSelected, setQaSelected] = useState<QuickActionKey[]>(DEFAULT_QUICK_ACTIONS);
+  const [qaLoading, setQaLoading] = useState(true);
+  const [qaSaving, setQaSaving] = useState(false);
+  const [qaError, setQaError] = useState("");
+  const [qaSavedAt, setQaSavedAt] = useState<number | null>(null);
+
+  // Alt sekme yükleme (localStorage)
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+      const raw = window.localStorage.getItem(TAB_STORAGE_KEY);
       if (raw) {
         const arr = JSON.parse(raw) as unknown;
         if (Array.isArray(arr) && arr.every((x) => typeof x === "string")) {
-          setSelected(arr.slice(0, MAX_TABS));
+          setTabSelected(arr.slice(0, MAX_TABS));
         }
       }
-    } catch { /* sessizce yut */ }
+    } catch { /* yut */ }
   }, []);
 
-  function toggle(id: string) {
-    setSelected((prev) => {
+  // Hızlı işlem yükleme (API)
+  useEffect(() => {
+    const tokenQs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/panel/dashboard${tokenQs}`, { credentials: "same-origin" })
+      .then(r => r.json())
+      .then(d => {
+        if (Array.isArray(d?.quickActions) && d.quickActions.length > 0) {
+          setQaSelected(d.quickActions as QuickActionKey[]);
+        }
+      })
+      .catch(() => {/* sessiz, default kalır */})
+      .finally(() => setQaLoading(false));
+  }, [token]);
+
+  // ── Alt sekme handlers ─────────────────────────────────────────────
+  function tabToggle(id: string) {
+    setTabSelected((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
-      if (prev.length >= MAX_TABS) return prev; // limit
+      if (prev.length >= MAX_TABS) return prev;
       return [...prev, id];
     });
   }
 
-  function save() {
+  function tabSave() {
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(selected));
-      setSavedAt(Date.now());
+      window.localStorage.setItem(TAB_STORAGE_KEY, JSON.stringify(tabSelected));
+      setTabSavedAt(Date.now());
+    } catch { /* quota / private mode */ }
+  }
+
+  function tabReset() {
+    setTabSelected(DEFAULT_TAB_SELECTION);
+    try { window.localStorage.removeItem(TAB_STORAGE_KEY); } catch { /* yut */ }
+    setTabSavedAt(Date.now());
+  }
+
+  // ── Hızlı işlem handlers ───────────────────────────────────────────
+  function qaToggle(key: QuickActionKey) {
+    setQaSelected((prev) =>
+      prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]
+    );
+    setQaSavedAt(null);
+    setQaError("");
+  }
+
+  function qaMove(key: QuickActionKey, delta: number) {
+    setQaSelected((prev) => {
+      const idx = prev.indexOf(key);
+      if (idx < 0) return prev;
+      const next = idx + delta;
+      if (next < 0 || next >= prev.length) return prev;
+      const out = [...prev];
+      [out[idx], out[next]] = [out[next], out[idx]];
+      return out;
+    });
+    setQaSavedAt(null);
+  }
+
+  function qaReset() {
+    setQaSelected(DEFAULT_QUICK_ACTIONS);
+    setQaSavedAt(null);
+    setQaError("");
+  }
+
+  async function qaSave() {
+    setQaSaving(true);
+    setQaError("");
+    try {
+      const res = await fetch("/api/panel/quick-actions/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ token: token || undefined, actions: qaSelected }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setQaError(d.error || "Kaydedilemedi.");
+        return;
+      }
+      setQaSavedAt(Date.now());
     } catch {
-      // quota / private mode
+      setQaError("Bağlantı hatası.");
+    } finally {
+      setQaSaving(false);
     }
   }
 
-  function reset() {
-    setSelected(DEFAULT_SELECTION);
-    try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* yut */ }
-    setSavedAt(Date.now());
-  }
-
-  const isFull = selected.length >= MAX_TABS;
+  const isTabFull = tabSelected.length >= MAX_TABS;
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-br from-emerald-700 via-teal-700 to-stone-900 text-white rounded-2xl p-6 shadow-lg">
-        <h1 className="text-2xl font-bold">⚙️ Panel Ayarları</h1>
-        <p className="text-emerald-100 text-sm mt-2 leading-relaxed">
-          Panelinizi kendi günlük akışınıza göre özelleştirin.
-        </p>
-      </div>
+    <div className="space-y-5 pb-12">
+      {/* Hero — banking */}
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Panel Ayarları</h1>
+      <p className="text-sm text-slate-600 dark:text-slate-400 -mt-3">
+        Panelinizi kendi günlük akışınıza göre özelleştirin.
+      </p>
 
-      <section className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5">
+      {/* Alt sekme çubuğu */}
+      <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
         <div className="flex items-baseline justify-between flex-wrap gap-2 mb-1">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Alt Sekme Çubuğu</h2>
-          <span className="text-xs text-slate-500">{selected.length} / {MAX_TABS} sekme seçili</span>
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white">Alt Sekme Çubuğu</h2>
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            {tabSelected.length} / {MAX_TABS} seçili
+          </span>
         </div>
         <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-          Mobil ekranınızın altındaki hızlı erişim sekmelerini seçin. En sık kullandığınız 4 sayfayı belirleyin —
-          ayarladıktan sonra alt çubukta görünür olacak. Seçtiğiniz sıraya göre soldan sağa dizilir.
+          Mobil ekranın altındaki hızlı erişim sekmelerini seç. En sık kullandığın 4 sayfayı belirle —
+          seçtiğin sıraya göre soldan sağa dizilir.
         </p>
 
         <div className="space-y-2">
-          {ALL_ITEMS.map((item) => {
-            const idx = selected.indexOf(item.id);
+          {ALL_TAB_ITEMS.map((item) => {
+            const idx = tabSelected.indexOf(item.id);
             const isSel = idx >= 0;
             const order = isSel ? idx + 1 : null;
-            const disabled = !isSel && isFull;
+            const disabled = !isSel && isTabFull;
             return (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => toggle(item.id)}
+                onClick={() => tabToggle(item.id)}
                 disabled={disabled}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl border transition text-left ${
                   isSel
-                    ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
+                    ? "border-emerald-500 dark:border-emerald-600 bg-emerald-50/60 dark:bg-emerald-950/30"
                     : disabled
-                    ? "border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-950 opacity-50 cursor-not-allowed"
-                    : "border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-800 hover:border-emerald-300 hover:bg-emerald-50/50"
+                    ? "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 opacity-50 cursor-not-allowed"
+                    : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-400 dark:hover:border-emerald-500"
                 }`}
               >
-                <span className="text-2xl">{item.icon}</span>
-                <span className="flex-1 font-medium text-slate-900 dark:text-slate-100">{item.label}</span>
+                <span className="text-2xl" aria-hidden="true">{item.icon}</span>
+                <span className="flex-1 font-medium text-slate-900 dark:text-white">{item.label}</span>
                 {isSel ? (
                   <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-600 text-white text-sm font-bold">
                     {order}
                   </span>
                 ) : (
-                  <span className="text-slate-300 text-sm">○</span>
+                  <span className="text-slate-300 dark:text-slate-600 text-sm">○</span>
                 )}
               </button>
             );
@@ -140,38 +226,164 @@ export default function PanelAyarlariPage() {
         <div className="flex flex-col sm:flex-row gap-2 mt-5">
           <button
             type="button"
-            onClick={save}
-            disabled={selected.length === 0}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white py-3 rounded-lg font-medium transition"
+            onClick={tabSave}
+            disabled={tabSelected.length === 0}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white py-3 rounded-2xl font-semibold text-sm shadow-sm active:scale-[0.98] transition"
           >
-            💾 Kaydet
+            <Save className="w-4 h-4" strokeWidth={2.2} /> Kaydet
           </button>
           <button
             type="button"
-            onClick={reset}
-            className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium transition"
+            onClick={tabReset}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 py-3 rounded-2xl text-sm font-medium active:scale-[0.98] transition"
           >
-            ↺ Varsayılana Dön
+            <RotateCcw className="w-4 h-4" strokeWidth={2.2} /> Varsayılana Dön
           </button>
         </div>
 
-        {savedAt && (
-          <div className="mt-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 text-emerald-800 text-sm rounded-lg px-3 py-2">
-            ✅ Kaydedildi. Değişikliği görmek için panel sayfasını yenileyin.
+        {tabSavedAt && (
+          <div className="mt-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300 text-sm rounded-xl px-3 py-2 flex items-center gap-1.5">
+            <Check className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />
+            Kaydedildi. Değişikliği görmek için panel sayfasını yenileyin.
           </div>
         )}
       </section>
 
-      <p className="text-xs text-slate-400 text-center px-4 leading-relaxed">
-        Tercihleriniz bu cihazda kayıtlıdır (localStorage). Farklı bir cihazda tekrar ayarlamanız gerekir.
+      {/* Hızlı işlemler */}
+      <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+        <div className="flex items-baseline justify-between flex-wrap gap-2 mb-1">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white">Hızlı İşlemler</h2>
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            {qaSelected.length} / {ALL_QUICK_ACTION_KEYS.length} aktif
+          </span>
+        </div>
+        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+          Panel ana sayfasının üstündeki yatay scroll satırını özelleştir. Aç/kapat ve sırasını değiştir —
+          aktif olanlar seçtiğin sırada görünür.
+        </p>
+
+        {qaLoading ? (
+          <div className="space-y-2">
+            <div className="h-14 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+            <div className="h-14 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+            <div className="h-14 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {/* Önce seçili olanlar sırayla, sonra seçilmeyenler */}
+            {[...qaSelected, ...ALL_QUICK_ACTION_KEYS.filter(k => !qaSelected.includes(k))].map((key) => {
+              const def = QUICK_ACTIONS[key];
+              if (!def) return null;
+              const idx = qaSelected.indexOf(key);
+              const isSel = idx >= 0;
+              const isFirst = isSel && idx === 0;
+              const isLast = isSel && idx === qaSelected.length - 1;
+              return (
+                <div
+                  key={key}
+                  className={`flex items-center gap-2 p-3 rounded-xl border transition ${
+                    isSel
+                      ? "border-emerald-500 dark:border-emerald-600 bg-emerald-50/60 dark:bg-emerald-950/30"
+                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+                  }`}
+                >
+                  <div className={`w-9 h-9 flex-shrink-0 rounded-xl flex items-center justify-center ${
+                    isSel
+                      ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                  }`}>
+                    <def.Icon className="w-5 h-5" strokeWidth={2.2} />
+                  </div>
+                  <span className={`flex-1 font-medium text-sm ${isSel ? "text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400"}`}>
+                    {def.label}
+                  </span>
+                  {isSel && (
+                    <div className="flex items-center gap-0.5 mr-1">
+                      <button
+                        type="button"
+                        onClick={() => qaMove(key, -1)}
+                        disabled={isFirst}
+                        aria-label="Yukarı taşı"
+                        className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                      >
+                        <ChevronUp className="w-4 h-4" strokeWidth={2.5} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => qaMove(key, 1)}
+                        disabled={isLast}
+                        aria-label="Aşağı taşı"
+                        className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                      >
+                        <ChevronDown className="w-4 h-4" strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => qaToggle(key)}
+                    role="switch"
+                    aria-checked={isSel}
+                    aria-label={def.label}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
+                      isSel ? "bg-emerald-600" : "bg-slate-300 dark:bg-slate-700"
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${isSel ? "translate-x-6" : "translate-x-1"}`} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {qaError && (
+          <div className="mt-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" strokeWidth={2.2} /> {qaError}
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-2 mt-5">
+          <button
+            type="button"
+            onClick={() => void qaSave()}
+            disabled={qaSaving || qaLoading}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white py-3 rounded-2xl font-semibold text-sm shadow-sm active:scale-[0.98] transition"
+          >
+            {qaSaving ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Kaydediliyor</>
+            ) : (
+              <><Save className="w-4 h-4" strokeWidth={2.2} /> Kaydet</>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={qaReset}
+            disabled={qaSaving}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 py-3 rounded-2xl text-sm font-medium active:scale-[0.98] disabled:opacity-60 transition"
+          >
+            <RotateCcw className="w-4 h-4" strokeWidth={2.2} /> Varsayılana Dön
+          </button>
+        </div>
+
+        {qaSavedAt && (
+          <div className="mt-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300 text-sm rounded-xl px-3 py-2 flex items-center gap-1.5">
+            <Check className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />
+            Kaydedildi. Panel sayfasını yenileyince güncel sıra görünür.
+          </div>
+        )}
+      </section>
+
+      <p className="text-xs text-slate-400 dark:text-slate-500 text-center px-4 leading-relaxed">
+        Alt sekme çubuğu bu cihazda saklanır (localStorage). Hızlı işlemler hesabınızda saklanır — başka cihazda da gelir.
       </p>
 
       {token && (
         <a
           href={`/tr/panel?t=${encodeURIComponent(token)}`}
-          className="block bg-slate-900 hover:bg-slate-800 text-white text-center py-3 rounded-xl font-medium transition"
+          className="flex items-center justify-center gap-1.5 w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-2xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] transition"
         >
-          ← Panele Dön
+          <ArrowLeft className="w-4 h-4" strokeWidth={2.2} /> Panele Dön
         </a>
       )}
     </div>

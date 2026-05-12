@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getSessionFromCookies } from "@/platform/auth/session";
+import { sanitizeQuickActions } from "@/platform/quick-actions/keys";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,9 @@ export async function GET(req: NextRequest) {
   const agent = (meta.agent_profile as { web_slug?: string } | undefined);
   const webSlug = agent?.web_slug || null;
 
+  // Hızlı işlem tercihleri — kullanıcı seçmediyse null döner, client fallback uygular.
+  const quickActions = sanitizeQuickActions(meta.quick_actions);
+
   // Subscription özeti — panel kartı için
   const sub = subRes.data;
   let subscription: {
@@ -91,5 +95,6 @@ export async function GET(req: NextRequest) {
     },
     webSlug,
     subscription,
+    quickActions,
   });
 }

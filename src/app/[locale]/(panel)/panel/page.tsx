@@ -13,9 +13,6 @@ import {
   Globe,
   Bell,
   Crown,
-  Plus,
-  UserPlus,
-  FilePlus2,
   Sparkles,
   Puzzle,
   Monitor,
@@ -29,6 +26,11 @@ import {
   ListCard,
   InfoChip,
 } from "@/components/banking";
+import { QUICK_ACTIONS } from "@/platform/quick-actions/catalog";
+import {
+  DEFAULT_QUICK_ACTIONS,
+  type QuickActionKey,
+} from "@/platform/quick-actions/keys";
 
 interface KPIs {
   properties: number;
@@ -56,6 +58,7 @@ export default function PanelimPage() {
   const [kpis, setKpis] = useState<KPIs | null>(null);
   const [webSlug, setWebSlug] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null);
+  const [quickActions, setQuickActions] = useState<QuickActionKey[] | null>(null);
 
   useEffect(() => {
     const url = token
@@ -68,6 +71,10 @@ export default function PanelimPage() {
           if (d?.kpis) setKpis(d.kpis);
           if (d?.webSlug) setWebSlug(d.webSlug);
           if (d?.subscription) setSubscription(d.subscription as SubscriptionSummary);
+          // quickActions null = kullanıcı seçmemiş → default'a fallback
+          if (Array.isArray(d?.quickActions)) {
+            setQuickActions(d.quickActions as QuickActionKey[]);
+          }
         }
       })
       .catch(() => {
@@ -121,20 +128,28 @@ export default function PanelimPage() {
       {/* Hero */}
       <HeroBanner {...heroProps} />
 
-      {/* Quick Actions — yatay scroll row */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4">
-        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3 px-1">
-          Hızlı işlem
-        </div>
-        <div className="flex gap-3 overflow-x-auto -mx-1 px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <ActionCircle Icon={Plus} label="Mülk Ekle" href={q("/tr/mulkekle-form")} />
-          <ActionCircle Icon={UserPlus} label="Müşteri Ekle" href={q("/tr/musteri-ekle-form")} />
-          <ActionCircle Icon={FilePlus2} label="Sözleşme Yap" href={q("/tr/sozlesme-yap")} />
-          <ActionCircle Icon={Sparkles} label="Sunum Yarat" href={q("/tr/sunumlarim")} />
-          <ActionCircle Icon={Target} label="Takip Ekle" href={q("/tr/takip")} />
-          <ActionCircle Icon={Calendar} label="Hatırlatma" href={q("/tr/takvim")} />
-        </div>
-      </div>
+      {/* Quick Actions — yatay scroll row.
+          Kullanıcı tercihi profiles.metadata.quick_actions ile (Panel Ayarları'ndan
+          değiştirilir); seçim yoksa DEFAULT_QUICK_ACTIONS (mevcut 6) gösterilir. */}
+      {(() => {
+        const keys = quickActions ?? DEFAULT_QUICK_ACTIONS;
+        const items = keys
+          .map((k) => QUICK_ACTIONS[k])
+          .filter((x): x is (typeof QUICK_ACTIONS)[QuickActionKey] => !!x);
+        if (items.length === 0) return null;
+        return (
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4">
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3 px-1">
+              Hızlı işlem
+            </div>
+            <div className="flex gap-3 overflow-x-auto -mx-1 px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {items.map((a) => (
+                <ActionCircle key={a.key} Icon={a.Icon} label={a.label} href={a.hrefFor(token)} />
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* KPI grid — 2 sütun mobile, 3 desktop */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
