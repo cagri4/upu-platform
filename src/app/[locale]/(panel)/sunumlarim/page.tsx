@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import {
+  Presentation,
+  Home,
+  ChevronRight,
+  AlertTriangle,
+  Loader2,
+} from "lucide-react";
 
 import { ReturnButtons } from "@/components/return-buttons";
 
@@ -27,7 +34,6 @@ export default function SunumlarimPage() {
   const [items, setItems] = useState<PresItem[]>([]);
 
   useEffect(() => {
-    // cookie-aware: token yoksa endpoint cookie session kabul eder
     fetch(`/api/sunumlarim/init?t=${encodeURIComponent(token)}`, { credentials: "same-origin" })
       .then(async (r) => {
         const d = await r.json();
@@ -38,76 +44,95 @@ export default function SunumlarimPage() {
       .catch(() => { setStatus("error"); setError("Bağlantı hatası."); });
   }, [token]);
 
-  if (status === "loading") return <Center><div className="text-4xl mb-3">⏳</div><p>Yükleniyor...</p></Center>;
-  if (status === "error") return <Center>
-    <div className="text-4xl mb-3">⚠️</div>
-    <h1 className="text-xl font-bold mb-2">Hata</h1>
-    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
-    <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
-  </Center>;
+  if (status === "loading") {
+    return (
+      <Center>
+        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mx-auto mb-3" />
+        <p className="text-slate-600 dark:text-slate-400">Yükleniyor...</p>
+      </Center>
+    );
+  }
+  if (status === "error") {
+    return (
+      <Center>
+        <AlertTriangle className="w-10 h-10 text-rose-600 mx-auto mb-3" />
+        <h1 className="text-xl font-bold mb-2 text-slate-900 dark:text-white">Hata</h1>
+        <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
+        <a
+          href={`https://wa.me/${BOT_WA_NUMBER}`}
+          className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition"
+        >
+          WhatsApp&apos;a dön
+        </a>
+      </Center>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
-      <div className="max-w-md mx-auto p-4">
-        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-2xl p-5 mb-5">
-          <div className="text-3xl mb-1">📚</div>
-          <h1 className="text-xl font-bold">Sunumlarım</h1>
-          <p className="text-blue-100 text-sm mt-1">{items.length} sunum</p>
-        </div>
-
-        {items.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center text-slate-500 text-sm shadow-sm">
-            Henüz hiç sunumunuz yok. WhatsApp&apos;tan bir mülk ekleyince otomatik sunum oluşur.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {items.map((p) => (
-              <a
-                key={p.id}
-                href={`/d/p/${p.magic_token}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden active:scale-[0.99] transition"
-              >
-                <div className="flex gap-3 p-3">
-                  <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-slate-200">
-                    {p.cover ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.cover} alt={p.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400">
-                        🏠
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 leading-tight line-clamp-2">{p.title || "Sunum"}</h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {new Date(p.created_at).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
-                    </p>
-                    {p.price && (
-                      <p className="text-sm font-bold text-indigo-700 mt-1">
-                        {new Intl.NumberFormat("tr-TR").format(p.price)} ₺
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center text-slate-400">
-                    →
-                  </div>
-                </div>
-              </a>
-            ))}
-          </div>
-        )}
-
-        <ReturnButtons token={token} botPhone={BOT_WA_NUMBER} />
+    <div className="pb-24 space-y-5">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Sunumlarım</h1>
+        <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
+          {items.length} kayıt
+        </span>
       </div>
+
+      {items.length === 0 ? (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-10 text-center shadow-sm border border-slate-200/70 dark:border-slate-800">
+          <Presentation className="w-12 h-12 text-emerald-600 dark:text-emerald-400 mx-auto mb-3" strokeWidth={1.8} />
+          <p className="font-semibold text-slate-900 dark:text-white mb-1">Henüz sunumunuz yok</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">WhatsApp&apos;tan bir mülk ekleyince otomatik sunum oluşur.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {items.map((p) => (
+            <a
+              key={p.id}
+              href={`/d/p/${p.magic_token}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/70 dark:border-slate-800 hover:shadow-md active:scale-[0.99] transition"
+            >
+              <div className="flex gap-3 p-3 items-center">
+                <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  {p.cover ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.cover} alt={p.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <Home className="w-7 h-7 text-slate-400 dark:text-slate-500" strokeWidth={1.8} />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-slate-900 dark:text-white leading-tight line-clamp-2">
+                    {p.title || "Sunum"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    {new Date(p.created_at).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
+                  </p>
+                  {p.price && (
+                    <p className="text-sm font-bold text-slate-900 dark:text-white mt-1">
+                      {new Intl.NumberFormat("tr-TR").format(p.price)} ₺
+                    </p>
+                  )}
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+
+      <ReturnButtons token={token} botPhone={BOT_WA_NUMBER} />
     </div>
   );
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
-    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">{children}</div>
-  </div>;
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-sm w-full text-center shadow-sm border border-slate-200/70 dark:border-slate-800">
+        {children}
+      </div>
+    </div>
+  );
 }
