@@ -43,34 +43,34 @@ interface CardDef {
 // App-icon stilinde pastel arka plan tonları (her kategoriye özel renk)
 const CARD_DEFS: Array<CardDef & { bg: string; valueColor: string; labelColor: string }> = [
   { key: "properties",   label: "Mülklerim",   icon: "🏢", iconSrc: "/icons/emlak/mulkler.png",    color: "from-indigo-500 to-blue-600",
-    bg: "bg-gradient-to-br from-indigo-100 dark:from-indigo-950/40 to-blue-200 dark:to-blue-900/30",      valueColor: "text-indigo-900",  labelColor: "text-indigo-800",
+    bg: "bg-gradient-to-br from-indigo-100 dark:from-indigo-950/40 to-blue-200 dark:to-blue-900/30",      valueColor: "text-indigo-900 dark:text-white",  labelColor: "text-indigo-800 dark:text-white",
     href: t => `/tr/mulklerim?t=${encodeURIComponent(t)}` },
   { key: "customers",    label: "Müşterilerim", icon: "👥", iconSrc: "/icons/emlak/musteriler.png", color: "from-emerald-500 to-teal-600",
-    bg: "bg-gradient-to-br from-emerald-100 dark:from-emerald-950/40 to-teal-200 dark:to-teal-900/30",     valueColor: "text-emerald-900", labelColor: "text-emerald-800",
+    bg: "bg-gradient-to-br from-emerald-100 dark:from-emerald-950/40 to-teal-200 dark:to-teal-900/30",     valueColor: "text-emerald-900 dark:text-white", labelColor: "text-emerald-800 dark:text-white",
     href: t => `/tr/musterilerim?t=${encodeURIComponent(t)}` },
   { key: "contracts",    label: "Sözleşmeler", icon: "📋", iconSrc: "/icons/emlak/sozlesme.png",   color: "from-amber-500 to-orange-600",
-    bg: "bg-gradient-to-br from-amber-100 dark:from-amber-950/40 to-orange-200 dark:to-orange-900/30",     valueColor: "text-amber-900",   labelColor: "text-amber-800",
+    bg: "bg-gradient-to-br from-amber-100 dark:from-amber-950/40 to-orange-200 dark:to-orange-900/30",     valueColor: "text-amber-900 dark:text-white",   labelColor: "text-amber-800 dark:text-white",
     href: t => `/tr/sozlesmelerim?t=${encodeURIComponent(t)}` },
   { key: "tracking",     label: "Takiplerim",  icon: "🎯", iconSrc: "/icons/emlak/takip.png",      color: "from-rose-500 to-pink-600",
-    bg: "bg-gradient-to-br from-rose-100 dark:from-rose-950/40 to-pink-200 dark:to-pink-900/30",        valueColor: "text-rose-900",    labelColor: "text-rose-800",
+    bg: "bg-gradient-to-br from-rose-100 dark:from-rose-950/40 to-pink-200 dark:to-pink-900/30",        valueColor: "text-rose-900 dark:text-white",    labelColor: "text-rose-800 dark:text-white",
     href: t => `/tr/takip?t=${encodeURIComponent(t)}` },
   { key: "presentations", label: "Sunumlarım", icon: "📊", iconSrc: "/icons/emlak/sunumlar.png",   color: "from-violet-500 to-fuchsia-600",
-    bg: "bg-gradient-to-br from-violet-100 dark:from-violet-950/40 to-fuchsia-200 dark:to-fuchsia-900/30",   valueColor: "text-violet-900",  labelColor: "text-violet-800",
+    bg: "bg-gradient-to-br from-violet-100 dark:from-violet-950/40 to-fuchsia-200 dark:to-fuchsia-900/30",   valueColor: "text-violet-900 dark:text-white",  labelColor: "text-violet-800 dark:text-white",
     href: t => `/tr/sunumlarim?t=${encodeURIComponent(t)}` },
   { key: "calendar",     label: "Takvim",      icon: "📅", iconSrc: "/icons/emlak/takvim.png",     color: "from-sky-500 to-cyan-600",
-    bg: "bg-gradient-to-br from-sky-100 dark:from-sky-950/40 to-cyan-200 dark:to-cyan-900/30",         valueColor: "text-sky-900",     labelColor: "text-sky-800",
+    bg: "bg-gradient-to-br from-sky-100 dark:from-sky-950/40 to-cyan-200 dark:to-cyan-900/30",         valueColor: "text-sky-900 dark:text-white",     labelColor: "text-sky-800 dark:text-white",
     href: t => `/tr/takvim?t=${encodeURIComponent(t)}` },
   { key: "profil",       label: "Profilim",    icon: "👤", iconSrc: "/icons/emlak/profil.png",     color: "from-stone-600 to-stone-800",
-    bg: "bg-gradient-to-br from-stone-100 dark:from-stone-950/40 to-stone-300",      valueColor: "text-stone-900",   labelColor: "text-stone-800",
+    bg: "bg-gradient-to-br from-stone-100 dark:from-stone-950/40 to-stone-300",      valueColor: "text-stone-900 dark:text-white",   labelColor: "text-stone-800 dark:text-white",
     href: t => `/tr/profil-duzenle?t=${encodeURIComponent(t)}`, staticValue: () => "Düzenle" },
   { key: "websitem",     label: "Web Sitem",   icon: "🌐", iconSrc: "/icons/emlak/websitem.png",   color: "from-teal-500 to-emerald-700",
-    bg: "bg-gradient-to-br from-teal-100 dark:from-teal-950/40 to-emerald-200 dark:to-emerald-900/30",     valueColor: "text-teal-900",    labelColor: "text-teal-800",
+    bg: "bg-gradient-to-br from-teal-100 dark:from-teal-950/40 to-emerald-200 dark:to-emerald-900/30",     valueColor: "text-teal-900 dark:text-white",    labelColor: "text-teal-800 dark:text-white",
     href: (t, slug) => slug ? `/u/${slug}` : `/api/panel/web-sitem?t=${encodeURIComponent(t)}`, staticValue: (slug) => slug ? "Aktif" : "Kur" },
   { key: "bildirimler",  label: "Bildirimler", icon: "🔔",                                       color: "from-yellow-500 to-amber-600",
-    bg: "bg-gradient-to-br from-yellow-100 dark:from-yellow-950/40 to-amber-200 dark:to-amber-900/30",     valueColor: "text-amber-900",   labelColor: "text-amber-800",
+    bg: "bg-gradient-to-br from-yellow-100 dark:from-yellow-950/40 to-amber-200 dark:to-amber-900/30",     valueColor: "text-amber-900 dark:text-white",   labelColor: "text-amber-800 dark:text-white",
     href: t => t ? `/tr/bildirimler?t=${encodeURIComponent(t)}` : `/tr/bildirimler`, staticValue: () => "Ayarla" },
   { key: "uyelik",       label: "Üyelik",      icon: "💎",                                       color: "from-violet-500 to-fuchsia-700",
-    bg: "bg-gradient-to-br from-violet-100 dark:from-violet-950/40 to-fuchsia-200 dark:to-fuchsia-900/30",   valueColor: "text-violet-900",  labelColor: "text-violet-800",
+    bg: "bg-gradient-to-br from-violet-100 dark:from-violet-950/40 to-fuchsia-200 dark:to-fuchsia-900/30",   valueColor: "text-violet-900 dark:text-white",  labelColor: "text-violet-800 dark:text-white",
     href: t => t ? `/tr/uyelik?t=${encodeURIComponent(t)}` : `/tr/uyelik` },
 ];
 
@@ -194,9 +194,9 @@ export default function PanelimPage() {
         <div className="flex items-start gap-4">
           <div className="text-3xl flex-shrink-0">🖥</div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Bilgisayardan Kullanın</h3>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-1">Bilgisayardan Kullanın</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
-              Bilgisayarınızda <span className="font-semibold text-slate-900 dark:text-slate-100">qr.upudev.nl</span> sayfasını açın, telefonunuzdaki QR kodu kameraya tutun — saniyeler içinde panel masaüstünüzde de açılır.
+              Bilgisayarınızda <span className="font-semibold text-slate-900 dark:text-white">qr.upudev.nl</span> sayfasını açın, telefonunuzdaki QR kodu kameraya tutun — saniyeler içinde panel masaüstünüzde de açılır.
             </p>
             <button
               onClick={openQrScanner}
@@ -210,36 +210,36 @@ export default function PanelimPage() {
 
       {/* İpucu — killer özellikler kısa anlatım */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
-        <p className="font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+        <p className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
           <span className="text-lg">💡</span> İpucu
         </p>
         <ul className="space-y-3 text-sm">
           <li>
-            <p className="font-semibold text-slate-900 dark:text-slate-100">🎯 Takiplerim</p>
+            <p className="font-semibold text-slate-900 dark:text-white">🎯 Takiplerim</p>
             <p className="text-slate-600 dark:text-slate-400 leading-snug mt-0.5">
               Kart ekle, her sabah Bodrum&apos;daki yeni sahibi ilanları WhatsApp&apos;ınıza gelir.
             </p>
           </li>
           <li>
-            <p className="font-semibold text-slate-900 dark:text-slate-100">🤖 Mülklerim</p>
+            <p className="font-semibold text-slate-900 dark:text-white">🤖 Mülklerim</p>
             <p className="text-slate-600 dark:text-slate-400 leading-snug mt-0.5">
               Mülk ekledikçe AI saniyelerde profesyonel sunum hazırlar.
             </p>
           </li>
           <li>
-            <p className="font-semibold text-slate-900 dark:text-slate-100">📋 Sözleşmelerim</p>
+            <p className="font-semibold text-slate-900 dark:text-white">📋 Sözleşmelerim</p>
             <p className="text-slate-600 dark:text-slate-400 leading-snug mt-0.5">
               Mülk + müşteri seç, AI hukuki taslak metni üretir, paylaşılabilir link ile imzalanır.
             </p>
           </li>
           <li>
-            <p className="font-semibold text-slate-900 dark:text-slate-100">🌐 Profilim</p>
+            <p className="font-semibold text-slate-900 dark:text-white">🌐 Profilim</p>
             <p className="text-slate-600 dark:text-slate-400 leading-snug mt-0.5">
               Bilgileriniz kişisel web sayfanıza otomatik yansır, müşterilere paylaşın.
             </p>
           </li>
           <li>
-            <p className="font-semibold text-slate-900 dark:text-slate-100">📅 Takvim</p>
+            <p className="font-semibold text-slate-900 dark:text-white">📅 Takvim</p>
             <p className="text-slate-600 dark:text-slate-400 leading-snug mt-0.5">
               Tarih ve saat girerek hatırlatıcı kurun, WhatsApp&apos;ınıza zamanı geldiğinde gönderirim.
             </p>
@@ -265,9 +265,9 @@ function SahibindenTutorialCard() {
       <div className="flex items-start gap-4">
         <div className="text-3xl flex-shrink-0">📋</div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Sahibinden Otomatik Form</h3>
+          <h3 className="font-semibold text-slate-900 dark:text-white mb-1">Sahibinden Otomatik Form</h3>
           <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
-            Mülk bilgilerinizi <span className="font-semibold text-slate-900 dark:text-slate-100">sahibinden.com</span> ilan formuna otomatik doldurur. Chrome eklentimizi yükleyin — 30 dakikalık ilan girişi 3 dakikaya iner.
+            Mülk bilgilerinizi <span className="font-semibold text-slate-900 dark:text-white">sahibinden.com</span> ilan formuna otomatik doldurur. Chrome eklentimizi yükleyin — 30 dakikalık ilan girişi 3 dakikaya iner.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <a
@@ -292,7 +292,7 @@ function SahibindenTutorialCard() {
                 <li key={s.n} className="flex gap-3">
                   <span className="flex-shrink-0 text-base">{s.n}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-900 dark:text-slate-100 leading-tight">{s.title}</p>
+                    <p className="font-semibold text-slate-900 dark:text-white leading-tight">{s.title}</p>
                     <p className="text-slate-600 dark:text-slate-400 text-xs mt-0.5">{s.desc}</p>
                     {s.link && (
                       <a
