@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { LoadingState } from "@/components/banking";
 
 interface TicketSummary {
   id: number;
@@ -93,7 +94,7 @@ export default function DestekPage() {
     return token ? `/tr/destek/${id}?t=${encodeURIComponent(token)}` : `/tr/destek/${id}`;
   }
 
-  if (status === "loading") return <Center>⏳ Yükleniyor...</Center>;
+  if (status === "loading") return <LoadingState />;
   if (status === "error") return <Center>⚠️ {error}</Center>;
 
   return (

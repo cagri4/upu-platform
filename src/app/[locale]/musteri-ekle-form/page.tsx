@@ -7,13 +7,13 @@ import {
   User,
   Target,
   FileText,
-  Loader2,
   AlertTriangle,
   Check,
   Sparkles,
   Plus,
   MessageCircle,
 } from "lucide-react";
+import { LoadingState } from "@/components/banking";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -141,14 +141,7 @@ export default function MusteriEkleFormPage() {
     }
   }
 
-  if (status === "loading") {
-    return (
-      <Center>
-        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mx-auto mb-3" />
-        <p className="text-slate-600 dark:text-slate-400">Yükleniyor...</p>
-      </Center>
-    );
-  }
+  if (status === "loading") return <LoadingState />;
   if (status === "error") {
     return (
       <Center>

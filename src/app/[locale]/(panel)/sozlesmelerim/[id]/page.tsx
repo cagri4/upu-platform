@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
+import { LoadingState } from "@/components/banking";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
 
@@ -105,7 +106,7 @@ export default function ContractDetailPage() {
   }
 
   if (status === "loading") {
-    return <div className="text-center py-20"><div className="text-4xl">⏳</div></div>;
+    return <LoadingState variant="card" />;
   }
   if (status === "error" || !contract) {
     return (

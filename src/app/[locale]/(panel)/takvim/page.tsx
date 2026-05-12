@@ -17,6 +17,7 @@ import {
   Check,
 } from "lucide-react";
 import { ReturnButtons } from "@/components/return-buttons";
+import { LoadingState } from "@/components/banking";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -155,14 +156,7 @@ export default function TakvimPage() {
     } finally { setBusyId(null); }
   }
 
-  if (status === "loading") {
-    return (
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-10 text-center shadow-sm border border-slate-200/70 dark:border-slate-800">
-        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mx-auto mb-3" />
-        <p className="text-slate-600 dark:text-slate-400 text-sm">Yükleniyor...</p>
-      </div>
-    );
-  }
+  if (status === "loading") return <LoadingState variant="card" />;
   if (status === "error") {
     return (
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 text-center shadow-sm border border-slate-200/70 dark:border-slate-800">

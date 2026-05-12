@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { YARDIM_ENTRIES } from "@/lib/yardim-content";
+import { LoadingState } from "@/components/banking";
 
 type Status = "loading" | "ready" | "error";
 
@@ -23,7 +24,7 @@ export default function YardimIndexPage() {
       .catch(() => { setStatus("error"); setError("Bağlantı hatası."); });
   }, [token]);
 
-  if (status === "loading") return <Center>⏳ Yükleniyor...</Center>;
+  if (status === "loading") return <LoadingState />;
   if (status === "error") return <Center><div className="text-red-600">⚠️ {error}</div></Center>;
 
   return (

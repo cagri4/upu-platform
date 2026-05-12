@@ -15,9 +15,9 @@ import {
   Copy,
   MessageCircle,
   AlertTriangle,
-  Loader2,
   ClipboardList,
 } from "lucide-react";
+import { LoadingState } from "@/components/banking";
 
 interface PropOption {
   id: string;
@@ -136,14 +136,7 @@ export default function SozlesmeYapPage() {
     }).catch(() => {});
   }
 
-  if (status === "loading") {
-    return (
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-10 text-center shadow-sm border border-slate-200/70 dark:border-slate-800">
-        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mx-auto mb-3" />
-        <p className="text-slate-600 dark:text-slate-400 text-sm">Yükleniyor...</p>
-      </div>
-    );
-  }
+  if (status === "loading") return <LoadingState variant="card" />;
 
   if (status === "error") {
     return (

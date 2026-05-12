@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import { LoadingState } from "@/components/banking";
 import {
   NOTIFICATION_TYPES,
   CATEGORY_META,
@@ -107,7 +108,7 @@ export function PreferencesView() {
     }
   }
 
-  if (status === "loading") return <Center>⏳ Yükleniyor...</Center>;
+  if (status === "loading") return <LoadingState />;
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <p className="text-slate-600 dark:text-slate-400 text-sm">{error}</p>

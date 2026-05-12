@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { ChromeSuggest, ChromeOpenInlineLink } from "./chrome-suggest";
 import { useIsInAppBrowser } from "./use-in-app-browser";
+import { LoadingState } from "@/components/banking";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -253,14 +254,7 @@ export default function MulkEkleFormPage() {
     }
   }
 
-  if (status === "loading") {
-    return (
-      <Center>
-        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mx-auto mb-3" />
-        <p className="text-slate-600 dark:text-slate-400">Link doğrulanıyor...</p>
-      </Center>
-    );
-  }
+  if (status === "loading") return <LoadingState label="Link doğrulanıyor" />;
   if (status === "error") {
     return (
       <Center>

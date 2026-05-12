@@ -15,6 +15,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { AdminLayout, type SidebarItem } from "@/components/admin-layout";
+import { LoadingState } from "@/components/banking";
 
 /**
  * Bottom tab item'larının tam kataloğu — kullanıcı /tr/panel-ayarlari'da
@@ -111,11 +112,7 @@ export default function PanelGroupLayout({ children }: { children: ReactNode }) 
   }, [token]);
 
   if (state === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="text-4xl">⏳</div>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (state === "error") {

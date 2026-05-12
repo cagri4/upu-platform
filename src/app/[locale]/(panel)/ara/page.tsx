@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { SahibindenLink } from "@/components/sahibinden-link";
 
 import { ReturnButtons } from "@/components/return-buttons";
+import { LoadingState } from "@/components/banking";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -102,7 +103,7 @@ export default function AraPage() {
     }
   }
 
-  if (status === "loading") return <Center><div className="text-4xl mb-3">⏳</div><p>Yükleniyor...</p></Center>;
+  if (status === "loading") return <LoadingState />;
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div><h1 className="text-xl font-bold mb-2">Hata</h1>
     <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>

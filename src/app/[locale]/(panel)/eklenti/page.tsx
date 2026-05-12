@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { LoadingState } from "@/components/banking";
 
 const EXTENSION_URL = "https://chromewebstore.google.com/detail/bcafoeijofbhelbanpfjhmhiokjnggbe";
 
@@ -64,7 +65,7 @@ export default function EklentiPage() {
     }
   }
 
-  if (status === "loading") return <Center>⏳ Yükleniyor...</Center>;
+  if (status === "loading") return <LoadingState />;
   if (status === "error") return <Center>⚠️ {error}</Center>;
 
   return (

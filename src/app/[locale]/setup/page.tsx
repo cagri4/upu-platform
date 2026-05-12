@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { LoadingState } from "@/components/banking";
 
 const BOT_WA_NUMBER = "31644967207"; // UPU bot's business WhatsApp number
 
@@ -112,14 +113,7 @@ export default function SetupPage() {
   }
 
   if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="text-center">
-          <div className="text-4xl mb-3">⏳</div>
-          <p className="text-slate-600 dark:text-slate-400">Link doğrulanıyor...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState label="Link doğrulanıyor" />;
   }
 
   if (status === "error") {

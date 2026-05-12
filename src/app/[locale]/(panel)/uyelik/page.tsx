@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { LoadingState } from "@/components/banking";
 
 interface Plan {
   id: "pro_monthly" | "pro_yearly";
@@ -129,7 +130,7 @@ export default function UyelikPage() {
     }
   }
 
-  if (status === "loading") return <Center>⏳ Yükleniyor...</Center>;
+  if (status === "loading") return <LoadingState />;
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <p className="text-slate-600 dark:text-slate-400 text-sm">{error}</p>

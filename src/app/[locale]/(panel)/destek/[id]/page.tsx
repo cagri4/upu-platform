@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useParams } from "next/navigation";
+import { LoadingState } from "@/components/banking";
 
 interface Message {
   id: number;
@@ -95,7 +96,7 @@ export default function DestekDetayPage() {
 
   const backHref = token ? `/tr/destek?t=${encodeURIComponent(token)}` : "/tr/destek";
 
-  if (status === "loading") return <Center>⏳ Yükleniyor...</Center>;
+  if (status === "loading") return <LoadingState />;
   if (status === "error" || !ticket) return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <p className="text-slate-600 dark:text-slate-400 text-sm">{error || "Talep bulunamadı."}</p>

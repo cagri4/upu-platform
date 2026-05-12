@@ -13,7 +13,6 @@ import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
-  Loader2,
   Home,
   MapPin,
   ArrowLeft,
@@ -22,6 +21,7 @@ import {
 } from "lucide-react";
 
 import { ReturnButtons } from "@/components/return-buttons";
+import { LoadingState } from "@/components/banking";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -221,14 +221,7 @@ export default function TakipPage() {
     } finally { setBusyId(null); }
   }
 
-  if (status === "loading") {
-    return (
-      <Center>
-        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mx-auto mb-3" />
-        <p className="text-slate-600 dark:text-slate-400">Yükleniyor...</p>
-      </Center>
-    );
-  }
+  if (status === "loading") return <LoadingState />;
   if (status === "error") {
     return (
       <Center>
@@ -466,11 +459,7 @@ export default function TakipPage() {
 
                 {isExpanded && (
                   <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-3">
-                    {sonuc?.status === "loading" && (
-                      <div className="text-center py-4 text-sm text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" /> Yükleniyor...
-                      </div>
-                    )}
+                    {sonuc?.status === "loading" && <LoadingState variant="inline" />}
                     {sonuc?.status === "error" && (
                       <div className="text-center py-4 text-sm text-rose-600 dark:text-rose-400 flex items-center justify-center gap-2">
                         <AlertTriangle className="w-4 h-4" strokeWidth={2.2} /> {sonuc.error}

@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { whatsappDeeplink } from "@/lib/whatsapp-deeplink";
+import { LoadingState } from "@/components/banking";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -74,7 +76,7 @@ export default function WebSayfamPage() {
     window.location.href = whatsappDeeplink(BOT_WA_NUMBER);
   }
 
-  if (status === "loading") return <Center><div className="text-4xl mb-3">⏳</div><p>Yükleniyor...</p></Center>;
+  if (status === "loading") return <LoadingState />;
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div>
     <h1 className="text-xl font-bold mb-2">Hata</h1>
@@ -140,7 +142,9 @@ export default function WebSayfamPage() {
           disabled={finishing}
           className="block w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-semibold text-base shadow-lg text-center active:scale-95 disabled:opacity-60"
         >
-          {finishing ? "⏳ Yönlendiriliyor..." : "💬 WhatsApp'a Dön"}
+          {finishing ? (
+            <span className="inline-flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Yönlendiriliyor...</span>
+          ) : "💬 WhatsApp'a Dön"}
         </button>
       </div>
     </div>
