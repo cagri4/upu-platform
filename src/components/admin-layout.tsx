@@ -200,7 +200,7 @@ export function AdminLayout({
       {/* Skip-to-content (klavye nav) */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:text-stone-900 focus:px-3 focus:py-2 focus:rounded focus:shadow"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:text-slate-900 focus:px-3 focus:py-2 focus:rounded focus:shadow"
       >
         İçeriğe atla
       </a>
@@ -217,17 +217,17 @@ export function AdminLayout({
       {/* Sidebar — mobile=drawer (w-64), tablet=icon-only (w-16), desktop=full (w-64) */}
       <aside
         id="sidebar-nav"
-        className={`fixed top-0 left-0 h-full w-64 md:w-16 lg:w-64 bg-stone-900 text-white z-40 transform transition-transform md:translate-x-0 flex flex-col ${
+        className={`fixed top-0 left-0 h-full w-64 md:w-16 lg:w-64 bg-slate-900 text-white z-40 transform transition-transform md:translate-x-0 flex flex-col ${
           drawerOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        <div className="p-5 md:p-3 lg:p-5 border-b border-stone-700 md:flex md:items-center md:justify-center lg:block flex-shrink-0">
+        <div className="p-5 md:p-3 lg:p-5 border-b border-slate-800 md:flex md:items-center md:justify-center lg:block flex-shrink-0">
           <div className="text-xl font-bold">
             <span className="md:hidden lg:inline">{brandTitle}</span>
             <span className="hidden md:inline lg:hidden text-2xl" title={brandTitle}>{brandIconCollapsed}</span>
           </div>
           {officeName && (
-            <div className="text-xs text-stone-400 mt-1 truncate md:hidden lg:block">{officeName}</div>
+            <div className="text-xs text-slate-400 mt-1 truncate md:hidden lg:block">{officeName}</div>
           )}
         </div>
         <nav className="p-3 md:p-2 lg:p-3 space-y-1 flex-1 overflow-y-auto" aria-label="Ana menü">
@@ -239,7 +239,7 @@ export function AdminLayout({
             return (
               <div key={item.id}>
                 {item.separatorBefore && (
-                  <hr className="my-2 border-stone-700" aria-hidden="true" />
+                  <hr className="my-2 border-slate-800" aria-hidden="true" />
                 )}
                 <a
                   href={href}
@@ -249,7 +249,7 @@ export function AdminLayout({
                   className={`flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm transition focus:outline-none focus:ring-2 ${accent.focusRing} ${
                     isActive
                       ? `${accent.active} text-white font-semibold lg:border-l-4 ${accent.border} lg:-ml-1 lg:pl-4`
-                      : "text-stone-300 hover:bg-stone-800 hover:text-white"
+                      : "text-slate-300 hover:bg-slate-800 hover:text-white"
                   }`}
                 >
                   {item.iconSrc ? (
@@ -264,11 +264,11 @@ export function AdminLayout({
             );
           })}
         </nav>
-        <div className="p-3 md:p-2 lg:p-3 border-t border-stone-700 flex-shrink-0 space-y-1">
+        <div className="p-3 md:p-2 lg:p-3 border-t border-slate-800 flex-shrink-0 space-y-1">
           <button
             onClick={() => setQrScannerOpen(true)}
             title="Bilgisayardan Aç"
-            className={`w-full flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm text-stone-300 hover:bg-stone-800 transition focus:outline-none focus:ring-2 ${accent.focusRing}`}
+            className={`w-full flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition focus:outline-none focus:ring-2 ${accent.focusRing}`}
           >
             <span>🖥</span>
             <span className="md:hidden lg:inline">Bilgisayardan Aç</span>
@@ -276,7 +276,7 @@ export function AdminLayout({
           <button
             onClick={handleLogout}
             title="WhatsApp'a Dön"
-            className={`w-full flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm text-stone-300 hover:bg-stone-800 transition focus:outline-none focus:ring-2 ${accent.focusRing}`}
+            className={`w-full flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition focus:outline-none focus:ring-2 ${accent.focusRing}`}
           >
             <span>💬</span>
             <span className="md:hidden lg:inline">WhatsApp&apos;a Dön</span>
@@ -284,7 +284,7 @@ export function AdminLayout({
           <button
             onClick={handleSignOut}
             title="Oturumu Kapat"
-            className={`w-full flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2 md:justify-center lg:justify-start rounded-lg text-xs text-stone-400 hover:bg-stone-800 hover:text-stone-200 transition focus:outline-none focus:ring-2 ${accent.focusRing}`}
+            className={`w-full flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2 md:justify-center lg:justify-start rounded-lg text-xs text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition focus:outline-none focus:ring-2 ${accent.focusRing}`}
           >
             <span>🚪</span>
             <span className="md:hidden lg:inline">Oturumu Kapat</span>
