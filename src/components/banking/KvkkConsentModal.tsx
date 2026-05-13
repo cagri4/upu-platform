@@ -81,8 +81,6 @@ export function KvkkConsentModal({ onAccepted, onDefer }: KvkkConsentModalProps)
 
         <a
           href="/tr/aydinlatma-metni"
-          target="_blank"
-          rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
         >
           <span>Aydınlatma metnini oku</span>

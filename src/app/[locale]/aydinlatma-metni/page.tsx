@@ -4,8 +4,7 @@
  * Static sayfa, banking style + dark mode. KvkkConsentModal'dan ve
  * /tr/uye-ol checkbox link'inden açılır. İçerik versiyonu v1.
  */
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { BackButton } from "./BackButton";
 
 export const metadata = {
   title: "Aydınlatma Metni · UPU Emlak",
@@ -16,13 +15,7 @@ export default function AydinlatmaMetniPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-12">
       <header className="px-4 py-4">
-        <Link
-          href="/tr"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition"
-        >
-          <ArrowLeft className="w-4 h-4" strokeWidth={2.2} />
-          Geri
-        </Link>
+        <BackButton />
       </header>
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 space-y-6">
@@ -211,8 +204,7 @@ export default function AydinlatmaMetniPage() {
                   info@upudev.nl
                 </a>
               </li>
-              <li><strong className="text-slate-900 dark:text-white">Adres:</strong> UPU Dev, [adres - sonradan doldurulacak]</li>
-              <li><strong className="text-slate-900 dark:text-white">Veri Sorumlusu Temsilcisi:</strong> [isim - sonradan doldurulacak]</li>
+              <li><strong className="text-slate-900 dark:text-white">Adres:</strong> UPU Dev, Computerweg 22, 3542 DR, Utrecht, The Netherlands</li>
             </ul>
           </Section>
 

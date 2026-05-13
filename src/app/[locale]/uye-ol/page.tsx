@@ -125,8 +125,6 @@ export default function UyeOlPage() {
               <span className="leading-relaxed">
                 <a
                   href="/tr/aydinlatma-metni"
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="text-emerald-600 dark:text-emerald-400 hover:underline"
                 >
                   KVKK Aydınlatma Metni
