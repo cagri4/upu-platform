@@ -4,11 +4,15 @@
  * cancel_at_period_end pattern: kullanıcı şu anki periyot sonuna kadar Pro
  * kalır, periyot bitiminde Free'ye düşer (Mollie webhook subscription
  * canceled event'i ile durum güncellenir). Hemen Free'ye düşmez.
+ *
+ * Hassas action — Faz 6.6 step-up WA OTP zorunlu (`requireWaStepUp`).
+ * Cookie 10 dk içinde verify edilmemişse 403 step_up_required.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { resolvePanelAuthFromBody } from "@/platform/auth/panel-auth";
 import { cancelSubscription as mollieCancel } from "@/platform/billing/mollie";
+import { requireWaStepUp } from "@/platform/auth/step-up";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +21,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const auth = await resolvePanelAuthFromBody(req, body);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    // Step-up gate — Faz 6.6
+    const stepUp = await requireWaStepUp(req, auth.userId);
+    if (!stepUp.ok) {
+      return NextResponse.json({ error: stepUp.error }, { status: 403 });
+    }
 
     const sb = getServiceClient();
     const userId = auth.userId;

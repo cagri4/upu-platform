@@ -25,6 +25,7 @@ import {
   DEFAULT_QUICK_ACTIONS,
   type QuickActionKey,
 } from "@/platform/quick-actions/keys";
+import { StepUpModal } from "@/components/banking";
 
 // ── Alt sekme çubuğu (localStorage) ──────────────────────────────────
 const TAB_STORAGE_KEY = "upu-bottom-tabs:emlak";
@@ -69,6 +70,8 @@ export default function PanelAyarlariPage() {
   // Google bağlantı state — Faz 6.2
   const [google, setGoogle] = useState<{ linked: boolean; email: string | null } | null>(null);
   const [googleUnlinking, setGoogleUnlinking] = useState(false);
+  // Faz 6.6 — unlink step-up modal'ı
+  const [showStepUp, setShowStepUp] = useState(false);
   const linkedToast = params.get("linked") === "1";
   const linkError = params.get("error") || "";
 
@@ -114,12 +117,24 @@ export default function PanelAyarlariPage() {
 
   async function googleUnlink() {
     if (!window.confirm("Google hesabı bağlantısı kaldırılsın mı?")) return;
+    await performGoogleUnlink();
+  }
+
+  // Step-up modal'a takılırsa cookie kazandıktan sonra parent yine bunu çağırır
+  async function performGoogleUnlink() {
     setGoogleUnlinking(true);
     try {
       const res = await fetch("/api/auth/google/unlink", {
         method: "POST",
         credentials: "same-origin",
       });
+      if (res.status === 403) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === "step_up_required" || data.error === "step_up_invalid") {
+          setShowStepUp(true);
+          return;
+        }
+      }
       if (res.ok) {
         setGoogle({ linked: false, email: null });
       } else {
@@ -485,6 +500,18 @@ export default function PanelAyarlariPage() {
         >
           <ArrowLeft className="w-4 h-4" strokeWidth={2.2} /> Panele Dön
         </a>
+      )}
+
+      {/* Step-up WA OTP modal'ı — Google unlink başarılı doğrulamadan sonra
+          performGoogleUnlink yeniden çağrılır (cookie 10 dk geçerli). */}
+      {showStepUp && (
+        <StepUpModal
+          onCancel={() => setShowStepUp(false)}
+          onVerified={() => {
+            setShowStepUp(false);
+            void performGoogleUnlink();
+          }}
+        />
       )}
     </div>
   );
