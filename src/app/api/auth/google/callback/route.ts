@@ -7,8 +7,8 @@
  * İki mod:
  *   - default (login): google_sub / google_email ile mevcut profile aranır.
  *     Bulunursa kendi JWT cookie'mizi set edip next'e redirect; bulunmazsa
- *     /tr/panel?error=no_account&hint=wa_first ile WA-first onboarding'e
- *     yönlendir (Faz 6.3'te /tr/giris login sayfası gelince oraya alınacak).
+ *     /tr/giris?error=no_account&hint=wa_first ile WA-first onboarding'e
+ *     yönlendir (Faz 6.3 ile login sayfası hazır).
  *   - mode=link: panel-içi Google bağlama. Cookie session uid ile pid
  *     eşleşmeli, google_sub başka profile'da kullanılmamalı. Mevcut
  *     profile'a google_sub/email kaydedilir, yeni cookie üretilmez.
@@ -39,8 +39,9 @@ export async function GET(req: NextRequest) {
   const pid = url.searchParams.get("pid") || "";
 
   // Error redirect base — mode'a göre kullanıcının döneceği yer.
-  // /tr/giris (Faz 6.3) yapılana kadar geçici olarak panel/panel-ayarlari.
-  const errBase = mode === "link" ? "/tr/panel-ayarlari" : "/tr/panel";
+  //   link mode → /tr/panel-ayarlari (kullanıcı oradan başlattı)
+  //   login mode → /tr/giris (Faz 6.3 login sayfası error toast render eder)
+  const errBase = mode === "link" ? "/tr/panel-ayarlari" : "/tr/giris";
 
   if (!code) {
     return NextResponse.redirect(`${url.origin}${errBase}?error=missing_code`);
@@ -145,10 +146,9 @@ export async function GET(req: NextRequest) {
   // 3) WA-first onboarding: profile yoksa yeni profile YARATMA.
   //    Kullanıcı önce WA ile kayıt olmalı, Faz 6.2'de panel-içi "Google bağla".
   if (!profile) {
-    // Faz 6.3'te /tr/giris login sayfası yapıldığında oraya alınacak;
-    // şimdilik panel'e dön (kullanıcı zaten oturum açacak adımdaydı, hata
-    // mesajı UI'da gösterilemiyor olsa bile 404'ten iyidir).
-    return NextResponse.redirect(`${url.origin}/tr/panel?error=no_account&hint=wa_first`);
+    // Faz 6.3 /tr/giris error toast'ı bu hint'i "wa_first" mesajı ile
+    // gösterir — kullanıcı WhatsApp ile bağlanmaya yönlendirilir.
+    return NextResponse.redirect(`${url.origin}/tr/giris?error=no_account&hint=wa_first`);
   }
 
   // google_sub henüz yoksa idempotent kaydet (kullanıcı 2'inci girişinde sub set olur)

@@ -70,7 +70,9 @@ export async function GET(req: NextRequest) {
 
   if (error || !data?.url) {
     // Mode'a göre kullanıcının döneceği yer
-    const errReturn = mode === "link" ? "/tr/panel-ayarlari" : "/tr/panel";
+    //   link mode → panel-ayarlari (UI error toast render eder)
+    //   login mode → /tr/giris (Faz 6.3 login sayfası error toast render eder)
+    const errReturn = mode === "link" ? "/tr/panel-ayarlari" : "/tr/giris";
     return NextResponse.redirect(`${url.origin}${errReturn}?error=oauth_init`);
   }
 
