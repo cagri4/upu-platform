@@ -13,14 +13,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getSessionFromCookies } from "@/platform/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
-  const next = url.searchParams.get("next") || "/tr/panel";
   const mode = url.searchParams.get("mode") || "";
-  const pid = url.searchParams.get("pid") || "";
+  // Link mode default next → panel-ayarlari; login mode → panel
+  const next =
+    url.searchParams.get("next") ||
+    (mode === "link" ? "/tr/panel-ayarlari" : "/tr/panel");
+
+  // Link mode: cookie session zorunlu (pid server-derived, client'a güvenmeyiz).
+  // Cookie yoksa giriş yönlendirmesi.
+  let pid: string | null = null;
+  if (mode === "link") {
+    const session = await getSessionFromCookies();
+    if (!session?.uid) {
+      return NextResponse.redirect(`${url.origin}/tr/giris?error=login_required`);
+    }
+    pid = session.uid;
+  }
 
   const cookieStore = await cookies();
   const setCookies: Array<{ name: string; value: string; options: CookieOptions }> = [];

@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
       })
       .eq("id", session.uid);
 
-    const res = NextResponse.redirect(`${url.origin}${next}?google=linked`);
+    const res = NextResponse.redirect(`${url.origin}${next}?linked=1`);
     for (const c of setCookies) res.cookies.set(c.name, c.value, c.options);
     return res;
   }
