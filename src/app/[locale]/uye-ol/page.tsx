@@ -21,6 +21,8 @@ const WA_DEEP_LINK = `https://wa.me/${WA_BOT}?text=${encodeURIComponent("Üye ol
 export default function UyeOlPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
+  // Faz 7.0 — KVKK consent checkbox (kayıt için zorunlu)
+  const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
@@ -65,8 +67,14 @@ export default function UyeOlPage() {
           ) : isMobile ? (
             <div className="space-y-3">
               <a
-                href={WA_DEEP_LINK}
-                className="flex items-center justify-between gap-3 w-full px-5 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shadow-lg active:scale-[0.98] transition"
+                href={agreed ? WA_DEEP_LINK : "#"}
+                onClick={agreed ? undefined : (e) => e.preventDefault()}
+                aria-disabled={!agreed}
+                className={`flex items-center justify-between gap-3 w-full px-5 py-4 rounded-2xl bg-emerald-500 text-white font-semibold shadow-lg transition ${
+                  agreed
+                    ? "hover:bg-emerald-600 active:scale-[0.98]"
+                    : "opacity-50 cursor-not-allowed"
+                }`}
               >
                 <span>WhatsApp ile başla</span>
                 <ArrowRight className="w-5 h-5" strokeWidth={2.4} />
@@ -89,14 +97,43 @@ export default function UyeOlPage() {
                 </p>
               </div>
               <a
-                href={WA_DEEP_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
+                href={agreed ? WA_DEEP_LINK : "#"}
+                onClick={agreed ? undefined : (e) => e.preventDefault()}
+                target={agreed ? "_blank" : undefined}
+                rel={agreed ? "noopener noreferrer" : undefined}
+                aria-disabled={!agreed}
+                className={`inline-block text-sm ${
+                  agreed
+                    ? "text-emerald-600 dark:text-emerald-400 hover:underline"
+                    : "text-slate-400 dark:text-slate-600 cursor-not-allowed"
+                }`}
               >
                 veya WhatsApp Web&apos;de aç →
               </a>
             </div>
+          )}
+
+          {/* KVKK consent — Faz 7.0. Bağla butonu disabled until checked. */}
+          {isMobile !== null && (
+            <label className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-400 cursor-pointer text-left">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded accent-emerald-600 flex-shrink-0"
+              />
+              <span className="leading-relaxed">
+                <a
+                  href="/tr/aydinlatma-metni"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-600 dark:text-emerald-400 hover:underline"
+                >
+                  KVKK Aydınlatma Metni
+                </a>
+                &apos;ni okudum ve kişisel verilerimin işlenmesine onay veriyorum.
+              </span>
+            </label>
           )}
 
           <p className="text-xs text-center text-slate-400 dark:text-slate-500 pt-2">

@@ -18,6 +18,9 @@ import {
   ChevronDown,
   Loader2,
   AlertTriangle,
+  FileText,
+  Mail,
+  ExternalLink,
 } from "lucide-react";
 import { QUICK_ACTIONS } from "@/platform/quick-actions/catalog";
 import {
@@ -487,6 +490,41 @@ export default function PanelAyarlariPage() {
             Google ile Bağla
           </button>
         )}
+      </section>
+
+      {/* Gizlilik ve Veriler — Faz 7.0 KVKK */}
+      <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 space-y-3">
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">Gizlilik ve Veriler</h2>
+        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+          Kişisel verilerinizin nasıl işlendiği ve haklarınız hakkında bilgi alın.
+        </p>
+        <div className="space-y-2">
+          <a
+            href="/tr/aydinlatma-metni"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-400 dark:hover:border-emerald-500 active:scale-[0.99] transition"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
+              <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.2} />
+              KVKK Aydınlatma Metni
+            </span>
+            <ExternalLink className="w-4 h-4 text-slate-400 dark:text-slate-500" strokeWidth={2.2} />
+          </a>
+          <a
+            href="mailto:info@upudev.nl?subject=KVKK%20Veri%20Talebi"
+            className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-400 dark:hover:border-emerald-500 active:scale-[0.99] transition"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
+              <Mail className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.2} />
+              Veri talebi gönder
+            </span>
+            <ExternalLink className="w-4 h-4 text-slate-400 dark:text-slate-500" strokeWidth={2.2} />
+          </a>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          Hesabınızı silmek isterseniz info@upudev.nl adresinden iletişime geçin. Talebiniz 90 gün içinde işlenir.
+        </p>
       </section>
 
       <p className="text-xs text-slate-400 dark:text-slate-500 text-center px-4 leading-relaxed">

@@ -31,6 +31,7 @@ import {
   ListCard,
   InfoChip,
   Skeleton,
+  KvkkConsentModal,
 } from "@/components/banking";
 import { QUICK_ACTIONS, type QuickActionDef } from "@/platform/quick-actions/catalog";
 import {
@@ -71,6 +72,8 @@ export default function PanelimPage() {
   // Google bağla onboarding — Faz 6.5
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showLinkBanner, setShowLinkBanner] = useState(false);
+  // KVKK consent — Faz 7.0
+  const [showKvkkModal, setShowKvkkModal] = useState(false);
 
   useEffect(() => {
     const url = token
@@ -119,6 +122,35 @@ export default function PanelimPage() {
       })
       .catch(() => {/* sessiz — modal/banner gösterme */});
   }, []);
+
+  // KVKK consent — Faz 7.0. needsConsent=true ise modal; "Daha sonra"
+  // diyene localStorage flag ile aynı gün tekrar gösterme.
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    let dismissedToday = false;
+    try {
+      dismissedToday = window.localStorage.getItem("kvkk_modal_dismissed_today") === today;
+    } catch { /* private mode / quota */ }
+    if (dismissedToday) return;
+
+    fetch("/api/profile/kvkk-status", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.needsConsent) setShowKvkkModal(true);
+      })
+      .catch(() => {/* sessiz */});
+  }, []);
+
+  function onKvkkAccepted() {
+    setShowKvkkModal(false);
+    try { window.localStorage.removeItem("kvkk_modal_dismissed_today"); } catch {/* yut */}
+  }
+
+  function onKvkkDefer() {
+    setShowKvkkModal(false);
+    const today = new Date().toISOString().slice(0, 10);
+    try { window.localStorage.setItem("kvkk_modal_dismissed_today", today); } catch {/* yut */}
+  }
 
   const googleLinkHref = "/api/auth/google/start?mode=link&next=/tr/panel";
 
@@ -404,9 +436,15 @@ export default function PanelimPage() {
         />
       </div>
 
+      {/* KVKK consent modal — Faz 7.0. needsConsent=true ise gösterilir;
+          önceliklidir, açıkken Google Welcome modal'ı saklı. */}
+      {showKvkkModal && (
+        <KvkkConsentModal onAccepted={onKvkkAccepted} onDefer={onKvkkDefer} />
+      )}
+
       {/* Welcome modal — Faz 6.5. WA ile yeni gelen kullanıcıya Google
-          bağlama önerisi. linked olunca veya welcome_seen=true olunca asla. */}
-      {showWelcomeModal && (
+          bağlama önerisi. KVKK modal'ı açıkken bekletilir. */}
+      {!showKvkkModal && showWelcomeModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
           onClick={() => void dismissWelcomeModal()}

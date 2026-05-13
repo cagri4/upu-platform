@@ -6,3 +6,4 @@ export { InfoChip, type InfoChipProps } from "./info-chip";
 export { LoadingState, type LoadingStateProps, type LoadingStateVariant } from "./loading-state";
 export { Skeleton, type SkeletonProps } from "./skeleton";
 export { StepUpModal } from "./StepUpModal";
+export { KvkkConsentModal } from "./KvkkConsentModal";
