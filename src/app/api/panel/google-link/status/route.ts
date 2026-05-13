@@ -19,12 +19,15 @@ export async function GET(req: NextRequest) {
   const admin = getServiceClient();
   const { data } = await admin
     .from("profiles")
-    .select("google_email, google_sub")
+    .select("google_email, google_sub, metadata")
     .eq("id", auth.userId)
     .single();
 
+  const meta = (data?.metadata as Record<string, unknown> | null) || {};
   return NextResponse.json({
     linked: !!data?.google_sub,
     email: (data?.google_email as string | null) || null,
+    welcomeSeen: !!meta.welcome_google_modal_seen,
+    bannerDismissedUntil: (meta.google_banner_dismissed_until as string | null) || null,
   });
 }

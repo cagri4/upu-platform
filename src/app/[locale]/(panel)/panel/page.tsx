@@ -18,6 +18,8 @@ import {
   Monitor,
   ChevronLeft,
   ChevronRight,
+  ShieldCheck,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { usePanelChrome } from "@/components/admin-layout";
@@ -66,6 +68,10 @@ export default function PanelimPage() {
   const [subscription, setSubscription] = useState<SubscriptionSummary | null | undefined>(undefined);
   const [quickActions, setQuickActions] = useState<QuickActionKey[] | null>(null);
 
+  // Google bağla onboarding — Faz 6.5
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showLinkBanner, setShowLinkBanner] = useState(false);
+
   useEffect(() => {
     const url = token
       ? `/api/panel/dashboard?t=${encodeURIComponent(token)}`
@@ -92,6 +98,71 @@ export default function PanelimPage() {
         setSubscription(null);
       });
   }, [token]);
+
+  // Google bağla durumu — Faz 6.5 modal/banner kararı.
+  //   linked → ikisi de gizli
+  //   !linked && !welcomeSeen → modal
+  //   !linked && welcomeSeen && (bannerDismissedUntil null veya geçmiş) → banner
+  useEffect(() => {
+    fetch("/api/panel/google-link/status", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d || d.linked) return;
+        if (!d.welcomeSeen) {
+          setShowWelcomeModal(true);
+          return;
+        }
+        const until = d.bannerDismissedUntil as string | null;
+        if (!until || new Date(until) <= new Date()) {
+          setShowLinkBanner(true);
+        }
+      })
+      .catch(() => {/* sessiz — modal/banner gösterme */});
+  }, []);
+
+  const googleLinkHref = "/api/auth/google/start?mode=link&next=/tr/panel";
+
+  async function dismissWelcomeModal() {
+    setShowWelcomeModal(false);
+    // 3 günlük grace — modal'da "atla" diyene hemen banner ile rahatsız etme
+    const inThreeDays = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    try {
+      await fetch("/api/panel/google-link/dismiss", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ type: "welcome", banner_dismissed_until: inThreeDays }),
+      });
+    } catch { /* sessiz */ }
+  }
+
+  async function dismissLinkBanner() {
+    setShowLinkBanner(false);
+    const inSevenDays = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    try {
+      await fetch("/api/panel/google-link/dismiss", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ type: "banner", banner_dismissed_until: inSevenDays }),
+      });
+    } catch { /* sessiz */ }
+  }
+
+  // Modal açıkken Escape ile kapatma + body scroll lock
+  useEffect(() => {
+    if (!showWelcomeModal) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") void dismissWelcomeModal();
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [showWelcomeModal]);
 
   const q = (path: string) => (token ? `${path}?t=${encodeURIComponent(token)}` : path);
 
@@ -170,6 +241,31 @@ export default function PanelimPage() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      {/* Google bağla persistent banner — modal'dan sonra (3 gün grace) veya
+          önceki banner dismiss'ten 7 gün sonra çıkar. linked olunca asla. */}
+      {showLinkBanner && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border-l-4 border-emerald-500">
+          <Sparkles className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" strokeWidth={2.2} />
+          <p className="flex-1 text-sm text-emerald-700 dark:text-emerald-300 leading-snug">
+            Google hesabını bağlayarak daha hızlı giriş yap.
+          </p>
+          <a
+            href={googleLinkHref}
+            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium active:scale-95 transition flex-shrink-0"
+          >
+            Bağla
+          </a>
+          <button
+            type="button"
+            onClick={() => void dismissLinkBanner()}
+            aria-label="Kapat"
+            className="p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded transition flex-shrink-0"
+          >
+            <X className="w-4 h-4" strokeWidth={2.4} />
+          </button>
+        </div>
+      )}
+
       {/* Hero slider — subscription fetch sürerken Skeleton (flicker fix).
           Tek slide ise plain HeroBanner; ≥2 ise prev/next ok + dot indicator.
           Auto-advance YOK — sadece manuel kullanıcı kontrolü. */}
@@ -307,7 +403,64 @@ export default function PanelimPage() {
           onClick={openQrScanner}
         />
       </div>
+
+      {/* Welcome modal — Faz 6.5. WA ile yeni gelen kullanıcıya Google
+          bağlama önerisi. linked olunca veya welcome_seen=true olunca asla. */}
+      {showWelcomeModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          onClick={() => void dismissWelcomeModal()}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-5"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="welcome-google-title"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" strokeWidth={2.2} />
+              </div>
+              <h2 id="welcome-google-title" className="font-semibold text-slate-900 dark:text-white">
+                Daha güvenli giriş
+              </h2>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              Google hesabını bağlayarak WhatsApp kaybetsen veya cihaz değiştirsen bile hesabına ulaşabilirsin. İstediğin zaman ayarlardan ekleyebilir veya kaldırabilirsin.
+            </p>
+            <div className="space-y-2">
+              <a
+                href={googleLinkHref}
+                className="flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-emerald-400 dark:hover:border-emerald-500 text-slate-900 dark:text-white font-medium shadow-sm active:scale-[0.98] transition"
+              >
+                <GoogleGlyph className="w-4 h-4" />
+                <span>Google ile Bağla</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => void dismissWelcomeModal()}
+                className="w-full py-2.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition"
+              >
+                Şimdilik atla
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+/** Google G logo (4-renk official) — modal'da kullanılır. */
+function GoogleGlyph({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 18 18" className={className} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4" />
+      <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853" />
+      <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05" />
+      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335" />
+    </svg>
   );
 }
 
