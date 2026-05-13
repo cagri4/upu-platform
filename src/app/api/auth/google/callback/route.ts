@@ -7,8 +7,8 @@
  * İki mod:
  *   - default (login): google_sub / google_email ile mevcut profile aranır.
  *     Bulunursa kendi JWT cookie'mizi set edip next'e redirect; bulunmazsa
- *     /tr/giris?error=no_account&hint=wa_first ile WA-first onboarding'e
- *     yönlendir.
+ *     /tr/panel?error=no_account&hint=wa_first ile WA-first onboarding'e
+ *     yönlendir (Faz 6.3'te /tr/giris login sayfası gelince oraya alınacak).
  *   - mode=link: panel-içi Google bağlama. Cookie session uid ile pid
  *     eşleşmeli, google_sub başka profile'da kullanılmamalı. Mevcut
  *     profile'a google_sub/email kaydedilir, yeni cookie üretilmez.
@@ -38,8 +38,12 @@ export async function GET(req: NextRequest) {
   const mode = url.searchParams.get("mode") || "";
   const pid = url.searchParams.get("pid") || "";
 
+  // Error redirect base — mode'a göre kullanıcının döneceği yer.
+  // /tr/giris (Faz 6.3) yapılana kadar geçici olarak panel/panel-ayarlari.
+  const errBase = mode === "link" ? "/tr/panel-ayarlari" : "/tr/panel";
+
   if (!code) {
-    return NextResponse.redirect(`${url.origin}/tr/giris?error=missing_code`);
+    return NextResponse.redirect(`${url.origin}${errBase}?error=missing_code`);
   }
 
   const cookieStore = await cookies();
@@ -63,7 +67,7 @@ export async function GET(req: NextRequest) {
   const { data: exchanged, error: exErr } = await sb.auth.exchangeCodeForSession(code);
   if (exErr || !exchanged?.user) {
     return NextResponse.redirect(
-      `${url.origin}/tr/giris?error=oauth_exchange&detail=${encodeURIComponent(exErr?.message || "")}`,
+      `${url.origin}${errBase}?error=oauth_exchange&detail=${encodeURIComponent(exErr?.message || "")}`,
     );
   }
 
@@ -80,7 +84,7 @@ export async function GET(req: NextRequest) {
     (supaUser.user_metadata?.provider_id as string | undefined);
 
   if (!googleEmail || !googleSub) {
-    return NextResponse.redirect(`${url.origin}/tr/giris?error=oauth_no_email`);
+    return NextResponse.redirect(`${url.origin}${errBase}?error=oauth_no_email`);
   }
 
   const admin = getServiceClient();
@@ -89,7 +93,7 @@ export async function GET(req: NextRequest) {
   if (mode === "link") {
     const session = await getSessionFromCookies();
     if (!session?.uid || (pid && session.uid !== pid)) {
-      return NextResponse.redirect(`${url.origin}/tr/giris?error=link_unauthorized`);
+      return NextResponse.redirect(`${url.origin}/tr/panel-ayarlari?error=link_unauthorized`);
     }
 
     // google_sub başka profile'da mı?
@@ -141,7 +145,10 @@ export async function GET(req: NextRequest) {
   // 3) WA-first onboarding: profile yoksa yeni profile YARATMA.
   //    Kullanıcı önce WA ile kayıt olmalı, Faz 6.2'de panel-içi "Google bağla".
   if (!profile) {
-    return NextResponse.redirect(`${url.origin}/tr/giris?error=no_account&hint=wa_first`);
+    // Faz 6.3'te /tr/giris login sayfası yapıldığında oraya alınacak;
+    // şimdilik panel'e dön (kullanıcı zaten oturum açacak adımdaydı, hata
+    // mesajı UI'da gösterilemiyor olsa bile 404'ten iyidir).
+    return NextResponse.redirect(`${url.origin}/tr/panel?error=no_account&hint=wa_first`);
   }
 
   // google_sub henüz yoksa idempotent kaydet (kullanıcı 2'inci girişinde sub set olur)

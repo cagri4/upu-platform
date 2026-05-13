@@ -26,12 +26,13 @@ export async function GET(req: NextRequest) {
     (mode === "link" ? "/tr/panel-ayarlari" : "/tr/panel");
 
   // Link mode: cookie session zorunlu (pid server-derived, client'a güvenmeyiz).
-  // Cookie yoksa giriş yönlendirmesi.
+  // Cookie yoksa panel-ayarlari'na error ile dön (kullanıcı oraya giriş yapmaya
+  // çalıştı; /tr/giris henüz yok).
   let pid: string | null = null;
   if (mode === "link") {
     const session = await getSessionFromCookies();
     if (!session?.uid) {
-      return NextResponse.redirect(`${url.origin}/tr/giris?error=login_required`);
+      return NextResponse.redirect(`${url.origin}/tr/panel-ayarlari?error=login_required`);
     }
     pid = session.uid;
   }
@@ -68,7 +69,9 @@ export async function GET(req: NextRequest) {
   });
 
   if (error || !data?.url) {
-    return NextResponse.redirect(`${url.origin}/tr/giris?error=oauth_init`);
+    // Mode'a göre kullanıcının döneceği yer
+    const errReturn = mode === "link" ? "/tr/panel-ayarlari" : "/tr/panel";
+    return NextResponse.redirect(`${url.origin}${errReturn}?error=oauth_init`);
   }
 
   const res = NextResponse.redirect(data.url);

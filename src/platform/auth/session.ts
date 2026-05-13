@@ -8,7 +8,9 @@
  * Cookie özellikleri:
  *   - HttpOnly  → JS'ten okunamaz (XSS koruma)
  *   - Secure    → sadece HTTPS (prod)
- *   - SameSite=Strict → CSRF kapalı, üçüncü taraf siteden taşımaz
+ *   - SameSite=Lax → top-level GET navigation'lara cookie gönderilir (OAuth
+ *     callback redirect chain için gerek). POST/iframe'de engellenir, CSRF
+ *     koruması yeterli. Strict OAuth flow'unda cookie kaybeder.
  *   - Path=/    → tüm panel route'larında
  *   - MaxAge    → 30 gün (sliding refresh, /me her isabet ettiğinde uzar)
  */
@@ -70,7 +72,7 @@ export function buildSessionCookie(jwt: string): string {
     "Path=/",
     `Max-Age=${SESSION_TTL_SECONDS}`,
     "HttpOnly",
-    "SameSite=Strict",
+    "SameSite=Lax",
   ];
   const domain = getCookieDomain();
   if (domain) parts.push(`Domain=${domain}`);
@@ -85,7 +87,7 @@ export function buildClearCookie(): string {
     "Path=/",
     "Max-Age=0",
     "HttpOnly",
-    "SameSite=Strict",
+    "SameSite=Lax",
   ];
   const domain = getCookieDomain();
   if (domain) parts.push(`Domain=${domain}`);
