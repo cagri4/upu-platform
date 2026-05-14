@@ -483,6 +483,20 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     await handleWebpanelShared(ctx, tenant);
     return;
   }
+  // Faz 9.2 — mevcut üye /[locale]/uye-ol sayfasından "Üye olmak istiyorum"
+  // prefilled mesajını gönderdiğinde "Komutu anlamadım" yerine açıklayıcı
+  // yanıt + panel linki. Yeni üye webhook'un intro akışında zaten yakalanır,
+  // buraya düşmez (router yalnız resolved userId varsa çağrılır).
+  if (
+    lower === "üye ol" ||
+    lower === "uye ol" ||
+    lower.startsWith("üye olmak") ||
+    lower.startsWith("uye olmak")
+  ) {
+    await sendText(ctx.phone, "Sen zaten üyesin 👋\n\nPaneline buradan ulaşabilirsin.");
+    await handleWebpanelShared(ctx, tenant);
+    return;
+  }
   if (firstWord === "degistir" || firstWord === "değiştir" || firstWord === "switch") {
     await handleDegistir(ctx);
     return;

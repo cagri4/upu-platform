@@ -36,6 +36,29 @@ export default function UyeOlPage() {
   const canProceed = agreed && agreedTos;
   // Faz 9.1 — mobilde 3sn sonra "WhatsApp açılmadı mı?" fallback linki
   const [showFallback, setShowFallback] = useState(false);
+  // Faz 9.2 — logged-in user direkt /panel'e redirect; auth check tamamlanmadan
+  // signup formu render edilmez.
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/panel/me", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled) return;
+        if (d?.success) {
+          window.location.replace(`/${locale}/panel`);
+        } else {
+          setAuthChecked(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setAuthChecked(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [locale]);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
@@ -60,6 +83,14 @@ export default function UyeOlPage() {
       color: { dark: "#0f172a", light: "#ffffff" },
     });
   }, [isMobile]);
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full border-2 border-slate-300 dark:border-slate-700 border-t-emerald-500 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
