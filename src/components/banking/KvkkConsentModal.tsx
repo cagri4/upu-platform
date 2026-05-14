@@ -11,12 +11,26 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, ExternalLink } from "lucide-react";
 
+type TenantKey = "emlak" | "bayi";
+
 interface KvkkConsentModalProps {
   onAccepted: () => void;
   onDefer: () => void;
+  /**
+   * Hangi tenant'ın metni gösterilsin. Default "emlak" (backward compat —
+   * mevcut (panel)/panel mount'u prop geçmiyor).
+   */
+  tenantKey?: TenantKey;
 }
 
-export function KvkkConsentModal({ onAccepted, onDefer }: KvkkConsentModalProps) {
+const TENANT_BODY: Record<TenantKey, string> = {
+  emlak:
+    "UPU Emlak'ı kullanırken kişisel verilerinizin işlenmesi konusunda sizi bilgilendiren KVKK aydınlatma metnimizi onaylamanız gerekmektedir.",
+  bayi:
+    "UPU Bayi'yi kullanırken kişisel verilerinizin (bayi telefonu, sipariş bilgisi, vade tutarları, IBAN vb.) yasal çerçeve içinde işlenmesi için onayınızı rica ederiz.",
+};
+
+export function KvkkConsentModal({ onAccepted, onDefer, tenantKey = "emlak" }: KvkkConsentModalProps) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -76,11 +90,11 @@ export function KvkkConsentModal({ onAccepted, onDefer }: KvkkConsentModalProps)
         </div>
 
         <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-          UPU Emlak&apos;ı kullanırken kişisel verilerinizin işlenmesi konusunda sizi bilgilendiren KVKK aydınlatma metnimizi onaylamanız gerekmektedir.
+          {TENANT_BODY[tenantKey]}
         </p>
 
         <a
-          href="/tr/aydinlatma-metni"
+          href={`/tr/aydinlatma-metni?tenant=${tenantKey}`}
           className="inline-flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
         >
           <span>Aydınlatma metnini oku</span>

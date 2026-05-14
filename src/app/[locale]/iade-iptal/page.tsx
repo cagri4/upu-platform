@@ -1,18 +1,29 @@
 /**
- * /tr/iade-iptal — İade ve İptal Politikası v1 (Faz 7.1a).
+ * /tr/iade-iptal — İade ve İptal Politikası v1 (Faz 7.1a + Sprint A tenant-aware).
  *
- * Static sayfa, banking style + dark mode. ToS ve panel-ayarlari Gizlilik
- * bölümünden link verilir. Avukat onayı beklemekle birlikte ilk profesyonel
- * versiyondur.
+ * Tenant resolution: ?tenant=<key> > middleware x-tenant-key header > "emlak" default.
  */
+import { headers } from "next/headers";
 import { BackButton } from "@/components/banking/BackButton";
+import { resolveLegalTenantContext } from "@/platform/legal/tenant-context";
 
 export const metadata = {
-  title: "İade ve İptal Politikası · UPU Emlak",
-  description: "UPU Emlak abonelik iptali, dönem ortası iade ve ödeme iade süreçleri.",
+  title: "İade ve İptal Politikası · UPU Platform",
+  description: "Abonelik iptali, dönem ortası iade ve ödeme iade süreçleri.",
 };
 
-export default function IadeIptalPage() {
+export default async function IadeIptalPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tenant?: string }>;
+}) {
+  const sp = await searchParams;
+  const h = await headers();
+  const ctx = await resolveLegalTenantContext({
+    searchParamTenant: sp.tenant ?? null,
+    headerTenant: h.get("x-tenant-key"),
+  });
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-12">
       <header className="px-4 py-4">
@@ -31,7 +42,7 @@ export default function IadeIptalPage() {
 
         <article className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 space-y-6 text-slate-700 dark:text-slate-300 text-[15px] leading-relaxed">
           <header className="pb-4 border-b border-slate-200 dark:border-slate-800 space-y-1 text-sm">
-            <p><strong className="text-slate-900 dark:text-white">Hizmet Sağlayıcı:</strong> UPU Dev (UPU Emlak)</p>
+            <p><strong className="text-slate-900 dark:text-white">Hizmet Sağlayıcı:</strong> {ctx.brandFull}</p>
             <p><strong className="text-slate-900 dark:text-white">Adres:</strong> Computerweg 22, 3542 DR, Utrecht, The Netherlands</p>
             <p><strong className="text-slate-900 dark:text-white">İletişim:</strong> info@upudev.nl</p>
           </header>
@@ -55,8 +66,8 @@ export default function IadeIptalPage() {
                 erişiminiz devam eder; ardından otomatik yenileme durdurulur.
               </li>
               <li>
-                Hesabınızdaki içerikler (portföy, müşteri, sunum) silinmez — yeniden abone
-                olduğunuzda kaldığınız yerden devam edersiniz.
+                Hesabınızdaki içerikler silinmez — yeniden abone olduğunuzda kaldığınız yerden
+                devam edersiniz.
               </li>
             </ul>
           </Section>
@@ -124,7 +135,7 @@ export default function IadeIptalPage() {
             <ul className="list-disc pl-5 space-y-1">
               <li>
                 Bu hak <strong className="text-slate-900 dark:text-white">yalnızca bireysel
-                tüketicilere</strong> tanınmıştır. UPU Emlak profesyonel bir araç olduğundan,
+                tüketicilere</strong> tanınmıştır. {ctx.brand} profesyonel bir araç olduğundan,
                 ticari hesaplar (B2B aboneler) bu haktan yararlanamaz.
               </li>
               <li>

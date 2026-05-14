@@ -1,18 +1,35 @@
 /**
- * /tr/hizmet-sartlari — UPU Emlak Hizmet Şartları (ToS) v1 (Faz 7.1a).
+ * /tr/hizmet-sartlari — Hizmet Şartları (ToS) v1 (Faz 7.1a + Sprint A tenant-aware).
  *
- * Static sayfa, banking style + dark mode. Üye kayıt akışında ikinci onay
- * checkbox'ı bu sayfaya link verir. Avukat onayı bekleyen ilk profesyonel
- * versiyondur (v1).
+ * Tenant resolution: ?tenant=<key> > middleware x-tenant-key header > "emlak" default.
  */
+import { headers } from "next/headers";
 import { BackButton } from "@/components/banking/BackButton";
+import { resolveLegalTenantContext } from "@/platform/legal/tenant-context";
 
 export const metadata = {
-  title: "Hizmet Şartları · UPU Emlak",
-  description: "UPU Emlak hizmet kullanım koşulları — üyelik, ücret, fesih ve sorumluluk düzenlemeleri.",
+  title: "Hizmet Şartları · UPU Platform",
+  description: "Hizmet kullanım koşulları — üyelik, ücret, fesih ve sorumluluk düzenlemeleri.",
 };
 
-export default function HizmetSartlariPage() {
+export default async function HizmetSartlariPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tenant?: string }>;
+}) {
+  const sp = await searchParams;
+  const h = await headers();
+  const ctx = await resolveLegalTenantContext({
+    searchParamTenant: sp.tenant ?? null,
+    headerTenant: h.get("x-tenant-key"),
+  });
+
+  // ToS section 3 "İçerik doğruluğu" maddesi tenant'a göre dilini değiştirir.
+  const contentAccuracy =
+    ctx.key === "bayi"
+      ? "Sisteme girdiğiniz bayi, sipariş, fatura ve tahsilat kayıtlarının doğru, güncel ve yasal olduğundan emin olmak."
+      : "Yüklediğiniz ilan, müşteri ve fotoğraf bilgilerinin doğru, güncel ve yasal olduğundan emin olmak.";
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-12">
       <header className="px-4 py-4">
@@ -31,23 +48,17 @@ export default function HizmetSartlariPage() {
 
         <article className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 space-y-6 text-slate-700 dark:text-slate-300 text-[15px] leading-relaxed">
           <header className="pb-4 border-b border-slate-200 dark:border-slate-800 space-y-1 text-sm">
-            <p><strong className="text-slate-900 dark:text-white">Hizmet Sağlayıcı:</strong> UPU Dev (UPU Emlak)</p>
+            <p><strong className="text-slate-900 dark:text-white">Hizmet Sağlayıcı:</strong> {ctx.brandFull}</p>
             <p><strong className="text-slate-900 dark:text-white">Adres:</strong> Computerweg 22, 3542 DR, Utrecht, The Netherlands</p>
             <p><strong className="text-slate-900 dark:text-white">İletişim:</strong> info@upudev.nl</p>
           </header>
 
           <Section number={1} title="Hizmet Tanımı">
+            <p>{ctx.serviceDescription}</p>
             <p>
-              UPU Emlak (&ldquo;Platform&rdquo;), emlak danışmanlarına ve emlak ofislerine yönelik
-              olarak portföy yönetimi, müşteri takibi, sözleşme ve sunum hazırlama, WhatsApp
-              üzerinden otomatik bildirim ve iş akışı asistanlığı hizmetlerini sunan bir SaaS
-              (Software as a Service) çözümüdür.
-            </p>
-            <p>
-              Hizmet; tek kullanıcılı serbest emlakçılar, bireysel danışmanlar ve küçük/orta
-              ölçekli ofisler için tasarlanmıştır. Tüketicilere doğrudan emlak satışı veya
-              kiralaması yapmamaktadır; yalnızca yetkili profesyonellerin iş süreçlerini
-              dijitalleştiren bir araçtır.
+              Hizmet; profesyonel kullanıcılar ve ticari işletmeler için tasarlanmıştır.
+              Tüketicilere doğrudan satış veya hizmet sunumu yapmamaktadır; yalnızca yetkili
+              profesyonellerin iş süreçlerini dijitalleştiren bir araçtır.
             </p>
           </Section>
 
@@ -58,7 +69,7 @@ export default function HizmetSartlariPage() {
             </p>
             <ul className="list-disc pl-5 space-y-1">
               <li>18 yaşından büyük olduğunuzu beyan edersiniz.</li>
-              <li>Profesyonel olarak emlak hizmeti sunma yetkiniz olduğunu beyan edersiniz.</li>
+              <li>{ctx.audienceClaim}</li>
               <li>Verdiğiniz bilgilerin doğru ve güncel olduğunu kabul edersiniz.</li>
               <li>Hesabınızın güvenliğinden bizzat sorumlu olduğunuzu kabul edersiniz.</li>
             </ul>
@@ -74,13 +85,13 @@ export default function HizmetSartlariPage() {
             <ul className="list-disc pl-5 space-y-1">
               <li>
                 <strong className="text-slate-900 dark:text-white">İçerik doğruluğu:</strong>{" "}
-                Yüklediğiniz ilan, müşteri ve fotoğraf bilgilerinin doğru, güncel ve yasal
-                olduğundan emin olmak.
+                {contentAccuracy}
               </li>
               <li>
                 <strong className="text-slate-900 dark:text-white">KVKK / GDPR uyumu:</strong>{" "}
-                Müşteri verisini Platform&apos;a girerken ilgili kişilerden gerekli açık rızayı
-                aldığınızı garanti etmek. Yetkisiz veri girişinin sorumluluğu tarafınıza aittir.
+                Üçüncü kişilere ait kişisel verileri Platform&apos;a girerken ilgili kişilerden
+                gerekli açık rızayı aldığınızı garanti etmek. Yetkisiz veri girişinin sorumluluğu
+                tarafınıza aittir.
               </li>
               <li>
                 <strong className="text-slate-900 dark:text-white">Telif hakkı:</strong> Yalnızca
@@ -135,7 +146,7 @@ export default function HizmetSartlariPage() {
             <ul className="list-disc pl-5 space-y-1">
               <li>
                 Dönem ortası iptallerde iade koşulları{" "}
-                <a href="/tr/iade-iptal" className="text-emerald-600 dark:text-emerald-400 hover:underline">
+                <a href={`/tr/iade-iptal?tenant=${ctx.key}`} className="text-emerald-600 dark:text-emerald-400 hover:underline">
                   İade ve İptal Politikası
                 </a>{" "}
                 dokümanında belirtilmiştir.
@@ -158,9 +169,9 @@ export default function HizmetSartlariPage() {
               mülkiyet devri içermez.
             </p>
             <p>
-              Platform&apos;a yüklediğiniz içerikler (ilan fotoğrafları, müşteri kayıtları, vb.)
-              size aittir. UPU Dev, yalnızca hizmeti sunmak için gereken ölçüde bu içerikleri
-              işleme yetkisine sahiptir; içeriği üçüncü taraflarla ticari amaçla paylaşmaz.
+              Platform&apos;a yüklediğiniz içerikler size aittir. UPU Dev, yalnızca hizmeti
+              sunmak için gereken ölçüde bu içerikleri işleme yetkisine sahiptir; içeriği üçüncü
+              taraflarla ticari amaçla paylaşmaz.
             </p>
           </Section>
 

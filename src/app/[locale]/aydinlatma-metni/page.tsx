@@ -1,17 +1,31 @@
 /**
- * /tr/aydinlatma-metni — KVKK Aydınlatma Metni (Faz 7.0).
+ * /tr/aydinlatma-metni — KVKK Aydınlatma Metni (Faz 7.0 + Sprint A tenant-aware).
  *
- * Static sayfa, banking style + dark mode. KvkkConsentModal'dan ve
- * /tr/uye-ol checkbox link'inden açılır. İçerik versiyonu v1.
+ * Tenant resolution: ?tenant=<key> > middleware x-tenant-key header > "emlak" default.
+ * KvkkConsentModal ve panel-ayarlari linkleri açar; bayi user'a bayi-spesifik
+ * veri tipleri + brand gösterir.
  */
+import { headers } from "next/headers";
 import { BackButton } from "@/components/banking/BackButton";
+import { resolveLegalTenantContext } from "@/platform/legal/tenant-context";
 
 export const metadata = {
-  title: "Aydınlatma Metni · UPU Emlak",
-  description: "UPU Emlak KVKK Aydınlatma Metni — kişisel verilerinizin işlenmesi hakkında bilgilendirme.",
+  title: "Aydınlatma Metni · UPU Platform",
+  description: "KVKK Aydınlatma Metni — kişisel verilerinizin işlenmesi hakkında bilgilendirme.",
 };
 
-export default function AydinlatmaMetniPage() {
+export default async function AydinlatmaMetniPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tenant?: string }>;
+}) {
+  const sp = await searchParams;
+  const h = await headers();
+  const ctx = await resolveLegalTenantContext({
+    searchParamTenant: sp.tenant ?? null,
+    headerTenant: h.get("x-tenant-key"),
+  });
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-12">
       <header className="px-4 py-4">
@@ -30,14 +44,14 @@ export default function AydinlatmaMetniPage() {
 
         <article className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 space-y-6 text-slate-700 dark:text-slate-300 text-[15px] leading-relaxed">
           <header className="pb-4 border-b border-slate-200 dark:border-slate-800 space-y-1 text-sm">
-            <p><strong className="text-slate-900 dark:text-white">Veri Sorumlusu:</strong> UPU Emlak / UPU Dev</p>
+            <p><strong className="text-slate-900 dark:text-white">Veri Sorumlusu:</strong> {ctx.brandFull}</p>
             <p><strong className="text-slate-900 dark:text-white">Yürürlük tarihi:</strong> 13.05.2026</p>
             <p><strong className="text-slate-900 dark:text-white">Versiyon:</strong> v1</p>
           </header>
 
           <Section number={1} title="Giriş">
             <p>
-              UPU Emlak (&ldquo;Platform&rdquo;), 6698 sayılı{" "}
+              {ctx.brand} (&ldquo;Platform&rdquo;), 6698 sayılı{" "}
               <strong className="text-slate-900 dark:text-white">Kişisel Verilerin Korunması Kanunu</strong>{" "}
               (&ldquo;KVKK&rdquo;) kapsamında veri sorumlusu sıfatıyla hareket etmektedir. Bu metin,
               kişisel verilerinizin tarafımızca nasıl toplandığı, işlendiği ve korunduğu hakkında
@@ -63,10 +77,9 @@ export default function AydinlatmaMetniPage() {
 
             <SubHeading>Hizmet kullanım verileri</SubHeading>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Mülk ilanları (yüklediğiniz fotoğraf ve açıklamalar dahil)</li>
-              <li>Müşteri bilgileri (sizin tarafınızdan girilen iletişim ve takip verileri)</li>
-              <li>Sözleşme ve sunum içerikleri</li>
-              <li>Hesap tercihleri ve ayarlar</li>
+              {ctx.sectoralDataTypes.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
             </ul>
 
             <SubHeading>Teknik veriler</SubHeading>
@@ -88,7 +101,9 @@ export default function AydinlatmaMetniPage() {
             <ul className="list-disc pl-5 space-y-1">
               <li>Hesap oluşturma ve kimlik doğrulama</li>
               <li>Hizmet sunumu ve teknik destek</li>
-              <li>Mülk yönetimi, müşteri ve sözleşme süreçlerinin yürütülmesi</li>
+              {ctx.sectoralPurposes.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
               <li>WhatsApp üzerinden bildirim, hatırlatma ve etkileşim sağlanması</li>
               <li>Üyelik ve abonelik yönetimi (ödeme dahil)</li>
               <li>İstatistiksel analiz ve hizmet iyileştirme (anonimleştirilmiş)</li>

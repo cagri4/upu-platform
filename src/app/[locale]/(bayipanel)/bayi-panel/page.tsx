@@ -18,6 +18,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { usePanelChrome } from "@/components/admin-layout";
+import { KvkkConsentModal } from "@/components/banking";
 
 interface KPIs {
   dealer_count: number;
@@ -65,6 +66,7 @@ export default function BayiPanelimPage() {
   const { openQrScanner } = usePanelChrome();
 
   const [kpis, setKpis] = useState<KPIs | null>(null);
+  const [showKvkkModal, setShowKvkkModal] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -75,6 +77,36 @@ export default function BayiPanelimPage() {
       })
       .catch(() => { /* layout init zaten validate etti */ });
   }, [token]);
+
+  // KVKK consent — Sprint A. needsConsent=true ise modal; "Daha sonra"
+  // diyene localStorage flag ile aynı gün tekrar gösterme. Emlak panel
+  // pattern'inin bayi karşılığı.
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    let dismissedToday = false;
+    try {
+      dismissedToday = window.localStorage.getItem("kvkk_modal_dismissed_today") === today;
+    } catch { /* private mode / quota */ }
+    if (dismissedToday) return;
+
+    fetch("/api/profile/kvkk-status", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.needsConsent) setShowKvkkModal(true);
+      })
+      .catch(() => { /* sessiz */ });
+  }, []);
+
+  function onKvkkAccepted() {
+    setShowKvkkModal(false);
+    try { window.localStorage.removeItem("kvkk_modal_dismissed_today"); } catch {/* yut */}
+  }
+
+  function onKvkkDefer() {
+    setShowKvkkModal(false);
+    const today = new Date().toISOString().slice(0, 10);
+    try { window.localStorage.setItem("kvkk_modal_dismissed_today", today); } catch {/* yut */}
+  }
 
   return (
     <div className="space-y-6">
@@ -146,6 +178,14 @@ export default function BayiPanelimPage() {
           Yeni bayi eklemek için sol menüden <strong>Bayilerim</strong>, sipariş kaydetmek için <strong>Siparişlerim</strong>, ya da WhatsApp&apos;ta doğrudan komut adını yazabilirsiniz (örn. <span className="font-mono bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">bayilerim</span>).
         </p>
       </div>
+
+      {showKvkkModal && (
+        <KvkkConsentModal
+          tenantKey="bayi"
+          onAccepted={onKvkkAccepted}
+          onDefer={onKvkkDefer}
+        />
+      )}
     </div>
   );
 }
