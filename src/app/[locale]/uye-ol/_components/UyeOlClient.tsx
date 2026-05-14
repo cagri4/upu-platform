@@ -14,7 +14,7 @@
  *   - Desktop: aynı wa.me URL'ini QR olarak göster
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import QRCode from "qrcode";
 import { ArrowRight } from "lucide-react";
@@ -24,15 +24,16 @@ const WA_BOT = "31644967207";
 interface UyeOlClientProps {
   /** WA pre-fill text — server tarafında tenant prefix ile birleştirilir. */
   waText: string;
+  /** Tenant-aware sade marka adı — header'da gösterilir (örn. "UPU Bayi"). */
+  brandName: string;
 }
 
-export default function UyeOlClient({ waText }: UyeOlClientProps) {
+export default function UyeOlClient({ waText, brandName }: UyeOlClientProps) {
   const t = useTranslations("signup");
   const locale = useLocale();
 
   const waDeepLink = `https://wa.me/${WA_BOT}?text=${encodeURIComponent(waText)}`;
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
   // Faz 7.0 — KVKK consent checkbox (kayıt için zorunlu)
   const [agreed, setAgreed] = useState(false);
@@ -79,15 +80,21 @@ export default function UyeOlClient({ waText }: UyeOlClientProps) {
     return () => window.clearTimeout(timer);
   }, [isMobile]);
 
-  useEffect(() => {
-    if (isMobile !== false || !canvasRef.current) return;
-    void QRCode.toCanvas(canvasRef.current, waDeepLink, {
-      width: 280,
-      margin: 2,
-      errorCorrectionLevel: "M",
-      color: { dark: "#0f172a", light: "#ffffff" },
-    });
-  }, [isMobile, waDeepLink]);
+  // QR canvas — callback ref. authChecked → isMobile sırasıyla render
+  // tetiklenince DOM'a giren canvas anında çizilir; useEffect deps race'i
+  // ortadan kalkar (Faz 9.1/9.2 fix).
+  const canvasRefCb = useCallback(
+    (node: HTMLCanvasElement | null) => {
+      if (!node || isMobile !== false) return;
+      void QRCode.toCanvas(node, waDeepLink, {
+        width: 280,
+        margin: 2,
+        errorCorrectionLevel: "M",
+        color: { dark: "#0f172a", light: "#ffffff" },
+      });
+    },
+    [isMobile, waDeepLink],
+  );
 
   if (!authChecked) {
     return (
@@ -101,7 +108,7 @@ export default function UyeOlClient({ waText }: UyeOlClientProps) {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
       <header className="px-4 py-4 flex items-center justify-between">
         <a href={`/${locale}`} className="flex items-center gap-2">
-          <span className="text-lg font-semibold text-slate-900 dark:text-white">UPU Emlak</span>
+          <span className="text-lg font-semibold text-slate-900 dark:text-white">{brandName}</span>
         </a>
       </header>
 
@@ -156,7 +163,7 @@ export default function UyeOlClient({ waText }: UyeOlClientProps) {
           ) : (
             <div className="space-y-4">
               <div className="inline-block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
-                <canvas ref={canvasRef} className="block mx-auto" />
+                <canvas ref={canvasRefCb} className="block mx-auto" />
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-slate-900 dark:text-white">

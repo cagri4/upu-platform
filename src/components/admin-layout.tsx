@@ -182,14 +182,18 @@ export function AdminLayout({
   }
 
   async function handleSignOut() {
-    // Oturum kapat: cookie temizle, sonra WA'ya yönlendir.
-    // Cihaz paylaşımı / başka kullanıcıya devretme senaryosu için.
+    // Oturum kapat: cookie temizle, ardından /giris sayfasına yönlendir.
+    // Cihaz paylaşımı / başka kullanıcıya devretme senaryosu — kullanıcı
+    // WA'ya değil, gerçek logout flow'una düşsün ki başka hesapla giriş
+    // yapabilsin.
     try {
       await fetch("/api/panel-session/logout", { method: "POST", credentials: "same-origin" });
     } catch {
-      // network hatasında bile WA'ya yönlendir, kullanıcı sıkışmasın
+      /* network hatasında bile redirect — kullanıcı sıkışmasın */
     }
-    window.location.href = `https://wa.me/${botPhone}`;
+    const pathLocale = window.location.pathname.split("/")[1];
+    const locale = ["tr", "en", "nl"].includes(pathLocale) ? pathLocale : "tr";
+    window.location.href = `/${locale}/giris`;
   }
 
   const chromeValue: PanelChromeContextValue = { openQrScanner: () => setQrScannerOpen(true) };
