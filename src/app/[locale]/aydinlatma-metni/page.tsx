@@ -4,7 +4,7 @@
  * Static sayfa, banking style + dark mode. KvkkConsentModal'dan ve
  * /tr/uye-ol checkbox link'inden açılır. İçerik versiyonu v1.
  */
-import { BackButton } from "./BackButton";
+import { BackButton } from "@/components/banking/BackButton";
 
 export const metadata = {
   title: "Aydınlatma Metni · UPU Emlak",

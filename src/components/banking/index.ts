@@ -7,3 +7,5 @@ export { LoadingState, type LoadingStateProps, type LoadingStateVariant } from "
 export { Skeleton, type SkeletonProps } from "./skeleton";
 export { StepUpModal } from "./StepUpModal";
 export { KvkkConsentModal } from "./KvkkConsentModal";
+export { BackButton } from "./BackButton";
+export { CookieBanner } from "./CookieBanner";

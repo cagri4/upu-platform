@@ -2,7 +2,7 @@
 
 import { ArrowLeft } from "lucide-react";
 
-export function BackButton() {
+export function BackButton({ fallbackHref = "/tr" }: { fallbackHref?: string }) {
   return (
     <button
       type="button"
@@ -10,7 +10,7 @@ export function BackButton() {
         if (typeof window !== "undefined" && window.history.length > 1) {
           window.history.back();
         } else {
-          window.location.href = "/tr";
+          window.location.href = fallbackHref;
         }
       }}
       className="inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition"

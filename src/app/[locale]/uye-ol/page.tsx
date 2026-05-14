@@ -23,6 +23,9 @@ export default function UyeOlPage() {
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
   // Faz 7.0 — KVKK consent checkbox (kayıt için zorunlu)
   const [agreed, setAgreed] = useState(false);
+  // Faz 7.1a — Hizmet Şartları onayı (kayıt için zorunlu)
+  const [agreedTos, setAgreedTos] = useState(false);
+  const canProceed = agreed && agreedTos;
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
@@ -67,11 +70,11 @@ export default function UyeOlPage() {
           ) : isMobile ? (
             <div className="space-y-3">
               <a
-                href={agreed ? WA_DEEP_LINK : "#"}
-                onClick={agreed ? undefined : (e) => e.preventDefault()}
-                aria-disabled={!agreed}
+                href={canProceed ? WA_DEEP_LINK : "#"}
+                onClick={canProceed ? undefined : (e) => e.preventDefault()}
+                aria-disabled={!canProceed}
                 className={`flex items-center justify-between gap-3 w-full px-5 py-4 rounded-2xl bg-emerald-500 text-white font-semibold shadow-lg transition ${
-                  agreed
+                  canProceed
                     ? "hover:bg-emerald-600 active:scale-[0.98]"
                     : "opacity-50 cursor-not-allowed"
                 }`}
@@ -97,13 +100,13 @@ export default function UyeOlPage() {
                 </p>
               </div>
               <a
-                href={agreed ? WA_DEEP_LINK : "#"}
-                onClick={agreed ? undefined : (e) => e.preventDefault()}
-                target={agreed ? "_blank" : undefined}
-                rel={agreed ? "noopener noreferrer" : undefined}
-                aria-disabled={!agreed}
+                href={canProceed ? WA_DEEP_LINK : "#"}
+                onClick={canProceed ? undefined : (e) => e.preventDefault()}
+                target={canProceed ? "_blank" : undefined}
+                rel={canProceed ? "noopener noreferrer" : undefined}
+                aria-disabled={!canProceed}
                 className={`inline-block text-sm ${
-                  agreed
+                  canProceed
                     ? "text-emerald-600 dark:text-emerald-400 hover:underline"
                     : "text-slate-400 dark:text-slate-600 cursor-not-allowed"
                 }`}
@@ -113,25 +116,44 @@ export default function UyeOlPage() {
             </div>
           )}
 
-          {/* KVKK consent — Faz 7.0. Bağla butonu disabled until checked. */}
+          {/* KVKK + ToS consent — Faz 7.0 / 7.1a. Buton iki onaya da bağlı. */}
           {isMobile !== null && (
-            <label className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-400 cursor-pointer text-left">
-              <input
-                type="checkbox"
-                checked={agreed}
-                onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded accent-emerald-600 flex-shrink-0"
-              />
-              <span className="leading-relaxed">
-                <a
-                  href="/tr/aydinlatma-metni"
-                  className="text-emerald-600 dark:text-emerald-400 hover:underline"
-                >
-                  KVKK Aydınlatma Metni
-                </a>
-                &apos;ni okudum ve kişisel verilerimin işlenmesine onay veriyorum.
-              </span>
-            </label>
+            <div className="space-y-2.5">
+              <label className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-400 cursor-pointer text-left">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded accent-emerald-600 flex-shrink-0"
+                />
+                <span className="leading-relaxed">
+                  <a
+                    href="/tr/aydinlatma-metni"
+                    className="text-emerald-600 dark:text-emerald-400 hover:underline"
+                  >
+                    KVKK Aydınlatma Metni
+                  </a>
+                  &apos;ni okudum ve kişisel verilerimin işlenmesine onay veriyorum.
+                </span>
+              </label>
+              <label className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-400 cursor-pointer text-left">
+                <input
+                  type="checkbox"
+                  checked={agreedTos}
+                  onChange={(e) => setAgreedTos(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded accent-emerald-600 flex-shrink-0"
+                />
+                <span className="leading-relaxed">
+                  <a
+                    href="/tr/hizmet-sartlari"
+                    className="text-emerald-600 dark:text-emerald-400 hover:underline"
+                  >
+                    Hizmet Şartları
+                  </a>
+                  &apos;nı okudum ve kabul ediyorum.
+                </span>
+              </label>
+            </div>
           )}
 
           <p className="text-xs text-center text-slate-400 dark:text-slate-500 pt-2">

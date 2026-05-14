@@ -1,5 +1,6 @@
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
+import { CookieBanner } from "@/components/banking/CookieBanner";
 
 export default async function LocaleLayout({
   children,
@@ -14,6 +15,7 @@ export default async function LocaleLayout({
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       {children}
+      <CookieBanner />
     </NextIntlClientProvider>
   );
 }
