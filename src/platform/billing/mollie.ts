@@ -84,6 +84,20 @@ export async function createCustomer(args: { email: string; name?: string; userI
   });
 }
 
+export interface MollieAddress {
+  streetAndNumber?: string;
+  streetAdditional?: string;
+  postalCode?: string;
+  city?: string;
+  region?: string;
+  country?: string;
+  givenName?: string;
+  familyName?: string;
+  organizationName?: string;
+  email?: string;
+  phone?: string;
+}
+
 export interface MolliePayment {
   id: string;
   status: "open" | "pending" | "authorized" | "paid" | "canceled" | "expired" | "failed";
@@ -94,6 +108,7 @@ export interface MolliePayment {
   mandateId?: string | null;
   subscriptionId?: string | null;
   metadata?: Record<string, string> | null;
+  billingAddress?: MollieAddress | null;
   _links?: { checkout?: { href: string }; [k: string]: unknown };
 }
 

@@ -76,6 +76,20 @@ async function handlePayment(paymentId: string) {
     return;
   }
 
+  // Faz 7.1b — Mollie'den dönen fatura adresini profile'a senkronla.
+  // Idempotent: aynı paymentId tekrar gelirse en güncel adresle üzerine yazar.
+  if (payment.billingAddress) {
+    try {
+      await sb
+        .from("profiles")
+        .update({ billing_address: payment.billingAddress })
+        .eq("id", userId);
+    } catch (err) {
+      console.error("[mollie-webhook] billing_address sync failed", err);
+      // Mollie 200 bekler — bilerek throw etmiyoruz.
+    }
+  }
+
   if (payment.status === "paid" && payment.sequenceType === "first") {
     // Mandate kayıt edildi — şimdi recurring subscription oluştur
     if (!payment.customerId || !plan) {

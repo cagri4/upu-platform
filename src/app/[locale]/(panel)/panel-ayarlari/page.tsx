@@ -500,6 +500,16 @@ export default function PanelAyarlariPage() {
         </p>
         <div className="space-y-2">
           <a
+            href={token ? `/tr/panel-verilerim?t=${encodeURIComponent(token)}` : "/tr/panel-verilerim"}
+            className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-400 dark:hover:border-emerald-500 active:scale-[0.99] transition"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
+              <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.2} />
+              Verilerim
+            </span>
+            <ExternalLink className="w-4 h-4 text-slate-400 dark:text-slate-500" strokeWidth={2.2} />
+          </a>
+          <a
             href="/tr/aydinlatma-metni"
             className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-400 dark:hover:border-emerald-500 active:scale-[0.99] transition"
           >
