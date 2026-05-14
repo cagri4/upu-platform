@@ -68,6 +68,20 @@ export function extractTenantHintFromText(text: string | null | undefined): stri
 }
 
 /**
+ * Tenant hint prefix'i mesaj metninden temizler. extractTenantHintFromText
+ * ile aynı pattern'i kullanır. Webhook ctx.text inşa edilirken çağrılır
+ * ki command match (örn. "Üye olmak istiyorum") prefix'siz işlesin.
+ *
+ * "BAYI:CODE..." gibi boşluksuz alfa-numerik invite kodlarına DOKUNMAZ
+ * (regex `\s+` zorunlu — bunlar webhook'un erken BAYI:CODE bloğunda
+ * zaten yakalanmış olur).
+ */
+export function stripTenantPrefix(text: string | null | undefined): string {
+  if (!text) return "";
+  return text.replace(/^(BAYI|EMLAK|MARKET|OTEL|RESTORAN|SITEYONETIM|MUHASEBE):\s+/i, "");
+}
+
+/**
  * Phone'un profile'larını + aktif session'ı çek, tenant context'i belirle,
  * doğru profile'ı seç. Hiç profile yoksa null döner — caller "davet kodu
  * varsa gönder" mesajı atar.

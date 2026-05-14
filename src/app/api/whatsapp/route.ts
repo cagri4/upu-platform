@@ -8,7 +8,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logEvent, logError, logOnboarding } from "@/platform/analytics/logger";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { resolveTenantContext } from "@/platform/auth/tenant-identity";
+import { resolveTenantContext, stripTenantPrefix } from "@/platform/auth/tenant-identity";
+import { tryOrganicSignup } from "@/platform/whatsapp/organic-signup";
 import { routeCommand } from "@/platform/whatsapp/router";
 import { markAsRead, sendText } from "@/platform/whatsapp/send";
 import type { WaContext } from "@/platform/whatsapp/types";
@@ -572,12 +573,25 @@ export async function POST(req: NextRequest) {
     // Flag AÇIK iken mesaj prefix hint (BAYI: / MARKET: ...) ek priority alır.
     const tCtx = await resolveTenantContext(supabase, phone, text);
     if (!tCtx) {
+      // Brand new phone — hiçbir tenant'ta profile yok. Önce organik signup
+      // niyetini yakalamayı dene (örn. "BAYI: Üye olmak istiyorum" → bayi
+      // tenant'ta yeni hesap + dealer onboarding). Yakalandıysa kayıt akışı
+      // başlar; yakalanmazsa davet kodu mesajı.
+      const handled = await tryOrganicSignup(supabase, phone, name, text);
+      if (handled) return NextResponse.json({ status: "ok" });
+
       await sendText(phone,
         "Merhaba! Davet kodunuz varsa lütfen gönderin.\nKod almak için yöneticinize başvurun."
       );
       return NextResponse.json({ status: "ok" });
     }
     const { tenantKey, selectedProfile: user, activeSession } = tCtx;
+
+    // Sprint Foundation — tenant hint prefix'ini ctx.text'ten temizle ki
+    // routeCommand match (örn. "Üye olmak istiyorum") prefix'siz işlesin.
+    // "BAYI:CODE" boşluksuz invite kodu zaten erken bloğa düşer; bu strip
+    // sadece "BAYI: <serbest metin>" gibi tenant ipucu prefix'ini temizler.
+    const cleanText = stripTenantPrefix(text);
 
     // Build context — use view_as_role if set (for admin testing dealer/employee view)
     const actualRole = (user.role as WaContext["role"]) || "admin";
@@ -593,7 +607,7 @@ export async function POST(req: NextRequest) {
       userName: user.display_name || name,
       locale: user.preferred_locale || "tr",
       messageId,
-      text,
+      text: cleanText,
       interactiveId,
       role: effectiveRole,
       permissions: (user.permissions as Record<string, unknown>) || {},
