@@ -32,6 +32,11 @@ function splitForWhatsApp(text: string, chunkLimit = 3900): string[] {
 }
 
 export async function sendText(phone: string, text: string) {
+  const sim = getSimBuffer();
+  if (sim) {
+    sim.push({ kind: "text", phone, body: text });
+    return;
+  }
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
 
@@ -67,8 +72,35 @@ function isNavSuppressedByContext(): boolean {
   return navSuppressStore.getStore()?.suppress === true;
 }
 
+// ── Admin simulate mode buffer ──────────────────────────────────────
+// Admin Test Phone Mechanism — webhook'u sahte phone ile çağırırken send
+// fonksiyonları gerçek Meta'ya gitmesin, response array'ine yazsın.
+// AsyncLocalStorage ile request-scoped → production'ı etkilemez.
+export interface SimulatedMessage {
+  kind: "text" | "buttons" | "list" | "url_button" | "document" | "mark_read" | "nav_footer";
+  phone: string;
+  body?: string;
+  buttons?: Array<{ id: string; title: string }>;
+  sections?: Array<{ title: string; rows: Array<{ id: string; title: string; description?: string }> }>;
+  url?: string;
+  buttonLabel?: string;
+  document?: { url: string; filename: string; caption?: string };
+}
+const simulateStore = new AsyncLocalStorage<{ buffer: SimulatedMessage[] }>();
+export function withSimulateBuffer<T>(buffer: SimulatedMessage[], fn: () => Promise<T>): Promise<T> {
+  return simulateStore.run({ buffer }, fn);
+}
+function getSimBuffer(): SimulatedMessage[] | null {
+  return simulateStore.getStore()?.buffer ?? null;
+}
+
 // Send a separate follow-up message with nav buttons (Görevlere Devam + Ana Menü)
 export async function sendNavFooter(phone: string) {
+  const sim = getSimBuffer();
+  if (sim) {
+    sim.push({ kind: "nav_footer", phone });
+    return;
+  }
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
   await fetch(`${WA_API}/${phoneId}/messages`, {
@@ -96,6 +128,14 @@ export async function sendButtons(
   buttons: Array<{ id: string; title: string }>,
   opts?: { skipNav?: boolean; header?: string },
 ) {
+  const sim = getSimBuffer();
+  if (sim) {
+    sim.push({ kind: "buttons", phone, body: text, buttons });
+    if (!opts?.skipNav && !isNavSuppressedByContext()) {
+      sim.push({ kind: "nav_footer", phone });
+    }
+    return;
+  }
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
 
@@ -149,6 +189,14 @@ export async function sendList(
   sections: Array<{ title: string; rows: Array<{ id: string; title: string; description?: string }> }>,
   opts?: { skipNav?: boolean },
 ) {
+  const sim = getSimBuffer();
+  if (sim) {
+    sim.push({ kind: "list", phone, body: text, buttonLabel: buttonText, sections });
+    if (!opts?.skipNav && !isNavSuppressedByContext()) {
+      sim.push({ kind: "nav_footer", phone });
+    }
+    return;
+  }
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
 
@@ -212,6 +260,14 @@ export async function sendUrlButton(
   url: string,
   opts?: { skipNav?: boolean },
 ) {
+  const sim = getSimBuffer();
+  if (sim) {
+    sim.push({ kind: "url_button", phone, body: text, buttonLabel, url });
+    if (!opts?.skipNav && !isNavSuppressedByContext()) {
+      sim.push({ kind: "nav_footer", phone });
+    }
+    return;
+  }
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
 
@@ -255,6 +311,11 @@ export async function sendDocument(
   filename: string,
   caption?: string,
 ) {
+  const sim = getSimBuffer();
+  if (sim) {
+    sim.push({ kind: "document", phone, document: { url, filename, caption } });
+    return;
+  }
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
 
@@ -269,6 +330,11 @@ export async function sendDocument(
 }
 
 export async function markAsRead(messageId: string, phone: string) {
+  const sim = getSimBuffer();
+  if (sim) {
+    sim.push({ kind: "mark_read", phone, body: messageId });
+    return;
+  }
   const { token, phoneId } = getConfig();
   if (!token || !phoneId) return;
 
