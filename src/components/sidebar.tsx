@@ -156,7 +156,7 @@ export function Sidebar({ tenant, isOpen, onClose }: SidebarProps) {
               ].map(item => (
                 <Link
                   key={item.tab}
-                  href={`/tr/dashboard`}
+                  href={`/tr/panel`}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition"
                   onClick={onClose}
                 >

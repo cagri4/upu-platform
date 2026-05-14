@@ -19,7 +19,7 @@ export function Header({ onMenuClick, userName }: HeaderProps) {
 
       <div className="flex items-center gap-3">
         {userName && <span className="text-sm text-slate-600 dark:text-slate-400">{userName}</span>}
-        <Button variant="ghost" size="sm" onClick={() => { window.location.href = '/tr/login'; }}>
+        <Button variant="ghost" size="sm" onClick={() => { window.location.href = '/tr/giris'; }}>
           <LogOut size={16} />
         </Button>
       </div>

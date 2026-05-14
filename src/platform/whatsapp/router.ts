@@ -660,7 +660,7 @@ async function handleWebpanelShared(ctx: WaContext, tenant: ReturnType<typeof ge
     );
   } catch {
     await sendText(ctx.phone,
-      `🖥 Web Panel\n\n${appUrl}/tr/login`,
+      `🖥 Web Panel\n\n${appUrl}/tr/giris`,
     );
   }
   await sendNavFooter(ctx.phone);

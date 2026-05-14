@@ -94,8 +94,8 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
             <a href="#features" className="text-sm text-slate-300 hover:text-white hidden md:block">{t("nav_features")}</a>
             <a href="#pricing" className="text-sm text-slate-300 hover:text-white hidden md:block">{t("nav_pricing")}</a>
             <LanguageDropdown locale={locale} />
-            <Link href={`/${locale}/login`} className="text-sm text-slate-300 hover:text-white">{t("nav_login")}</Link>
-            <Link href={`/${locale}/register`} className="text-sm bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1.5 rounded-lg transition">
+            <Link href={`/${locale}/giris`} className="text-sm text-slate-300 hover:text-white">{t("nav_login")}</Link>
+            <Link href={`/${locale}/uye-ol`} className="text-sm bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1.5 rounded-lg transition">
               {t("nav_free_trial")}
             </Link>
           </div>
@@ -116,7 +116,7 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href={`/${locale}/register`}
+              href={`/${locale}/uye-ol`}
               className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-8 py-3 rounded-xl transition text-lg"
             >
               {t("hero_cta_trial")}
@@ -231,7 +231,7 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
                     </li>
                   ))}
                 </ul>
-                <Link href={`/${locale}/register`} className="block text-center bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl transition font-medium">
+                <Link href={`/${locale}/uye-ol`} className="block text-center bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl transition font-medium">
                   {t("pricing_starter_cta")}
                 </Link>
               </div>
@@ -253,7 +253,7 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
                     </li>
                   ))}
                 </ul>
-                <Link href={`/${locale}/register`} className="block text-center bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 rounded-xl transition font-medium">
+                <Link href={`/${locale}/uye-ol`} className="block text-center bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 rounded-xl transition font-medium">
                   {t("pricing_pro_cta")}
                 </Link>
               </div>
@@ -267,7 +267,7 @@ async function TenantLanding({ tenant, locale }: { tenant: TenantConfig; locale:
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold mb-4">{t("cta_title")}</h2>
           <p className="text-slate-300 mb-8">{t("cta_subtitle")}</p>
-          <Link href={`/${locale}/register`} className="inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-10 py-3.5 rounded-xl transition text-lg">
+          <Link href={`/${locale}/uye-ol`} className="inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-10 py-3.5 rounded-xl transition text-lg">
             {t("cta_button")}
           </Link>
         </div>
@@ -373,7 +373,7 @@ function BayiPricing({
               <li>📊 1 muhasebe yazılımı entegrasyonu</li>
               <li>📧 E-mail destek (24h)</li>
             </ul>
-            <Link href={`/${locale}/register`} className="block text-center bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl transition font-medium text-sm">
+            <Link href={`/${locale}/uye-ol`} className="block text-center bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl transition font-medium text-sm">
               {t("pricing_starter_cta")}
             </Link>
           </div>
@@ -398,7 +398,7 @@ function BayiPricing({
               <li>🎁 Setup ücretsiz dahil</li>
               <li>⚡ Priority destek (4h) + WA</li>
             </ul>
-            <Link href={`/${locale}/register`} className="block text-center bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 rounded-xl transition font-medium text-sm">
+            <Link href={`/${locale}/uye-ol`} className="block text-center bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 rounded-xl transition font-medium text-sm">
               {t("pricing_pro_cta")}
             </Link>
           </div>
@@ -422,7 +422,7 @@ function BayiPricing({
               <li>🎁 Setup ücretsiz dahil</li>
               <li>👤 Dedicated AM (1h) + Slack</li>
             </ul>
-            <Link href={`/${locale}/register`} className="block text-center bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl transition font-medium text-sm">
+            <Link href={`/${locale}/uye-ol`} className="block text-center bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl transition font-medium text-sm">
               {t("pricing_pro_cta")}
             </Link>
           </div>

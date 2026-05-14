@@ -63,7 +63,7 @@ export async function handleWebpanel(ctx: WaContext): Promise<void> {
     );
   } catch {
     await sendButtons(ctx.phone,
-      `🖥 Web Panel\n\n${appUrl}/tr/login`,
+      `🖥 Web Panel\n\n${appUrl}/tr/giris`,
       [{ id: "cmd:menu", title: "Ana Menü" }],
     );
   }

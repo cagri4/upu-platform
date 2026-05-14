@@ -35,7 +35,7 @@ export default function MagicLinkPage() {
       if (data.name) localStorage.setItem('upu_user_name', data.name);
       // Redirect to dashboard after short delay
       setTimeout(() => {
-        window.location.href = '/tr/dashboard';
+        window.location.href = '/tr/panel';
       }, 1500);
     } catch {
       setStatus('error');
@@ -65,7 +65,7 @@ export default function MagicLinkPage() {
             <div className="text-4xl mb-4">❌</div>
             <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Giriş başarısız</h1>
             <p className="text-slate-500 text-sm mb-4">{error}</p>
-            <a href="/tr/login" className="text-indigo-600 hover:underline text-sm">Normal giriş yapın →</a>
+            <a href="/tr/giris" className="text-indigo-600 hover:underline text-sm">Normal giriş yapın →</a>
           </>
         )}
       </div>
