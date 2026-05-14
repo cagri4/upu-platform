@@ -21,6 +21,8 @@ import {
   FileText,
   Mail,
   ExternalLink,
+  Download,
+  Trash2,
 } from "lucide-react";
 import { QUICK_ACTIONS } from "@/platform/quick-actions/catalog";
 import {
@@ -75,6 +77,10 @@ export default function PanelAyarlariPage() {
   const [googleUnlinking, setGoogleUnlinking] = useState(false);
   // Faz 6.6 — unlink step-up modal'ı
   const [showStepUp, setShowStepUp] = useState(false);
+  // Faz 7.1c — Verilerimi indir aksiyonu
+  const [dataExporting, setDataExporting] = useState(false);
+  // Faz 7.1c — me bilgisi (mailto subject/body için)
+  const [meDisplayName, setMeDisplayName] = useState<string | null>(null);
   const linkedToast = params.get("linked") === "1";
   const linkError = params.get("error") || "";
 
@@ -112,6 +118,68 @@ export default function PanelAyarlariPage() {
       .then((d) => setGoogle({ linked: !!d.linked, email: d.email || null }))
       .catch(() => setGoogle({ linked: false, email: null }));
   }, []);
+
+  // Faz 7.1c — display_name (silme talebi mailto için)
+  useEffect(() => {
+    fetch("/api/panel/me", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.success) setMeDisplayName(d.displayName || null);
+      })
+      .catch(() => {
+        /* silent */
+      });
+  }, []);
+
+  // Faz 7.1c — JSON dump fetch + auto-download
+  async function handleDataExport() {
+    setDataExporting(true);
+    try {
+      const url = token
+        ? `/api/profile/data-export?t=${encodeURIComponent(token)}`
+        : "/api/profile/data-export";
+      const res = await fetch(url, { credentials: "same-origin" });
+      if (!res.ok) {
+        window.alert("Veri indirilemedi. Lütfen tekrar deneyin.");
+        return;
+      }
+      const blob = await res.blob();
+      const today = new Date().toISOString().slice(0, 10);
+      const dlUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = dlUrl;
+      a.download = `upu-emlak-veri-export-${today}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(dlUrl);
+    } catch {
+      window.alert("Bağlantı hatası.");
+    } finally {
+      setDataExporting(false);
+    }
+  }
+
+  // Faz 7.1c — mailto silme talebi (admin manuel 90 gün içinde işler)
+  function handleDeleteRequest() {
+    const today = new Date().toISOString().slice(0, 10);
+    const email = google?.email || "";
+    const subjectBase = "Hesap Silme Talebi";
+    const subject = email ? `${subjectBase} - ${email}` : subjectBase;
+    const body = [
+      "Merhaba,",
+      "",
+      "Hesabımı silmek istiyorum. Bilgilerim:",
+      `İsim: ${meDisplayName || "(otomatik doldurulamadı)"}`,
+      `E-posta: ${email || "(otomatik doldurulamadı)"}`,
+      `Tarih: ${today}`,
+      "",
+      "KVKK metninizde belirtildiği üzere 90 gün içinde işlenmesini rica ederim.",
+      "",
+      "İyi çalışmalar.",
+    ].join("\n");
+    window.location.href = `mailto:info@upudev.nl?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
 
   function googleLink() {
     // mode=link + cookie session ile pid server-derived
@@ -500,16 +568,6 @@ export default function PanelAyarlariPage() {
         </p>
         <div className="space-y-2">
           <a
-            href={token ? `/tr/panel-verilerim?t=${encodeURIComponent(token)}` : "/tr/panel-verilerim"}
-            className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-400 dark:hover:border-emerald-500 active:scale-[0.99] transition"
-          >
-            <span className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
-              <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.2} />
-              Verilerim
-            </span>
-            <ExternalLink className="w-4 h-4 text-slate-400 dark:text-slate-500" strokeWidth={2.2} />
-          </a>
-          <a
             href="/tr/aydinlatma-metni"
             className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-400 dark:hover:border-emerald-500 active:scale-[0.99] transition"
           >
@@ -549,6 +607,31 @@ export default function PanelAyarlariPage() {
             </span>
             <ExternalLink className="w-4 h-4 text-slate-400 dark:text-slate-500" strokeWidth={2.2} />
           </a>
+        </div>
+
+        {/* Faz 7.1c — Veri aksiyonları (export + silme talebi) */}
+        <div className="pt-2 space-y-2">
+          <button
+            type="button"
+            onClick={handleDataExport}
+            disabled={dataExporting}
+            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold shadow-sm active:scale-[0.98] transition"
+          >
+            {dataExporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2.4} />
+            ) : (
+              <Download className="w-4 h-4" strokeWidth={2.4} />
+            )}
+            {dataExporting ? "Hazırlanıyor…" : "Verilerimi indir (JSON)"}
+          </button>
+          <button
+            type="button"
+            onClick={handleDeleteRequest}
+            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-rose-300 dark:border-rose-700 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-sm font-semibold active:scale-[0.98] transition"
+          >
+            <Trash2 className="w-4 h-4" strokeWidth={2.4} />
+            Hesap silme talebi gönder
+          </button>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
           Hesabınızı silmek isterseniz info@upudev.nl adresinden iletişime geçin. Talebiniz 90 gün içinde işlenir.
