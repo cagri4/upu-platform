@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logEvent, logError, logOnboarding } from "@/platform/analytics/logger";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { resolveTenantContext } from "@/platform/auth/tenant-identity";
 import { routeCommand } from "@/platform/whatsapp/router";
 import { markAsRead, sendText } from "@/platform/whatsapp/send";
 import type { WaContext } from "@/platform/whatsapp/types";
@@ -566,51 +567,17 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Resolve user by phone (may have multiple profiles across SaaS) ──
-    const { data: allProfiles } = await supabase
-      .from("profiles")
-      .select("id, tenant_id, display_name, preferred_locale, role, permissions, dealer_id, capabilities")
-      .eq("whatsapp_phone", phone)
-      .order("created_at", { ascending: false });
-
-    if (!allProfiles?.length) {
+    // Sprint Foundation: helper'a refactor. Flag KAPALI iken mevcut davranış
+    // (en yeni profile → saas_active_session → emlak default) birebir korunur.
+    // Flag AÇIK iken mesaj prefix hint (BAYI: / MARKET: ...) ek priority alır.
+    const tCtx = await resolveTenantContext(supabase, phone, text);
+    if (!tCtx) {
       await sendText(phone,
         "Merhaba! Davet kodunuz varsa lütfen gönderin.\nKod almak için yöneticinize başvurun."
       );
       return NextResponse.json({ status: "ok" });
     }
-
-    // Resolve tenant key — check active SaaS session first
-    let tenantKey = "emlak";
-    const { data: activeSession } = await supabase
-      .from("saas_active_session")
-      .select("active_saas_key, view_as_role")
-      .eq("phone", phone)
-      .maybeSingle();
-
-    if (activeSession?.active_saas_key) {
-      tenantKey = activeSession.active_saas_key;
-    } else if (allProfiles[0].tenant_id) {
-      const { data: tenant } = await supabase
-        .from("tenants")
-        .select("saas_type")
-        .eq("id", allProfiles[0].tenant_id)
-        .single();
-      if (tenant) tenantKey = tenant.saas_type;
-    }
-
-    // Pick the profile matching the active tenant (or first if no match)
-    let user = allProfiles[0];
-    if (allProfiles.length > 1) {
-      const { data: tenantRow } = await supabase
-        .from("tenants")
-        .select("id")
-        .eq("saas_type", tenantKey)
-        .single();
-      if (tenantRow) {
-        const match = allProfiles.find(p => p.tenant_id === tenantRow.id);
-        if (match) user = match;
-      }
-    }
+    const { tenantKey, selectedProfile: user, activeSession } = tCtx;
 
     // Build context — use view_as_role if set (for admin testing dealer/employee view)
     const actualRole = (user.role as WaContext["role"]) || "admin";

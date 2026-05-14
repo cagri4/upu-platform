@@ -1383,9 +1383,13 @@ async function handleDegistir(ctx: WaContext): Promise<void> {
   }
 
   if (rows.length === 0) {
-    await sendButtons(ctx.phone, "Değiştirilecek bir şey yok — tek SaaS ve tek rol kullanıyorsunuz.", [
-      { id: "cmd:menu", title: "Ana Menü" },
-    ]);
+    const currentTenantNameForEmpty =
+      Object.values(tenantMap).find(t => t.saas_type === ctx.tenantKey)?.name || ctx.tenantKey;
+    await sendButtons(
+      ctx.phone,
+      `Sadece *${currentTenantNameForEmpty}* kullanıyorsunuz — değiştirebileceğiniz başka bir SaaS yok.`,
+      [{ id: "cmd:menu", title: "Ana Menü" }],
+    );
     return;
   }
 
