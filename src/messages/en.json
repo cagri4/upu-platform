@@ -199,5 +199,22 @@
     "subtitle": "AI-powered virtual employee teams for every industry",
     "employees_count": "{count} virtual employees",
     "admin_panel": "Admin Panel"
+  },
+  "signup": {
+    "title": "Get started",
+    "subtitle": "Sign up in 1 minute via WhatsApp and use the AI-powered real estate team.",
+    "cta_button": "Start with WhatsApp",
+    "cta_hint": "WhatsApp will open; just tap 'Send'.",
+    "mobile_hint": "Opens in your WhatsApp app.",
+    "qr_label": "Scan the QR with your phone camera",
+    "web_fallback": "or open in WhatsApp Web →",
+    "app_not_opened": "Didn't WhatsApp open?",
+    "web_link": "Open in WhatsApp Web",
+    "kvkk_link": "Privacy Notice (GDPR)",
+    "kvkk_consent_text": " — I have read it and consent to the processing of my personal data.",
+    "tos_link": "Terms of Service",
+    "tos_consent_text": " — I have read and accept them.",
+    "already_member": "Already a member?",
+    "login_link": "Sign in"
   }
 }

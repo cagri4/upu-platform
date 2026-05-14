@@ -199,5 +199,22 @@
     "subtitle": "AI-aangedreven virtuele medewerkersteams voor elke sector",
     "employees_count": "{count} virtuele medewerkers",
     "admin_panel": "Admin Paneel"
+  },
+  "signup": {
+    "title": "Begin nu",
+    "subtitle": "Meld je in 1 minuut aan via WhatsApp en gebruik het AI-vastgoedteam.",
+    "cta_button": "Start met WhatsApp",
+    "cta_hint": "WhatsApp gaat open; tik gewoon op 'Verzenden'.",
+    "mobile_hint": "Opent in je WhatsApp-app.",
+    "qr_label": "Scan de QR met je telefooncamera",
+    "web_fallback": "of openen in WhatsApp Web →",
+    "app_not_opened": "WhatsApp niet geopend?",
+    "web_link": "Openen in WhatsApp Web",
+    "kvkk_link": "Privacyverklaring (AVG)",
+    "kvkk_consent_text": " — Ik heb deze gelezen en geef toestemming voor de verwerking van mijn persoonsgegevens.",
+    "tos_link": "Servicevoorwaarden",
+    "tos_consent_text": " — Ik heb deze gelezen en accepteer ze.",
+    "already_member": "Al lid?",
+    "login_link": "Inloggen"
   }
 }

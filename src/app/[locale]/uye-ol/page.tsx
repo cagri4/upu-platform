@@ -1,5 +1,5 @@
 /**
- * /tr/uye-ol — Yeni üye reklam landing (Faz 6.4).
+ * /[locale]/uye-ol — Yeni üye reklam landing (Faz 6.4 + 7.0 + 7.1a + 9.1).
  *
  * Davranış device'a göre:
  *   - Mobile (max-width: 768px): wa.me deep link butonu — WhatsApp açılır
@@ -8,17 +8,25 @@
  * Bot tarafında prefilled mesaj "Üye olmak istiyorum" → mevcut onboarding
  * akışı tetiklenir. Bu sayfa yeni DB tokenı üretmez — mevcut
  * /tr/qr-giris ve panel_qr_tokens akışına DOKUNMAZ (o login içindi).
+ *
+ * Faz 9.1 — i18n (TR/EN/NL) + mobile fallback link (3sn sonra "WA açılmadı mı?").
+ * WA prefilled mesaj TR'de tutulur — bot Türkçe.
  */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import QRCode from "qrcode";
 import { ArrowRight } from "lucide-react";
 
 const WA_BOT = "31644967207";
+// Bot Türkçe konuştuğu için prefilled mesaj locale'den bağımsız TR.
 const WA_DEEP_LINK = `https://wa.me/${WA_BOT}?text=${encodeURIComponent("Üye olmak istiyorum")}`;
 
 export default function UyeOlPage() {
+  const t = useTranslations("signup");
+  const locale = useLocale();
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
   // Faz 7.0 — KVKK consent checkbox (kayıt için zorunlu)
@@ -26,15 +34,22 @@ export default function UyeOlPage() {
   // Faz 7.1a — Hizmet Şartları onayı (kayıt için zorunlu)
   const [agreedTos, setAgreedTos] = useState(false);
   const canProceed = agreed && agreedTos;
+  // Faz 9.1 — mobilde 3sn sonra "WhatsApp açılmadı mı?" fallback linki
+  const [showFallback, setShowFallback] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
     setIsMobile(mq.matches);
-    // Window resize / dev tools'ta cihaz simülasyonu için canlı dinle
     const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
+
+  useEffect(() => {
+    if (isMobile !== true) return;
+    const timer = window.setTimeout(() => setShowFallback(true), 3000);
+    return () => window.clearTimeout(timer);
+  }, [isMobile]);
 
   useEffect(() => {
     if (isMobile !== false || !canvasRef.current) return;
@@ -49,7 +64,7 @@ export default function UyeOlPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
       <header className="px-4 py-4 flex items-center justify-between">
-        <a href="/tr" className="flex items-center gap-2">
+        <a href={`/${locale}`} className="flex items-center gap-2">
           <span className="text-lg font-semibold text-slate-900 dark:text-white">UPU Emlak</span>
         </a>
       </header>
@@ -58,17 +73,17 @@ export default function UyeOlPage() {
         <div className="w-full max-w-md space-y-6 text-center">
           <div className="space-y-2">
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
-              Hemen başla
+              {t("title")}
             </h1>
             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              WhatsApp üzerinden 1 dakikada üye ol, AI destekli emlak ekibini kullan.
+              {t("subtitle")}
             </p>
           </div>
 
           {isMobile === null ? (
             <div className="h-72 rounded-2xl bg-slate-200/50 dark:bg-slate-800/50 animate-pulse" />
           ) : isMobile ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               <a
                 href={canProceed ? WA_DEEP_LINK : "#"}
                 onClick={canProceed ? undefined : (e) => e.preventDefault()}
@@ -79,12 +94,28 @@ export default function UyeOlPage() {
                     : "opacity-50 cursor-not-allowed"
                 }`}
               >
-                <span>WhatsApp ile başla</span>
+                <span>{t("cta_button")}</span>
                 <ArrowRight className="w-5 h-5" strokeWidth={2.4} />
               </a>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                WhatsApp açılır, &ldquo;Gönder&rdquo; demen yeterli.
+                {t("cta_hint")}
               </p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                {t("mobile_hint")}
+              </p>
+              {showFallback && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 pt-2">
+                  {t("app_not_opened")}{" "}
+                  <a
+                    href={WA_DEEP_LINK}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-600 dark:text-emerald-400 hover:underline"
+                  >
+                    {t("web_link")}
+                  </a>
+                </p>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -93,10 +124,10 @@ export default function UyeOlPage() {
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-slate-900 dark:text-white">
-                  Telefon kameranla QR&apos;ı okut
+                  {t("qr_label")}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  WhatsApp açılır, &ldquo;Gönder&rdquo; demen yeterli.
+                  {t("cta_hint")}
                 </p>
               </div>
               <a
@@ -111,7 +142,7 @@ export default function UyeOlPage() {
                     : "text-slate-400 dark:text-slate-600 cursor-not-allowed"
                 }`}
               >
-                veya WhatsApp Web&apos;de aç →
+                {t("web_fallback")}
               </a>
             </div>
           )}
@@ -128,12 +159,12 @@ export default function UyeOlPage() {
                 />
                 <span className="leading-relaxed">
                   <a
-                    href="/tr/aydinlatma-metni"
+                    href={`/${locale}/aydinlatma-metni`}
                     className="text-emerald-600 dark:text-emerald-400 hover:underline"
                   >
-                    KVKK Aydınlatma Metni
+                    {t("kvkk_link")}
                   </a>
-                  &apos;ni okudum ve kişisel verilerimin işlenmesine onay veriyorum.
+                  {t("kvkk_consent_text")}
                 </span>
               </label>
               <label className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-400 cursor-pointer text-left">
@@ -145,24 +176,24 @@ export default function UyeOlPage() {
                 />
                 <span className="leading-relaxed">
                   <a
-                    href="/tr/hizmet-sartlari"
+                    href={`/${locale}/hizmet-sartlari`}
                     className="text-emerald-600 dark:text-emerald-400 hover:underline"
                   >
-                    Hizmet Şartları
+                    {t("tos_link")}
                   </a>
-                  &apos;nı okudum ve kabul ediyorum.
+                  {t("tos_consent_text")}
                 </span>
               </label>
             </div>
           )}
 
           <p className="text-xs text-center text-slate-400 dark:text-slate-500 pt-2">
-            Zaten üye misin?{" "}
+            {t("already_member")}{" "}
             <a
-              href="/tr/giris"
+              href={`/${locale}/giris`}
               className="text-emerald-600 dark:text-emerald-400 hover:underline"
             >
-              Giriş yap
+              {t("login_link")}
             </a>
           </p>
         </div>

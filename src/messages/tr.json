@@ -199,5 +199,22 @@
     "subtitle": "Her sektör için AI destekli sanal çalışan ekipleri",
     "employees_count": "{count} sanal eleman",
     "admin_panel": "Admin Panel"
+  },
+  "signup": {
+    "title": "Hemen başla",
+    "subtitle": "WhatsApp üzerinden 1 dakikada üye ol, AI destekli emlak ekibini kullan.",
+    "cta_button": "WhatsApp ile başla",
+    "cta_hint": "WhatsApp açılır, 'Gönder' demen yeterli.",
+    "mobile_hint": "WhatsApp uygulamanızda açılacak.",
+    "qr_label": "Telefon kameranla QR'ı okut",
+    "web_fallback": "veya WhatsApp Web'de aç →",
+    "app_not_opened": "WhatsApp açılmadı mı?",
+    "web_link": "WhatsApp Web'de aç",
+    "kvkk_link": "KVKK Aydınlatma Metni",
+    "kvkk_consent_text": "'ni okudum ve kişisel verilerimin işlenmesine onay veriyorum.",
+    "tos_link": "Hizmet Şartları",
+    "tos_consent_text": "'nı okudum ve kabul ediyorum.",
+    "already_member": "Zaten üye misin?",
+    "login_link": "Giriş yap"
   }
 }
