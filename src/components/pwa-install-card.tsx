@@ -11,12 +11,12 @@
  */
 
 import { useEffect, useState } from "react";
-
-interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: ReadonlyArray<string>;
-  readonly userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
-  prompt(): Promise<void>;
-}
+import {
+  getCachedPrompt,
+  setCachedPrompt,
+  subscribeCachedPrompt,
+  type BeforeInstallPromptEvent,
+} from "@/lib/pwa-install-cache";
 
 type Platform = "android" | "ios" | "other";
 
@@ -51,12 +51,11 @@ export function PwaInstallCard({ brandName = "UPU Emlak" }: PwaInstallCardProps 
     setPlatform(detectPlatform());
     setStandalone(isStandalone());
 
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
-    window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    // RootLayout capturer event'i module-level cache'e koyar; mount anında
+    // cache'i oku + sonradan gelecek event'leri subscribe ile yakala.
+    setDeferredPrompt(getCachedPrompt());
+    const unsub = subscribeCachedPrompt((e) => setDeferredPrompt(e));
+    return unsub;
   }, []);
 
   // Zaten yüklenmişse → gösterme
@@ -72,7 +71,10 @@ export function PwaInstallCard({ brandName = "UPU Emlak" }: PwaInstallCardProps 
     if (deferredPrompt) {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") setDeferredPrompt(null);
+      if (outcome === "accepted") {
+        // Chrome event'i tek kullanımlık — cache'i de temizle.
+        setCachedPrompt(null);
+      }
       return;
     }
     // Chrome bazen beforeinstallprompt vermez (kriter yetersiz vs.)

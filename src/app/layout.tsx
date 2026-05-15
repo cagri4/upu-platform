@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { PwaUpdateBanner } from "@/components/pwa-update-banner";
+import { PwaInstallCapturer } from "@/components/pwa-install-capturer";
 
 const inter = Inter({ subsets: ["latin", "latin-ext"] });
 
@@ -49,6 +50,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+        <PwaInstallCapturer />
         {children}
         <PwaUpdateBanner />
       </body>
