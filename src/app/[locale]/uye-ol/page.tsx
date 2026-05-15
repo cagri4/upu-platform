@@ -18,10 +18,11 @@ import UyeOlClient from "./_components/UyeOlClient";
 
 const BASE_TEXT = "Üye olmak istiyorum";
 
-/** Tenant key → WA prefix. emlak'a (default) prefix YOK — eski davranış korunur. */
+/** Tenant key → WA prefix. Symmetric: her tenant için prefix (emlak dahil)
+ *  — saas_active_session pollution'ı önler, hint her zaman explicit gelir. */
 function buildWaText(tenantKey: string | null, flagOn: boolean): string {
   if (!flagOn) return BASE_TEXT;
-  if (!tenantKey || tenantKey === "emlak") return BASE_TEXT;
+  if (!tenantKey) return BASE_TEXT;
   return `${tenantKey.toUpperCase()}: ${BASE_TEXT}`;
 }
 

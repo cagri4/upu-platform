@@ -26,23 +26,15 @@ const PANEL_START_URL: Record<string, string> = {
   muhasebe: "/tr/panel",
 };
 
-const SHORT_NAME_MAP: Record<string, string> = {
-  emlak: "Emlak",
-  bayi: "Bayi",
-  market: "Market",
-  otel: "Otel",
-  restoran: "Restoran",
-  siteyonetim: "Site",
-  muhasebe: "Muhasebe",
-};
-
 export function GET(req: NextRequest) {
   const host = req.headers.get("host") || "";
   const tenant = getTenantByDomain(host);
 
   const tenantKey = tenant?.key ?? "emlak";
   const brand = getTenantBrandShort(tenantKey);
-  const shortName = SHORT_NAME_MAP[tenantKey] ?? "UPU";
+  // short_name PWA install label'ı — "UPU Bayi" gibi full brand (max 12
+  // karakter spec'i Android'de yumuşak; tüm UPU brand'leri ≤12 char).
+  const shortName = brand;
   const startUrl = PANEL_START_URL[tenantKey] ?? "/tr/panel";
   const themeColor = tenant?.color ?? "#1877F2";
 
