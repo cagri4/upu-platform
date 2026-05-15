@@ -76,6 +76,19 @@ select option[value=""] {
   color: #64748b;                    /* "Seçin..." varsayılan option */
 }
 
+/* iOS Safari auto-zoom prevention — input font-size mobile'da ≥16px
+   olmalı; yoksa focus'ta sayfaya zoom yapar. Tailwind text-sm/text-xs
+   class'larını desktop'ta bozmamak için sadece mobile breakpoint'inde
+   raw element seçicilerle override. Tasarımda küçük input gerekirse
+   inline style ile override edilebilir. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 /* iOS standalone PWA — notch / Dynamic Island safe area utilities.
    viewport-fit=cover ile birlikte kullanılır. body'ye varsayılan apply
    edildi (RootLayout), bireysel layout'larda gerekirse override edilebilir. */

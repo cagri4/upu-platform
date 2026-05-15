@@ -88,6 +88,9 @@ export default function RootLayout({
             apple-mobile-web-app-capable arıyor. Standalone modda açılması için
             manuel eklenir. */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        {/* iOS Safari auto-detection kapama — panel'deki telefon/adres/tarih
+            metinleri yanlışlıkla "tap to call" / "open maps" tetiklemesin. */}
+        <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no" />
         {/* Apple splash images — portrait, beyaz arka plan + ortalanmış icon.
             Tenant-aware splash v2'ye bırakıldı (asset 7x6 olur, ilk turda
             neutral splash yeterli). */}
