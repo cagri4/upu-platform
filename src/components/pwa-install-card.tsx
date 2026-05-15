@@ -35,7 +35,13 @@ function isStandalone(): boolean {
   return Boolean(("standalone" in window.navigator) && (window.navigator as Navigator & { standalone?: boolean }).standalone);
 }
 
-export function PwaInstallCard() {
+export interface PwaInstallCardProps {
+  /** Tenant-aware kısa marka (örn. "UPU Bayi"). Default "UPU Emlak"
+   *  geriye uyumluluk için emlak panel'de prop geçmiyor. */
+  brandName?: string;
+}
+
+export function PwaInstallCard({ brandName = "UPU Emlak" }: PwaInstallCardProps = {}) {
   const [platform, setPlatform] = useState<Platform>("other");
   const [standalone, setStandalone] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -82,7 +88,7 @@ export function PwaInstallCard() {
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Uygulama Olarak Yükleyin</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
-              UPU Emlak&apos;ı ana ekranınıza ekleyin — tarayıcı çubuğu olmadan, gerçek uygulama gibi açılsın.
+              {brandName}&apos;ı ana ekranınıza ekleyin — tarayıcı çubuğu olmadan, gerçek uygulama gibi açılsın.
             </p>
             <button
               onClick={handleInstall}
@@ -120,7 +126,7 @@ export function PwaInstallCard() {
                 </li>
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-xs">3</span>
-                  <span>Sağ üstte <span className="font-semibold">&quot;Ekle&quot;</span> butonuna dokunun. UPU Emlak ana ekranınızda hazır.</span>
+                  <span>Sağ üstte <span className="font-semibold">&quot;Ekle&quot;</span> butonuna dokunun. {brandName} ana ekranınızda hazır.</span>
                 </li>
               </ol>
             ) : (
@@ -135,7 +141,7 @@ export function PwaInstallCard() {
                 </li>
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-xs">3</span>
-                  <span>Onaylayın — UPU Emlak ana ekranınızda hazır.</span>
+                  <span>Onaylayın — {brandName} ana ekranınızda hazır.</span>
                 </li>
               </ol>
             )}

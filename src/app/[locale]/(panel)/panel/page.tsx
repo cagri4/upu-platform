@@ -420,7 +420,7 @@ export default function PanelimPage() {
       </div>
 
       {/* PWA Install — mobile only */}
-      <PwaInstallCard />
+      <PwaInstallCard brandName="UPU Emlak" />
 
       {/* Info chips — sade duyurular */}
       <div className="space-y-2">

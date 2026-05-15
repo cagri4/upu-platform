@@ -148,41 +148,8 @@ export function AdminLayout({
   const items = sidebarItems ?? DEFAULT_SIDEBAR_ITEMS;
   const accent = ACCENT_CLASSES[accentColor];
 
-  // Multi-tenant SaaS switcher — user'in profile sahip olduğu tüm tenant'lar
-  const [memberships, setMemberships] = useState<Array<{ tenantKey: string; tenantName: string; icon: string }>>([]);
-  const [switching, setSwitching] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/auth/list-memberships", { credentials: "same-origin" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.memberships?.length) setMemberships(d.memberships);
-      })
-      .catch(() => { /* sessiz — switcher gizli kalır */ });
-  }, []);
-
-  async function handleSwitchTenant(targetKey: string) {
-    if (targetKey === tenantKey || switching) return;
-    setSwitching(targetKey);
-    try {
-      const r = await fetch("/api/auth/switch-tenant", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target: targetKey }),
-      });
-      const d = await r.json();
-      if (r.ok && d.redirect) {
-        window.location.replace(d.redirect);
-        return;
-      }
-      console.error("[switch-tenant]", d.error);
-      setSwitching(null);
-    } catch (err) {
-      console.error("[switch-tenant] network error", err);
-      setSwitching(null);
-    }
-  }
+  // (Multi-tenant SaaS switcher kaldırıldı — her tenant artık ayrı PWA.
+  // estateai.upudev.nl → UPU Emlak app, retailai.upudev.nl → UPU Bayi app.)
 
   // Aktif item: explicit prop > pathname match > "dashboard" default
   const autoActive =
@@ -304,39 +271,6 @@ export function AdminLayout({
             );
           })}
         </nav>
-        {/* Multi-tenant SaaS switcher — yalnız 2+ membership varsa görünür */}
-        {memberships.length > 1 && (
-          <div className="p-3 md:p-2 lg:p-3 border-t border-slate-800 flex-shrink-0 space-y-1">
-            <p className="text-[10px] uppercase tracking-wider text-slate-500 px-3 md:px-0 lg:px-3 mb-1 md:hidden lg:block">
-              Üye olduğum SaaS&apos;lar
-            </p>
-            {memberships.map((m) => {
-              const isActive = m.tenantKey === tenantKey;
-              const isSwitching = switching === m.tenantKey;
-              return (
-                <button
-                  key={m.tenantKey}
-                  onClick={() => handleSwitchTenant(m.tenantKey)}
-                  disabled={isActive || !!switching}
-                  title={`${m.tenantName}${isActive ? " (aktif)" : ""}`}
-                  className={`w-full flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2 md:justify-center lg:justify-start rounded-lg text-sm transition focus:outline-none focus:ring-2 ${accent.focusRing} ${
-                    isActive
-                      ? "bg-slate-800 text-white font-semibold cursor-default"
-                      : "text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-50"
-                  }`}
-                >
-                  <span>{m.icon}</span>
-                  <span className="md:hidden lg:inline truncate">
-                    {m.tenantName}
-                    {isActive && <span className="text-emerald-400 ml-1">• aktif</span>}
-                    {isSwitching && <span className="text-slate-400 ml-1">…</span>}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
         <div className="p-3 md:p-2 lg:p-3 border-t border-slate-800 flex-shrink-0 space-y-1">
           <button
             onClick={() => setQrScannerOpen(true)}
