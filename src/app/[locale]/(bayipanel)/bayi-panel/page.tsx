@@ -1,24 +1,45 @@
 "use client";
 
 /**
- * Bayi Panelim — 6 KPI dashboard.
+ * Bayi Panelim — banking primitives refactor (Sprint B-1).
  *
- * Pattern: emlak (panel)/panel/page.tsx — gradient hero + KPI grid +
- * "Hızlı işlem" altı.
+ * Pattern: emlak (panel)/panel/page.tsx ile aynı görsel dil.
+ *   - HeroBanner üst
+ *   - Profile completeness ListCard (firma_profili eksikse)
+ *   - 6 KPI StatCard grid (toplam_bayi, aktif_siparis, bekleyen_tahsilat,
+ *     bu_ay_ciro, kritik_stok, davet_aktif)
+ *   - 6 ActionCircle quick action row
+ *   - Skeleton loading
  *
- * KPI'lar (sektörel):
- *   - dealer_count          Toplam Bayi
- *   - active_orders         Aktif Sipariş
- *   - pending_invoices      Bekleyen Fatura
- *   - overdue_amount        Vadesi Geçmiş Tutar (₺)
- *   - month_revenue         Bu Ay Ciro (₺)
- *   - critical_stock        Kritik Stok (kalem)
+ * KVKK consent modal Sprint A'da bayi panel'e mount edildi — korunuyor.
  */
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { usePanelChrome } from "@/components/admin-layout";
-import { KvkkConsentModal } from "@/components/banking";
+import {
+  Building2,
+  ClipboardList,
+  TrendingDown,
+  TrendingUp,
+  PackageX,
+  Mail,
+  UserPlus,
+  ShoppingCart,
+  Bell,
+  Megaphone,
+  Clock,
+  BarChart3,
+  ClipboardCheck,
+  Sparkles,
+} from "lucide-react";
+import {
+  HeroBanner,
+  StatCard,
+  ActionCircle,
+  ListCard,
+  Skeleton,
+  KvkkConsentModal,
+} from "@/components/banking";
 
 interface KPIs {
   dealer_count: number;
@@ -27,31 +48,8 @@ interface KPIs {
   overdue_amount: number;
   month_revenue: number;
   critical_stock: number;
+  active_invites: number;
 }
-
-type CardKey = keyof KPIs | "profil";
-
-interface CardDef {
-  key: CardKey;
-  label: string;
-  icon: string;
-  color: string;
-  href: (t: string) => string;
-  /** KPI değil sabit metin gösteren kart (örn Profilim → "Düzenle"). */
-  staticValue?: string;
-  /** Tutar formatlama — overdue/revenue için ₺. */
-  isCurrency?: boolean;
-  comingSoon?: boolean;
-}
-
-const CARD_DEFS: CardDef[] = [
-  { key: "dealer_count",     label: "Toplam Bayi",     icon: "🏢", color: "from-indigo-500 to-sky-600",     href: t => `/tr/bayi-bayilerim?t=${encodeURIComponent(t)}` },
-  { key: "active_orders",    label: "Aktif Sipariş",   icon: "📋", color: "from-emerald-500 to-teal-600",   href: t => `/tr/bayi-siparislerim?t=${encodeURIComponent(t)}` },
-  { key: "pending_invoices", label: "Bekleyen Fatura", icon: "📄", color: "from-amber-500 to-orange-600",   href: t => `/tr/bayi-tahsilatlarim?t=${encodeURIComponent(t)}` },
-  { key: "overdue_amount",   label: "Vadesi Geçmiş",   icon: "⏰", color: "from-rose-500 to-pink-600",      href: t => `/tr/bayi-vade-hatirlatma?t=${encodeURIComponent(t)}`, isCurrency: true },
-  { key: "month_revenue",    label: "Bu Ay Ciro",      icon: "📊", color: "from-violet-500 to-fuchsia-600", href: t => `/tr/bayi-raporlar?t=${encodeURIComponent(t)}`,        isCurrency: true },
-  { key: "critical_stock",   label: "Kritik Stok",     icon: "📦", color: "from-stone-600 to-stone-800",    href: t => `/tr/bayi-bayilerim?t=${encodeURIComponent(t)}` },
-];
 
 function formatCurrency(n: number): string {
   if (!n) return "₺0";
@@ -62,24 +60,28 @@ function formatCurrency(n: number): string {
 
 export default function BayiPanelimPage() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("t") || searchParams.get("token");
-  const { openQrScanner } = usePanelChrome();
+  const token = searchParams.get("t") || searchParams.get("token") || "";
 
   const [kpis, setKpis] = useState<KPIs | null>(null);
-  const [showKvkkModal, setShowKvkkModal] = useState(false);
+  const [kpisLoading, setKpisLoading] = useState(true);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
+  const [showKvkkModal, setShowKvkkModal] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setKpisLoading(false);
+      return;
+    }
     fetch(`/api/bayi-panel/dashboard?t=${encodeURIComponent(token)}`)
       .then((r) => r.json())
       .then((d) => {
         if (!d?.error && d?.kpis) setKpis(d.kpis);
       })
-      .catch(() => { /* layout init zaten validate etti */ });
+      .catch(() => { /* layout init zaten validate etti */ })
+      .finally(() => setKpisLoading(false));
   }, [token]);
 
-  // Profile completeness — firma_profili.ticari_unvan eksikse hero banner
+  // Profile completeness — firma_profili.ticari_unvan eksikse banner
   useEffect(() => {
     if (!token) return;
     fetch(`/api/bayi-panel/profile?t=${encodeURIComponent(token)}`)
@@ -94,9 +96,7 @@ export default function BayiPanelimPage() {
       .catch(() => { /* sessiz */ });
   }, [token]);
 
-  // KVKK consent — Sprint A. needsConsent=true ise modal; "Daha sonra"
-  // diyene localStorage flag ile aynı gün tekrar gösterme. Emlak panel
-  // pattern'inin bayi karşılığı.
+  // KVKK consent modal — Sprint A pattern
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
     let dismissedToday = false;
@@ -115,106 +115,121 @@ export default function BayiPanelimPage() {
 
   function onKvkkAccepted() {
     setShowKvkkModal(false);
-    try { window.localStorage.removeItem("kvkk_modal_dismissed_today"); } catch {/* yut */}
+    try { window.localStorage.removeItem("kvkk_modal_dismissed_today"); } catch { /* yut */ }
   }
 
   function onKvkkDefer() {
     setShowKvkkModal(false);
     const today = new Date().toISOString().slice(0, 10);
-    try { window.localStorage.setItem("kvkk_modal_dismissed_today", today); } catch {/* yut */}
+    try { window.localStorage.setItem("kvkk_modal_dismissed_today", today); } catch { /* yut */ }
   }
 
+  const q = (path: string) => (token ? `${path}?t=${encodeURIComponent(token)}` : path);
+  const kpiValue = (k: keyof KPIs): string | number => (kpis ? kpis[k] ?? 0 : "—");
+  const kpiCurrency = (k: keyof KPIs): string => (kpis ? formatCurrency(kpis[k] ?? 0) : "—");
+
   return (
-    <div className="space-y-6">
-      {/* Profile completeness banner — firma_profili eksikse */}
-      {profileIncomplete && token && (
-        <div className="bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl p-5 shadow-md">
-          <div className="flex items-start gap-3">
-            <div className="text-2xl flex-shrink-0">📋</div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-base mb-1">Profilinizi Tamamlayın</h3>
-              <p className="text-amber-50 text-sm leading-relaxed mb-3">
-                Sistemi tam kullanabilmek için firma bilgilerinizi doldurun — ~5 dakika.
-                Kalan: firma adı, yetkili, vergi no, IBAN, brifing tercihi.
-              </p>
-              <a
-                href={`/tr/bayi-profil?t=${encodeURIComponent(token)}`}
-                className="inline-flex items-center gap-1.5 bg-white text-orange-700 hover:bg-amber-50 font-semibold text-sm px-4 py-2 rounded-lg transition active:scale-95"
-              >
-                ✏️ Profilini Tamamla
-              </a>
-            </div>
-          </div>
+    <div className="space-y-5 sm:space-y-6">
+      {/* HeroBanner */}
+      <HeroBanner
+        Icon={Sparkles}
+        title="Bayi Yönetim Paneli"
+        subtitle="Bayilerinizi, siparişleri ve tahsilatları tek yerden takip edin."
+      />
+
+      {/* Profile completeness — firma_profili eksikse */}
+      {profileIncomplete && (
+        <ListCard
+          Icon={ClipboardCheck}
+          title="Profilinizi Tamamlayın"
+          subtitle="Firma adı, vergi no, IBAN, brifing tercihi — ~5 dakika"
+          rightLabel="Doldur"
+          href={q("/tr/bayi-profil")}
+        />
+      )}
+
+      {/* KPI grid — 2 mobile, 3 desktop */}
+      {kpisLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} height="h-28" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <StatCard
+            Icon={Building2}
+            value={kpiValue("dealer_count")}
+            label="Toplam Bayi"
+            href={q("/tr/bayiler")}
+          />
+          <StatCard
+            Icon={ClipboardList}
+            value={kpiValue("active_orders")}
+            label="Aktif Sipariş"
+            href={q("/tr/bayi-siparislerim")}
+          />
+          <StatCard
+            Icon={TrendingDown}
+            value={kpiCurrency("overdue_amount")}
+            label="Bekleyen Tahsilat"
+            href={q("/tr/bayi-tahsilatlarim")}
+          />
+          <StatCard
+            Icon={TrendingUp}
+            value={kpiCurrency("month_revenue")}
+            label="Bu Ay Ciro"
+            href={q("/tr/bayi-raporlar")}
+          />
+          <StatCard
+            Icon={PackageX}
+            value={kpiValue("critical_stock")}
+            label="Kritik Stok"
+            href={q("/tr/bayiler")}
+          />
+          <StatCard
+            Icon={Mail}
+            value={kpiValue("active_invites")}
+            label="Aktif Davet"
+            href={q("/tr/bayiler")}
+          />
         </div>
       )}
 
-      {/* Hero */}
-      <div className="bg-gradient-to-br from-indigo-700 via-sky-700 to-stone-900 text-white rounded-2xl p-6 shadow-lg">
-        <h1 className="text-2xl font-bold">Panelim</h1>
-        <p className="text-indigo-100 text-sm mt-2 leading-relaxed">
-          Sisteminizi buradan yönetin.
-        </p>
-        <p className="text-indigo-200/80 text-xs mt-3 italic">
-          Paneldeki kartlara sol menüden de ulaşabilirsiniz.
-        </p>
-      </div>
-
-      {/* KPI grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-        {CARD_DEFS.map((card) => {
-          const raw = kpis ? (kpis[card.key as keyof KPIs] ?? 0) : null;
-          const value = card.staticValue
-            ? card.staticValue
-            : raw === null
-            ? "—"
-            : card.isCurrency
-            ? formatCurrency(raw)
-            : raw.toLocaleString("tr-TR");
-          const href = token ? card.href(token) : "#";
-          return (
-            <a
-              key={card.key}
-              href={href}
-              className={`block bg-gradient-to-br ${card.color} text-white rounded-2xl p-4 shadow-md hover:shadow-lg active:scale-95 transition relative`}
-            >
-              {card.comingSoon && (
-                <span className="absolute top-2 right-2 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
-                  Yakında
-                </span>
-              )}
-              <div className="text-2xl mb-1">{card.icon}</div>
-              <div className="text-2xl sm:text-3xl font-bold leading-none truncate">{value}</div>
-              <div className="text-xs opacity-90 mt-1.5">{card.label}</div>
-            </a>
-          );
-        })}
-      </div>
-
-      {/* Bilgisayardan Kullan — feature highlight */}
-      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl p-5 shadow-sm">
-        <div className="flex items-start gap-4">
-          <div className="text-3xl flex-shrink-0">🖥</div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Bilgisayardan Kullanın</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
-              Bilgisayarınızda <span className="font-semibold text-slate-900 dark:text-slate-100">qr.upudev.nl</span> sayfasını açın, telefonunuzdaki QR kodu kameraya tutun — saniyeler içinde panel masaüstünüzde de açılır.
-            </p>
-            <button
-              onClick={openQrScanner}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-            >
-              🖥 Şimdi Bağlan
-            </button>
-          </div>
+      {/* Quick actions — horizontal scrollable row */}
+      <div>
+        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-1 mb-2">
+          Hızlı işlem
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+          <ActionCircle Icon={UserPlus}     label="Bayi Davet"     href={q("/tr/bayi-calisan-davet")} />
+          <ActionCircle Icon={ShoppingCart} label="Sipariş Kaydet" href={q("/tr/bayi-siparis")} />
+          <ActionCircle Icon={Bell}         label="Tahsilat"       href={q("/tr/bayi-tahsilatlarim")} />
+          <ActionCircle Icon={Megaphone}    label="Kampanya"       href={q("/tr/bayi-kampanya")} />
+          <ActionCircle Icon={Clock}        label="Vade Hatırla"   href={q("/tr/bayi-vade-hatirlatma")} />
+          <ActionCircle Icon={BarChart3}    label="Cirolarım"      href={q("/tr/bayi-raporlar")} />
         </div>
       </div>
 
-      {/* Quick actions hint */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm text-sm text-slate-600 dark:text-slate-400">
-        <p className="font-semibold text-slate-900 dark:text-slate-100 mb-2">💡 Hızlı işlem</p>
-        <p>
-          Yeni bayi eklemek için sol menüden <strong>Bayilerim</strong>, sipariş kaydetmek için <strong>Siparişlerim</strong>, ya da WhatsApp&apos;ta doğrudan komut adını yazabilirsiniz (örn. <span className="font-mono bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">bayilerim</span>).
-        </p>
+      {/* Hesap & ayarlar — emlak pattern paralel */}
+      <div className="space-y-2">
+        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-1">
+          Hesap & ayarlar
+        </div>
+        <ListCard
+          Icon={ClipboardCheck}
+          title="Profilim"
+          subtitle="Firma ve hesap bilgilerinizi düzenleyin"
+          rightLabel="Düzenle"
+          href={q("/tr/bayi-profilim")}
+        />
+        <ListCard
+          Icon={Bell}
+          title="Panel Ayarları"
+          subtitle="Gizlilik, veri export, KVKK"
+          rightLabel="Aç"
+          href={q("/tr/bayi-panel-ayarlari")}
+        />
       </div>
 
       {showKvkkModal && (

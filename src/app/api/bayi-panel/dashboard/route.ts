@@ -68,6 +68,7 @@ export async function GET(req: NextRequest) {
       overdueTxRes,
       monthOrdersRes,
       stockRes,
+      activeInvitesRes,
     ] = await Promise.all([
       sb.from("bayi_dealers").select("id", { count: "exact", head: true })
         .eq("tenant_id", tenantId).eq("is_active", true),
@@ -85,6 +86,8 @@ export async function GET(req: NextRequest) {
       sb.from("bayi_orders").select("total_amount")
         .eq("tenant_id", tenantId).gte("created_at", monthStartIso),
       sb.from("bayi_products").select("id, stock_quantity, low_stock_threshold")
+        .eq("tenant_id", tenantId).eq("is_active", true),
+      sb.from("bayi_invite_links").select("id", { count: "exact", head: true })
         .eq("tenant_id", tenantId).eq("is_active", true),
     ]);
 
@@ -107,6 +110,7 @@ export async function GET(req: NextRequest) {
         overdue_amount: overdueAmount,
         month_revenue: monthRevenue,
         critical_stock: criticalStock,
+        active_invites: activeInvitesRes.count || 0,
       },
     });
   } catch (err) {
