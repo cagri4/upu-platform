@@ -1,43 +1,72 @@
 /**
- * GET /api/bayi-panel/dashboard?t=<token>
+ * GET /api/bayi-panel/dashboard
  *
- * Bayi dashboard 6 KPI:
- *   - dealer_count           toplam aktif bayi
- *   - active_orders          aktif sipariş (pending/preparing/shipped status)
- *   - pending_invoices       ödenmemiş fatura sayısı
- *   - overdue_amount         vadesi geçmiş tutar (bayi_dealer_transactions sale + due_date<NOW)
- *   - month_revenue          bu ay sipariş cirosu (orders.total_amount, created_at >= ay başı)
- *   - critical_stock         kritik stok kalem sayısı (stock <= low_stock_threshold)
+ * Bayi panel KPI dashboard — subdomain-aware tenant resolution.
  *
- * Pattern: emlak /api/panel/dashboard — Promise.all paralel sorgular,
- * tenant_id'ye scoped.
+ * Auth chain:
+ *   1. x-tenant-key header (middleware'in subdomain → tenant resolution'ı) MUST = "bayi"
+ *   2. Cookie session (resolvePanelAuth) → userId (profile.id)
+ *   3. profile.auth_user_id → auth.users.id (multi-tenant anchor)
+ *   4. Bayi profile lookup: (auth_user_id, tenant_id=bayi) composite
+ *   5. KPI queries scoped to bayi tenant_id
+ *
+ * Multi-tenant fix: Admin user emlak+bayi profile'a sahipse, cookie
+ * session emlak profile.id taşıyabilir (eski evergreen URL'leri).
+ * Subdomain'den bayi context zorla → auth_user_id ile bayi profile'ı
+ * doğru getir → KPI'lar bayi tenant_id ile filtreli.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { resolvePanelAuth } from "@/platform/auth/panel-auth";
+import { getTenantByDomain, getTenantByKey } from "@/tenants/config";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    // Cookie session öncelik, token fallback. Layout init endpoint cookie
-    // attach ettikten sonra client-side navigation token query'sini düşürebilir
-    // — bu yüzden token-only auth dashboard KPI fetch'ini bozardı (KPI '—').
+    // 1) Subdomain tenant guard — middleware /api/ path'lerini skip ediyor
+    //    (PUBLIC_PATHS), x-tenant-key header endpoint'e gelmez. Host'tan
+    //    doğrudan resolve et (manifest.json endpoint ile aynı pattern).
+    const host = req.headers.get("host") || "";
+    const hostTenant = getTenantByDomain(host);
+    if (hostTenant?.key !== "bayi") {
+      return NextResponse.json({ error: "Bu endpoint yalnızca bayi subdomain'inde kullanılır." }, { status: 400 });
+    }
+
+    const bayiTenantCfg = getTenantByKey("bayi");
+    if (!bayiTenantCfg) {
+      return NextResponse.json({ error: "Bayi tenant config bulunamadı." }, { status: 500 });
+    }
+    const bayiTenantId = bayiTenantCfg.tenantId;
+
+    // 2) Cookie session (token fallback) → userId (profile.id)
     const auth = await resolvePanelAuth(req);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const sb = getServiceClient();
-    const { data: profile } = await sb
+
+    // 3) profile.id → auth_user_id (multi-tenant anchor)
+    const { data: ownProfile } = await sb
       .from("profiles")
-      .select("tenant_id")
+      .select("auth_user_id")
       .eq("id", auth.userId)
       .maybeSingle();
-    const tenantId = profile?.tenant_id;
-    if (!tenantId) return NextResponse.json({ error: "Tenant bulunamadı." }, { status: 500 });
+    const authUserId = ownProfile?.auth_user_id || auth.userId;
 
-    // Aktif sipariş için status_id eşleşmesi
+    // 4) Bayi profile composite lookup (auth_user_id + bayi tenant_id)
+    const { data: bayiProfile } = await sb
+      .from("profiles")
+      .select("id")
+      .eq("auth_user_id", authUserId)
+      .eq("tenant_id", bayiTenantId)
+      .maybeSingle();
+    if (!bayiProfile) {
+      return NextResponse.json({ error: "Bu hesap bayi'ye kayıtlı değil." }, { status: 403 });
+    }
+
+    // 5) KPI queries — hepsi bayi tenant_id ile filtreli
     const { data: statuses } = await sb
       .from("bayi_order_statuses")
       .select("id, code");
@@ -45,7 +74,6 @@ export async function GET(req: NextRequest) {
       .filter(s => ["pending", "preparing", "shipped", "in_transit", "delivering"].includes(s.code))
       .map(s => s.id);
 
-    // Sale type ID (vadesi geçmiş tutar için)
     const { data: txTypes } = await sb
       .from("bayi_transaction_types")
       .select("id, code");
@@ -67,24 +95,24 @@ export async function GET(req: NextRequest) {
       activeInvitesRes,
     ] = await Promise.all([
       sb.from("bayi_dealers").select("id", { count: "exact", head: true })
-        .eq("tenant_id", tenantId).eq("is_active", true),
+        .eq("tenant_id", bayiTenantId).eq("is_active", true),
       activeStatusIds.length
         ? sb.from("bayi_orders").select("id", { count: "exact", head: true })
-            .eq("tenant_id", tenantId).in("status_id", activeStatusIds)
+            .eq("tenant_id", bayiTenantId).in("status_id", activeStatusIds)
         : Promise.resolve({ count: 0 } as { count: number }),
       sb.from("bayi_dealer_invoices").select("id", { count: "exact", head: true })
-        .eq("tenant_id", tenantId).eq("is_paid", false),
+        .eq("tenant_id", bayiTenantId).eq("is_paid", false),
       saleTypeId
         ? sb.from("bayi_dealer_transactions").select("amount, due_date")
-            .eq("tenant_id", tenantId).eq("transaction_type_id", saleTypeId)
+            .eq("tenant_id", bayiTenantId).eq("transaction_type_id", saleTypeId)
             .lt("due_date", todayIso)
         : Promise.resolve({ data: [] } as { data: Array<{ amount: number; due_date: string }> }),
       sb.from("bayi_orders").select("total_amount")
-        .eq("tenant_id", tenantId).gte("created_at", monthStartIso),
+        .eq("tenant_id", bayiTenantId).gte("created_at", monthStartIso),
       sb.from("bayi_products").select("id, stock_quantity, low_stock_threshold")
-        .eq("tenant_id", tenantId).eq("is_active", true),
+        .eq("tenant_id", bayiTenantId).eq("is_active", true),
       sb.from("bayi_invite_links").select("id", { count: "exact", head: true })
-        .eq("tenant_id", tenantId).eq("is_active", true),
+        .eq("tenant_id", bayiTenantId).eq("is_active", true),
     ]);
 
     const overdueAmount = ((overdueTxRes as { data?: Array<{ amount: number }> }).data || [])
