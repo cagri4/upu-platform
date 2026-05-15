@@ -39,6 +39,10 @@ export function GET(req: NextRequest) {
   const themeColor = tenant?.color ?? "#1877F2";
 
   const manifest = {
+    // PWA unique identifier — Chrome scope/start_url çakışmalarında uygulamayı
+    // ayırt eder. Tenant'a göre stable; değiştirilmemeli (değişirse Chrome
+    // yeni uygulama olarak görür, önceki install kaybolur).
+    id: `/${tenantKey}-app`,
     name: brand,
     short_name: shortName,
     description: "Yapay zeka destekli iş asistanınız.",

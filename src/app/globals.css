@@ -75,3 +75,22 @@ select:invalid,
 select option[value=""] {
   color: #64748b;                    /* "Seçin..." varsayılan option */
 }
+
+/* iOS standalone PWA — notch / Dynamic Island safe area utilities.
+   viewport-fit=cover ile birlikte kullanılır. body'ye varsayılan apply
+   edildi (RootLayout), bireysel layout'larda gerekirse override edilebilir. */
+@layer utilities {
+  .pt-safe { padding-top: max(env(safe-area-inset-top), 0px); }
+  .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+  .pl-safe { padding-left: max(env(safe-area-inset-left), 0px); }
+  .pr-safe { padding-right: max(env(safe-area-inset-right), 0px); }
+  .px-safe {
+    padding-left: max(env(safe-area-inset-left), 0px);
+    padding-right: max(env(safe-area-inset-right), 0px);
+  }
+
+  /* iOS Safari address-bar açılışta `100vh` taşar — `dvh` dinamik ayarlanır.
+     Eski tarayıcı fallback olarak `100vh`'yi tutar (cascade). */
+  .h-screen { height: 100vh; height: 100dvh; }
+  .min-h-screen { min-height: 100vh; min-height: 100dvh; }
+}
