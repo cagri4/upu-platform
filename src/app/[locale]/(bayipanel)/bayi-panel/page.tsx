@@ -67,6 +67,7 @@ export default function BayiPanelimPage() {
 
   const [kpis, setKpis] = useState<KPIs | null>(null);
   const [showKvkkModal, setShowKvkkModal] = useState(false);
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -76,6 +77,21 @@ export default function BayiPanelimPage() {
         if (!d?.error && d?.kpis) setKpis(d.kpis);
       })
       .catch(() => { /* layout init zaten validate etti */ });
+  }, [token]);
+
+  // Profile completeness — firma_profili.ticari_unvan eksikse hero banner
+  useEffect(() => {
+    if (!token) return;
+    fetch(`/api/bayi-panel/profile?t=${encodeURIComponent(token)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        const unvan = d?.firma?.ticari_unvan;
+        if (!unvan || String(unvan).trim().length === 0) {
+          setProfileIncomplete(true);
+        }
+      })
+      .catch(() => { /* sessiz */ });
   }, [token]);
 
   // KVKK consent — Sprint A. needsConsent=true ise modal; "Daha sonra"
@@ -110,6 +126,28 @@ export default function BayiPanelimPage() {
 
   return (
     <div className="space-y-6">
+      {/* Profile completeness banner — firma_profili eksikse */}
+      {profileIncomplete && token && (
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl p-5 shadow-md">
+          <div className="flex items-start gap-3">
+            <div className="text-2xl flex-shrink-0">📋</div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-base mb-1">Profilinizi Tamamlayın</h3>
+              <p className="text-amber-50 text-sm leading-relaxed mb-3">
+                Sistemi tam kullanabilmek için firma bilgilerinizi doldurun — ~5 dakika.
+                Kalan: firma adı, yetkili, vergi no, IBAN, brifing tercihi.
+              </p>
+              <a
+                href={`/tr/bayi-profil?t=${encodeURIComponent(token)}`}
+                className="inline-flex items-center gap-1.5 bg-white text-orange-700 hover:bg-amber-50 font-semibold text-sm px-4 py-2 rounded-lg transition active:scale-95"
+              >
+                ✏️ Profilini Tamamla
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero */}
       <div className="bg-gradient-to-br from-indigo-700 via-sky-700 to-stone-900 text-white rounded-2xl p-6 shadow-lg">
         <h1 className="text-2xl font-bold">Panelim</h1>

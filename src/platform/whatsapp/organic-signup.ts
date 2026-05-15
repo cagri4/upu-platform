@@ -7,30 +7,25 @@
  *   - tryOrganicSignupForExistingUser(...) — mevcut user (emlak gibi)
  *     yeni tenant'a kayıt isterse — router.ts Faz 9.2 intent'ten çağrılır.
  *
+ * Modern pattern (memory: "WA = uzaktan kumanda, PWA = kokpit"): WA'da
+ * uzun chat onboarding YOK. Profile yaratılır → kısa welcome (3 mesaj)
+ * → "Paneli Aç" buton → kullanıcı PWA'da hero/görevler kartından profile
+ * tamamlama formuna gider.
+ *
  * Schema invariant (Deep Foundation):
  *   - auth.users: 1 phone = 1 row (Supabase constraint, korunur)
  *   - profiles: (whatsapp_phone, tenant_id) UNIQUE + (auth_user_id, tenant_id) UNIQUE
- *     → bir auth.user N profile (her tenant'ta ayrı) sahibi olabilir
- *   - Legacy profile satırı: profile.id = auth.users.id (backfill: auth_user_id = id)
- *   - Yeni multi-tenant profile: profile.id = fresh UUID, auth_user_id = auth.users.id
- *
- * Şu an sadece bayi tenant'ı için tam onboarding akışı var (dealer-onboarding).
- * Diğer tenant'lar için welcome mesajı + "site/profil sayfasından devam et"
- * — organic flow her tenant için ayrı sprint.
+ *   - Legacy profile: profile.id = auth.users.id, auth_user_id = id (backfill)
+ *   - Multi-tenant profile: profile.id = fresh UUID, auth_user_id = auth.users.id
  */
 import { randomBytes, randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { extractTenantHintFromText, stripTenantPrefix } from "@/platform/auth/tenant-identity";
-import { sendText } from "./send";
+import { sendText, sendUrlButton } from "./send";
 import type { WaContext } from "./types";
 import { getTenantByKey } from "@/tenants/config";
 
-/**
- * Tenant'lara özel pre-intro greeting. Modern pattern: bayi/intro-supported
- * tenant'lar için boş — intro.ts kendi 3 mesajlı welcome'ını gönderir
- * (çift greeting'i önler). Sadece intro flow'u olmayan tenant'lar için
- * davet kodu placeholder mesajı.
- */
+/** Intro flow'u olmayan tenant'lar için "davet kodu gerek" placeholder. */
 const PRE_INTRO_MESSAGES: Record<string, string> = {
   market:
     "🛒 *Hoş geldin!*\n\n" +
@@ -51,6 +46,12 @@ function isUyeOlIntent(text: string): boolean {
   );
 }
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://upudev.nl";
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
 // ── Brand new phone (no profile anywhere) ────────────────────────────
 
 export async function tryOrganicSignup(
@@ -65,7 +66,6 @@ export async function tryOrganicSignup(
   const cleanText = stripTenantPrefix(rawText);
   if (!isUyeOlIntent(cleanText)) return false;
 
-  // Brand new phone — auth user yarat
   const { data: authUser, error: authErr } = await supabase.auth.admin.createUser({
     email: `${hint}_organic_${Date.now()}_${randomBytes(4).toString("hex")}@placeholder.upudev.nl`,
     email_confirm: true,
@@ -85,7 +85,7 @@ export async function tryOrganicSignup(
     phone,
     name: name || phone,
     tenantKey: hint,
-    isLegacyAuth: true, // brand new — profile.id = auth.users.id pattern
+    isLegacyAuth: true,
   });
 }
 
@@ -101,7 +101,7 @@ export async function tryOrganicSignupForExistingUser(
     phone: ctx.phone,
     name: ctx.userName || ctx.phone,
     tenantKey,
-    isLegacyAuth: false, // mevcut user — profile.id = fresh UUID, auth_user_id ayrı
+    isLegacyAuth: false,
   });
 }
 
@@ -112,10 +112,6 @@ interface SignupArgs {
   phone: string;
   name: string;
   tenantKey: string;
-  /**
-   * true: profile.id = authUserId (legacy 1-1, brand new user)
-   * false: profile.id = fresh UUID (multi-tenant, existing user)
-   */
   isLegacyAuth: boolean;
 }
 
@@ -131,13 +127,7 @@ async function runTenantSignup(
     return false;
   }
 
-  // Pre-intro greeting — intro flow'u olmayan tenant'lar için fallback.
-  // Bayi/emlak/restoran/siteyonetim/otel/market intro.ts'te kendi 3 mesajlı
-  // welcome'ını gönderir (modern pattern); buraya placeholder düşmesin.
-  const preIntro = PRE_INTRO_MESSAGES[tenantKey];
-  if (preIntro) await sendText(phone, preIntro);
-
-  // Capabilities — şimdilik sadece bayi'de OWNER_ALL preset var; diğerleri []
+  // Capabilities — bayi için OWNER_ALL preset; diğerleri şimdilik boş
   let capabilities: string[] = [];
   if (tenantKey === "bayi") {
     const { defaultCapabilitiesForRole } = await import("@/tenants/bayi/capabilities");
@@ -162,7 +152,6 @@ async function runTenantSignup(
     const code = (profileErr as { code?: string }).code;
     console.error("[organic-signup] profile insert error:", profileErr);
     if (code === "23505") {
-      // Aynı auth_user + tenant zaten kayıtlı — paralel istekte yarış olabilir
       await sendText(phone, "Bu hizmete zaten kayıtlısın 👋\n\n'panel' yazarak panele dön.");
       return true;
     }
@@ -170,7 +159,7 @@ async function runTenantSignup(
     return true;
   }
 
-  // Trial abonelik (her tenant'a — billing tarafı ayrıştırma sonra)
+  // Trial abonelik
   await supabase
     .from("subscriptions")
     .insert({
@@ -195,50 +184,101 @@ async function runTenantSignup(
       if (r.error) console.error("[organic-signup] active session upsert error:", r.error);
     });
 
-  // Modern pattern: intro.ts kendi 3 mesajlı greet + capabilities + PWA form
-  // CTA gönderir. WA'da 7-soru chat akışı YOK — form web panelinde doldurulur
-  // (memory: "3-kanalli mimari: WA=uzaktan kumanda, Web panel=kokpit. Form
-  // agir isleri web'e tasi.").
-  const onbCtx: WaContext = {
-    phone,
-    userId: newProfileId,
-    authUserId,
-    tenantId: tenantCfg.tenantId,
-    tenantKey,
-    userName: name,
-    locale: "tr",
-    messageId: "",
-    text: "",
-    interactiveId: "",
-    role: "admin",
-    permissions: {},
-    dealerId: null,
-    capabilities,
-  };
+  // ── Part B: Multi-membership info — diğer tenant'lara üye mi? ──
+  await maybeSendMultiMembershipInfo(supabase, phone, authUserId, tenantCfg.tenantId);
 
-  const { startIntro } = await import("./intro");
-  const introOk = await startIntro(onbCtx);
-
-  if (!introOk) {
-    // Intro flow desteklenmeyen tenant veya runtime hata — fallback: kısa
-    // bilgi + evergreen panel URL (token'sız, fresh mint).
-    await sendText(phone, "🎉 Hesabın hazır! Aşağıdaki panelden devam et.");
-    const subdomain = tenantCfg.slug || tenantKey;
-    const evergreenUrl =
-      tenantKey === "bayi"
-        ? `https://${subdomain}.upudev.nl/api/bayi-panel/evergreen?uid=${encodeURIComponent(authUserId)}`
-        : `https://${subdomain}.upudev.nl/api/panel/evergreen?uid=${encodeURIComponent(authUserId)}`;
-    const { sendUrlButton } = await import("./send");
-    await sendUrlButton(
-      phone,
-      "🖥 *Profilini Tamamla*\n\n" +
-        "Firma bilgilerini panel üzerinden doldur (~2 dk). " +
-        "Sonrasında kullanmaya başlayabilirsin.",
-      "🖥 Panele Git",
-      evergreenUrl,
-      { skipNav: true },
-    );
+  // ── Part A: Welcome + Panel CTA (intro yerine inline modern pattern) ──
+  if (tenantKey === "bayi") {
+    await sendBayiPanelWelcome(phone, name, authUserId);
+    return true;
   }
 
+  // Diğer tenant'lar — şimdilik placeholder davet kodu mesajı
+  const preIntro = PRE_INTRO_MESSAGES[tenantKey];
+  if (preIntro) {
+    await sendText(phone, preIntro);
+    return true;
+  }
+
+  // Henüz organic signup tanımı olmayan tenant — generic fallback
+  await sendText(phone, "🎉 Hesabın hazır! Panele ulaşmak için 'panel' yazabilirsin.");
   return true;
+}
+
+// ── Part B helper ────────────────────────────────────────────────────
+
+async function maybeSendMultiMembershipInfo(
+  supabase: SupabaseClient,
+  phone: string,
+  authUserId: string,
+  excludeTenantId: string,
+): Promise<void> {
+  type Row = { tenant_id: string; tenants: { saas_type: string; name: string } | null };
+  const { data: others } = await supabase
+    .from("profiles")
+    .select("tenant_id, tenants(saas_type, name)")
+    .eq("auth_user_id", authUserId)
+    .neq("tenant_id", excludeTenantId)
+    .returns<Row[]>();
+
+  if (!others?.length) return;
+
+  const lines = others
+    .map((p) => {
+      const t = p.tenants;
+      if (!t) return null;
+      const cfg = getTenantByKey(t.saas_type);
+      const icon = cfg?.icon || "•";
+      const brand = cfg?.name || t.name;
+      return `${icon} ${brand}`;
+    })
+    .filter(Boolean);
+
+  if (!lines.length) return;
+
+  await sendText(
+    phone,
+    "ℹ️ *Bilgi*\n\n" +
+      `Bu numara ile zaten şu UPU SaaS'lara üyesin:\n${lines.join("\n")}\n\n` +
+      `Aralarında geçiş için WA'da "değiştir" yaz veya panel sidebar'daki ` +
+      `"Üye olduğum SaaS'lar" bölümünden seç.`,
+  );
+}
+
+// ── Part A: Bayi welcome (inline 3 mesaj, modern pattern) ────────────
+
+async function sendBayiPanelWelcome(phone: string, name: string, authUserId: string): Promise<void> {
+  const firstName = (name || "").split(/\s+/)[0] || "";
+  const greet = firstName ? `👋 Merhaba ${firstName}! ✨` : `👋 Merhaba! ✨`;
+
+  // Mesaj 1 — greet + core promise
+  await sendText(
+    phone,
+    `${greet}\n\n` +
+      `Ben kişisel asistanınız UPU. 7/24 tahsilatlarınızı ve sipariş operasyonunuzu kolaylaştıracağım.`,
+  );
+  await sleep(1500);
+
+  // Mesaj 2 — yetenekler
+  await sendText(
+    phone,
+    `🎯 *Yapabileceklerimden bazıları:*\n\n` +
+      `✅ Yeni bayi başvurularınızı telefonla onaylayıp sisteme eklerim\n` +
+      `✅ Vadesi gelen tahsilatlarınız için hatırlatma metni hazırlar, onayınızla bayiye gönderirim\n` +
+      `✅ Bayi siparişlerinizi WhatsApp'tan tek akışta sisteme kaydederim\n` +
+      `✅ Tüm bayilerinize tek tıkla kampanya duyurusu yaparım`,
+  );
+  await sleep(1500);
+
+  // Mesaj 3 — Paneli Aç (evergreen URL — server-side fresh token mint)
+  const evergreenUrl = `${APP_URL}/api/bayi-panel/evergreen?uid=${encodeURIComponent(authUserId)}`;
+  await sendUrlButton(
+    phone,
+    `🖥 *Bayi Panelinize Hoş Geldiniz*\n\n` +
+      `Profilinizi tamamlamak ve sisteminizi yönetmek için panele gidin. ` +
+      `Hero kartından "Profilini Tamamla" ile firma bilgilerinizi 5 dakikada doldurabilirsiniz.`,
+    "🖥 Paneli Aç",
+    evergreenUrl,
+    { skipNav: true },
+  );
 }
