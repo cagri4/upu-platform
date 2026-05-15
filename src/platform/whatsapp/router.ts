@@ -514,6 +514,34 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     await tryOrganicSignupForExistingUser(sb, ctx, ctx.tenantKey);
     return;
   }
+  // Bug 1 — "Giriş yap" intent (mobile WA deep link'ten gelir).
+  // Mevcut user (resolved tenant'a profile var) → handleWebpanelShared
+  // (magic link / evergreen URL gönderir). Yeni user için bu intent'e
+  // ulaşılmaz (router yalnız resolved userId varsa çağrılır); router öncesi
+  // webhook'ta tCtx==null branch organic signup yönlendirmesi yapar.
+  if (lower === "giriş yap" || lower === "giris yap") {
+    const sb = getServiceClient();
+    const { data: tenantProfile } = ctx.tenantId
+      ? await sb
+          .from("profiles")
+          .select("id")
+          .eq("auth_user_id", ctx.authUserId)
+          .eq("tenant_id", ctx.tenantId)
+          .maybeSingle()
+      : { data: null };
+
+    if (tenantProfile) {
+      await sendText(ctx.phone, "Tekrar hoş geldin 👋\n\nPaneline buradan ulaşabilirsin.");
+      await handleWebpanelShared(ctx, tenant);
+      return;
+    }
+
+    await sendText(
+      ctx.phone,
+      "Bu hizmete henüz üye değilsin.\n\nÜye olmak için kayıt mesajını gönder.",
+    );
+    return;
+  }
   if (firstWord === "degistir" || firstWord === "değiştir" || firstWord === "switch") {
     await handleDegistir(ctx);
     return;

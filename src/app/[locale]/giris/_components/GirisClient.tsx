@@ -1,36 +1,61 @@
 "use client";
 
 /**
- * /[locale]/giris — 2 buton login client (Faz 6.3 + Bug fix tenant-aware brand).
+ * /[locale]/giris — 2 buton login client (Faz 6.3 + Bug fix tenant-aware
+ * brand + Bug 1 mobile WA deep link).
  *
- *   1) WhatsApp ile bağlan → /tr/qr-giris
- *   2) Google ile gir     → /api/auth/google/start?next=<next>
+ *   1) WhatsApp ile bağlan:
+ *      - Mobile (max-width: 768px): wa.me deep link → kullanıcının kendi
+ *        WA app'ine düşer, pre-filled mesaj ("EMLAK: Giriş yap" vb.)
+ *      - Desktop: /tr/qr-giris → panel scanner (başka cihaz tarar)
+ *   2) Google ile gir → /api/auth/google/start?next=<next>
  *
- * Server wrapper (`../page.tsx`) tenant'a göre `brandName` prop'unu geçer.
+ * Server wrapper tenant-aware brandName + waText + locale prop'larını geçer.
  */
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowRight, AlertTriangle } from "lucide-react";
+
+const WA_BOT = "31644967207";
 
 interface GirisClientProps {
   /** Tenant-aware sade marka adı (örn. "UPU Bayi"). */
   brandName: string;
+  /** wa.me pre-fill metni — tenant'a göre prefix (örn. "BAYI: Giriş yap"). */
+  waText: string;
+  /** URL locale segmenti (tr/en/nl). */
+  locale: string;
 }
 
-function GirisInner({ brandName }: GirisClientProps) {
+function GirisInner({ brandName, waText, locale }: GirisClientProps) {
   const params = useSearchParams();
   const error = params.get("error");
   const hint = params.get("hint");
-  const next = params.get("next") || "/tr/panel";
+  const next = params.get("next") || `/${locale}/panel`;
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    setIsMobile(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   const errorMessage = mapErrorToMessage(error, hint);
   const googleHref = `/api/auth/google/start?next=${encodeURIComponent(next)}`;
+  const waMobileHref = `https://wa.me/${WA_BOT}?text=${encodeURIComponent(waText)}`;
+  const waDesktopHref = `/${locale}/qr-giris`;
+  // SSR/loading: desktop akışına düş (mevcut davranış). Hidrate sonrası
+  // mobile detect olursa wa.me'ye geçer.
+  const waHref = isMobile ? waMobileHref : waDesktopHref;
+  const isWaTargetExternal = !!isMobile;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
       <header className="px-4 py-4 flex items-center justify-between">
-        <a href="/tr" className="flex items-center gap-2">
+        <a href={`/${locale}`} className="flex items-center gap-2">
           <span className="text-lg font-semibold text-slate-900 dark:text-white">{brandName}</span>
         </a>
       </header>
@@ -58,9 +83,11 @@ function GirisInner({ brandName }: GirisClientProps) {
             </div>
           )}
 
-          {/* WA buton — primary */}
+          {/* WA buton — primary, mobile/desktop conditional */}
           <a
-            href="/tr/qr-giris"
+            href={waHref}
+            target={isWaTargetExternal ? "_blank" : undefined}
+            rel={isWaTargetExternal ? "noopener noreferrer" : undefined}
             className="flex items-center justify-between gap-3 w-full px-5 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shadow-lg active:scale-[0.98] transition"
           >
             <span className="flex items-center gap-3">
@@ -94,10 +121,10 @@ function GirisInner({ brandName }: GirisClientProps) {
   );
 }
 
-export default function GirisClient({ brandName }: GirisClientProps) {
+export default function GirisClient(props: GirisClientProps) {
   return (
     <Suspense fallback={null}>
-      <GirisInner brandName={brandName} />
+      <GirisInner {...props} />
     </Suspense>
   );
 }
