@@ -71,25 +71,12 @@ TOTAL=$(grep -oP 'Toplam: \K\d+' "$SCRAPE_DETAIL")
 URL_DONE=$(grep -oP 'URL tamamlanan: \K\d+/\d+' "$SCRAPE_DETAIL")
 BLOCKED=$(grep -c "Engel\|Giriş duvarı\|IP engeli" "$SCRAPE_DETAIL")
 
-# Faz 8.0 — anti-bot retry/skip counters
-ANTI_BOT=$(grep -c "Anti-bot challenge" "$SCRAPE_DETAIL")
-RETRY_OK=$(grep -c "retry başarılı" "$SCRAPE_DETAIL")
-SKIPPED_CATS=$(grep -c "kategori atlandı" "$SCRAPE_DETAIL")
-
 DATE2=$(date '+%Y-%m-%d %H:%M')
 if [ $SCRAPE_EXIT -ne 0 ] || [ "$BLOCKED" -gt 0 ]; then
   echo "$DATE2 — ⚠️ Scrape [$PART] TAMAMLANMADI — $URL_DONE URL, $TOTAL ilan" >> "$LOG_FILE"
   grep -E "❌|⚠️|Engel|blocked" "$SCRAPE_DETAIL" >> "$LOG_FILE" 2>/dev/null
 else
   echo "$DATE2 — ✅ Scrape [$PART] OK — $URL_DONE URL, $TOTAL ilan" >> "$LOG_FILE"
-fi
-
-# Faz 8.0 — anti-bot ozet satiri (monitor-scrape.sh bu satiri grep eder)
-if [ "$ANTI_BOT" -gt 0 ] || [ "$SKIPPED_CATS" -gt 0 ]; then
-  echo "$DATE2 — 🛡️ Anti-bot [$PART]: $ANTI_BOT challenge, $RETRY_OK retry başarılı, $SKIPPED_CATS kategori atlandı" >> "$LOG_FILE"
-fi
-if [ "$ANTI_BOT" -gt 5 ]; then
-  echo "$DATE2 — ⚠️ Anti-bot [$PART] YÜKSEK ($ANTI_BOT > 5) — manuel browser refresh gerekebilir" >> "$LOG_FILE"
 fi
 
 # 3. DB'ye import (V3)

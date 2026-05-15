@@ -113,23 +113,6 @@ if [ "$COOKIE_NUM" = "0" ] || [ -z "$COOKIE_NUM" ]; then
   SIGNALS+=("🍪 Cookie: 0 (export-cookies sessiz fail)")
 fi
 
-# 6. Faz 8.0 — anti-bot >5 challenge (yuksek baski sinyali)
-if [ -f "$SCRAPE_DETAIL" ]; then
-  ANTI_BOT_HITS=$(grep -c "Anti-bot challenge" "$SCRAPE_DETAIL")
-  if [ "$ANTI_BOT_HITS" -gt 5 ]; then
-    SAMPLE=$(grep "Anti-bot challenge" "$SCRAPE_DETAIL" | head -1 | cut -c1-120)
-    SIGNALS+=("🛡️ Anti-bot: $ANTI_BOT_HITS challenge (>5, manuel refresh önerilir). Örnek: $SAMPLE")
-  fi
-fi
-
-# 7. Faz 8.0 — kategori atlandı (retry'lar fail, veri kaybı)
-if [ -f "$SCRAPE_DETAIL" ]; then
-  SKIPPED_CATS=$(grep -c "kategori atlandı" "$SCRAPE_DETAIL")
-  if [ "$SKIPPED_CATS" -gt 0 ]; then
-    SIGNALS+=("⛔ Anti-bot retry fail: $SKIPPED_CATS kategori atlandı (veri kaybı)")
-  fi
-fi
-
 # ── Sinyal varsa alert gönder ──
 if [ ${#SIGNALS[@]} -eq 0 ]; then
   echo "[$PART] ✅ Tüm sinyaller temiz."

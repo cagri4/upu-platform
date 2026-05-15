@@ -13,7 +13,6 @@ import puppeteerExtra from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 puppeteerExtra.use(StealthPlugin());
@@ -104,33 +103,6 @@ const DELAY = {
   page: { min: 4000, max: 7000 },
   category: { min: 30000, max: 60000 },
   blocked: { min: 60000, max: 90000 },
-  // Faz 8.0 — anti-bot escalating cooldown
-  retry1: { min: 30000, max: 60000 },   // 30–60 sn
-  retry2: { min: 300000, max: 360000 }, // 5–6 dk
-};
-
-// Faz 8.0 — anti-bot challenge title regex.
-// Türkçe / İngilizce başlık formatlarını kapsar; Türkçe karakter varyasyonlarına
-// (ş/s, ğ/g, ı/i) toleranslı.
-const ANTI_BOT_TITLE_REGEX =
-  /ola[gğ]an\s*d[ıi]?\s*[şs][ıi]\s*eri[şs]im|tespit\s*ettik|unusual\s*activity|are\s*you\s*a\s*robot|access\s*denied/i;
-
-// Bu kategorilerde page 1'de 0 ilan = neredeyse her zaman anti-bot.
-// Bodrum'da kiralık daire / villa / rezidans hiçbir gün 0 olmaz.
-const CRITICAL_TYPES = new Set(['daire', 'villa', 'rezidans']);
-
-// Page 1'de anti-bot challenge sayfası body innerText < 5KB; normal listings 50KB+.
-const MIN_PAGE_BODY_TEXT_BYTES = 5000;
-
-const MAX_ANTI_BOT_RETRIES = 2; // toplam 3 deneme (initial + 2 retry)
-
-// Faz 8.0 — runtime stats (summary'de yazılır, daily-scrape.sh tarafından
-// "Anti-bot challenge" / "retry başarılı" / "kategori atlandı" satırlarıyla
-// grep edilir).
-const antiBotStats = {
-  detections: 0,
-  retrySuccesses: 0,
-  categoriesSkipped: 0,
 };
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
@@ -183,87 +155,6 @@ function saveJSON(file, data) {
 function loadJSON(file) {
   if (!fs.existsSync(file)) return null;
   try { return JSON.parse(fs.readFileSync(file, 'utf-8')); } catch { return null; }
-}
-
-// ─── ANTI-BOT DETECTION (Faz 8.0) ──────────────────────────────────────────
-
-/**
- * 4 sinyal ile anti-bot challenge tespit eder:
- *   1) URL'de /giris veya /login (login wall)
- *   2) URL'de olagan-disi
- *   3) document.title regex match (sahibinden Türkçe + İngilizce variants)
- *   4) Sahte-0 koruması: CRITICAL_TYPES + page 1 + 0 ilan + body innerText < 5KB
- *
- * `blocked=false` → sayfa OK. `blocked=true` → retry akışı tetiklenir.
- */
-async function detectAntiBot(page, listingsCount, propertyType, pageNum) {
-  const pageUrl = page.url();
-  if (pageUrl.includes('/giris') || pageUrl.includes('/login')) {
-    return { blocked: true, reason: 'URL login wall' };
-  }
-  if (pageUrl.includes('olagan-disi')) {
-    return { blocked: true, reason: 'URL olagan-disi' };
-  }
-
-  const title = await page.title().catch(() => '');
-  if (title && ANTI_BOT_TITLE_REGEX.test(title)) {
-    return { blocked: true, reason: `title "${title.slice(0, 80)}"` };
-  }
-
-  if (listingsCount === 0 && pageNum === 1 && CRITICAL_TYPES.has(propertyType)) {
-    const bodyTextLen = await page
-      .evaluate(() => document.body?.innerText?.length || 0)
-      .catch(() => 0);
-    if (bodyTextLen < MIN_PAGE_BODY_TEXT_BYTES) {
-      return {
-        blocked: true,
-        reason: `sahte-0 (${propertyType}, body innerText ${bodyTextLen}b)`,
-      };
-    }
-  }
-
-  return { blocked: false };
-}
-
-/**
- * Faz 8.0 — Chrome cookie store'undan taze cookie çek + page'e set et.
- * Browser'da kullanıcı logged-in olmalı; logged-out ise export-cookies fail
- * eder ve refresh başarısız (caller cooldown'a devam eder).
- */
-async function refreshCookiesOnPage(page) {
-  const projectRoot = path.resolve(__dirname, '..');
-  try {
-    execSync('node scripts/export-cookies.mjs', {
-      cwd: projectRoot,
-      stdio: 'pipe',
-      timeout: 30000,
-    });
-  } catch (err) {
-    const msg = (err.stderr?.toString() || err.message || '').split('\n')[0];
-    console.error(`    ❌ export-cookies fail: ${msg}`);
-    return false;
-  }
-
-  const fresh = loadCookies();
-  if (!fresh.length) {
-    console.error('    ❌ export-cookies: 0 cookie');
-    return false;
-  }
-
-  try {
-    const existing = await page.cookies('https://www.sahibinden.com');
-    if (existing.length) {
-      await page.deleteCookie(
-        ...existing.map((c) => ({ name: c.name, domain: c.domain })),
-      );
-    }
-    await page.setCookie(...fresh);
-    console.log(`    🔄 cookies refreshed (${fresh.length})`);
-    return true;
-  } catch (err) {
-    console.error(`    ❌ cookie set fail: ${(err.message || '').split('\n')[0]}`);
-    return false;
-  }
 }
 
 // ─── SPECIAL TYPE SETS ──────────────────────────────────────────────────────
@@ -409,62 +300,36 @@ async function scrape() {
       pageNum++;
       console.log(`  📄 Sayfa ${pageNum}`);
 
-      // Faz 8.0 — anti-bot retry loop. Goto + detection birlikte; blocked
-      // gelirse escalating cooldown (30-60sn / 5-6dk) + cookie refresh ile
-      // aynı URL'i toplam 3 kez dener. 3. denemede de blocked ise kategori
-      // atlanır.
-      let attempt = 0;
-      let rawListings = [];
-      let pageOK = false;
+      try {
+        await page.goto(currentUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      } catch (err) {
+        console.error(`  ⚠️ Sayfa yuklenemedi: ${err.message}`);
+        break;
+      }
+      // Listings ajax/lazy-load için selector wait (8 sn cap, sessiz fail).
+      await page.waitForSelector('.searchResultsItem', { timeout: 8000 }).catch(() => {});
+      await sleep(2500, 4000);
 
-      while (attempt <= MAX_ANTI_BOT_RETRIES) {
-        try {
-          await page.goto(currentUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        } catch (err) {
-          console.error(`  ⚠️ Sayfa yuklenemedi: ${err.message}`);
-          break; // attempt loop'undan çık, kategori bitir
-        }
-        await page.waitForSelector('.searchResultsItem', { timeout: 8000 }).catch(() => {});
-        await sleep(2500, 4000);
-
-        rawListings = await page.evaluate(extractListings);
-        const det = await detectAntiBot(page, rawListings.length, property_type, pageNum);
-
-        if (!det.blocked) {
-          if (attempt > 0) {
-            antiBotStats.retrySuccesses++;
-            console.log(`  ✅ retry başarılı (deneme ${attempt + 1})`);
-          }
-          pageOK = true;
-          break;
-        }
-
-        antiBotStats.detections++;
-        console.error(
-          `  ❌ Anti-bot challenge (${det.reason}) — deneme ${attempt + 1}/${MAX_ANTI_BOT_RETRIES + 1}`,
-        );
-
-        if (attempt >= MAX_ANTI_BOT_RETRIES) {
-          antiBotStats.categoriesSkipped++;
-          console.error(`  ⛔ kategori atlandı — ${MAX_ANTI_BOT_RETRIES + 1} deneme başarısız`);
-          blocked = true;
-          break;
-        }
-
-        const cooldown = attempt === 0 ? DELAY.retry1 : DELAY.retry2;
-        console.log(
-          `    ⏳ ${Math.round(cooldown.min / 1000)}-${Math.round(cooldown.max / 1000)}sn cooldown + cookie refresh`,
-        );
-        await sleep(cooldown.min, cooldown.max);
-        await refreshCookiesOnPage(page);
-        attempt++;
+      // Block/login check
+      const pageUrl = page.url();
+      if (pageUrl.includes('/giris') || pageUrl.includes('/login')) {
+        console.error('  ❌ Giris duvari! Cookie guncelle.');
+        blocked = true;
+        break;
+      }
+      if (pageUrl.includes('olagan-disi')) {
+        console.error('  ❌ IP engeli! Bekle ve tekrar dene.');
+        blocked = true;
+        break;
       }
 
-      if (!pageOK) break; // anti-bot veya goto fail → kategori loop'undan çık
+      // Extract raw rows
+      const rawListings = await page.evaluate(extractListings);
 
       if (rawListings.length === 0) {
         console.log('  Sayfada ilan yok — bitis.');
         // DEBUG: env DEBUG_EMPTY_DUMP=1 ile boş sayfanın HTML'i dump edilir.
+        // Kullanıcı manuel inceleyip selector mu / anti-bot mu diagnose eder.
         if (process.env.DEBUG_EMPTY_DUMP === '1') {
           try {
             const html = await page.content();
@@ -472,7 +337,7 @@ async function scrape() {
             const dumpPath = `/tmp/scrape-empty-${safe}-p${pageNum}.html`;
             fs.writeFileSync(dumpPath, html);
             console.log(`  📝 HTML dump: ${dumpPath} (${html.length} bytes)`);
-            console.log(`  Final URL: ${page.url()}`);
+            console.log(`  Final URL: ${pageUrl}`);
           } catch (dumpErr) {
             console.error(`  HTML dump fail: ${dumpErr.message}`);
           }
@@ -580,11 +445,6 @@ async function scrape() {
 
   console.log(`\n📁 Cikti: ${OUTPUT_FILE}`);
   if (blocked) console.log(`\n⚠️ Engel nedeniyle durdu. Tekrar calistirinca kaldigi yerden devam eder.`);
-
-  // Faz 8.0 — anti-bot ozet (daily-scrape.sh / monitor-scrape.sh grep eder)
-  console.log(
-    `\n🛡️ Anti-bot: ${antiBotStats.detections} challenge, ${antiBotStats.retrySuccesses} retry başarılı, ${antiBotStats.categoriesSkipped} kategori atlandı`,
-  );
 }
 
 scrape().catch(console.error);
