@@ -25,30 +25,20 @@ import { sendText } from "./send";
 import type { WaContext } from "./types";
 import { getTenantByKey } from "@/tenants/config";
 
-const WELCOME_MESSAGES: Record<string, string> = {
-  bayi:
-    "🙋 *Hoş geldin!*\n\n" +
-    "UPU Bayi yönetim sistemine seni kaydetmek için şirket bilgilerini soracağım — " +
-    "7 kısa soru, ~3 dakika.\n\nBaşlayalım.",
+/**
+ * Tenant'lara özel pre-intro greeting. Modern pattern: bayi/intro-supported
+ * tenant'lar için boş — intro.ts kendi 3 mesajlı welcome'ını gönderir
+ * (çift greeting'i önler). Sadece intro flow'u olmayan tenant'lar için
+ * davet kodu placeholder mesajı.
+ */
+const PRE_INTRO_MESSAGES: Record<string, string> = {
   market:
     "🛒 *Hoş geldin!*\n\n" +
     "UPU Market kayıt akışı henüz davet kodu ile yapılıyor. info@upudev.nl ile iletişime geçin.",
-  otel:
-    "🏨 *Hoş geldin!*\n\n" +
-    "UPU Otel kayıt akışı henüz davet kodu ile yapılıyor. info@upudev.nl ile iletişime geçin.",
-  restoran:
-    "🍴 *Hoş geldin!*\n\n" +
-    "UPU Restoran kayıt akışı henüz davet kodu ile yapılıyor. info@upudev.nl ile iletişime geçin.",
-  siteyonetim:
-    "🏢 *Hoş geldin!*\n\n" +
-    "UPU Site Yönetimi kayıt akışı henüz davet kodu ile yapılıyor. info@upudev.nl ile iletişime geçin.",
   muhasebe:
     "📊 *Hoş geldin!*\n\n" +
     "UPU Muhasebe kayıt akışı henüz davet kodu ile yapılıyor. info@upudev.nl ile iletişime geçin.",
 };
-
-/** Şu an tam onboarding akışı (dealer-onboarding) hangi tenant'larda hazır. */
-const TENANTS_WITH_FULL_ONBOARDING = new Set(["bayi"]);
 
 /** "Üye olmak istiyorum" intent — prefix temizlendikten sonra eşleşir. */
 function isUyeOlIntent(text: string): boolean {
@@ -141,9 +131,11 @@ async function runTenantSignup(
     return false;
   }
 
-  // Welcome — tenant'a özel mesaj
-  const welcome = WELCOME_MESSAGES[tenantKey];
-  if (welcome) await sendText(phone, welcome);
+  // Pre-intro greeting — intro flow'u olmayan tenant'lar için fallback.
+  // Bayi/emlak/restoran/siteyonetim/otel/market intro.ts'te kendi 3 mesajlı
+  // welcome'ını gönderir (modern pattern); buraya placeholder düşmesin.
+  const preIntro = PRE_INTRO_MESSAGES[tenantKey];
+  if (preIntro) await sendText(phone, preIntro);
 
   // Capabilities — şimdilik sadece bayi'de OWNER_ALL preset var; diğerleri []
   let capabilities: string[] = [];
@@ -203,32 +195,48 @@ async function runTenantSignup(
       if (r.error) console.error("[organic-signup] active session upsert error:", r.error);
     });
 
-  // Tam onboarding akışı var mı? Şu an sadece bayi.
-  if (TENANTS_WITH_FULL_ONBOARDING.has(tenantKey) && tenantKey === "bayi") {
-    const onbCtx: WaContext = {
+  // Modern pattern: intro.ts kendi 3 mesajlı greet + capabilities + PWA form
+  // CTA gönderir. WA'da 7-soru chat akışı YOK — form web panelinde doldurulur
+  // (memory: "3-kanalli mimari: WA=uzaktan kumanda, Web panel=kokpit. Form
+  // agir isleri web'e tasi.").
+  const onbCtx: WaContext = {
+    phone,
+    userId: newProfileId,
+    authUserId,
+    tenantId: tenantCfg.tenantId,
+    tenantKey,
+    userName: name,
+    locale: "tr",
+    messageId: "",
+    text: "",
+    interactiveId: "",
+    role: "admin",
+    permissions: {},
+    dealerId: null,
+    capabilities,
+  };
+
+  const { startIntro } = await import("./intro");
+  const introOk = await startIntro(onbCtx);
+
+  if (!introOk) {
+    // Intro flow desteklenmeyen tenant veya runtime hata — fallback: kısa
+    // bilgi + evergreen panel URL (token'sız, fresh mint).
+    await sendText(phone, "🎉 Hesabın hazır! Aşağıdaki panelden devam et.");
+    const subdomain = tenantCfg.slug || tenantKey;
+    const evergreenUrl =
+      tenantKey === "bayi"
+        ? `https://${subdomain}.upudev.nl/api/bayi-panel/evergreen?uid=${encodeURIComponent(authUserId)}`
+        : `https://${subdomain}.upudev.nl/api/panel/evergreen?uid=${encodeURIComponent(authUserId)}`;
+    const { sendUrlButton } = await import("./send");
+    await sendUrlButton(
       phone,
-      userId: newProfileId,
-      authUserId,
-      tenantId: tenantCfg.tenantId,
-      tenantKey,
-      userName: name,
-      locale: "tr",
-      messageId: "",
-      text: "",
-      interactiveId: "",
-      role: "admin",
-      permissions: {},
-      dealerId: null,
-      capabilities,
-    };
-    const { startDealerOnboarding } = await import("@/tenants/bayi/commands/dealer-onboarding");
-    await startDealerOnboarding(onbCtx);
-  } else {
-    // Henüz onboarding tanımı olmayan tenant'lar — kullanıcı yine kayıtlı
-    // ama detaylar web panel'inden veya admin tarafından doldurulacak.
-    await sendText(
-      phone,
-      "Hesabın oluşturuldu ✅ — sonraki adımlar info@upudev.nl ile koordine edilir.",
+      "🖥 *Profilini Tamamla*\n\n" +
+        "Firma bilgilerini panel üzerinden doldur (~2 dk). " +
+        "Sonrasında kullanmaya başlayabilirsin.",
+      "🖥 Panele Git",
+      evergreenUrl,
+      { skipNav: true },
     );
   }
 
