@@ -660,10 +660,17 @@ async function handleWebpanelShared(ctx: WaContext, tenant: ReturnType<typeof ge
 
   const { sendUrlButton } = await import("./send");
 
-  // Bayi için evergreen URL — server fresh token mint eder, eski mesajlardan
-  // bile çalışır, "süresi dolmuş" hatası bitmesi (Bölüm 17).
-  if (ctx.tenantKey === "bayi") {
-    const evergreenUrl = `${appUrl}/api/bayi-panel/evergreen?uid=${encodeURIComponent(ctx.userId)}`;
+  // Evergreen pattern — server fresh token mint eder, eski mesajlardan bile
+  // çalışır ("süresi dolmuş" hatası yok). Bayi ve emlak'ın kendi endpoint'i
+  // var; diğer tenant'lar için (market/otel/restoran/...) magic mint fallback.
+  const evergreenEndpoint: Record<string, string> = {
+    bayi: "/api/bayi-panel/evergreen",
+    emlak: "/api/emlak-panel/evergreen",
+  };
+  const evergreenPath = evergreenEndpoint[ctx.tenantKey];
+
+  if (evergreenPath) {
+    const evergreenUrl = `${appUrl}${evergreenPath}?uid=${encodeURIComponent(ctx.userId)}`;
     await sendUrlButton(ctx.phone,
       `🖥 *Web Panel*\n\nTüm sisteminizi yönetmek için panele gidin.`,
       "🖥 Paneli Aç",
@@ -673,7 +680,8 @@ async function handleWebpanelShared(ctx: WaContext, tenant: ReturnType<typeof ge
     return;
   }
 
-  // Emlak / diğer tenant'lar — magic token mint (15 dk TTL) + Paneli Aç buton.
+  // Diğer tenant'lar (market/otel/restoran/siteyonetim/muhasebe) — magic mint
+  // pattern (15 dk TTL). Evergreen endpoint'leri sonraki sprint'lerde eklenir.
   try {
     const supabase = getServiceClient();
     const { randomBytes } = await import("crypto");
