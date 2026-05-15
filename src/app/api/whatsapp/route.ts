@@ -302,7 +302,8 @@ export async function POST(req: NextRequest) {
         // combined greeting. Fallback for non-intro tenants sends its own below.
 
         const onbCtx: WaContext = {
-          phone, userId: authUser.user.id, tenantId: inviteLink.tenant_id,
+          phone, userId: authUser.user.id, authUserId: authUser.user.id,
+          tenantId: inviteLink.tenant_id,
           tenantKey, userName: name || phone, locale: "tr",
           messageId: "", text: "", interactiveId: "",
           role: (dealerRole as WaContext["role"]),
@@ -432,7 +433,8 @@ export async function POST(req: NextRequest) {
         // No separate welcome text — intro flow sends the single combined greeting.
 
         const onbCtx: WaContext = {
-          phone, userId: authUser.user.id, tenantId: uLink.tenant_id,
+          phone, userId: authUser.user.id, authUserId: authUser.user.id,
+          tenantId: uLink.tenant_id,
           tenantKey, userName: name || phone, locale: "tr",
           messageId: "", text: "", interactiveId: "",
           role: (uLink.role as WaContext["role"]) || "admin",
@@ -540,7 +542,8 @@ export async function POST(req: NextRequest) {
           const state = await getOnboardingState(invite.user_id);
           if (state) {
             const ctx: WaContext = {
-              phone, userId: invite.user_id, tenantId: invite.tenant_id,
+              phone, userId: invite.user_id, authUserId: invite.user_id,
+              tenantId: invite.tenant_id,
               tenantKey, userName, locale: "tr",
               messageId: "", text: "", interactiveId: "",
               role: ((invitedUser?.role as WaContext["role"]) || "admin"),
@@ -585,7 +588,7 @@ export async function POST(req: NextRequest) {
       );
       return NextResponse.json({ status: "ok" });
     }
-    const { tenantKey, selectedProfile: user, activeSession } = tCtx;
+    const { tenantKey, tenantId: resolvedTenantId, authUserId, selectedProfile: user, activeSession } = tCtx;
 
     // Sprint Foundation — tenant hint prefix'ini ctx.text'ten temizle ki
     // routeCommand match (örn. "Üye olmak istiyorum") prefix'siz işlesin.
@@ -602,7 +605,8 @@ export async function POST(req: NextRequest) {
     const ctx: WaContext = {
       phone,
       userId: user.id,
-      tenantId: user.tenant_id || "",
+      authUserId,
+      tenantId: resolvedTenantId || user.tenant_id || "",
       tenantKey,
       userName: user.display_name || name,
       locale: user.preferred_locale || "tr",

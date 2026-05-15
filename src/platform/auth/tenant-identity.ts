@@ -23,6 +23,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface ProfileRow {
   id: string;
+  /** auth.users.id — multi-tenant lookup'ların anchor'u. */
+  auth_user_id: string | null;
   tenant_id: string | null;
   display_name: string | null;
   preferred_locale: string | null;
@@ -39,6 +41,12 @@ export interface ActiveSessionRow {
 
 export interface TenantContext {
   tenantKey: string;
+  /** Resolved tenant'ın tenant_id'si — selectedProfile.tenant_id'den FARKLI olabilir
+   *  (hint bayi ama henüz bayi profili yoksa selectedProfile emlak'taki olur ama
+   *  tenantId bayi'nin id'sine resolve edilir — "user'ın istediği tenant"). */
+  tenantId: string | null;
+  /** auth.users.id — selectedProfile.auth_user_id'den propagate (legacy = id). */
+  authUserId: string;
   selectedProfile: ProfileRow;
   allProfiles: ProfileRow[];
   activeSession: ActiveSessionRow | null;
@@ -93,7 +101,7 @@ export async function resolveTenantContext(
 ): Promise<TenantContext | null> {
   const { data: allProfiles } = await supabase
     .from("profiles")
-    .select("id, tenant_id, display_name, preferred_locale, role, permissions, dealer_id, capabilities")
+    .select("id, auth_user_id, tenant_id, display_name, preferred_locale, role, permissions, dealer_id, capabilities")
     .eq("whatsapp_phone", phone)
     .order("created_at", { ascending: false });
 
@@ -107,22 +115,14 @@ export async function resolveTenantContext(
 
   const flagOn = isTenantAwareIdentityEnabled();
 
-  // Priority 1: prefix hint (flag-gated)
+  // Priority 1: prefix hint (flag-gated) — Deep Foundation: hint HER ZAMAN
+  // kazanır (profile olmasa bile). selectedProfile fallback'a düşer ama
+  // tenantKey/tenantId hint'i yansıtır → router.ts Faz 9.2 intent
+  // cross-tenant signup'ı tetikleyebilsin.
   let tenantKey: string | null = null;
   if (flagOn) {
     const hint = extractTenantHintFromText(text);
-    if (hint) {
-      // Hint only counts if phone has a profile in that tenant — aksi
-      // takdirde "yeni üye?" yolu (caller orphan-aware davranır).
-      const { data: tenantRow } = await supabase
-        .from("tenants")
-        .select("id")
-        .eq("saas_type", hint)
-        .maybeSingle();
-      if (tenantRow && allProfiles.some((p) => p.tenant_id === tenantRow.id)) {
-        tenantKey = hint;
-      }
-    }
+    if (hint) tenantKey = hint;
   }
 
   // Priority 2: active session
@@ -143,22 +143,35 @@ export async function resolveTenantContext(
   // Fallback (kayıtlı profile var ama tenant resolve edilemedi)
   if (!tenantKey) tenantKey = "emlak";
 
-  // Profile seç — resolved tenant'a uyan profile veya allProfiles[0]
+  // Resolved tenant'ın id'sini bul (selectedProfile'dan farklı olabilir —
+  // hint case). Yoksa fallback selectedProfile.tenant_id.
+  let resolvedTenantId: string | null = null;
+  const { data: resolvedTenantRow } = await supabase
+    .from("tenants")
+    .select("id")
+    .eq("saas_type", tenantKey)
+    .maybeSingle();
+  if (resolvedTenantRow) resolvedTenantId = resolvedTenantRow.id as string;
+
+  // Profile seç — resolved tenant'a uyan profile varsa onu, yoksa allProfiles[0]
   let selectedProfile: ProfileRow = allProfiles[0] as ProfileRow;
-  if (allProfiles.length > 1) {
-    const { data: tenantRow } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("saas_type", tenantKey)
-      .maybeSingle();
-    if (tenantRow) {
-      const match = allProfiles.find((p) => p.tenant_id === tenantRow.id);
-      if (match) selectedProfile = match as ProfileRow;
-    }
+  if (resolvedTenantId && allProfiles.length > 1) {
+    const match = allProfiles.find((p) => p.tenant_id === resolvedTenantId);
+    if (match) selectedProfile = match as ProfileRow;
   }
+
+  // authUserId — multi-tenant lookup'ların anchor'u. Backfill: legacy
+  // profile'larda auth_user_id = id, yeni profile'larda auth.users.id.
+  const authUserId = (selectedProfile.auth_user_id || selectedProfile.id) as string;
+
+  // tenantId fallback — resolved tenant'ta profile yoksa hint'in id'si
+  // (cross-tenant intent için doğru), profile varsa onun tenant_id'si.
+  const tenantId = resolvedTenantId || selectedProfile.tenant_id || null;
 
   return {
     tenantKey,
+    tenantId,
+    authUserId,
     selectedProfile,
     allProfiles: allProfiles as ProfileRow[],
     activeSession: activeSession as ActiveSessionRow | null,

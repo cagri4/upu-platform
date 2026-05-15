@@ -7,6 +7,14 @@ export type UserRole = "admin" | "employee" | "dealer" | "system" | "user";
 export interface WaContext {
   phone: string;
   userId: string;
+  /**
+   * auth.users.id — multi-tenant profile lookup'ları için. Legacy
+   * profile satırları için auth_user_id = id (1-1 backfill); yeni
+   * çoklu-tenant profile'larda auth_user_id = auth.users.id, id
+   * bağımsız UUID. Cross-tenant profile sorgularında bunu kullanın
+   * (örn. `eq("auth_user_id", ctx.authUserId)`).
+   */
+  authUserId: string;
   tenantId: string;
   tenantKey: string;
   userName: string;

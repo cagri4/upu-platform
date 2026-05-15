@@ -1,26 +1,54 @@
 /**
- * Organic signup — bayi tenant için davet kodu olmadan kayıt akışı.
+ * Organic signup — davet kodu olmadan multi-tenant kayıt akışı.
  *
- * /tr/uye-ol mobile/QR akışından gelen "BAYI: Üye olmak istiyorum" gibi
- * pre-filled mesajları yakalar. Tenant resolve sırasında hiç profile'ı
- * olmayan (brand new phone) kullanıcılar için tetiklenir — yani
- * resolveTenantContext null döndükten sonra fallback.
+ * İki giriş noktası:
+ *   - tryOrganicSignup(...) — brand new phone (hiç profile yok)
+ *     /api/whatsapp route.ts tCtx==null branch'tan çağrılır.
+ *   - tryOrganicSignupForExistingUser(...) — mevcut user (emlak gibi)
+ *     yeni tenant'a kayıt isterse — router.ts Faz 9.2 intent'ten çağrılır.
  *
- * Mevcut auth.users (phone unique) constraint'i nedeniyle aynı phone'a
- * 2. profile yaratılamaz. Mevcut emlak kullanıcısı "BAYI:" prefix'i ile
- * gelse bile resolveTenantContext profile bulur (null değil); bu helper
- * sadece BRAND NEW phone'ları handle eder.
+ * Schema invariant (Deep Foundation):
+ *   - auth.users: 1 phone = 1 row (Supabase constraint, korunur)
+ *   - profiles: (whatsapp_phone, tenant_id) UNIQUE + (auth_user_id, tenant_id) UNIQUE
+ *     → bir auth.user N profile (her tenant'ta ayrı) sahibi olabilir
+ *   - Legacy profile satırı: profile.id = auth.users.id (backfill: auth_user_id = id)
+ *   - Yeni multi-tenant profile: profile.id = fresh UUID, auth_user_id = auth.users.id
  *
- * Şu an sadece bayi tenant'ı için tam akış var (dealer-onboarding tetikler).
- * Diğer tenant'lar için hint yakalanırsa kibarca "davet kodu gerek" mesajı
- * dönülür — sonraki sprint'lerde her tenant kendi organic flow'unu ekler.
+ * Şu an sadece bayi tenant'ı için tam onboarding akışı var (dealer-onboarding).
+ * Diğer tenant'lar için welcome mesajı + "site/profil sayfasından devam et"
+ * — organic flow her tenant için ayrı sprint.
  */
+import { randomBytes, randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { randomBytes } from "crypto";
 import { extractTenantHintFromText, stripTenantPrefix } from "@/platform/auth/tenant-identity";
 import { sendText } from "./send";
 import type { WaContext } from "./types";
 import { getTenantByKey } from "@/tenants/config";
+
+const WELCOME_MESSAGES: Record<string, string> = {
+  bayi:
+    "🙋 *Hoş geldin!*\n\n" +
+    "UPU Bayi yönetim sistemine seni kaydetmek için şirket bilgilerini soracağım — " +
+    "7 kısa soru, ~3 dakika.\n\nBaşlayalım.",
+  market:
+    "🛒 *Hoş geldin!*\n\n" +
+    "UPU Market kayıt akışı henüz davet kodu ile yapılıyor. info@upudev.nl ile iletişime geçin.",
+  otel:
+    "🏨 *Hoş geldin!*\n\n" +
+    "UPU Otel kayıt akışı henüz davet kodu ile yapılıyor. info@upudev.nl ile iletişime geçin.",
+  restoran:
+    "🍴 *Hoş geldin!*\n\n" +
+    "UPU Restoran kayıt akışı henüz davet kodu ile yapılıyor. info@upudev.nl ile iletişime geçin.",
+  siteyonetim:
+    "🏢 *Hoş geldin!*\n\n" +
+    "UPU Site Yönetimi kayıt akışı henüz davet kodu ile yapılıyor. info@upudev.nl ile iletişime geçin.",
+  muhasebe:
+    "📊 *Hoş geldin!*\n\n" +
+    "UPU Muhasebe kayıt akışı henüz davet kodu ile yapılıyor. info@upudev.nl ile iletişime geçin.",
+};
+
+/** Şu an tam onboarding akışı (dealer-onboarding) hangi tenant'larda hazır. */
+const TENANTS_WITH_FULL_ONBOARDING = new Set(["bayi"]);
 
 /** "Üye olmak istiyorum" intent — prefix temizlendikten sonra eşleşir. */
 function isUyeOlIntent(text: string): boolean {
@@ -33,11 +61,8 @@ function isUyeOlIntent(text: string): boolean {
   );
 }
 
-/**
- * Organic signup akışını dene. Yakalandıysa true döner — caller başka
- * fallback yazmaz. Yakalanmadıysa false — caller mevcut "davet kodu"
- * mesajını gönderir.
- */
+// ── Brand new phone (no profile anywhere) ────────────────────────────
+
 export async function tryOrganicSignup(
   supabase: SupabaseClient,
   phone: string,
@@ -50,67 +75,90 @@ export async function tryOrganicSignup(
   const cleanText = stripTenantPrefix(rawText);
   if (!isUyeOlIntent(cleanText)) return false;
 
-  if (hint !== "bayi") {
-    // Diğer tenant'lar için organic signup henüz hazır değil — kibar bilgi.
-    await sendText(
-      phone,
-      `Bu hizmet (${hint}) için kayıt şu an davet kodu ile yapılıyor.\n\n` +
-        `Davet kodu için info@upudev.nl ile iletişime geçin.`,
-    );
-    return true;
-  }
-
-  return await startBayiOrganicSignup(supabase, phone, name);
-}
-
-async function startBayiOrganicSignup(
-  supabase: SupabaseClient,
-  phone: string,
-  name: string,
-): Promise<boolean> {
-  const tenantCfg = getTenantByKey("bayi");
-  if (!tenantCfg) {
-    console.error("[organic-signup] bayi tenant config missing");
-    return false;
-  }
-  const bayiTenantId = tenantCfg.tenantId;
-
-  // Welcome — kayıt başlatıldığını bildir
-  await sendText(
-    phone,
-    "🙋 *Hoş geldin!*\n\n" +
-      "UPU Bayi yönetim sistemine seni kaydetmek için şirket bilgilerini soracağım — " +
-      "7 kısa soru, ~3 dakika.\n\nBaşlayalım.",
-  );
-
-  // Auth user oluştur (placeholder email pattern, BAYI:CODE flow ile uyumlu)
+  // Brand new phone — auth user yarat
   const { data: authUser, error: authErr } = await supabase.auth.admin.createUser({
-    email: `bayi_organic_${Date.now()}_${randomBytes(4).toString("hex")}@placeholder.upudev.nl`,
+    email: `${hint}_organic_${Date.now()}_${randomBytes(4).toString("hex")}@placeholder.upudev.nl`,
     email_confirm: true,
     user_metadata: { name: name || phone },
   });
-
   if (authErr || !authUser?.user) {
     console.error("[organic-signup] auth.admin.createUser error:", authErr);
     await sendText(
       phone,
-      "❌ Kayıt başlatılamadı.\n\n" +
-        "Bu telefon başka bir hesapla zaten kayıtlı olabilir. " +
-        "Lütfen info@upudev.nl ile iletişime geçin.",
+      "❌ Kayıt başlatılamadı. Bu telefon başka bir hesapla zaten kayıtlı olabilir. info@upudev.nl ile iletişime geçin.",
     );
-    return true; // handled (kullanıcıya cevap verdik)
+    return true;
   }
 
-  const userId = authUser.user.id;
+  return await runTenantSignup(supabase, {
+    authUserId: authUser.user.id,
+    phone,
+    name: name || phone,
+    tenantKey: hint,
+    isLegacyAuth: true, // brand new — profile.id = auth.users.id pattern
+  });
+}
 
-  // Owner rolü — full capability (OWNER_ALL "*")
-  const { defaultCapabilitiesForRole } = await import("@/tenants/bayi/capabilities");
-  const capabilities = defaultCapabilitiesForRole("admin");
+// ── Existing user (has profile in another tenant) ────────────────────
+
+export async function tryOrganicSignupForExistingUser(
+  supabase: SupabaseClient,
+  ctx: WaContext,
+  tenantKey: string,
+): Promise<boolean> {
+  return await runTenantSignup(supabase, {
+    authUserId: ctx.authUserId,
+    phone: ctx.phone,
+    name: ctx.userName || ctx.phone,
+    tenantKey,
+    isLegacyAuth: false, // mevcut user — profile.id = fresh UUID, auth_user_id ayrı
+  });
+}
+
+// ── Shared signup runner ──────────────────────────────────────────────
+
+interface SignupArgs {
+  authUserId: string;
+  phone: string;
+  name: string;
+  tenantKey: string;
+  /**
+   * true: profile.id = authUserId (legacy 1-1, brand new user)
+   * false: profile.id = fresh UUID (multi-tenant, existing user)
+   */
+  isLegacyAuth: boolean;
+}
+
+async function runTenantSignup(
+  supabase: SupabaseClient,
+  args: SignupArgs,
+): Promise<boolean> {
+  const { authUserId, phone, name, tenantKey, isLegacyAuth } = args;
+
+  const tenantCfg = getTenantByKey(tenantKey);
+  if (!tenantCfg) {
+    console.error("[organic-signup] tenant config missing:", tenantKey);
+    return false;
+  }
+
+  // Welcome — tenant'a özel mesaj
+  const welcome = WELCOME_MESSAGES[tenantKey];
+  if (welcome) await sendText(phone, welcome);
+
+  // Capabilities — şimdilik sadece bayi'de OWNER_ALL preset var; diğerleri []
+  let capabilities: string[] = [];
+  if (tenantKey === "bayi") {
+    const { defaultCapabilitiesForRole } = await import("@/tenants/bayi/capabilities");
+    capabilities = defaultCapabilitiesForRole("admin");
+  }
+
+  const newProfileId = isLegacyAuth ? authUserId : randomUUID();
 
   const { error: profileErr } = await supabase.from("profiles").insert({
-    id: userId,
-    tenant_id: bayiTenantId,
-    display_name: name || phone,
+    id: newProfileId,
+    auth_user_id: authUserId,
+    tenant_id: tenantCfg.tenantId,
+    display_name: name,
     whatsapp_phone: phone,
     role: "admin",
     permissions: {},
@@ -119,17 +167,23 @@ async function startBayiOrganicSignup(
   });
 
   if (profileErr) {
+    const code = (profileErr as { code?: string }).code;
     console.error("[organic-signup] profile insert error:", profileErr);
+    if (code === "23505") {
+      // Aynı auth_user + tenant zaten kayıtlı — paralel istekte yarış olabilir
+      await sendText(phone, "Bu hizmete zaten kayıtlısın 👋\n\n'panel' yazarak panele dön.");
+      return true;
+    }
     await sendText(phone, "❌ Profil oluşturulamadı. Lütfen tekrar deneyin veya info@upudev.nl ile iletişime geçin.");
     return true;
   }
 
-  // Trial abonelik
+  // Trial abonelik (her tenant'a — billing tarafı ayrıştırma sonra)
   await supabase
     .from("subscriptions")
     .insert({
-      tenant_id: bayiTenantId,
-      user_id: userId,
+      tenant_id: tenantCfg.tenantId,
+      user_id: newProfileId,
       plan: "trial",
       status: "active",
     })
@@ -137,37 +191,46 @@ async function startBayiOrganicSignup(
       if (r.error) console.error("[organic-signup] subscription insert error:", r.error);
     });
 
-  // saas_active_session — sonraki mesajlarda bayi context'inde kalsın
+  // saas_active_session — sonraki mesajlarda yeni tenant'ta kal
   await supabase
     .from("saas_active_session")
     .upsert({
       phone,
-      active_saas_key: "bayi",
+      active_saas_key: tenantKey,
       updated_at: new Date().toISOString(),
     })
     .then((r) => {
       if (r.error) console.error("[organic-signup] active session upsert error:", r.error);
     });
 
-  // Dealer onboarding'i başlat (firma adı → ... 7 adımlık akış)
-  const onbCtx: WaContext = {
-    phone,
-    userId,
-    tenantId: bayiTenantId,
-    tenantKey: "bayi",
-    userName: name || phone,
-    locale: "tr",
-    messageId: "",
-    text: "",
-    interactiveId: "",
-    role: "admin",
-    permissions: {},
-    dealerId: null,
-    capabilities,
-  };
-
-  const { startDealerOnboarding } = await import("@/tenants/bayi/commands/dealer-onboarding");
-  await startDealerOnboarding(onbCtx);
+  // Tam onboarding akışı var mı? Şu an sadece bayi.
+  if (TENANTS_WITH_FULL_ONBOARDING.has(tenantKey) && tenantKey === "bayi") {
+    const onbCtx: WaContext = {
+      phone,
+      userId: newProfileId,
+      authUserId,
+      tenantId: tenantCfg.tenantId,
+      tenantKey,
+      userName: name,
+      locale: "tr",
+      messageId: "",
+      text: "",
+      interactiveId: "",
+      role: "admin",
+      permissions: {},
+      dealerId: null,
+      capabilities,
+    };
+    const { startDealerOnboarding } = await import("@/tenants/bayi/commands/dealer-onboarding");
+    await startDealerOnboarding(onbCtx);
+  } else {
+    // Henüz onboarding tanımı olmayan tenant'lar — kullanıcı yine kayıtlı
+    // ama detaylar web panel'inden veya admin tarafından doldurulacak.
+    await sendText(
+      phone,
+      "Hesabın oluşturuldu ✅ — sonraki adımlar info@upudev.nl ile koordine edilir.",
+    );
+  }
 
   return true;
 }

@@ -483,18 +483,35 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
     await handleWebpanelShared(ctx, tenant);
     return;
   }
-  // Faz 9.2 — mevcut üye /[locale]/uye-ol sayfasından "Üye olmak istiyorum"
-  // prefilled mesajını gönderdiğinde "Komutu anlamadım" yerine açıklayıcı
-  // yanıt + panel linki. Yeni üye webhook'un intro akışında zaten yakalanır,
-  // buraya düşmez (router yalnız resolved userId varsa çağrılır).
+  // Faz 9.2 + Deep Foundation — "Üye olmak istiyorum" intent tenant-aware.
+  // Resolved tenant'a (ctx.tenantKey/tenantId) profile varsa → "zaten üyesin"
+  // (mevcut davranış). Profile yoksa (BAYI: prefix gönderen emlak user gibi)
+  // → cross-tenant organic signup tetikle.
   if (
     lower === "üye ol" ||
     lower === "uye ol" ||
     lower.startsWith("üye olmak") ||
     lower.startsWith("uye olmak")
   ) {
-    await sendText(ctx.phone, "Sen zaten üyesin 👋\n\nPaneline buradan ulaşabilirsin.");
-    await handleWebpanelShared(ctx, tenant);
+    const sb = getServiceClient();
+    const { data: tenantProfile } = ctx.tenantId
+      ? await sb
+          .from("profiles")
+          .select("id")
+          .eq("auth_user_id", ctx.authUserId)
+          .eq("tenant_id", ctx.tenantId)
+          .maybeSingle()
+      : { data: null };
+
+    if (tenantProfile) {
+      await sendText(ctx.phone, "Sen zaten üyesin 👋\n\nPaneline buradan ulaşabilirsin.");
+      await handleWebpanelShared(ctx, tenant);
+      return;
+    }
+
+    // Bu tenant'a üye değil → organic signup
+    const { tryOrganicSignupForExistingUser } = await import("@/platform/whatsapp/organic-signup");
+    await tryOrganicSignupForExistingUser(sb, ctx, ctx.tenantKey);
     return;
   }
   if (firstWord === "degistir" || firstWord === "değiştir" || firstWord === "switch") {
