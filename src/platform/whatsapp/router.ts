@@ -658,21 +658,22 @@ async function handleWebpanelShared(ctx: WaContext, tenant: ReturnType<typeof ge
   const subdomain = tenant?.slug || "estateai";
   const appUrl = `https://${subdomain}.upudev.nl`;
 
+  const { sendUrlButton } = await import("./send");
+
   // Bayi için evergreen URL — server fresh token mint eder, eski mesajlardan
   // bile çalışır, "süresi dolmuş" hatası bitmesi (Bölüm 17).
   if (ctx.tenantKey === "bayi") {
     const evergreenUrl = `${appUrl}/api/bayi-panel/evergreen?uid=${encodeURIComponent(ctx.userId)}`;
-    const { sendUrlButton } = await import("./send");
     await sendUrlButton(ctx.phone,
       `🖥 *Web Panel*\n\nTüm sisteminizi yönetmek için panele gidin.`,
       "🖥 Paneli Aç",
       evergreenUrl,
       { skipNav: true },
     );
-    await sendNavFooter(ctx.phone);
     return;
   }
 
+  // Emlak / diğer tenant'lar — magic token mint (15 dk TTL) + Paneli Aç buton.
   try {
     const supabase = getServiceClient();
     const { randomBytes } = await import("crypto");
@@ -686,15 +687,20 @@ async function handleWebpanelShared(ctx: WaContext, tenant: ReturnType<typeof ge
     });
 
     const magicUrl = `${appUrl}/auth/magic?token=${token}`;
-    await sendText(ctx.phone,
-      `🖥 Web Panel\n\nAşağıdaki linke tıklayarak giriş yapın:\n\n${magicUrl}\n\n⏱ 15 dakika geçerli.`,
+    await sendUrlButton(ctx.phone,
+      `🖥 *Web Panel*\n\nTüm sisteminizi yönetmek için panele gidin.\n\n⏱ Link 15 dakika geçerli.`,
+      "🖥 Paneli Aç",
+      magicUrl,
+      { skipNav: true },
     );
   } catch {
-    await sendText(ctx.phone,
-      `🖥 Web Panel\n\n${appUrl}/tr/giris`,
+    await sendUrlButton(ctx.phone,
+      `🖥 *Web Panel*\n\nGiriş için panele gidin.`,
+      "🖥 Paneli Aç",
+      `${appUrl}/tr/giris`,
+      { skipNav: true },
     );
   }
-  await sendNavFooter(ctx.phone);
 }
 
 // ── Guide command (generic — same structure for all SaaS) ────────────────
