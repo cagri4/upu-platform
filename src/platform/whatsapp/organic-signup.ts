@@ -181,7 +181,17 @@ function isUyeOlIntent(text: string): boolean {
   );
 }
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://upudev.nl";
+/**
+ * Bug 3 — Tenant-aware base URL. Evergreen endpoint'leri root domain'de
+ * (upudev.nl) mount değil; her tenant kendi subdomain'inde
+ * (estateai/retailai/marketai/...). Tenant config'in `slug` field'ından
+ * inşa edilir. Slug yoksa NEXT_PUBLIC_APP_URL fallback'a düşer (legacy).
+ */
+function getTenantBaseUrl(tenantKey: string): string {
+  const cfg = getTenantByKey(tenantKey);
+  if (cfg?.slug) return `https://${cfg.slug}.upudev.nl`;
+  return process.env.NEXT_PUBLIC_APP_URL || "https://upudev.nl";
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -386,8 +396,11 @@ async function sendTenantPanelWelcome(
   await sendText(phone, intro.capabilities);
   await sleep(1500);
 
-  // Mesaj 3 — Paneli Aç (evergreen URL — server-side fresh token mint)
-  const evergreenUrl = `${APP_URL}${intro.evergreenPath}?uid=${encodeURIComponent(authUserId)}`;
+  // Mesaj 3 — Paneli Aç (evergreen URL — server-side fresh token mint).
+  // Tenant subdomain'i kullan (Bug 3 fix); root domain'de evergreen mount
+  // değil, retailai/estateai/marketai/... her tenant kendi subdomain'inde.
+  const baseUrl = getTenantBaseUrl(tenantKey);
+  const evergreenUrl = `${baseUrl}${intro.evergreenPath}?uid=${encodeURIComponent(authUserId)}`;
   await sendUrlButton(
     phone,
     intro.panelWelcome,
