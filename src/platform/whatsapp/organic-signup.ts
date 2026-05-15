@@ -25,15 +25,150 @@ import { sendText, sendUrlButton } from "./send";
 import type { WaContext } from "./types";
 import { getTenantByKey } from "@/tenants/config";
 
-/** Intro flow'u olmayan tenant'lar için "davet kodu gerek" placeholder. */
-const PRE_INTRO_MESSAGES: Record<string, string> = {
-  market:
-    "🛒 *Hoş geldin!*\n\n" +
-    "UPU Market kayıt akışı henüz davet kodu ile yapılıyor. info@upudev.nl ile iletişime geçin.",
-  muhasebe:
-    "📊 *Hoş geldin!*\n\n" +
-    "UPU Muhasebe kayıt akışı henüz davet kodu ile yapılıyor. info@upudev.nl ile iletişime geçin.",
-};
+/**
+ * Bug 2 — Tenant-aware intro factory. Her tenant için 3 mesaj akışı:
+ *   1) greet + core promise (kişisel asistan + ne yapacak özet)
+ *   2) capabilities (4-5 ✅ madde)
+ *   3) panelWelcome (Paneli Aç CTA ile gönderilir)
+ *
+ * Eski generic fallback "Hesabın hazır! 'panel' yazabilirsin" kaldırıldı
+ * — her tenant artık kendi intro'sunu alır.
+ */
+interface TenantIntro {
+  promise: string;
+  capabilities: string;
+  panelWelcome: string;
+  /** Paneli Aç buton URL'inin /api/.../evergreen path segment'i. */
+  evergreenPath: string;
+}
+
+function buildTenantIntro(tenantKey: string, firstName: string): TenantIntro {
+  const greet = firstName ? `👋 Merhaba ${firstName}! ✨` : `👋 Merhaba! ✨`;
+  switch (tenantKey) {
+    case "bayi":
+      return {
+        promise:
+          `${greet}\n\n` +
+          `Ben kişisel asistanınız UPU. 7/24 tahsilatlarınızı ve sipariş operasyonunuzu kolaylaştıracağım.`,
+        capabilities:
+          `🎯 *Yapabileceklerimden bazıları:*\n\n` +
+          `✅ Yeni bayi başvurularınızı telefonla onaylayıp sisteme eklerim\n` +
+          `✅ Vadesi gelen tahsilatlarınız için hatırlatma metni hazırlar, onayınızla bayiye gönderirim\n` +
+          `✅ Bayi siparişlerinizi WhatsApp'tan tek akışta sisteme kaydederim\n` +
+          `✅ Tüm bayilerinize tek tıkla kampanya duyurusu yaparım`,
+        panelWelcome:
+          `🖥 *Bayi Panelinize Hoş Geldiniz*\n\n` +
+          `Profilinizi tamamlamak ve sisteminizi yönetmek için panele gidin. ` +
+          `Hero kartından "Profilini Tamamla" ile firma bilgilerinizi 5 dakikada doldurabilirsiniz.`,
+        evergreenPath: "/api/bayi-panel/evergreen",
+      };
+    case "emlak":
+      return {
+        promise:
+          `${greet}\n\n` +
+          `Ben kişisel asistanınız UPU. 7/24 portföy ilanlarınızı ve müşteri taleplerinizi yönetmenizi kolaylaştıracağım.`,
+        capabilities:
+          `🎯 *Yapabileceklerimden bazıları:*\n\n` +
+          `✅ Mülk ilanlarınızı tek mesajla portföyünüze eklerim\n` +
+          `✅ Müşteri taleplerine eşleşen mülkleri otomatik öneririm\n` +
+          `✅ Portföy değerlemesi ve fiyat analizi yaparım\n` +
+          `✅ Tüm müşterilerinize tek tıkla yeni ilan / kampanya duyurusu`,
+        panelWelcome:
+          `🏠 *Emlak Panelinize Hoş Geldiniz*\n\n` +
+          `Profilinizi tamamlamak ve portföyünüzü yönetmek için panele gidin. ` +
+          `Hero kartından "Profilini Tamamla" ile ofis bilgilerinizi 5 dakikada doldurabilirsiniz.`,
+        evergreenPath: "/api/emlak-panel/evergreen",
+      };
+    case "market":
+      return {
+        promise:
+          `${greet}\n\n` +
+          `Ben kişisel asistanınız UPU. Marketinizin stok, sipariş ve kasa operasyonunu WhatsApp'tan yöneteceğim.`,
+        capabilities:
+          `🎯 *Yapabileceklerimden bazıları:*\n\n` +
+          `✅ Stok seviyesi düşen ürünlerinizi bildiririm\n` +
+          `✅ Tedarikçi siparişlerinizi tek mesajla başlatırım\n` +
+          `✅ Gün sonu kasa raporunu özetlerim\n` +
+          `✅ Fiyat ve kampanya güncellemelerini panelden senkron ederim`,
+        panelWelcome:
+          `🛒 *Market Panelinize Hoş Geldiniz*\n\n` +
+          `Profilinizi tamamlamak ve stok/sipariş akışınızı yönetmek için panele gidin.`,
+        evergreenPath: "/api/market-panel/evergreen",
+      };
+    case "otel":
+      return {
+        promise:
+          `${greet}\n\n` +
+          `Ben kişisel asistanınız UPU. Otelinizin rezervasyon, check-in ve misafir deneyimi süreçlerini hızlandıracağım.`,
+        capabilities:
+          `🎯 *Yapabileceklerimden bazıları:*\n\n` +
+          `✅ Yeni rezervasyonları otomatik kaydederim\n` +
+          `✅ Check-in / check-out hatırlatmalarını gönderirim\n` +
+          `✅ Oda doluluk ve müsaitlik raporlarını çıkarırım\n` +
+          `✅ Misafir memnuniyet mesajlarını yönlendiririm`,
+        panelWelcome:
+          `🏨 *Otel Panelinize Hoş Geldiniz*\n\n` +
+          `Profilinizi tamamlamak ve rezervasyon takvimini görmek için panele gidin.`,
+        evergreenPath: "/api/otel-panel/evergreen",
+      };
+    case "restoran":
+      return {
+        promise:
+          `${greet}\n\n` +
+          `Ben kişisel asistanınız UPU. Restoranınızın masa, menü ve rezervasyon akışını WhatsApp'tan yöneteceğim.`,
+        capabilities:
+          `🎯 *Yapabileceklerimden bazıları:*\n\n` +
+          `✅ Rezervasyonları otomatik alır, masa atarım\n` +
+          `✅ Menü ve fiyat güncellemelerini paneldeki sürümle senkron tutarım\n` +
+          `✅ Stok eksikliği uyarılarını mutfağa iletirim\n` +
+          `✅ Müşteri yorumlarını derler, geri bildirim özetlerim`,
+        panelWelcome:
+          `🍽️ *Restoran Panelinize Hoş Geldiniz*\n\n` +
+          `Profilinizi tamamlamak ve menünüzü düzenlemek için panele gidin.`,
+        evergreenPath: "/api/restoran-panel/evergreen",
+      };
+    case "siteyonetim":
+      return {
+        promise:
+          `${greet}\n\n` +
+          `Ben kişisel asistanınız UPU. Site yönetiminizi (aidat, duyuru, teknik servis) WhatsApp'tan koordine edeceğim.`,
+        capabilities:
+          `🎯 *Yapabileceklerimden bazıları:*\n\n` +
+          `✅ Aidat hatırlatmalarını sakinlere otomatik gönderirim\n` +
+          `✅ Bakım ve arıza taleplerini teknik servise yönlendiririm\n` +
+          `✅ Toplu duyuruları tek mesajla iletirim\n` +
+          `✅ Gelir-gider raporlarını panele aktarırım`,
+        panelWelcome:
+          `🏢 *Site Yönetimi Panelinize Hoş Geldiniz*\n\n` +
+          `Profilinizi tamamlamak ve site bilgilerinizi yönetmek için panele gidin.`,
+        evergreenPath: "/api/site-panel/evergreen",
+      };
+    case "muhasebe":
+      return {
+        promise:
+          `${greet}\n\n` +
+          `Ben kişisel asistanınız UPU. Muhasebe büronuzun fatura, beyanname ve mükellef takibini hızlandıracağım.`,
+        capabilities:
+          `🎯 *Yapabileceklerimden bazıları:*\n\n` +
+          `✅ Gelen faturaları e-Fatura entegrasyonundan çekerim\n` +
+          `✅ Beyanname son tarihlerini hatırlatırım\n` +
+          `✅ Mükellef cari hesap ve borç durumlarını raporlarım\n` +
+          `✅ Tahsilat hatırlatmalarını otomatik gönderirim`,
+        panelWelcome:
+          `📊 *Muhasebe Panelinize Hoş Geldiniz*\n\n` +
+          `Profilinizi tamamlamak ve mükellef listenizi görmek için panele gidin.`,
+        evergreenPath: "/api/muhasebe-panel/evergreen",
+      };
+    default:
+      // Bilinmeyen tenant — neutral fallback.
+      return {
+        promise: `${greet}\n\nBen kişisel asistanınız UPU. Operasyonunuzu WhatsApp'tan kolaylaştıracağım.`,
+        capabilities: `🎯 *Yapabileceklerimden bazıları:*\n\n✅ Sorularınızı yanıtlar, görevlerinizi yönetirim`,
+        panelWelcome: `🖥 *Panelinize Hoş Geldiniz*\n\nProfilinizi tamamlamak için panele gidin.`,
+        evergreenPath: "/api/panel/evergreen",
+      };
+  }
+}
 
 /** "Üye olmak istiyorum" intent — prefix temizlendikten sonra eşleşir. */
 function isUyeOlIntent(text: string): boolean {
@@ -187,21 +322,8 @@ async function runTenantSignup(
   // ── Part B: Multi-membership info — diğer tenant'lara üye mi? ──
   await maybeSendMultiMembershipInfo(supabase, phone, authUserId, tenantCfg.tenantId);
 
-  // ── Part A: Welcome + Panel CTA (intro yerine inline modern pattern) ──
-  if (tenantKey === "bayi") {
-    await sendBayiPanelWelcome(phone, name, authUserId);
-    return true;
-  }
-
-  // Diğer tenant'lar — şimdilik placeholder davet kodu mesajı
-  const preIntro = PRE_INTRO_MESSAGES[tenantKey];
-  if (preIntro) {
-    await sendText(phone, preIntro);
-    return true;
-  }
-
-  // Henüz organic signup tanımı olmayan tenant — generic fallback
-  await sendText(phone, "🎉 Hesabın hazır! Panele ulaşmak için 'panel' yazabilirsin.");
+  // ── Part A: Welcome + Panel CTA (tenant-aware factory) ──
+  await sendTenantPanelWelcome(phone, name, authUserId, tenantKey);
   return true;
 }
 
@@ -245,38 +367,30 @@ async function maybeSendMultiMembershipInfo(
   );
 }
 
-// ── Part A: Bayi welcome (inline 3 mesaj, modern pattern) ────────────
+// ── Part A: Tenant-aware welcome (inline 3 mesaj, modern pattern) ─────
 
-async function sendBayiPanelWelcome(phone: string, name: string, authUserId: string): Promise<void> {
+async function sendTenantPanelWelcome(
+  phone: string,
+  name: string,
+  authUserId: string,
+  tenantKey: string,
+): Promise<void> {
   const firstName = (name || "").split(/\s+/)[0] || "";
-  const greet = firstName ? `👋 Merhaba ${firstName}! ✨` : `👋 Merhaba! ✨`;
+  const intro = buildTenantIntro(tenantKey, firstName);
 
   // Mesaj 1 — greet + core promise
-  await sendText(
-    phone,
-    `${greet}\n\n` +
-      `Ben kişisel asistanınız UPU. 7/24 tahsilatlarınızı ve sipariş operasyonunuzu kolaylaştıracağım.`,
-  );
+  await sendText(phone, intro.promise);
   await sleep(1500);
 
   // Mesaj 2 — yetenekler
-  await sendText(
-    phone,
-    `🎯 *Yapabileceklerimden bazıları:*\n\n` +
-      `✅ Yeni bayi başvurularınızı telefonla onaylayıp sisteme eklerim\n` +
-      `✅ Vadesi gelen tahsilatlarınız için hatırlatma metni hazırlar, onayınızla bayiye gönderirim\n` +
-      `✅ Bayi siparişlerinizi WhatsApp'tan tek akışta sisteme kaydederim\n` +
-      `✅ Tüm bayilerinize tek tıkla kampanya duyurusu yaparım`,
-  );
+  await sendText(phone, intro.capabilities);
   await sleep(1500);
 
   // Mesaj 3 — Paneli Aç (evergreen URL — server-side fresh token mint)
-  const evergreenUrl = `${APP_URL}/api/bayi-panel/evergreen?uid=${encodeURIComponent(authUserId)}`;
+  const evergreenUrl = `${APP_URL}${intro.evergreenPath}?uid=${encodeURIComponent(authUserId)}`;
   await sendUrlButton(
     phone,
-    `🖥 *Bayi Panelinize Hoş Geldiniz*\n\n` +
-      `Profilinizi tamamlamak ve sisteminizi yönetmek için panele gidin. ` +
-      `Hero kartından "Profilini Tamamla" ile firma bilgilerinizi 5 dakikada doldurabilirsiniz.`,
+    intro.panelWelcome,
     "🖥 Paneli Aç",
     evergreenUrl,
     { skipNav: true },
