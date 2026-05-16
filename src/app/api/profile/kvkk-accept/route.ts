@@ -4,9 +4,13 @@
  * Kullanıcı KvkkConsentModal'da "Okudum, onaylıyorum" diyince çağrılır.
  * profiles.kvkk_consent_at = now() + kvkk_consent_version = "v1" set edilir.
  * Mevcut metadata alanları (agent_profile, quick_actions vb.) etkilenmez.
+ *
+ * Multi-tenant aware: önce profile lookup (auth_user_id || id) + tenant_id
+ * ile resolve, UPDATE profile.id (lookup'tan alınan PK) ile yapılır.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { resolvePanelAuth } from "@/platform/auth/panel-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { getServiceClient } from "@/platform/auth/supabase";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +24,14 @@ export async function POST(req: NextRequest) {
   }
 
   const admin = getServiceClient();
+  const lookup = await resolveTenantProfile<Record<string, never>>(admin, {
+    userId: auth.userId,
+    select: "id",
+  });
+  if ("error" in lookup) {
+    return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+  }
+
   const { error } = await admin
     .from("profiles")
     .update({
@@ -27,7 +39,7 @@ export async function POST(req: NextRequest) {
       kvkk_consent_version: CURRENT_KVKK_VERSION,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", auth.userId);
+    .eq("id", lookup.profile.id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

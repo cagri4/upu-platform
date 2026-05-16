@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { resolvePanelAuth } from "@/platform/auth/panel-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 
@@ -31,13 +32,30 @@ export async function GET(req: NextRequest) {
   const userId = auth.userId;
 
   try {
-    const { data: profile } = await sb
-      .from("profiles")
-      .select(
+    // Multi-tenant aware profile lookup — auth_user_id || id eşleşir,
+    // tenant_id ile resolved tenant'a scoped (legacy + yeni multi-tenant
+    // profile pattern'lerinin ikisini de kapsar).
+    const lookup = await resolveTenantProfile<{
+      id: string;
+      display_name: string | null;
+      role: string | null;
+      tenant_id: string | null;
+      whatsapp_phone: string | null;
+      google_email: string | null;
+      created_at: string | null;
+      kvkk_consent_at: string | null;
+      kvkk_consent_version: string | null;
+      billing_address: Record<string, unknown> | null;
+      metadata: Record<string, unknown> | null;
+    }>(sb, {
+      userId,
+      select:
         "id, display_name, role, tenant_id, whatsapp_phone, google_email, created_at, kvkk_consent_at, kvkk_consent_version, billing_address, metadata",
-      )
-      .eq("id", userId)
-      .maybeSingle();
+    });
+    if ("error" in lookup) {
+      return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+    }
+    const profile = lookup.profile;
 
     let saasType: string = "emlak";
     if (profile?.tenant_id) {

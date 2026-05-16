@@ -3,7 +3,7 @@
  *
  * Welcome modal veya persistent banner dismiss eylemi. profiles.metadata
  * JSONB merge — diğer alanlar (agent_profile, about_cache, quick_actions
- * vb.) korunur.
+ * vb.) korunur. Multi-tenant aware lookup.
  *
  * Body:
  *   { type: "welcome", banner_dismissed_until?: string }
@@ -16,6 +16,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { resolvePanelAuth } from "@/platform/auth/panel-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { getServiceClient } from "@/platform/auth/supabase";
 
 export const dynamic = "force-dynamic";
@@ -43,16 +44,17 @@ export async function POST(req: NextRequest) {
   }
 
   const admin = getServiceClient();
-  const { data: prof, error: readErr } = await admin
-    .from("profiles")
-    .select("metadata")
-    .eq("id", auth.userId)
-    .single();
-  if (readErr || !prof) {
-    return NextResponse.json({ error: "Profil bulunamadı" }, { status: 404 });
+  const lookup = await resolveTenantProfile<{
+    metadata: Record<string, unknown> | null;
+  }>(admin, {
+    userId: auth.userId,
+    select: "id, metadata",
+  });
+  if ("error" in lookup) {
+    return NextResponse.json({ error: lookup.error }, { status: lookup.status });
   }
 
-  const meta = (prof.metadata as Record<string, unknown> | null) || {};
+  const meta = lookup.profile.metadata ?? {};
   const nextMeta = { ...meta };
 
   if (type === "welcome") {
@@ -65,7 +67,7 @@ export async function POST(req: NextRequest) {
   const { error: writeErr } = await admin
     .from("profiles")
     .update({ metadata: nextMeta, updated_at: new Date().toISOString() })
-    .eq("id", auth.userId);
+    .eq("id", lookup.profile.id);
   if (writeErr) {
     return NextResponse.json({ error: "Kaydedilemedi" }, { status: 500 });
   }
