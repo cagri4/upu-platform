@@ -203,7 +203,7 @@ export function AdminLayout({
 
   return (
     <PanelChromeContext.Provider value={chromeValue}>
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pl-safe pr-safe">
       {/* Skip-to-content (klavye nav) */}
       <a
         href="#main-content"
@@ -302,7 +302,7 @@ export function AdminLayout({
       {/* Main column — tablet pushes 64px, desktop pushes 256px */}
       <div className="md:ml-16 lg:ml-64">
         {/* Topbar */}
-        <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800/50 sticky top-0 z-20">
+        <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800/50 sticky top-0 z-20 pt-safe">
           <div className="flex items-center gap-3 px-4 py-3">
             <button
               className={`md:hidden p-2 -ml-2 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 ${accent.focusRing} rounded-lg`}

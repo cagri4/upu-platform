@@ -102,7 +102,7 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" href="/icons/app/apple-touch-startup-image-2048x2732.png" />
         <link rel="apple-touch-startup-image" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" href="/icons/app/apple-touch-startup-image-1668x2388.png" />
       </head>
-      <body className="min-h-full flex flex-col bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 pt-safe pb-safe px-safe">
+      <body className="min-h-full flex flex-col bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
         <PwaInstallCapturer />
         <IosWaBanner />
         {children}
