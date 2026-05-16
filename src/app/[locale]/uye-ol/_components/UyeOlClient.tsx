@@ -32,18 +32,12 @@ export default function UyeOlClient({ waText, brandName }: UyeOlClientProps) {
   const t = useTranslations("signup");
   const locale = useLocale();
 
-  // KVKK + ToS onayı checkbox checked iken WA mesajına `+kvkk` token
-  // eklenir. Bot tarafı (organic-signup) bu token'ı görürse profile insert'te
-  // kvkk_consent_at + version="v1" direkt set eder — duplicate KVKK modal yok.
-  // Browser-context bağımsız (önceki localStorage hand-off WA in-app browser ↔
-  // Chrome geçişlerinde fail ediyordu).
+  // WA mesajı sade — token gerek yok (KVKK onayı panel modal'da alınır).
 
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
-  // Faz 7.0 — KVKK consent checkbox (kayıt için zorunlu)
-  const [agreed, setAgreed] = useState(false);
-  // Faz 7.1a — Hizmet Şartları onayı (kayıt için zorunlu)
-  const [agreedTos, setAgreedTos] = useState(false);
-  const canProceed = agreed && agreedTos;
+  // KVKK + ToS web checkbox'ları kaldırıldı — panel modal tek consent gate.
+  // Signup eylemi = aydınlatma metni + ToS implicit accept (footer link mevcut).
+  const canProceed = true;
   // Faz 9.1 — mobilde 3sn sonra "WhatsApp açılmadı mı?" fallback linki
   const [showFallback, setShowFallback] = useState(false);
   // Faz 9.2 — logged-in user direkt /panel'e redirect; auth check tamamlanmadan
@@ -84,8 +78,7 @@ export default function UyeOlClient({ waText, brandName }: UyeOlClientProps) {
     return () => window.clearTimeout(timer);
   }, [isMobile]);
 
-  const waMessage = canProceed ? `${waText} +kvkk` : waText;
-  const waDeepLink = `https://wa.me/${WA_BOT}?text=${encodeURIComponent(waMessage)}`;
+  const waDeepLink = `https://wa.me/${WA_BOT}?text=${encodeURIComponent(waText)}`;
 
   // QR canvas — callback ref. authChecked → isMobile sırasıyla render
   // tetiklenince DOM'a giren canvas anında çizilir; useEffect deps race'i
@@ -197,44 +190,26 @@ export default function UyeOlClient({ waText, brandName }: UyeOlClientProps) {
             </div>
           )}
 
-          {/* KVKK + ToS consent — Faz 7.0 / 7.1a. Buton iki onaya da bağlı. */}
+          {/* Implicit accept — kayıt olarak aydınlatma metni + ToS kabul edilmiş
+              sayılır. KVKK onayı panel modal'ında tek gate olarak alınır. */}
           {isMobile !== null && (
-            <div className="space-y-2.5">
-              <label className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-400 cursor-pointer text-left">
-                <input
-                  type="checkbox"
-                  checked={agreed}
-                  onChange={(e) => setAgreed(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded accent-emerald-600 flex-shrink-0"
-                />
-                <span className="leading-relaxed">
-                  <a
-                    href={`/${locale}/aydinlatma-metni`}
-                    className="text-emerald-600 dark:text-emerald-400 hover:underline"
-                  >
-                    {t("kvkk_link")}
-                  </a>
-                  {t("kvkk_consent_text")}
-                </span>
-              </label>
-              <label className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-400 cursor-pointer text-left">
-                <input
-                  type="checkbox"
-                  checked={agreedTos}
-                  onChange={(e) => setAgreedTos(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded accent-emerald-600 flex-shrink-0"
-                />
-                <span className="leading-relaxed">
-                  <a
-                    href={`/${locale}/hizmet-sartlari`}
-                    className="text-emerald-600 dark:text-emerald-400 hover:underline"
-                  >
-                    {t("tos_link")}
-                  </a>
-                  {t("tos_consent_text")}
-                </span>
-              </label>
-            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed text-center px-2">
+              Kayıt olarak{" "}
+              <a
+                href={`/${locale}/aydinlatma-metni`}
+                className="text-emerald-600 dark:text-emerald-400 hover:underline"
+              >
+                {t("kvkk_link")}
+              </a>
+              {" "}ve{" "}
+              <a
+                href={`/${locale}/hizmet-sartlari`}
+                className="text-emerald-600 dark:text-emerald-400 hover:underline"
+              >
+                {t("tos_link")}
+              </a>
+              {"'nı kabul etmiş sayılırsınız."}
+            </p>
           )}
 
           <p className="text-xs text-center text-slate-400 dark:text-slate-500 pt-2">
