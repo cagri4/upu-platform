@@ -32,7 +32,11 @@ export default function UyeOlClient({ waText, brandName }: UyeOlClientProps) {
   const t = useTranslations("signup");
   const locale = useLocale();
 
-  const waDeepLink = `https://wa.me/${WA_BOT}?text=${encodeURIComponent(waText)}`;
+  // KVKK + ToS onayı checkbox checked iken WA mesajına `+kvkk` token
+  // eklenir. Bot tarafı (organic-signup) bu token'ı görürse profile insert'te
+  // kvkk_consent_at + version="v1" direkt set eder — duplicate KVKK modal yok.
+  // Browser-context bağımsız (önceki localStorage hand-off WA in-app browser ↔
+  // Chrome geçişlerinde fail ediyordu).
 
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
   // Faz 7.0 — KVKK consent checkbox (kayıt için zorunlu)
@@ -80,22 +84,8 @@ export default function UyeOlClient({ waText, brandName }: UyeOlClientProps) {
     return () => window.clearTimeout(timer);
   }, [isMobile]);
 
-  // Fix 3 — Web signup'ta KVKK + ToS checkbox onayı localStorage'a yazılır;
-  // bot organic-signup → panel mount akışında auto-accept tetiklenir
-  // (duplicate KVKK modal görünmesin). 24 saat TTL flag.
-  function persistSignupConsent() {
-    if (!canProceed) return;
-    try {
-      const payload = JSON.stringify({
-        kvkk_accepted_at: new Date().toISOString(),
-        tos_accepted_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      });
-      window.localStorage.setItem("upu_signup_consent", payload);
-    } catch {
-      /* private mode / quota — sessiz */
-    }
-  }
+  const waMessage = canProceed ? `${waText} +kvkk` : waText;
+  const waDeepLink = `https://wa.me/${WA_BOT}?text=${encodeURIComponent(waMessage)}`;
 
   // QR canvas — callback ref. authChecked → isMobile sırasıyla render
   // tetiklenince DOM'a giren canvas anında çizilir; useEffect deps race'i
@@ -146,11 +136,7 @@ export default function UyeOlClient({ waText, brandName }: UyeOlClientProps) {
             <div className="space-y-2">
               <a
                 href={canProceed ? waDeepLink : "#"}
-                onClick={
-                  canProceed
-                    ? () => persistSignupConsent()
-                    : (e) => e.preventDefault()
-                }
+                onClick={canProceed ? undefined : (e) => e.preventDefault()}
                 aria-disabled={!canProceed}
                 className={`flex items-center justify-between gap-3 w-full px-5 py-4 rounded-2xl bg-emerald-500 text-white font-semibold shadow-lg transition ${
                   canProceed
@@ -174,7 +160,6 @@ export default function UyeOlClient({ waText, brandName }: UyeOlClientProps) {
                     href={waDeepLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => persistSignupConsent()}
                     className="text-emerald-600 dark:text-emerald-400 hover:underline"
                   >
                     {t("web_link")}
@@ -197,11 +182,7 @@ export default function UyeOlClient({ waText, brandName }: UyeOlClientProps) {
               </div>
               <a
                 href={canProceed ? waDeepLink : "#"}
-                onClick={
-                  canProceed
-                    ? () => persistSignupConsent()
-                    : (e) => e.preventDefault()
-                }
+                onClick={canProceed ? undefined : (e) => e.preventDefault()}
                 target={canProceed ? "_blank" : undefined}
                 rel={canProceed ? "noopener noreferrer" : undefined}
                 aria-disabled={!canProceed}

@@ -143,50 +143,6 @@ export default function PanelimPage() {
     };
   }, []);
 
-  // Fix 3 — Web signup hand-off: /tr/uye-ol checkbox onayı localStorage'a
-  // yazılırsa, panel mount'unda otomatik /api/profile/kvkk-accept POST atılır
-  // ve flag temizlenir. Kullanıcı modal'ı bir daha görmez. 24 saat TTL.
-  useEffect(() => {
-    let raw: string | null = null;
-    try {
-      raw = window.localStorage.getItem("upu_signup_consent");
-    } catch {
-      /* yut */
-    }
-    if (!raw) return;
-    try {
-      const payload = JSON.parse(raw) as { expires_at?: string };
-      const expired = !payload.expires_at || new Date(payload.expires_at) < new Date();
-      if (expired) {
-        window.localStorage.removeItem("upu_signup_consent");
-        return;
-      }
-      void fetch("/api/profile/kvkk-accept", {
-        method: "POST",
-        credentials: "same-origin",
-      })
-        .then((r) => {
-          if (r.ok) {
-            try {
-              window.localStorage.removeItem("upu_signup_consent");
-            } catch {
-              /* yut */
-            }
-          }
-        })
-        .catch(() => {
-          /* sessiz — bir sonraki panel açılışında tekrar dene */
-        });
-    } catch {
-      /* json parse fail — flag'i temizle */
-      try {
-        window.localStorage.removeItem("upu_signup_consent");
-      } catch {
-        /* yut */
-      }
-    }
-  }, []);
-
   // KVKK consent — Faz 7.0. needsConsent=true ise modal; "Daha sonra"
   // diyene localStorage flag ile aynı gün tekrar gösterme.
   // Race fix: cookie henüz settle olmamışsa 401/403 retry (max 3 attempt).

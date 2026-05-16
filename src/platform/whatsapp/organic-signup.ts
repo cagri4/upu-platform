@@ -182,6 +182,18 @@ function isUyeOlIntent(text: string): boolean {
 }
 
 /**
+ * Web signup'taki KVKK+ToS checkbox onayı, WA mesaj sonuna `+kvkk` token
+ * olarak eklenir (UyeOlClient). Bu token görülürse profile insert'inde
+ * kvkk_consent_at + version="v1" direkt set edilir — kullanıcı panel'de
+ * duplicate KVKK modal görmez. Browser-context bağımsız (localStorage
+ * hand-off WA in-app browser ↔ Chrome geçişlerinde fail ediyordu).
+ */
+function extractConsentFlag(text: string | null | undefined): boolean {
+  if (!text) return false;
+  return /\+kvkk\b/i.test(text);
+}
+
+/**
  * Bug 3 — Tenant-aware base URL. Evergreen endpoint'leri root domain'de
  * (upudev.nl) mount değil; her tenant kendi subdomain'inde
  * (estateai/retailai/marketai/...). Tenant config'in `slug` field'ından
@@ -231,6 +243,7 @@ export async function tryOrganicSignup(
     name: name || phone,
     tenantKey: hint,
     isLegacyAuth: true,
+    kvkkConsent: extractConsentFlag(rawText),
   });
 }
 
@@ -247,6 +260,7 @@ export async function tryOrganicSignupForExistingUser(
     name: ctx.userName || ctx.phone,
     tenantKey,
     isLegacyAuth: false,
+    kvkkConsent: extractConsentFlag(ctx.text),
   });
 }
 
@@ -258,13 +272,16 @@ interface SignupArgs {
   name: string;
   tenantKey: string;
   isLegacyAuth: boolean;
+  /** Web signup checkbox token (`+kvkk`) ile geldiyse true → profile insert
+   *  sırasında kvkk_consent_at + version="v1" set edilir. */
+  kvkkConsent: boolean;
 }
 
 async function runTenantSignup(
   supabase: SupabaseClient,
   args: SignupArgs,
 ): Promise<boolean> {
-  const { authUserId, phone, name, tenantKey, isLegacyAuth } = args;
+  const { authUserId, phone, name, tenantKey, isLegacyAuth, kvkkConsent } = args;
 
   const tenantCfg = getTenantByKey(tenantKey);
   if (!tenantCfg) {
@@ -281,6 +298,7 @@ async function runTenantSignup(
 
   const newProfileId = isLegacyAuth ? authUserId : randomUUID();
 
+  const now = new Date().toISOString();
   const { error: profileErr } = await supabase.from("profiles").insert({
     id: newProfileId,
     auth_user_id: authUserId,
@@ -291,6 +309,9 @@ async function runTenantSignup(
     permissions: {},
     capabilities,
     preferred_locale: "tr",
+    ...(kvkkConsent
+      ? { kvkk_consent_at: now, kvkk_consent_version: "v1" }
+      : {}),
   });
 
   if (profileErr) {
