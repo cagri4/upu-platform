@@ -107,3 +107,22 @@ select option[value=""] {
   .h-screen { height: 100vh; height: 100dvh; }
   .min-h-screen { min-height: 100vh; min-height: 100dvh; }
 }
+
+/* Panel edit mode — iPhone home screen pattern. Edit toggle açıkken
+   tüm "edit-jiggle" item'ları hafif salınır; ✕ icon overlay'leri
+   sayfa içinde absolute position ile mount edilir. */
+@keyframes edit-jiggle {
+  0%,  100% { transform: rotate(-0.7deg); }
+  50%       { transform: rotate(0.7deg); }
+}
+
+@layer utilities {
+  .edit-jiggle {
+    animation: edit-jiggle 0.4s ease-in-out infinite;
+    transform-origin: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edit-jiggle { animation: none; }
+}

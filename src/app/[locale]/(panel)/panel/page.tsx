@@ -3,12 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  Building2,
-  Users,
-  FileText,
-  Target,
-  Presentation,
-  Calendar,
   UserCog,
   Globe,
   Bell,
@@ -20,6 +14,8 @@ import {
   ChevronRight,
   ShieldCheck,
   X,
+  Pencil,
+  Plus,
   type LucideIcon,
 } from "lucide-react";
 import { usePanelChrome } from "@/components/admin-layout";
@@ -36,9 +32,17 @@ import {
 } from "@/components/banking";
 import { QUICK_ACTIONS, type QuickActionDef } from "@/platform/quick-actions/catalog";
 import {
+  ALL_QUICK_ACTION_KEYS,
   DEFAULT_QUICK_ACTIONS,
   type QuickActionKey,
 } from "@/platform/quick-actions/keys";
+import { KPI_CARDS } from "@/platform/kpi-cards/catalog";
+import {
+  ALL_KPI_CARD_KEYS,
+  DEFAULT_KPI_CARDS,
+  type KpiCardKey,
+} from "@/platform/kpi-cards/keys";
+import { ItemAddModal } from "@/components/panel-edit/item-add-modal";
 
 interface KPIs {
   properties: number;
@@ -70,6 +74,12 @@ export default function PanelimPage() {
   // obj = aktif/trial. Hero flicker'ı önlemek için bu ayrım gerekli.
   const [subscription, setSubscription] = useState<SubscriptionSummary | null | undefined>(undefined);
   const [quickActions, setQuickActions] = useState<QuickActionKey[] | null>(null);
+  // Edit mode — in-place quick action + KPI yönetimi (panel-layout endpoint).
+  // null = henüz fetch edilmedi (default'a fallback). Kullanıcı toggle yaparsa
+  // anlık PATCH (debounce yok; küçük payload, occasional click).
+  const [kpiCards, setKpiCards] = useState<KpiCardKey[] | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [addModalKind, setAddModalKind] = useState<"quick" | "kpi" | null>(null);
 
   // Google bağla onboarding — Faz 6.5
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
@@ -144,6 +154,80 @@ export default function PanelimPage() {
       cancelled = true;
     };
   }, []);
+
+  // Panel layout — in-place edit kullanıcı tercihi (quick_actions + kpi_cards).
+  // Dashboard endpoint quickActions geri uyumluluk için döner ama edit
+  // mutasyonu /api/profile/panel-layout PATCH'e gider; mount'ta tek source
+  // of truth bu endpoint.
+  useEffect(() => {
+    let cancelled = false;
+    let attempt = 0;
+    const tryFetch = async (): Promise<void> => {
+      attempt++;
+      try {
+        const r = await fetch("/api/profile/panel-layout", { credentials: "same-origin" });
+        if (cancelled) return;
+        if ((r.status === 401 || r.status === 403) && attempt < 3) {
+          setTimeout(() => void tryFetch(), 500 * attempt);
+          return;
+        }
+        if (!r.ok) return;
+        const d = await r.json();
+        if (cancelled) return;
+        if (Array.isArray(d?.quick_actions)) setQuickActions(d.quick_actions);
+        setKpiCards(Array.isArray(d?.kpi_cards) ? d.kpi_cards : null);
+      } catch {
+        if (!cancelled && attempt < 3) setTimeout(() => void tryFetch(), 500 * attempt);
+      }
+    };
+    void tryFetch();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function patchPanelLayout(updates: { quick_actions?: QuickActionKey[]; kpi_cards?: KpiCardKey[] }) {
+    try {
+      await fetch("/api/profile/panel-layout", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(updates),
+      });
+    } catch {
+      /* sessiz — bir sonraki toggle'da retry; UI zaten optimistic */
+    }
+  }
+
+  const currentQuickActions: QuickActionKey[] = quickActions ?? DEFAULT_QUICK_ACTIONS;
+  const currentKpiCards: KpiCardKey[] = kpiCards ?? DEFAULT_KPI_CARDS;
+
+  function hideQuickAction(key: QuickActionKey) {
+    const next = currentQuickActions.filter((k) => k !== key);
+    setQuickActions(next);
+    void patchPanelLayout({ quick_actions: next });
+  }
+  function hideKpiCard(key: KpiCardKey) {
+    const next = currentKpiCards.filter((k) => k !== key);
+    setKpiCards(next);
+    void patchPanelLayout({ kpi_cards: next });
+  }
+  function toggleQuickAction(key: QuickActionKey) {
+    const has = currentQuickActions.includes(key);
+    const next = has
+      ? currentQuickActions.filter((k) => k !== key)
+      : [...currentQuickActions, key];
+    setQuickActions(next);
+    void patchPanelLayout({ quick_actions: next });
+  }
+  function toggleKpiCard(key: KpiCardKey) {
+    const has = currentKpiCards.includes(key);
+    const next = has
+      ? currentKpiCards.filter((k) => k !== key)
+      : [...currentKpiCards, key];
+    setKpiCards(next);
+    void patchPanelLayout({ kpi_cards: next });
+  }
 
   // KVKK consent — Faz 7.0. needsConsent=true ise modal; "Daha sonra"
   // diyene localStorage flag ile aynı gün tekrar gösterme.
@@ -303,12 +387,14 @@ export default function PanelimPage() {
     setHeroIdx((i) => (i + 1) % heroSlides.length);
   const heroGoTo = (i: number) => setHeroIdx(i);
 
-  // Quick action items — kullanıcı tercihi (profiles.metadata.quick_actions)
-  // yoksa default 6. Render aşağıda QuickActionsRow component'inde yapılır
-  // (state hook'ları için ayrı component lazım).
-  const quickActionItems: QuickActionDef[] = (quickActions ?? DEFAULT_QUICK_ACTIONS)
+  // Quick action items — kullanıcı tercihi (profiles.metadata.panel_layout
+  // .quick_actions) yoksa default 6.
+  const quickActionItems: QuickActionDef[] = currentQuickActions
     .map((k) => QUICK_ACTIONS[k])
     .filter((x): x is QuickActionDef => !!x);
+  const kpiItems = currentKpiCards
+    .map((k) => KPI_CARDS[k])
+    .filter((x): x is (typeof KPI_CARDS)[keyof typeof KPI_CARDS] => !!x);
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -379,48 +465,66 @@ export default function PanelimPage() {
         </div>
       )}
 
-      {/* Quick Actions — yatay scroll row. Cookie fast-path: panel'e ulaşan
-          user zaten oturumlu; hrefFor("") ile token propage etmiyoruz. */}
-      {quickActionItems.length > 0 && <QuickActionsRow items={quickActionItems} />}
+      {/* Düzenle / Bitti toggle — Hızlı İşlem ve KPI grid'in başında.
+          Edit mode'da tüm item'lar jiggle + ✕ overlay + "+ Ekle" placeholder. */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setEditMode((v) => !v)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+            editMode
+              ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+              : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+          aria-pressed={editMode}
+        >
+          {editMode ? (
+            <>
+              <span aria-hidden="true">✓</span>
+              <span>Bitti</span>
+            </>
+          ) : (
+            <>
+              <Pencil className="w-3.5 h-3.5" strokeWidth={2.4} />
+              <span>Düzenle</span>
+            </>
+          )}
+        </button>
+      </div>
 
-      {/* KPI grid — 2 sütun mobile, 3 desktop */}
+      {/* Quick Actions — yatay scroll row. Edit mode'da her circle jiggle
+          + ✕ overlay; "+ Ekle" placeholder catalog'da kalmış item'lar için.
+          Normal mod + boş liste → tamamen gizle. */}
+      {(quickActionItems.length > 0 || editMode) && (
+        <QuickActionsRow
+          items={quickActionItems}
+          editMode={editMode}
+          onHide={hideQuickAction}
+          canAdd={editMode && quickActionItems.length < ALL_QUICK_ACTION_KEYS.length}
+          onAddClick={() => setAddModalKind("quick")}
+        />
+      )}
+
+      {/* KPI grid — 2 sütun mobile, 3 desktop. Edit mode'da her kart
+          jiggle + ✕ overlay; son hücrede "+ Ekle" placeholder. */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <StatCard
-          Icon={Building2}
-          value={kpiValue("properties")}
-          label="Mülklerim"
-          href={q("/tr/mulklerim")}
-        />
-        <StatCard
-          Icon={Users}
-          value={kpiValue("customers")}
-          label="Müşterilerim"
-          href={q("/tr/musterilerim")}
-        />
-        <StatCard
-          Icon={FileText}
-          value={kpiValue("contracts")}
-          label="Sözleşmeler"
-          href={q("/tr/sozlesmelerim")}
-        />
-        <StatCard
-          Icon={Target}
-          value={kpiValue("tracking")}
-          label="Takiplerim"
-          href={q("/tr/takip")}
-        />
-        <StatCard
-          Icon={Presentation}
-          value={kpiValue("presentations")}
-          label="Sunumlarım"
-          href={q("/tr/sunumlarim")}
-        />
-        <StatCard
-          Icon={Calendar}
-          value={kpiValue("calendar")}
-          label="Takvim"
-          href={q("/tr/takvim")}
-        />
+        {kpiItems.map((item) => (
+          <EditableTile
+            key={item.key}
+            editMode={editMode}
+            onHide={() => hideKpiCard(item.key)}
+          >
+            <StatCard
+              Icon={item.Icon}
+              value={kpiValue(item.key)}
+              label={item.label}
+              href={editMode ? undefined : item.hrefFor(token)}
+            />
+          </EditableTile>
+        ))}
+        {editMode && kpiItems.length < ALL_KPI_CARD_KEYS.length && (
+          <AddTilePlaceholder onClick={() => setAddModalKind("kpi")} />
+        )}
       </div>
 
       {/* Daha az kullanılan kartlar — list */}
@@ -476,6 +580,33 @@ export default function PanelimPage() {
           />
         )}
       </div>
+
+      {/* Item Add modal — edit mode'da "+ Ekle" placeholder tıklanırsa açılır.
+          Katalogdaki tüm item'lar checkbox listesi (selected/unselected). */}
+      <ItemAddModal
+        open={addModalKind === "quick"}
+        title="Hızlı işlem ekle / kaldır"
+        items={ALL_QUICK_ACTION_KEYS.map((k) => ({
+          key: k,
+          label: QUICK_ACTIONS[k].label,
+          Icon: QUICK_ACTIONS[k].Icon,
+        }))}
+        selectedKeys={currentQuickActions}
+        onToggle={(k) => toggleQuickAction(k as QuickActionKey)}
+        onClose={() => setAddModalKind(null)}
+      />
+      <ItemAddModal
+        open={addModalKind === "kpi"}
+        title="KPI kartı ekle / kaldır"
+        items={ALL_KPI_CARD_KEYS.map((k) => ({
+          key: k,
+          label: KPI_CARDS[k].label,
+          Icon: KPI_CARDS[k].Icon,
+        }))}
+        selectedKeys={currentKpiCards}
+        onToggle={(k) => toggleKpiCard(k as KpiCardKey)}
+        onClose={() => setAddModalKind(null)}
+      />
 
       {/* KVKK consent modal — Faz 7.0. needsConsent=true ise gösterilir;
           önceliklidir, açıkken Google Welcome modal'ı saklı. */}
@@ -544,11 +675,67 @@ function GoogleGlyph({ className }: { className?: string }) {
 }
 
 /**
+ * Edit mode'da bir item etrafına ✕ ikonu overlay'i + jiggle animasyonu.
+ * children = mevcut ActionCircle/StatCard — biz dokunmuyoruz. editMode=false
+ * iken yalın render.
+ */
+function EditableTile({
+  editMode,
+  onHide,
+  children,
+}: {
+  editMode: boolean;
+  onHide: () => void;
+  children: React.ReactNode;
+}) {
+  if (!editMode) return <>{children}</>;
+  return (
+    <div className="relative edit-jiggle">
+      {children}
+      <button
+        type="button"
+        onClick={onHide}
+        aria-label="Kaldır"
+        className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 text-white shadow-md flex items-center justify-center z-10 ring-2 ring-white dark:ring-slate-900"
+      >
+        <X className="w-3.5 h-3.5" strokeWidth={3} />
+      </button>
+    </div>
+  );
+}
+
+/** "+ Ekle" dashed placeholder — KPI grid hücresi boyutunda. */
+function AddTilePlaceholder({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-400 dark:hover:border-emerald-500 hover:bg-emerald-50/40 dark:hover:bg-emerald-900/10 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition aspect-square min-h-[88px]"
+      aria-label="Ekle"
+    >
+      <Plus className="w-6 h-6" strokeWidth={2.2} />
+      <span className="text-xs font-medium">Ekle</span>
+    </button>
+  );
+}
+
+/**
  * Hızlı İşlem yatay scroll row — sol/sağ fade gradient + (desktop'ta görünür)
  * chevron butonları ile kullanıcıya daha fazla aksiyon olduğunu sezdirir.
  * Mobile'da swipe doğal; gradient ipucu yeter.
+ *
+ * Edit mode'da her ActionCircle jiggle + ✕ overlay; tile sonunda "+ Ekle"
+ * placeholder (catalog'da kalmış item varsa).
  */
-function QuickActionsRow({ items }: { items: QuickActionDef[] }) {
+interface QuickActionsRowProps {
+  items: QuickActionDef[];
+  editMode: boolean;
+  onHide: (key: QuickActionKey) => void;
+  canAdd: boolean;
+  onAddClick: () => void;
+}
+
+function QuickActionsRow({ items, editMode, onHide, canAdd, onAddClick }: QuickActionsRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canL, setCanL] = useState(false);
   const [canR, setCanR] = useState(false);
@@ -599,8 +786,37 @@ function QuickActionsRow({ items }: { items: QuickActionDef[] }) {
           className="flex gap-3 overflow-x-auto -mx-1 px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {items.map((a) => (
-            <ActionCircle key={a.key} Icon={a.Icon} label={a.label} href={a.hrefFor("")} />
+            <div key={a.key} className={editMode ? "edit-jiggle relative" : "relative"}>
+              <ActionCircle
+                Icon={a.Icon}
+                label={a.label}
+                href={editMode ? undefined : a.hrefFor("")}
+              />
+              {editMode && (
+                <button
+                  type="button"
+                  onClick={() => onHide(a.key)}
+                  aria-label="Kaldır"
+                  className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 text-white shadow-md flex items-center justify-center z-10 ring-2 ring-white dark:ring-slate-900"
+                >
+                  <X className="w-3.5 h-3.5" strokeWidth={3} />
+                </button>
+              )}
+            </div>
           ))}
+          {canAdd && (
+            <button
+              type="button"
+              onClick={onAddClick}
+              aria-label="Ekle"
+              className="flex flex-col items-center justify-center flex-shrink-0 w-16 gap-1 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+            >
+              <span className="w-12 h-12 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-400 dark:hover:border-emerald-500 flex items-center justify-center transition">
+                <Plus className="w-5 h-5" strokeWidth={2.2} />
+              </span>
+              <span className="text-[11px] font-medium">Ekle</span>
+            </button>
+          )}
         </div>
         {canR && (
           <>
