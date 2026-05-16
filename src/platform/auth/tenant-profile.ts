@@ -58,5 +58,10 @@ export async function resolveTenantProfile<T extends Record<string, unknown>>(
     return { error: "Bu tenant'ta profil bulunamadı.", status: 403 };
   }
 
-  return { profile: data as T & { id: string }, tenantId: tenant.tenantId };
+  // PostgREST maybeSingle genericleri T | GenericStringError döndürebiliyor;
+  // null check yukarıda yapıldı, burada güvenli unknown cast.
+  return {
+    profile: data as unknown as T & { id: string },
+    tenantId: tenant.tenantId,
+  };
 }
