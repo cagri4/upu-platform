@@ -19,7 +19,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { usePanelChrome } from "@/components/admin-layout";
-import { PwaInstallCard } from "@/components/pwa-install-card";
 import { useIsMobileDevice } from "@/lib/use-is-mobile-device";
 import {
   HeroBanner,
@@ -561,9 +560,6 @@ export default function PanelimPage() {
           href={q("/tr/bildirimler")}
         />
       </div>
-
-      {/* PWA Install — mobile only */}
-      <PwaInstallCard brandName="UPU Emlak" />
 
       {/* Info chips — sade duyurular */}
       <div className="space-y-2">

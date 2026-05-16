@@ -40,7 +40,6 @@ import {
   Skeleton,
   KvkkConsentModal,
 } from "@/components/banking";
-import { PwaInstallCard } from "@/components/pwa-install-card";
 
 interface KPIs {
   dealer_count: number;
@@ -211,9 +210,6 @@ export default function BayiPanelimPage() {
           <ActionCircle Icon={BarChart3}    label="Cirolarım"      href={q("/tr/bayi-raporlar")} />
         </div>
       </div>
-
-      {/* PWA install — mobile only */}
-      <PwaInstallCard brandName="UPU Bayi" />
 
       {/* Hesap & ayarlar — emlak pattern paralel */}
       <div className="space-y-2">
