@@ -106,11 +106,25 @@ export default function PanelimPage() {
   //   linked → ikisi de gizli
   //   !linked && !welcomeSeen → modal
   //   !linked && welcomeSeen && (bannerDismissedUntil null veya geçmiş) → banner
+  //
+  // İlk mount'ta cookie session bazen tam settle olmamış olabilir (panel
+  // layout init paralel akıyor). 401/403 dönerse 3 kez exponential backoff
+  // retry — kullanıcı ilk açılışta modal'ı kaçırmasın.
   useEffect(() => {
-    fetch("/api/panel/google-link/status", { credentials: "same-origin" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!d || d.linked) return;
+    let cancelled = false;
+    let attempt = 0;
+    const tryFetch = async (): Promise<void> => {
+      attempt++;
+      try {
+        const r = await fetch("/api/panel/google-link/status", { credentials: "same-origin" });
+        if (cancelled) return;
+        if ((r.status === 401 || r.status === 403) && attempt < 3) {
+          setTimeout(() => void tryFetch(), 500 * attempt);
+          return;
+        }
+        if (!r.ok) return;
+        const d = await r.json();
+        if (cancelled || !d || d.linked) return;
         if (!d.welcomeSeen) {
           setShowWelcomeModal(true);
           return;
@@ -119,12 +133,19 @@ export default function PanelimPage() {
         if (!until || new Date(until) <= new Date()) {
           setShowLinkBanner(true);
         }
-      })
-      .catch(() => {/* sessiz — modal/banner gösterme */});
+      } catch {
+        if (!cancelled && attempt < 3) setTimeout(() => void tryFetch(), 500 * attempt);
+      }
+    };
+    void tryFetch();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // KVKK consent — Faz 7.0. needsConsent=true ise modal; "Daha sonra"
   // diyene localStorage flag ile aynı gün tekrar gösterme.
+  // Race fix: cookie henüz settle olmamışsa 401/403 retry (max 3 attempt).
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
     let dismissedToday = false;
@@ -133,12 +154,28 @@ export default function PanelimPage() {
     } catch { /* private mode / quota */ }
     if (dismissedToday) return;
 
-    fetch("/api/profile/kvkk-status", { credentials: "same-origin" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.needsConsent) setShowKvkkModal(true);
-      })
-      .catch(() => {/* sessiz */});
+    let cancelled = false;
+    let attempt = 0;
+    const tryFetch = async (): Promise<void> => {
+      attempt++;
+      try {
+        const r = await fetch("/api/profile/kvkk-status", { credentials: "same-origin" });
+        if (cancelled) return;
+        if ((r.status === 401 || r.status === 403) && attempt < 3) {
+          setTimeout(() => void tryFetch(), 500 * attempt);
+          return;
+        }
+        if (!r.ok) return;
+        const d = await r.json();
+        if (!cancelled && d?.needsConsent) setShowKvkkModal(true);
+      } catch {
+        if (!cancelled && attempt < 3) setTimeout(() => void tryFetch(), 500 * attempt);
+      }
+    };
+    void tryFetch();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   function onKvkkAccepted() {
