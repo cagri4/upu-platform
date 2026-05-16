@@ -282,6 +282,12 @@ async function runTenantSignup(
 
   const newProfileId = isLegacyAuth ? authUserId : randomUUID();
 
+  // Option D — implicit KVKK consent: /tr/uye-ol disclaimer ("Kayıt olarak
+  // KVKK Aydınlatma Metni ve Hizmet Şartları'nı kabul etmiş sayılırsınız.")
+  // + WA üzerinden gönderilen "Üye olmak istiyorum" intent = consent gate.
+  // Panel modal artık sadece legacy fallback (eski NULL kayıtlar için).
+  const nowIso = new Date().toISOString();
+
   const { error: profileErr } = await supabase.from("profiles").insert({
     id: newProfileId,
     auth_user_id: authUserId,
@@ -292,6 +298,8 @@ async function runTenantSignup(
     permissions: {},
     capabilities,
     preferred_locale: "tr",
+    kvkk_consent_at: nowIso,
+    kvkk_consent_version: "v1",
   });
 
   if (profileErr) {
