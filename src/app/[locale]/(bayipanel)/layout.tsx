@@ -19,6 +19,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { AdminLayout } from "@/components/admin-layout";
+import { PanelAuthFail } from "@/components/panel-auth-fail";
 import { BAYI_SIDEBAR, BAYI_BRAND_TITLE, BAYI_BRAND_ICON, BAYI_ACCENT } from "@/tenants/bayi/components/sidebar";
 
 type InitState = "loading" | "ready" | "error";
@@ -79,24 +80,7 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
   }
 
   if (state === "error") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">
-          <div className="text-4xl mb-3">⚠️</div>
-          <h1 className="text-xl font-bold mb-2">Hata</h1>
-          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
-          <a
-            href="https://wa.me/31644967207"
-            className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg"
-          >
-            WhatsApp&apos;a dön
-          </a>
-          <p className="text-slate-500 text-xs mt-4 leading-relaxed">
-            💡 WhatsApp&apos;a döndükten sonra son gönderdiğim &quot;Panele Git&quot; butonuna tekrar dokunarak yeni bir bağlantı alabilirsiniz.
-          </p>
-        </div>
-      </div>
-    );
+    return <PanelAuthFail tenantKey="bayi" message={error} />;
   }
 
   return (

@@ -15,6 +15,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { AdminLayout, type SidebarItem } from "@/components/admin-layout";
+import { PanelAuthFail } from "@/components/panel-auth-fail";
 
 /**
  * Bottom tab item'larının tam kataloğu — kullanıcı /tr/panel-ayarlari'da
@@ -115,24 +116,7 @@ export default function PanelGroupLayout({ children }: { children: ReactNode }) 
   }, [token]);
 
   if (state === "error") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-sm w-full text-center shadow-sm border border-slate-200/70 dark:border-slate-800">
-          <div className="text-4xl mb-3">⚠️</div>
-          <h1 className="text-xl font-bold mb-2 text-slate-900 dark:text-white">Hata</h1>
-          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
-          <a
-            href="https://wa.me/31644967207"
-            className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition"
-          >
-            WhatsApp&apos;a dön
-          </a>
-          <p className="text-slate-500 dark:text-slate-400 text-xs mt-4 leading-relaxed">
-            💡 WhatsApp&apos;a döndükten sonra son gönderdiğim &quot;Panele Git&quot; butonuna tekrar dokunarak yeni bir bağlantı alabilirsiniz.
-          </p>
-        </div>
-      </div>
-    );
+    return <PanelAuthFail tenantKey="emlak" message={error} />;
   }
 
   // state === "loading" veya "ready" — her iki durumda da AdminLayout render edilir.
