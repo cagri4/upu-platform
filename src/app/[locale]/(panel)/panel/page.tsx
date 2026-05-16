@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { usePanelChrome } from "@/components/admin-layout";
 import { PwaInstallCard } from "@/components/pwa-install-card";
+import { useIsMobileDevice } from "@/lib/use-is-mobile-device";
 import {
   HeroBanner,
   ActionCircle,
@@ -61,6 +62,7 @@ export default function PanelimPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token") || "";
   const { openQrScanner } = usePanelChrome();
+  const isMobileDevice = useIsMobileDevice();
 
   const [kpis, setKpis] = useState<KPIs | null>(null);
   const [webSlug, setWebSlug] = useState<string | null>(null);
@@ -466,11 +468,13 @@ export default function PanelimPage() {
           text="Sahibinden formunu otomatik doldur — Chrome eklentisi"
           href="https://chromewebstore.google.com/detail/bcafoeijofbhelbanpfjhmhiokjnggbe"
         />
-        <InfoChip
-          Icon={Monitor}
-          text="Bilgisayardan açın — QR ile saniyeler içinde"
-          onClick={openQrScanner}
-        />
+        {isMobileDevice && (
+          <InfoChip
+            Icon={Monitor}
+            text="Bilgisayardan açın — QR ile saniyeler içinde"
+            onClick={openQrScanner}
+          />
+        )}
       </div>
 
       {/* KVKK consent modal — Faz 7.0. needsConsent=true ise gösterilir;

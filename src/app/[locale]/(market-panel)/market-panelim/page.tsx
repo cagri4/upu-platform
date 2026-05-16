@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { usePanelChrome } from "@/components/admin-layout";
+import { useIsMobileDevice } from "@/lib/use-is-mobile-device";
 
 interface KPIs {
   daily_revenue: number;
@@ -39,6 +40,7 @@ export default function MarketPanelimPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token");
   const { openQrScanner } = usePanelChrome();
+  const isMobileDevice = useIsMobileDevice();
 
   const [kpis, setKpis] = useState<KPIs | null>(null);
 
@@ -90,24 +92,27 @@ export default function MarketPanelimPage() {
         })}
       </div>
 
-      {/* Bilgisayardan Kullan — feature highlight */}
-      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl p-5 shadow-sm">
-        <div className="flex items-start gap-4">
-          <div className="text-3xl flex-shrink-0">🖥</div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Bilgisayardan Kullanın</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
-              Bilgisayarınızda <span className="font-semibold text-slate-900 dark:text-slate-100">qr.upudev.nl</span> sayfasını açın, telefonunuzdaki QR kodu kameraya tutun — saniyeler içinde panel masaüstünüzde de açılır.
-            </p>
-            <button
-              onClick={openQrScanner}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-            >
-              🖥 Şimdi Bağlan
-            </button>
+      {/* Bilgisayardan Kullan — feature highlight (sadece mobile cihazda;
+          desktop'ta QR scanner kamera kullanılamaz, kart anlamsız) */}
+      {isMobileDevice && (
+        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="text-3xl flex-shrink-0">🖥</div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Bilgisayardan Kullanın</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
+                Bilgisayarınızda <span className="font-semibold text-slate-900 dark:text-slate-100">qr.upudev.nl</span> sayfasını açın, telefonunuzdaki QR kodu kameraya tutun — saniyeler içinde panel masaüstünüzde de açılır.
+              </p>
+              <button
+                onClick={openQrScanner}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+              >
+                🖥 Şimdi Bağlan
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Quick actions hint */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm text-sm text-slate-600 dark:text-slate-400">

@@ -7,6 +7,7 @@ import { QrScannerModal } from "@/components/qr-scanner-modal";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
 import { NotificationBell } from "@/components/notification-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useIsMobileDevice } from "@/lib/use-is-mobile-device";
 
 /**
  * AdminLayout chrome context — sayfalardan QR scanner modalı tetiklemek
@@ -141,6 +142,7 @@ export function AdminLayout({
 }: AdminLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [qrScannerOpen, setQrScannerOpen] = useState(false);
+  const isMobileDevice = useIsMobileDevice();
   const firstName = (displayName || "").split(/\s+/)[0] || "";
   const pathname = usePathname() || "";
   const searchParams = useSearchParams();
@@ -272,14 +274,18 @@ export function AdminLayout({
           })}
         </nav>
         <div className="p-3 md:p-2 lg:p-3 border-t border-slate-800 flex-shrink-0 space-y-1">
-          <button
-            onClick={() => setQrScannerOpen(true)}
-            title="Bilgisayardan Aç"
-            className={`w-full flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition focus:outline-none focus:ring-2 ${accent.focusRing}`}
-          >
-            <span>🖥</span>
-            <span className="md:hidden lg:inline">Bilgisayardan Aç</span>
-          </button>
+          {/* "Bilgisayardan Aç" — QR scanner kamera açar; desktop'ta saçma,
+              sadece mobile cihazda göster (phone → masaüstü tarayıcı geçişi). */}
+          {isMobileDevice && (
+            <button
+              onClick={() => setQrScannerOpen(true)}
+              title="Bilgisayardan Aç"
+              className={`w-full flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition focus:outline-none focus:ring-2 ${accent.focusRing}`}
+            >
+              <span>🖥</span>
+              <span className="md:hidden lg:inline">Bilgisayardan Aç</span>
+            </button>
+          )}
           <button
             onClick={handleLogout}
             title="WhatsApp'a Dön"
