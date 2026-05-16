@@ -17,8 +17,25 @@ import {
   subscribeCachedPrompt,
   type BeforeInstallPromptEvent,
 } from "@/lib/pwa-install-cache";
+import { DOMAIN_MAP } from "@/tenants/config";
 
 type Platform = "android" | "ios" | "other";
+
+// Subdomain'den tenant key resolve — "estateai.upudev.nl" → "emlak".
+// Mismatch fallback "emlak" (emlak panel ilk müşteri). localhost da emlak.
+function resolveTenantKey(): string {
+  if (typeof window === "undefined") return "emlak";
+  return DOMAIN_MAP[window.location.host] ?? "emlak";
+}
+
+function setInstalledFlag(): void {
+  try {
+    const key = `pwa_installed_${resolveTenantKey()}`;
+    localStorage.setItem(key, "true");
+  } catch {
+    /* localStorage erişimi blok ise sessiz geç */
+  }
+}
 
 function detectPlatform(): Platform {
   if (typeof navigator === "undefined") return "other";
@@ -55,7 +72,16 @@ export function PwaInstallCard({ brandName = "UPU Emlak" }: PwaInstallCardProps 
     // cache'i oku + sonradan gelecek event'leri subscribe ile yakala.
     setDeferredPrompt(getCachedPrompt());
     const unsub = subscribeCachedPrompt((e) => setDeferredPrompt(e));
-    return unsub;
+
+    // appinstalled — kullanıcı tarayıcı menüsünden ekleyebilir (Chrome
+    // "Yükle" prompt'u dışı yol). Banner için tenant-aware flag set.
+    const onInstalled = () => setInstalledFlag();
+    window.addEventListener("appinstalled", onInstalled);
+
+    return () => {
+      unsub();
+      window.removeEventListener("appinstalled", onInstalled);
+    };
   }, []);
 
   // Zaten yüklenmişse → gösterme
@@ -74,6 +100,8 @@ export function PwaInstallCard({ brandName = "UPU Emlak" }: PwaInstallCardProps 
       if (outcome === "accepted") {
         // Chrome event'i tek kullanımlık — cache'i de temizle.
         setCachedPrompt(null);
+        // Browser'da bir sonraki açılışta "Uygulamada Aç" banner'ı için flag.
+        setInstalledFlag();
       }
       return;
     }

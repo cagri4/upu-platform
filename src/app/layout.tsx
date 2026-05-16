@@ -6,6 +6,7 @@ import "./globals.css";
 import { PwaUpdateBanner } from "@/components/pwa-update-banner";
 import { PwaInstallCapturer } from "@/components/pwa-install-capturer";
 import { IosWaBanner } from "@/components/ios-wa-banner";
+import { OpenInPwaBanner } from "@/components/open-in-pwa-banner";
 
 const inter = Inter({ subsets: ["latin", "latin-ext"] });
 
@@ -105,6 +106,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
         <PwaInstallCapturer />
         <IosWaBanner />
+        <OpenInPwaBanner />
         {children}
         <PwaUpdateBanner />
       </body>
