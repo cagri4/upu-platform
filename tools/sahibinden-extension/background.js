@@ -2,10 +2,15 @@
  * Sahibinden Bridge — service worker (background)
  *
  *   1) WS connect ws://127.0.0.1:3001/ws (reconnect 5sn)
- *   2) "start-scrape" mesajı → 23 URL sırayla yeni tab'da aç (60sn aralık)
- *   3) Tab loaded → content script'e "parse" mesajı → cevabı /listings'e POST
- *   4) Captcha tespiti → /captcha-detected → pause + WS "resume" bekle
- *   5) Tamamlandığında /scrape-done
+ *   2) "start-scrape" mesajı → state machine başlat, ilk URL aç
+ *   3) Her URL bitince state chrome.storage.local'a persist + alarm SET (60sn)
+ *   4) Alarm callback → state oku → next URL (service worker suspend olsa da uyanır)
+ *   5) Captcha → /captcha-detected, paused state, "resume" mesajı beklenir
+ *   6) Son URL → /scrape-done, state cleanup
+ *
+ * Tasarım sebebi: MV3 service worker idle'da suspend olur. async sleep(60_000)
+ * sırasında suspend → loop state RAM'de kaybolur. Çözüm: state'i storage'a yaz,
+ * alarm ile uyandır, kaldığı yerden devam.
  */
 
 import {
@@ -17,29 +22,48 @@ import {
   CONTENT_DOM_WAIT_MS,
 } from "./config.js";
 
+const STATE_KEY = "scrape_state";
+const STEP_ALARM = "scrape-step";
+const KEEPALIVE_ALARM = "ws-keepalive";
+
 let ws = null;
 let wsReconnectTimer = null;
-let session = null; // { id, startedAt, totalListings, totalSaved, totalSkipped, errors, paused, abort }
-const pendingResume = []; // resume promise resolvers
 
 connectWs();
 
-// MV3 service worker 30sn idle sonrası suspend olur → WS kopar. Alarm
-// callback'i her 30sn worker'ı uyandırır; bağlı değilsek reconnect ederiz.
-chrome.alarms.create("ws-keepalive", { periodInMinutes: 0.5 });
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name !== "ws-keepalive") return;
-  if (!ws || ws.readyState !== 1) {
-    console.log("[bg] keepalive: ws not open, reconnecting");
-    connectWs();
+// MV3 keepalive — alarm her 30sn worker'ı uyandırır, WS kopuksa reconnect
+chrome.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: 0.5 });
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === KEEPALIVE_ALARM) {
+    if (!ws || ws.readyState !== 1) {
+      console.log("[bg] keepalive: ws not open, reconnecting");
+      connectWs();
+    }
+    // Pending scrape varsa devam ettir (recovery güvencesi — alarm SET edilmemiş
+    // olsa bile next-step çağrılır)
+    const st = await getState();
+    if (st && st.status === "running" && !st.scheduledNext) {
+      console.log("[bg] keepalive: pending scrape var, processNext çağrılıyor");
+      void processNext();
+    }
+    return;
+  }
+  if (alarm.name === STEP_ALARM) {
+    console.log("[bg] step alarm tetiklendi");
+    void processNext();
   }
 });
 
-// Service worker startup'larında da connect dene (alarm + onStartup birlikte
-// idle'dan uyanmayı garanti eder).
-chrome.runtime.onStartup.addListener(() => {
-  console.log("[bg] runtime startup, ensuring ws");
+chrome.runtime.onStartup.addListener(async () => {
+  console.log("[bg] runtime startup");
   if (!ws || ws.readyState !== 1) connectWs();
+  // Recovery — startup öncesi pending scrape varsa devam
+  const st = await getState();
+  if (st && st.status === "running") {
+    console.log("[bg] startup: pending scrape resume");
+    void processNext();
+  }
 });
 
 function connectWs() {
@@ -82,121 +106,172 @@ function scheduleReconnect() {
   wsReconnectTimer = setTimeout(connectWs, 5000);
 }
 
-function handleServerMessage(msg) {
+async function handleServerMessage(msg) {
   if (msg.type === "start-scrape") {
-    if (session && !session.aborted) {
-      console.warn("[bg] start-scrape ignored — already running:", session.id);
+    const st = await getState();
+    if (st && st.status === "running") {
+      console.warn("[bg] start-scrape ignored — running:", st.sessionId);
       return;
     }
-    void runScrape(msg.sessionId);
+    await initScrape(msg.sessionId);
+    void processNext();
   } else if (msg.type === "resume") {
-    while (pendingResume.length > 0) {
-      const resolve = pendingResume.shift();
-      try { resolve(); } catch { /* yut */ }
+    const st = await getState();
+    if (st && st.status === "paused") {
+      console.log("[bg] resume: paused state'i kaldırıp devam");
+      // Captcha gelen URL'i atla, sıradakine geç
+      st.status = "running";
+      st.index += 1;
+      st.scheduledNext = false;
+      await setState(st);
+      void processNext();
     }
   } else if (msg.type === "stop") {
-    if (session) {
-      session.aborted = true;
-      while (pendingResume.length > 0) {
-        const resolve = pendingResume.shift();
-        try { resolve(); } catch { /* yut */ }
-      }
+    const st = await getState();
+    if (st && (st.status === "running" || st.status === "paused")) {
+      console.log("[bg] stop: aborting", st.sessionId);
+      st.status = "aborted";
+      await setState(st);
+      await chrome.alarms.clear(STEP_ALARM);
+      await finalize(st);
     }
   }
 }
 
-async function runScrape(sessionId) {
-  session = {
-    id: sessionId,
+// ─── State Machine ───────────────────────────────────────────────────────────
+
+async function getState() {
+  const r = await chrome.storage.local.get(STATE_KEY);
+  return r[STATE_KEY] || null;
+}
+
+async function setState(st) {
+  await chrome.storage.local.set({ [STATE_KEY]: st });
+}
+
+async function clearState() {
+  await chrome.storage.local.remove(STATE_KEY);
+}
+
+async function initScrape(sessionId) {
+  const st = {
+    sessionId,
+    status: "running",       // running | paused | aborted | done
+    index: 0,
     startedAt: Date.now(),
-    totalListings: 0,
-    totalSaved: 0,
-    totalSkipped: 0,
+    totals: { listings: 0, saved: 0, skipped: 0 },
     errors: [],
-    aborted: false,
+    scheduledNext: false,
   };
+  await setState(st);
+  await chrome.alarms.clear(STEP_ALARM);
+  console.log(`[bg] scrape init ${sessionId} (${SAHIBINDEN_TARGETS.length} URL)`);
+}
 
-  console.log(`[bg] scrape start ${sessionId} (${SAHIBINDEN_TARGETS.length} URL)`);
-  await chrome.storage.local.set({ lastStart: Date.now(), lastStatus: "running" });
+async function processNext() {
+  const st = await getState();
+  if (!st) return;
+  if (st.status !== "running") {
+    console.log(`[bg] processNext: status=${st.status}, skip`);
+    return;
+  }
+  st.scheduledNext = false;
+  await setState(st);
 
-  for (let i = 0; i < SAHIBINDEN_TARGETS.length; i++) {
-    if (session.aborted) {
-      console.log(`[bg] scrape aborted at ${i}/${SAHIBINDEN_TARGETS.length}`);
-      break;
-    }
-
-    const target = SAHIBINDEN_TARGETS[i];
-    const category = `${target.listing_type}/${target.property_type}`;
-    console.log(`[bg] [${i + 1}/${SAHIBINDEN_TARGETS.length}] ${category}`);
-
-    try {
-      const result = await scrapeCategory(target, sessionId);
-      session.totalListings += result.parsed;
-      session.totalSaved += result.saved;
-      session.totalSkipped += result.skipped;
-
-      if (result.captcha) {
-        console.warn(`[bg] captcha at ${category} — paused`);
-        await postJson("/captcha-detected", {
-          sessionId,
-          url: target.url,
-          category,
-        });
-        await waitForResume();
-        if (session.aborted) break;
-        // Resume sonrası mevcut URL'yi atla, sıradakine geç
-        continue;
-      }
-    } catch (err) {
-      console.warn(`[bg] ${category} error:`, err.message);
-      session.errors.push({ category, error: err.message });
-    }
-
-    // İnsan trafiği — kategoriler arası bekleme (son URL'de gerek yok)
-    if (i < SAHIBINDEN_TARGETS.length - 1 && !session.aborted) {
-      await sleep(TAB_INTERVAL_MS);
-    }
+  if (st.index >= SAHIBINDEN_TARGETS.length) {
+    console.log("[bg] tüm URL'ler bitti, finalize");
+    st.status = "done";
+    await setState(st);
+    await finalize(st);
+    return;
   }
 
-  const duration = Date.now() - session.startedAt;
-  await postJson("/scrape-done", {
-    sessionId,
-    totalListings: session.totalListings,
-    totalSaved: session.totalSaved,
-    totalSkipped: session.totalSkipped,
-    duration,
-    errors: session.errors,
-  });
+  const target = SAHIBINDEN_TARGETS[st.index];
+  const category = `${target.listing_type}/${target.property_type}`;
+  console.log(`[bg] [${st.index + 1}/${SAHIBINDEN_TARGETS.length}] ${category}`);
 
+  let result;
+  try {
+    result = await scrapeCategory(target, st.sessionId);
+  } catch (err) {
+    console.warn(`[bg] ${category} error:`, err.message);
+    st.errors.push({ category, error: err.message });
+    result = { parsed: 0, saved: 0, skipped: 0, captcha: false };
+  }
+
+  // State'i refresh et (paralel stop gelmiş olabilir)
+  const st2 = await getState();
+  if (!st2 || st2.status === "aborted") {
+    console.log("[bg] aborted during scrape, exit");
+    return;
+  }
+  st2.totals.listings += result.parsed || 0;
+  st2.totals.saved += result.saved || 0;
+  st2.totals.skipped += result.skipped || 0;
+
+  if (result.captcha) {
+    console.warn(`[bg] captcha at ${category} — paused`);
+    await postJson("/captcha-detected", {
+      sessionId: st2.sessionId,
+      url: target.url,
+      category,
+    });
+    st2.status = "paused";
+    await setState(st2);
+    return; // resume mesajı bekleniyor, alarm SET edilmiyor
+  }
+
+  // Sonraki URL var mı?
+  st2.index += 1;
+  if (st2.index >= SAHIBINDEN_TARGETS.length) {
+    st2.status = "done";
+    await setState(st2);
+    await finalize(st2);
+    return;
+  }
+
+  // Alarm ile 60sn sonra sıradakini tetikle (service worker suspend olsa bile)
+  st2.scheduledNext = true;
+  await setState(st2);
+  // chrome.alarms periodInMinutes minimum 0.5 (30sn). delayInMinutes daha esnek.
+  await chrome.alarms.create(STEP_ALARM, { delayInMinutes: TAB_INTERVAL_MS / 60000 });
+  console.log(`[bg] next URL ${TAB_INTERVAL_MS / 1000}sn sonra (alarm SET)`);
+}
+
+async function finalize(st) {
+  const duration = Date.now() - st.startedAt;
+  await postJson("/scrape-done", {
+    sessionId: st.sessionId,
+    totalListings: st.totals.listings,
+    totalSaved: st.totals.saved,
+    totalSkipped: st.totals.skipped,
+    duration,
+    errors: st.errors,
+  });
   await chrome.storage.local.set({
-    lastStatus: session.aborted ? "aborted" : "done",
+    lastStatus: st.status,
     lastFinish: Date.now(),
     lastTotals: {
-      listings: session.totalListings,
-      saved: session.totalSaved,
-      skipped: session.totalSkipped,
-      errors: session.errors.length,
+      listings: st.totals.listings,
+      saved: st.totals.saved,
+      skipped: st.totals.skipped,
+      errors: st.errors.length,
     },
   });
-
-  console.log(`[bg] scrape done — ${session.totalSaved}/${session.totalListings} saved in ${(duration / 1000).toFixed(1)}s`);
-  session = null;
+  await clearState();
+  await chrome.alarms.clear(STEP_ALARM);
+  console.log(`[bg] scrape ${st.status} — ${st.totals.saved}/${st.totals.listings} saved in ${(duration / 1000).toFixed(1)}s`);
 }
 
-function waitForResume() {
-  return new Promise((resolve) => pendingResume.push(resolve));
-}
+// ─── Scrape One Category ─────────────────────────────────────────────────────
 
 async function scrapeCategory(target, sessionId) {
-  // 1) Yeni tab aç (background, kullanıcının aktif tab'ını bozma)
   const tab = await chrome.tabs.create({ url: target.url, active: false });
   const tabId = tab.id;
 
   try {
-    // 2) Tab'ın yüklenmesini ve content script'in mount olmasını bekle
     await waitForTabComplete(tabId);
 
-    // 3) Content script'e parse komutu gönder (content_scripts matches ile zaten mount)
     const result = await Promise.race([
       chrome.tabs.sendMessage(tabId, {
         type: "parse",
@@ -224,7 +299,6 @@ async function scrapeCategory(target, sessionId) {
       listed_by: target.listed_by,
     }));
 
-    // 4) /listings POST
     const postRes = await postJson("/listings", {
       sessionId,
       category: `${target.listing_type}/${target.property_type}`,
@@ -238,7 +312,6 @@ async function scrapeCategory(target, sessionId) {
       captcha: false,
     };
   } finally {
-    // 5) Tab kapat (best-effort)
     try { await chrome.tabs.remove(tabId); } catch { /* zaten kapanmış */ }
   }
 }
@@ -248,12 +321,10 @@ function waitForTabComplete(tabId) {
     const onUpdated = (id, info) => {
       if (id === tabId && info.status === "complete") {
         chrome.tabs.onUpdated.removeListener(onUpdated);
-        // Content script + JS render için ekstra bekleme
         setTimeout(resolve, CONTENT_DOM_WAIT_MS);
       }
     };
     chrome.tabs.onUpdated.addListener(onUpdated);
-    // Timeout fallback (30sn)
     setTimeout(() => {
       chrome.tabs.onUpdated.removeListener(onUpdated);
       resolve();
@@ -283,16 +354,18 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-// Popup'tan gelen manuel komutlar (POST /trigger { source: "manual" } popup
-// kendisi yapacak; burada sadece status query'leri için kanal hazır).
+// Popup status query
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === "get-status") {
-    sendResponse({
-      wsConnected: !!ws && ws.readyState === 1,
-      session: session
-        ? { id: session.id, totalSaved: session.totalSaved, totalListings: session.totalListings }
-        : null,
-    });
+    (async () => {
+      const st = await getState();
+      sendResponse({
+        wsConnected: !!ws && ws.readyState === 1,
+        session: st
+          ? { id: st.sessionId, status: st.status, index: st.index, total: SAHIBINDEN_TARGETS.length, totals: st.totals }
+          : null,
+      });
+    })();
     return true;
   }
 });
