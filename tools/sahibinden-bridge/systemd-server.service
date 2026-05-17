@@ -1,0 +1,16 @@
+[Unit]
+Description=Sahibinden Bridge Server (Telegram + cron → Chrome extension)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /home/cagr/Masaüstü/upu-platform/tools/sahibinden-bridge/server.mjs
+WorkingDirectory=/home/cagr/Masaüstü/upu-platform/tools/sahibinden-bridge
+Environment=NODE_ENV=production
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

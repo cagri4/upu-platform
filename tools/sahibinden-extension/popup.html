@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <title>Sahibinden Bridge</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 16px; width: 280px; background: #fafafa; color: #111; }
+    h1 { font-size: 14px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+    .badge.ok { background: #d1fae5; color: #065f46; }
+    .badge.warn { background: #fef3c7; color: #92400e; }
+    .badge.err { background: #fee2e2; color: #991b1b; }
+    button { width: 100%; padding: 10px; border: 0; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 6px; }
+    .primary { background: #ffe800; color: #111; }
+    .primary:hover { background: #fadb00; }
+    .secondary { background: #e5e7eb; color: #111; }
+    .secondary:hover { background: #d1d5db; }
+    .last { margin-top: 14px; padding-top: 10px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #555; line-height: 1.5; }
+    .row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+    .row b { font-variant-numeric: tabular-nums; color: #111; }
+    .muted { color: #888; }
+  </style>
+</head>
+<body>
+  <h1>📡 Sahibinden Bridge <span id="status" class="badge warn">…</span></h1>
+  <button id="trigger" class="primary">🟡 Bodrum'u Tara</button>
+  <button id="stop" class="secondary">⏹ Durdur</button>
+  <div class="last">
+    <div class="row"><span>Bağlantı</span><b id="conn">—</b></div>
+    <div class="row"><span>Son tarama</span><b id="lastTime">—</b></div>
+    <div class="row"><span>Kaydedilen</span><b id="lastSaved">—</b></div>
+    <div class="row"><span>Toplam parse</span><b id="lastTotal">—</b></div>
+    <div class="row"><span>Hata</span><b id="lastErrors">—</b></div>
+  </div>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

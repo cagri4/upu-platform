@@ -1,0 +1,17 @@
+{
+  "name": "sahibinden-bridge",
+  "version": "1.0.0",
+  "description": "Local HTTP+WS bridge between Telegram/cron triggers and Chrome extension scraper",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.16.0"
+  }
+}

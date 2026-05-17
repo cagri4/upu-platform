@@ -47,3 +47,7 @@ next-env.d.ts
 scripts/cookies.json
 scripts/output/
 scrape-log.txt
+
+# Local tools (sahibinden-bridge node_modules + lockfile)
+tools/sahibinden-bridge/node_modules/
+tools/sahibinden-bridge/package-lock.json
