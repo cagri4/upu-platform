@@ -24,6 +24,24 @@ const pendingResume = []; // resume promise resolvers
 
 connectWs();
 
+// MV3 service worker 30sn idle sonrası suspend olur → WS kopar. Alarm
+// callback'i her 30sn worker'ı uyandırır; bağlı değilsek reconnect ederiz.
+chrome.alarms.create("ws-keepalive", { periodInMinutes: 0.5 });
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name !== "ws-keepalive") return;
+  if (!ws || ws.readyState !== 1) {
+    console.log("[bg] keepalive: ws not open, reconnecting");
+    connectWs();
+  }
+});
+
+// Service worker startup'larında da connect dene (alarm + onStartup birlikte
+// idle'dan uyanmayı garanti eder).
+chrome.runtime.onStartup.addListener(() => {
+  console.log("[bg] runtime startup, ensuring ws");
+  if (!ws || ws.readyState !== 1) connectWs();
+});
+
 function connectWs() {
   if (wsReconnectTimer) {
     clearTimeout(wsReconnectTimer);
