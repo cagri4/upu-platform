@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Sahibinden Cookie Bridge",
+  "version": "1.0.0",
+  "description": "Auto-export sahibinden.com cookies to local scrape script every 5 minutes.",
+  "permissions": ["cookies", "alarms"],
+  "host_permissions": [
+    "https://*.sahibinden.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "128": "icon.png"
+  }
+}
