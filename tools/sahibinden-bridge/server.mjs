@@ -141,7 +141,9 @@ app.post("/listings", async (req, res) => {
   let saved = 0;
   let errors = 0;
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/emlak_daily_leads`, {
+    // PostgREST: on_conflict query param ŞART, yoksa Prefer header'ı tek başına
+    // çalışmaz ve duplicate'larda tüm batch 409 fail eder.
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/emlak_daily_leads?on_conflict=source_id,snapshot_date`, {
       method: "POST",
       headers: {
         ...SUPABASE_AUTH,
