@@ -3,10 +3,13 @@
  * Sahibinden Scraper V3 — V2 + sahibinden/emlak ofisi ayrimi
  *
  * Usage:
- *   node scripts/scrape-v3.mjs          → Full scrape (76 URL)
- *   node scripts/scrape-v3.mjs --daily  → Sadece yeni ilanlar (?date=1day)
- *   node scripts/scrape-v3.mjs --visible → Tarayiciyi goster
- *   node scripts/scrape-v3.mjs --test   → Ilk 3 URL ile test
+ *   node scripts/scrape-v3.mjs                     → Full scrape (76 URL)
+ *   node scripts/scrape-v3.mjs --daily             → Sadece yeni ilanlar (?date=1day)
+ *   node scripts/scrape-v3.mjs --visible           → Tarayiciyi goster
+ *   node scripts/scrape-v3.mjs --test              → Ilk 3 URL ile test
+ *   node scripts/scrape-v3.mjs --connect-running   → Çalışan Chrome'a bağlan
+ *     (Chrome `--remote-debugging-port=9222` ile başlatılmış olmalı; gerçek
+ *      user session = anti-bot bypass. Bağlanma fail ederse launch fallback.)
  */
 
 import puppeteerExtra from 'puppeteer-extra';
@@ -32,6 +35,11 @@ const skipCount = skipArg ? parseInt(skipArg.split('=')[1], 10) : 0;
 const takeArg = process.argv.find(a => a.startsWith('--take='));
 const takeCount = takeArg ? parseInt(takeArg.split('=')[1], 10) : 0;
 const sahibiOnly = process.argv.includes('--sahibi-only');
+// Connect mode: user'ın çalışan Chrome'una bağlan (--remote-debugging-port=9222
+// ile başlatılmış olmalı). Cookie/UA/stealth gerek yok — gerçek session.
+// Bağlanma fail ederse launch fallback'ı çalışır (eski akış).
+const connectRunning = process.argv.includes('--connect-running');
+const DEBUG_PORT = process.env.CHROME_DEBUG_PORT || '9222';
 
 // ─── BASE URLs (kullanıcı tarafından doğrulanmış 23 URL) ──────────────────
 //
@@ -250,9 +258,6 @@ async function scrape() {
   const mode = isDailyMode ? 'DAILY' : isTestMode ? 'TEST' : 'FULL';
   console.log(`\n🏠 Scraper V3 [${mode}] — ${urls.length} URL\n`);
 
-  const cookies = loadCookies();
-  console.log(`🍪 ${cookies.length} cookie yuklendi`);
-
   // Always resume from progress — don't reset on date mode.
   // Completed URLs are skipped, only pending ones are scraped.
   const progress = loadJSON(PROGRESS_FILE) || { completedUrls: [], listings: [] };
@@ -264,15 +269,39 @@ async function scrape() {
     console.log(`📂 Resume: ${allListings.length} ilan${isDailyMode ? '' : `, ${completedUrls.size} URL tamamlanmis`}\n`);
   }
 
-  const browser = await puppeteerExtra.launch({
-    headless: headlessMode,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled', '--window-size=1366,768'],
-  });
+  let browser;
+  let usingConnect = false;
+  if (connectRunning) {
+    try {
+      browser = await puppeteerExtra.connect({
+        browserURL: `http://127.0.0.1:${DEBUG_PORT}`,
+        defaultViewport: { width: 1366, height: 768 },
+      });
+      usingConnect = true;
+      console.log(`🔗 Bağlandı: localhost:${DEBUG_PORT} (gerçek Chrome session)`);
+    } catch (err) {
+      console.warn(`⚠️ Connect fail (${err.message}) — launch fallback`);
+    }
+  }
+  if (!browser) {
+    browser = await puppeteerExtra.launch({
+      headless: headlessMode,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled', '--window-size=1366,768'],
+    });
+  }
 
   const page = await browser.newPage();
   await page.setViewport({ width: 1366, height: 768 });
-  await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
-  await page.setCookie(...cookies);
+
+  if (usingConnect) {
+    // Gerçek Chrome session — UA + cookie kullanıcının tarayıcısından gelir.
+    console.log('🍪 Connect mode: cookies.json skip (gerçek browser session aktif)');
+  } else {
+    const cookies = loadCookies();
+    console.log(`🍪 ${cookies.length} cookie yuklendi`);
+    await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
+    await page.setCookie(...cookies);
+  }
 
   let blocked = false;
 
@@ -300,8 +329,10 @@ async function scrape() {
       pageNum++;
       console.log(`  📄 Sayfa ${pageNum}`);
 
+      let httpStatus = 0;
       try {
-        await page.goto(currentUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        const response = await page.goto(currentUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        httpStatus = response?.status() || 0;
       } catch (err) {
         console.error(`  ⚠️ Sayfa yuklenemedi: ${err.message}`);
         break;
@@ -310,7 +341,7 @@ async function scrape() {
       await page.waitForSelector('.searchResultsItem', { timeout: 8000 }).catch(() => {});
       await sleep(2500, 4000);
 
-      // Block/login check
+      // Block/login check — URL pattern, HTTP status ve error-page DOM marker
       const pageUrl = page.url();
       if (pageUrl.includes('/giris') || pageUrl.includes('/login')) {
         console.error('  ❌ Giris duvari! Cookie guncelle.');
@@ -319,6 +350,19 @@ async function scrape() {
       }
       if (pageUrl.includes('olagan-disi')) {
         console.error('  ❌ IP engeli! Bekle ve tekrar dene.');
+        blocked = true;
+        break;
+      }
+      if (httpStatus === 403 || httpStatus === 429) {
+        console.error(`  ❌ Anti-bot blok (HTTP ${httpStatus}). Connect mode / cookie / IP gerekli.`);
+        blocked = true;
+        break;
+      }
+      // Sahibinden sarı temalı "error-page-container" sayfası — 200 dönüp
+      // boş HTML ile gelebilir (URL redirect yok). Bu silent block sinyali.
+      const errorPage = await page.evaluate(() => !!document.querySelector('.error-page-container'));
+      if (errorPage) {
+        console.error(`  ❌ Sahibinden error-page (silent block, HTTP ${httpStatus}).`);
         blocked = true;
         break;
       }
@@ -409,7 +453,13 @@ async function scrape() {
     }
   }
 
-  await browser.close();
+  // Cleanup — connect mode'da user'ın Chrome'unu kapatma, sadece bizim tab'ı.
+  if (usingConnect) {
+    try { await page.close(); } catch { /* tab zaten kapanmış olabilir */ }
+    try { await browser.disconnect(); } catch { /* sessiz */ }
+  } else {
+    await browser.close();
+  }
 
   // Final save
   saveJSON(OUTPUT_FILE, allListings);

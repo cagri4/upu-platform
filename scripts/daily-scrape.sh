@@ -29,24 +29,33 @@ DATE=$(date '+%Y-%m-%d %H:%M')
 echo "───────────────────────────────" >> "$LOG_FILE"
 echo "$DATE — Başlatılıyor [$PART]" >> "$LOG_FILE"
 
-# 1. Cookie'leri yenile
 cd "$PROJECT_DIR"
-COOKIE_OUT=$($NODE scripts/export-cookies.mjs 2>&1)
-COOKIE_EXIT=$?
 
-if [ $COOKIE_EXIT -ne 0 ]; then
-  echo "$DATE — ❌ Cookie yenileme BAŞARISIZ" >> "$LOG_FILE"
-  echo "  $COOKIE_OUT" >> "$LOG_FILE"
-  exit 1
+# 1. Chrome debug check → varsa connect mode (gerçek user session, anti-bot
+# bypass). Yoksa eski cookie + headless launch akışına düş.
+if curl -s -o /dev/null --max-time 2 "http://127.0.0.1:9222/json/version"; then
+  CONNECT_FLAG="--connect-running"
+  echo "$DATE — 🔗 Chrome debug aktif (9222) → connect mode" >> "$LOG_FILE"
+else
+  CONNECT_FLAG=""
+  echo "$DATE — ⚠️ Chrome debug yok (9222) → launch fallback (cookie refresh)" >> "$LOG_FILE"
+
+  # Launch fallback için cookie'leri yenile (connect mode'da gerek yok)
+  COOKIE_OUT=$($NODE scripts/export-cookies.mjs 2>&1)
+  COOKIE_EXIT=$?
+  if [ $COOKIE_EXIT -ne 0 ]; then
+    echo "$DATE — ❌ Cookie yenileme BAŞARISIZ" >> "$LOG_FILE"
+    echo "  $COOKIE_OUT" >> "$LOG_FILE"
+    exit 1
+  fi
+  COOKIE_COUNT=$(echo "$COOKIE_OUT" | grep -oP '\d+ cookie' | head -1)
+  echo "$DATE — ✅ Cookie: $COOKIE_COUNT" >> "$LOG_FILE"
 fi
-
-COOKIE_COUNT=$(echo "$COOKIE_OUT" | grep -oP '\d+ cookie' | head -1)
-echo "$DATE — ✅ Cookie: $COOKIE_COUNT" >> "$LOG_FILE"
 
 # 2. Scrape V3 — partiye göre URL seçimi (23 URL toplam, sadece sahibi)
 # Daily leads pipeline: sahibi ilanları 3 partide çekilir
 # part1: ilk 8, part2: 8-16, part3: 16-23
-SCRAPE_ARGS="--days=1 --sahibi-only"
+SCRAPE_ARGS="--days=1 --sahibi-only $CONNECT_FLAG"
 
 # Part1 her gün taze başlamalı: yesterday'in progress file'ı varsa sil.
 # (scrape-v3.mjs persistent PROGRESS_FILE kullanıyor, gün sonunda reset
