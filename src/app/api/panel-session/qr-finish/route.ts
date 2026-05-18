@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { signSession, buildSessionCookie } from "@/platform/auth/session";
 import { getTenantPanelUrl } from "@/platform/auth/qr";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 
@@ -41,12 +42,20 @@ export async function GET(req: NextRequest) {
     const targetUrl = getTenantPanelUrl(row.claimed_tenant);
     if (!targetUrl) return NextResponse.redirect(FALLBACK_HOME);
 
-    // Profili tekrar yükle — tenantId payload için (cookie scope .upudev.nl)
-    const { data: profile } = await sb
-      .from("profiles")
-      .select("tenant_id")
-      .eq("id", row.claimed_user_id)
-      .single();
+    // Multi-tenant profile lookup — claimed_tenant'a göre doğru profile'ı bul.
+    // Legacy `eq("id", uid)` her zaman emlak profile döndürüyordu; bayi gibi
+    // multi-tenant subdomain'lerde JWT yanlış tenant_id ile imzalanıyordu →
+    // panel layout bayi açsa da içerik emlak'a düşüyor / mobil view "emlak'a
+    // dönüşmüş" görünür.
+    const lookup = await resolveTenantProfile<{ tenant_id: string }>(sb, {
+      userId: row.claimed_user_id,
+      tenantKey: row.claimed_tenant,
+      select: "tenant_id",
+    });
+    if ("error" in lookup) {
+      console.error("[qr-finish] profile lookup fail:", lookup.error);
+      return NextResponse.redirect(FALLBACK_HOME);
+    }
 
     // Code'u tek kullanımlık olarak işaretle
     await sb
@@ -57,7 +66,7 @@ export async function GET(req: NextRequest) {
 
     const jwt = await signSession({
       uid: row.claimed_user_id,
-      tenantId: profile?.tenant_id ?? null,
+      tenantId: lookup.tenantId,
     });
 
     const response = NextResponse.redirect(targetUrl);
