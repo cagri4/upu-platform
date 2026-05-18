@@ -18,6 +18,9 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { resolvePanelAuth } from "@/platform/auth/panel-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
+import { getTenantByKey } from "@/tenants/config";
 
 export const dynamic = "force-dynamic";
 
@@ -31,27 +34,56 @@ function clampInt(v: string | null, min: number, max: number, def: number): numb
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const token = sp.get("t") || sp.get("token");
-  if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
-
   const supabase = getServiceClient();
-  const { data: magicToken } = await supabase
-    .from("magic_link_tokens")
-    .select("id, user_id, expires_at")
-    .eq("token", token)
-    .maybeSingle();
-  if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-  if (new Date(magicToken.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
+
+  // Auth — token magic-link öncelikli, fallback cookie session.
+  let tenantId: string | null = null;
+
+  if (token) {
+    const { data: magicToken } = await supabase
+      .from("magic_link_tokens")
+      .select("id, user_id, expires_at")
+      .eq("token", token)
+      .maybeSingle();
+    if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
+    if (new Date(magicToken.expires_at) < new Date()) {
+      return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
+    }
+
+    const bayiCfg = getTenantByKey("bayi");
+    if (!bayiCfg?.tenantId) {
+      return NextResponse.json({ error: "Bayi tenant config bulunamadı." }, { status: 500 });
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("tenant_id")
+      .or(`id.eq.${magicToken.user_id},auth_user_id.eq.${magicToken.user_id}`)
+      .eq("tenant_id", bayiCfg.tenantId)
+      .maybeSingle();
+    if (!profile?.tenant_id) {
+      return NextResponse.json({ error: "Bu link bayi tenant'ına ait değil." }, { status: 403 });
+    }
+    tenantId = profile.tenant_id;
+  } else {
+    // Cookie session fallback
+    const auth = await resolvePanelAuth(req);
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+    const lookup = await resolveTenantProfile<{ tenant_id: string }>(supabase, {
+      userId: auth.userId,
+      tenantKey: "bayi",
+      select: "id, tenant_id",
+    });
+    if ("error" in lookup) {
+      return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+    }
+    tenantId = lookup.tenantId;
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, tenant_id, capabilities")
-    .eq("id", magicToken.user_id)
-    .single();
-  if (!profile?.tenant_id) return NextResponse.json({ error: "Profil eksik." }, { status: 500 });
-
-  const tenantId = profile.tenant_id;
+  if (!tenantId) {
+    return NextResponse.json({ error: "Tenant resolved edilemedi." }, { status: 500 });
+  }
   const page = clampInt(sp.get("page"), 1, 10000, 1);
   const pageSize = clampInt(sp.get("pageSize"), 5, 100, 20);
   const qRaw = (sp.get("q") || "").trim();

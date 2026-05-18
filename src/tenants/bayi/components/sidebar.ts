@@ -12,23 +12,31 @@
  * pattern'i). Sidebar etiketi "Panelim" / "Bayilerim" gibi sade kalır;
  * URL `/tr/bayi-panel`, `/tr/bayi-bayilerim` olur. Emlak `(panel)/panel`
  * ile path çakışmasını önlemek için.
+ *
+ * Token-optional: Cookie session aktifse AdminLayout `token=""` geçer.
+ * `q(path)` helper boş token'da `?t=` query suffix EKLEMEZ — alt sayfalar
+ * cookie session fallback ile çalışır (boş `?t=` "Geçersiz link" hatası
+ * vermesin diye).
  */
 import type { SidebarItem } from "@/components/admin-layout";
 
+const q = (path: string) => (t: string) =>
+  t ? `${path}?t=${encodeURIComponent(t)}` : path;
+
 export const BAYI_SIDEBAR: SidebarItem[] = [
-  { id: "panelim",       label: "Panelim",         icon: "🏠", href: t => `/tr/bayi-panel?t=${encodeURIComponent(t)}`,           matchPath: "/tr/bayi-panel" },
-  { id: "bayilerim",     label: "Bayilerim",       icon: "🏢", href: t => `/tr/bayiler?t=${encodeURIComponent(t)}`,              matchPath: "/tr/bayiler" },
-  { id: "siparislerim",  label: "Siparişlerim",    icon: "📋", href: t => `/tr/bayi-siparislerim?t=${encodeURIComponent(t)}`,    matchPath: "/tr/bayi-siparislerim" },
-  { id: "tahsilatlarim", label: "Tahsilatlarım",   icon: "💰", href: t => `/tr/bayi-tahsilatlarim?t=${encodeURIComponent(t)}`,   matchPath: "/tr/bayi-tahsilatlarim" },
-  { id: "vade",          label: "Vade Hatırlatma", icon: "⏰", href: t => `/tr/bayi-vade-hatirlatma?t=${encodeURIComponent(t)}`, matchPath: "/tr/bayi-vade-hatirlatma" },
-  { id: "kampanyalarim", label: "Kampanyalarım",   icon: "📣", href: t => `/tr/bayi-kampanya?t=${encodeURIComponent(t)}`,        matchPath: "/tr/bayi-kampanya" },
-  { id: "raporlar",      label: "Cirolarım",       icon: "📊", href: t => `/tr/bayi-raporlar?t=${encodeURIComponent(t)}`,        matchPath: "/tr/bayi-raporlar" },
-  { id: "takvim",        label: "Takvim",          icon: "📅", href: t => `/tr/bayi-takvim?t=${encodeURIComponent(t)}`,          matchPath: "/tr/bayi-takvim" },
-  { id: "profilim",      label: "Profilim",        icon: "👤", href: t => `/tr/bayi-profilim?t=${encodeURIComponent(t)}`,        matchPath: "/tr/bayi-profilim" },
-  { id: "ayarlar",       label: "Panel Ayarları",  icon: "⚙️",  href: t => `/tr/bayi-panel-ayarlari?t=${encodeURIComponent(t)}`,  matchPath: "/tr/bayi-panel-ayarlari", separatorBefore: true },
-  { id: "hakkinda",      label: "UPUDev Hakkında", icon: "ℹ️",  href: t => `/tr/bayi-hakkinda?t=${encodeURIComponent(t)}`,         matchPath: "/tr/bayi-hakkinda", separatorBefore: true },
-  { id: "oneri",         label: "Öneri / Şikayet", icon: "💬", href: t => `/tr/bayi-oneri?t=${encodeURIComponent(t)}`,           matchPath: "/tr/bayi-oneri" },
-  { id: "destek",        label: "Destek Talebi",   icon: "🛟", href: t => `/tr/bayi-destek?t=${encodeURIComponent(t)}`,          matchPath: "/tr/bayi-destek" },
+  { id: "panelim",       label: "Panelim",         icon: "🏠", href: q("/tr/bayi-panel"),           matchPath: "/tr/bayi-panel" },
+  { id: "bayilerim",     label: "Bayilerim",       icon: "🏢", href: q("/tr/bayiler"),              matchPath: "/tr/bayiler" },
+  { id: "siparislerim",  label: "Siparişlerim",    icon: "📋", href: q("/tr/bayi-siparislerim"),    matchPath: "/tr/bayi-siparislerim" },
+  { id: "tahsilatlarim", label: "Tahsilatlarım",   icon: "💰", href: q("/tr/bayi-tahsilatlarim"),   matchPath: "/tr/bayi-tahsilatlarim" },
+  { id: "vade",          label: "Vade Hatırlatma", icon: "⏰", href: q("/tr/bayi-vade-hatirlatma"), matchPath: "/tr/bayi-vade-hatirlatma" },
+  { id: "kampanyalarim", label: "Kampanyalarım",   icon: "📣", href: q("/tr/bayi-kampanya"),        matchPath: "/tr/bayi-kampanya" },
+  { id: "raporlar",      label: "Cirolarım",       icon: "📊", href: q("/tr/bayi-raporlar"),        matchPath: "/tr/bayi-raporlar" },
+  { id: "takvim",        label: "Takvim",          icon: "📅", href: q("/tr/bayi-takvim"),          matchPath: "/tr/bayi-takvim" },
+  { id: "profilim",      label: "Profilim",        icon: "👤", href: q("/tr/bayi-profilim"),        matchPath: "/tr/bayi-profilim" },
+  { id: "ayarlar",       label: "Panel Ayarları",  icon: "⚙️",  href: q("/tr/bayi-panel-ayarlari"),  matchPath: "/tr/bayi-panel-ayarlari", separatorBefore: true },
+  { id: "hakkinda",      label: "UPUDev Hakkında", icon: "ℹ️",  href: q("/tr/bayi-hakkinda"),        matchPath: "/tr/bayi-hakkinda", separatorBefore: true },
+  { id: "oneri",         label: "Öneri / Şikayet", icon: "💬", href: q("/tr/bayi-oneri"),           matchPath: "/tr/bayi-oneri" },
+  { id: "destek",        label: "Destek Talebi",   icon: "🛟", href: q("/tr/bayi-destek"),          matchPath: "/tr/bayi-destek" },
 ];
 
 export const BAYI_BRAND_TITLE = "🏢 UPU Bayi";

@@ -1,14 +1,21 @@
 /**
  * GET /api/bayi-panel/me — bayi panel cookie session doğrulama.
- * Cookie geçerliyse profile döner (token gerekmez). Sliding session.
+ *
+ * Cookie geçerliyse bayi tenant profili döner. Token gerekmez (sliding session).
+ *
+ * Multi-tenant fix: resolveTenantProfile("bayi") composite lookup:
+ *   .or(auth_user_id.eq.<uid>, id.eq.<uid>).eq(tenant_id, bayi)
+ * Aynı auth.users.id'ye sahip emlak legacy + bayi multi-tenant profile
+ * birlikte var olabilir; subdomain bayi → bayi profili döner, emlak değil.
  */
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getSessionFromCookies, attachSessionToResponse } from "@/platform/auth/session";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(_req: NextRequest) {
   try {
     const session = await getSessionFromCookies();
     if (!session) {
@@ -16,17 +23,21 @@ export async function GET() {
     }
 
     const supabase = getServiceClient();
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("display_name, tenant_id, metadata")
-      .eq("id", session.uid)
-      .single();
+    const lookup = await resolveTenantProfile<{
+      display_name: string | null;
+      tenant_id: string;
+      metadata: Record<string, unknown> | null;
+    }>(supabase, {
+      userId: session.uid,
+      tenantKey: "bayi",
+      select: "id, display_name, tenant_id, metadata",
+    });
 
-    if (!profile) {
-      return NextResponse.json({ error: "Profil bulunamadı." }, { status: 404 });
+    if ("error" in lookup) {
+      return NextResponse.json({ error: lookup.error }, { status: lookup.status });
     }
 
-    const meta = (profile.metadata || {}) as Record<string, unknown>;
+    const meta = (lookup.profile.metadata || {}) as Record<string, unknown>;
     const firma = (meta.firma_profili || {}) as Record<string, unknown>;
     const firmaUnvani =
       (firma.ticari_unvan as string) ||
@@ -35,15 +46,15 @@ export async function GET() {
 
     const response = NextResponse.json({
       success: true,
-      displayName: profile.display_name || null,
+      displayName: lookup.profile.display_name || null,
       firmaUnvani,
       officeName: firmaUnvani,
-      tenantId: profile.tenant_id || null,
+      tenantId: lookup.tenantId,
       botPhone: "31644967207",
     });
     return await attachSessionToResponse(response, {
       uid: session.uid,
-      tenantId: profile.tenant_id ?? null,
+      tenantId: lookup.tenantId,
     });
   } catch (err) {
     console.error("[bayi-panel:me]", err);

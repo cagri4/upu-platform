@@ -117,25 +117,34 @@ export default function BayilerPage() {
   const [searchInput, setSearchInput] = useState(q);
 
   const apiUrl = useMemo(() => {
-    const sp = new URLSearchParams({ t: token, page: String(page), pageSize: String(pageSize), status, vade });
+    // Token boş ise t param atlanır → /api/bayiler/list cookie session fallback
+    // ile auth eder (multi-tenant aware, bayi profili).
+    const sp = new URLSearchParams({ page: String(page), pageSize: String(pageSize), status, vade });
+    if (token) sp.set("t", token);
     if (q) sp.set("q", q);
     return `/api/bayiler/list?${sp.toString()}`;
   }, [token, page, pageSize, q, status, vade]);
 
-  // Init + tour Task 1 (bayilerim) advance fire-once
+  // Init + tour Task 1 (bayilerim) advance fire-once.
+  // Token URL'de yoksa /api/bayiler/init cookie session ile auth eder
+  // (sidebar token-optional path → cookie devralır).
   useEffect(() => {
-    if (!token) { setError("Geçersiz link — token bulunamadı."); return; }
-    fetch(`/api/bayiler/init?t=${encodeURIComponent(token)}`)
+    const initUrl = token ? `/api/bayiler/init?t=${encodeURIComponent(token)}` : `/api/bayiler/init`;
+    fetch(initUrl, { credentials: "same-origin" })
       .then(async r => {
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Init hatası");
         setInit(d.user);
-        // Tour koridor — liste sayfası açıldıkça "bayilerim" tamam.
-        fetch(`/api/tour/advance`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, event: "tour_bayilerim_done" }),
-        }).catch(() => { /* sessiz */ });
+        if (token) {
+          // Tour koridor — liste sayfası açıldıkça "bayilerim" tamam.
+          // Cookie session modunda token yok → tour advance atla (zaten
+          // organic signup user'ı için tour-relevant değil).
+          fetch(`/api/tour/advance`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token, event: "tour_bayilerim_done" }),
+          }).catch(() => { /* sessiz */ });
+        }
       })
       .catch(e => setError(e.message || "Bağlantı hatası"));
   }, [token]);
@@ -144,7 +153,7 @@ export default function BayilerPage() {
   useEffect(() => {
     if (!init) return;
     setLoading(true);
-    fetch(apiUrl)
+    fetch(apiUrl, { credentials: "same-origin" })
       .then(async r => {
         const d = await r.json();
         if (!r.ok) {

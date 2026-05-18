@@ -2,11 +2,14 @@
  * GET /api/bayi-panel/profile?t=<token>
  *
  * Bayi profilim özet — display_name + firma_profili snapshot.
- * Profilim sayfasında okunan veriyi tek seferde döner.
+ *
+ * Multi-tenant fix: resolveTenantProfile("bayi") ile composite lookup.
+ * Eski .eq("id", auth.userId) bayi multi-tenant profile'ında 0 row dönüyordu.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { resolvePanelAuth } from "@/platform/auth/panel-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 
@@ -19,19 +22,27 @@ export async function GET(req: NextRequest) {
   }
 
   const sb = getServiceClient();
-  const { data: profile } = await sb
-    .from("profiles")
-    .select("display_name, metadata, phone")
-    .eq("id", auth.userId)
-    .maybeSingle();
+  const lookup = await resolveTenantProfile<{
+    display_name: string | null;
+    metadata: Record<string, unknown> | null;
+    phone: string | null;
+  }>(sb, {
+    userId: auth.userId,
+    tenantKey: "bayi",
+    select: "id, display_name, metadata, phone",
+  });
 
-  const meta = (profile?.metadata || {}) as Record<string, unknown>;
+  if ("error" in lookup) {
+    return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+  }
+
+  const meta = (lookup.profile.metadata || {}) as Record<string, unknown>;
   const firma = (meta.firma_profili || {}) as Record<string, unknown>;
 
   return NextResponse.json({
     success: true,
-    displayName: profile?.display_name || null,
-    phone: profile?.phone || null,
+    displayName: lookup.profile.display_name || null,
+    phone: lookup.profile.phone || null,
     firma: {
       ticari_unvan:    (firma.ticari_unvan as string) || null,
       yetkili_adi:     (firma.yetkili_adi as string) || null,
