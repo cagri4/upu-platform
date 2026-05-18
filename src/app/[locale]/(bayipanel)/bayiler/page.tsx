@@ -18,6 +18,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { BayiDavetModal } from "./_components/BayiDavetModal";
 
 interface BayiRow {
   id: string;
@@ -106,6 +107,7 @@ export default function BayilerPage() {
   const [error, setError] = useState("");
   const [data, setData] = useState<ListResp | null>(null);
   const [loading, setLoading] = useState(true);
+  const [davetOpen, setDavetOpen] = useState(false);
 
   // URL params (controlled)
   const page = parseInt(params.get("page") || "1", 10);
@@ -212,12 +214,19 @@ export default function BayilerPage() {
               <p className="text-xs text-slate-500 mt-0.5">{init.ticariUnvan}</p>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             {data && (
               <div className="text-xs text-slate-500">
                 {data.total} bayi · sayfa {data.page}/{data.pages}
               </div>
             )}
+            <button
+              type="button"
+              onClick={() => setDavetOpen(true)}
+              className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-3 py-2 rounded-lg transition"
+            >
+              <span>+</span> Bayi Davet Et
+            </button>
             <a
               href={`/tr/bayi-calisan-davet?t=${encodeURIComponent(token)}`}
               className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-3 py-2 rounded-lg transition"
@@ -366,6 +375,11 @@ export default function BayilerPage() {
           </div>
         )}
       </main>
+
+      <BayiDavetModal
+        open={davetOpen}
+        onClose={() => setDavetOpen(false)}
+      />
     </div>
   );
 }
