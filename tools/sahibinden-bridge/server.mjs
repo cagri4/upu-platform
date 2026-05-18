@@ -234,6 +234,12 @@ app.post("/stop", (req, res) => {
   res.json({ ok: true, stopped: sessionId });
 });
 
+app.post("/reload-extension", (_req, res) => {
+  broadcast({ type: "reload" });
+  log("info", `reload broadcast`, { clients: state.wsClients.size });
+  res.json({ ok: true, clients: state.wsClients.size });
+});
+
 // ── HTTP + WS BOOTSTRAP ────────────────────────────────────────────────
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: "/ws" });

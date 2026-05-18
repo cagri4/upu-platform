@@ -136,6 +136,9 @@ async function handleServerMessage(msg) {
       await chrome.alarms.clear(STEP_ALARM);
       await finalize(st);
     }
+  } else if (msg.type === "reload") {
+    console.log("[bg] reload command — chrome.runtime.reload()");
+    chrome.runtime.reload();
   }
 }
 
