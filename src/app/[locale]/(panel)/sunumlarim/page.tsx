@@ -83,7 +83,7 @@ export default function SunumlarimPage() {
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-10 text-center shadow-sm border border-slate-200/70 dark:border-slate-800">
           <Presentation className="w-12 h-12 text-emerald-600 dark:text-emerald-400 mx-auto mb-3" strokeWidth={1.8} />
           <p className="font-semibold text-slate-900 dark:text-white mb-1">Henüz sunumunuz yok</p>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">WhatsApp&apos;tan bir mülk ekleyince otomatik sunum oluşur.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Bir mülk eklediğinizde sizin için hemen sunum oluştururum.</p>
         </div>
       ) : (
         <div className="space-y-3">
