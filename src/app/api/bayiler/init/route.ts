@@ -18,7 +18,7 @@ import { getTenantByKey } from "@/tenants/config";
 
 export const dynamic = "force-dynamic";
 
-interface BayiProfile {
+type BayiProfile = {
   id: string;
   tenant_id: string | null;
   capabilities: string[] | null;
@@ -26,7 +26,8 @@ interface BayiProfile {
   invited_by: string | null;
   display_name: string | null;
   metadata: Record<string, unknown> | null;
-}
+  [key: string]: unknown;
+};
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("t") || req.nextUrl.searchParams.get("token");
