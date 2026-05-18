@@ -28,6 +28,7 @@ const KEEPALIVE_ALARM = "ws-keepalive";
 
 let ws = null;
 let wsReconnectTimer = null;
+let processing = false; // concurrent processNext koruması (in-memory; race window içinde geçerli)
 
 connectWs();
 
@@ -169,6 +170,19 @@ async function initScrape(sessionId) {
 }
 
 async function processNext() {
+  if (processing) {
+    console.log("[bg] processNext: zaten processing, skip");
+    return;
+  }
+  processing = true;
+  try {
+    await _processNext();
+  } finally {
+    processing = false;
+  }
+}
+
+async function _processNext() {
   const st = await getState();
   if (!st) return;
   if (st.status !== "running") {
