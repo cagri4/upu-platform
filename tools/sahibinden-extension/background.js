@@ -226,6 +226,19 @@ async function _processNext() {
   st2.totals.saved += result.saved || 0;
   st2.totals.skipped += result.skipped || 0;
 
+  if (result.loginRequired) {
+    console.warn(`[bg] login required at ${category} (reason=${result.reason}) — paused`);
+    await postJson("/login-required", {
+      sessionId: st2.sessionId,
+      url: target.url,
+      category,
+      reason: result.reason,
+    });
+    st2.status = "paused";
+    await setState(st2);
+    return; // resume mesajı bekleniyor (kullanıcı login yapıp /resume tetikler)
+  }
+
   if (result.captcha) {
     console.warn(`[bg] captcha at ${category} — paused`);
     await postJson("/captcha-detected", {
@@ -302,6 +315,10 @@ async function scrapeCategory(target, sessionId) {
 
     if (!result || result.timeout) {
       return { parsed: 0, saved: 0, skipped: 0, captcha: false, errors: 1 };
+    }
+
+    if (result.loginRequired) {
+      return { parsed: 0, saved: 0, skipped: 0, captcha: false, loginRequired: true, reason: result.reason };
     }
 
     if (result.captcha) {

@@ -11,7 +11,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type !== "parse") return;
   (async () => {
     try {
-      // Captcha / blok kontrolü
+      // 1) Cookie expire / login form — captcha'dan ÖNCE öncelikli
+      const loginReason = detectLoginRequired();
+      if (loginReason) {
+        sendResponse({ loginRequired: true, reason: loginReason, listings: [] });
+        return;
+      }
+
+      // 2) Captcha / blok kontrolü
       const captcha = detectCaptcha();
       if (captcha) {
         sendResponse({ captcha: true, reason: captcha });
@@ -26,6 +33,23 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return true; // async sendResponse
 });
 
+function detectLoginRequired() {
+  // 1) URL auth path'e redirect (cookie expire'ın en net sinyali)
+  const url = location.href;
+  if (/\/giris\b|\/uye-giris\b|\/login\b/i.test(url)) return "auth-url";
+  if (/[?&]action=login\b/i.test(url)) return "action-login";
+
+  // 2) Login form DOM marker'ları (URL aynı kalsa bile inline form)
+  if (document.querySelector(".login-form, #user-login, .sign-in, form[action*='giris'], form[action*='login']")) {
+    return "login-form";
+  }
+
+  // 3) Body class fingerprint'i (bazı sayfalar JS render sonrası body'ye class koyar)
+  if (document.body?.classList?.contains("login-page")) return "login-page-body";
+
+  return null;
+}
+
 function detectCaptcha() {
   // 1) Sahibinden'in sarı temalı error page'i
   if (document.querySelector(".error-page-container")) return "error-page";
@@ -35,10 +59,9 @@ function detectCaptcha() {
   if (bodyText.includes("olağan dışı erişim")) return "olagan-disi";
   if (bodyText.includes("basılı tut")) return "press-hold";
 
-  // 3) URL redirect to giriş wall
-  const url = location.href;
-  if (url.includes("/giris") || url.includes("/login")) return "login-wall";
-  if (url.includes("olagan-disi")) return "olagan-disi-url";
+  // 3) URL redirect to olağan dışı erişim path'i (login path artık
+  // detectLoginRequired tarafından yakalanıyor — burada yok)
+  if (location.href.includes("olagan-disi")) return "olagan-disi-url";
 
   // 4) PerimeterX challenge iframe (varsa)
   if (document.querySelector("iframe[src*='captcha']")) return "captcha-iframe";

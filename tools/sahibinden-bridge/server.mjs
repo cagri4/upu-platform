@@ -194,6 +194,19 @@ app.post("/scrape-done", async (req, res) => {
       (Array.isArray(errors) && errors.length > 0 ? `\n• Hata: ${errors.length}` : ""),
   );
 
+  // Defense-in-depth — content.js login-detect + bg.js handler tetiklenmediyse
+  // de scrape-done seviyesinde silent fail'i yakala. 0 listing + > 5dk süre
+  // = full cron çalışmış ama cookie expire kuvvetli sinyali (test mode short
+  // run'larda false-positive olmasın diye duration threshold).
+  if ((totalListings || 0) === 0 && (duration || 0) > 5 * 60 * 1000) {
+    log("warn", `silent zero-listing scrape — likely cookie expire`, { sessionId, duration });
+    await tgNotify(
+      `🚨 Scrape tamamlandı ama 0 listing — cookie expire ihtimali yüksek.\n` +
+        `Chrome → sahibinden.com → Giriş Yap → bir ilana tıkla (warmup).\n` +
+        `Sonra cron yeniden tetiklenecek (08:00/18:00) veya manuel POST /trigger.`,
+    );
+  }
+
   res.json({ ok: true });
 });
 
@@ -212,6 +225,25 @@ app.post("/captcha-detected", async (req, res) => {
   );
 
   res.json({ ok: true, status: "paused" });
+});
+
+app.post("/login-required", async (req, res) => {
+  const { sessionId, url, category, reason } = req.body || {};
+  log("warn", `login required (cookie expire)`, { sessionId, url, category, reason });
+
+  if (state.pending?.sessionId === sessionId) {
+    state.pending.status = "login-required";
+  }
+
+  const shortId = (sessionId || "").slice(0, 8);
+  await tgNotify(
+    `⚠️ Sahibinden cookie expire — re-login yap.\n\n` +
+      `Chrome → sahibinden.com → Giriş Yap → bir ilana tıkla (warmup).\n\n` +
+      `Sonra: POST /resume veya botla "devam" yaz.\n\n` +
+      `Session: ${shortId}, kategori: ${category || "?"}, reason: ${reason || "?"}`,
+  );
+
+  res.json({ ok: true, status: "login-required" });
 });
 
 app.post("/resume", (req, res) => {
