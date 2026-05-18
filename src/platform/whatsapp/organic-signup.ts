@@ -261,7 +261,7 @@ interface SignupArgs {
   isLegacyAuth: boolean;
 }
 
-async function runTenantSignup(
+export async function runTenantSignup(
   supabase: SupabaseClient,
   args: SignupArgs,
 ): Promise<boolean> {

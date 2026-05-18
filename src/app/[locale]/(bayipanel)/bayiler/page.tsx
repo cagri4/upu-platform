@@ -220,6 +220,12 @@ export default function BayilerPage() {
                 {data.total} bayi · sayfa {data.page}/{data.pages}
               </div>
             )}
+            <a
+              href={`/tr/bayi-davetleri?t=${encodeURIComponent(token)}`}
+              className="inline-flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold px-3 py-2 rounded-lg transition hover:border-emerald-300"
+            >
+              📩 Davetler
+            </a>
             <button
               type="button"
               onClick={() => setDavetOpen(true)}
