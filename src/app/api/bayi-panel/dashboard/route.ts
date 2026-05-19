@@ -19,7 +19,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { resolvePanelAuth } from "@/platform/auth/panel-auth";
 import { getTenantByDomain, getTenantByKey } from "@/tenants/config";
-import { sanitizeBayiQuickActions, DEFAULT_BAYI_QUICK_ACTIONS } from "@/platform/quick-actions/bayi-keys";
 
 export const dynamic = "force-dynamic";
 
@@ -59,18 +58,13 @@ export async function GET(req: NextRequest) {
     // 4) Bayi profile composite lookup (auth_user_id + bayi tenant_id)
     const { data: bayiProfile } = await sb
       .from("profiles")
-      .select("id, metadata")
+      .select("id")
       .eq("auth_user_id", authUserId)
       .eq("tenant_id", bayiTenantId)
       .maybeSingle();
     if (!bayiProfile) {
       return NextResponse.json({ error: "Bu hesap bayi'ye kayıtlı değil." }, { status: 403 });
     }
-
-    // Hızlı işlem tercihi — metadata.bayi_quick_actions, yoksa default
-    const metaQuickActions = (bayiProfile.metadata as { bayi_quick_actions?: unknown } | null)?.bayi_quick_actions;
-    const sanitized = sanitizeBayiQuickActions(metaQuickActions);
-    const quickActions = sanitized && sanitized.length > 0 ? sanitized : DEFAULT_BAYI_QUICK_ACTIONS;
 
     // 5) KPI queries — hepsi bayi tenant_id ile filtreli
     const { data: statuses } = await sb
@@ -142,7 +136,6 @@ export async function GET(req: NextRequest) {
         critical_stock: criticalStock,
         active_invites: activeInvitesRes.count || 0,
       },
-      quickActions,
     });
   } catch (err) {
     console.error("[bayi-panel:dashboard]", err);

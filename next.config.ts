@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
         destination: "/:locale/kullanici-davet",
         permanent: true,
       },
+      // bayi-panel-ayarlari → bayi-panel (Iter 2: in-place edit'e geçildi,
+      // gizlilik bölümü ayrı /bayi-gizlilik sayfasına taşındı).
+      {
+        source: "/:locale/bayi-panel-ayarlari",
+        destination: "/:locale/bayi-panel",
+        permanent: true,
+      },
     ];
   },
 };

@@ -18,7 +18,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { BayiDavetModal } from "./_components/BayiDavetModal";
 
 interface BayiRow {
   id: string;
@@ -107,7 +106,6 @@ export default function BayilerPage() {
   const [error, setError] = useState("");
   const [data, setData] = useState<ListResp | null>(null);
   const [loading, setLoading] = useState(true);
-  const [davetOpen, setDavetOpen] = useState(false);
 
   // URL params (controlled)
   const page = parseInt(params.get("page") || "1", 10);
@@ -117,11 +115,6 @@ export default function BayilerPage() {
   const vade = params.get("vade") || "tum";
 
   const [searchInput, setSearchInput] = useState(q);
-
-  // Hızlı işlemler menüsünden gelindiğinde davet modalını otomatik aç.
-  useEffect(() => {
-    if (params.get("invite") === "1") setDavetOpen(true);
-  }, [params]);
 
   const apiUrl = useMemo(() => {
     // Token boş ise t param atlanır → /api/bayiler/list cookie session fallback
@@ -237,13 +230,6 @@ export default function BayilerPage() {
             >
               🔗 Davet Linkim
             </a>
-            <button
-              type="button"
-              onClick={() => setDavetOpen(true)}
-              className="inline-flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold px-3 py-2 rounded-lg transition hover:border-emerald-300"
-            >
-              <span>+</span> Manuel Bayi Ekle
-            </button>
           </div>
         </div>
 
@@ -386,11 +372,6 @@ export default function BayilerPage() {
           </div>
         )}
       </main>
-
-      <BayiDavetModal
-        open={davetOpen}
-        onClose={() => setDavetOpen(false)}
-      />
     </div>
   );
 }
