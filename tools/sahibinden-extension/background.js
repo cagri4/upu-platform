@@ -31,6 +31,11 @@ const COOKIE_POLL_ALARM = "cookie-poll";
 const COOKIE_TEST_URL = "https://www.sahibinden.com/";
 const COOKIE_POLL_PERIOD_MIN = 1; // 60sn
 
+// Auto-recover umuyoruz ama 4 saat geçtiyse Chrome notification ile
+// kullanıcıyı tetikle (yedek). Bir oturumda tek bildirim — spam önlenir.
+const STALE_NOTIFICATION_MS = 4 * 60 * 60 * 1000;
+const STALE_NOTIFICATION_ID = "sahibinden-cookie-stale";
+
 let ws = null;
 let wsReconnectTimer = null;
 let processing = false; // concurrent processNext koruması (in-memory; race window içinde geçerli)
@@ -280,13 +285,17 @@ async function pollCookieAndMaybeResume() {
   });
 
   if (!test.ok) {
+    // 4 saatten fazla expired → kullanıcıyı Chrome notification ile tetikle
+    await maybeNotifyStale(cs);
     return; // Yine expired — alarm 60sn sonra tekrar tetikler
   }
 
-  // ✓ Cookie tazedi → server'a bildir + scrape resume
+  // ✓ Cookie tazedi → server'a bildir + scrape resume + notification cleanup
   console.log("[bg] cookie OK — scrape resume");
   await postJson("/cookie-refresh", { recoveredAt: Date.now() });
   await chrome.alarms.clear(COOKIE_POLL_ALARM);
+  try { await chrome.notifications.clear(STALE_NOTIFICATION_ID); } catch { /* yut */ }
+  await chrome.storage.local.remove("stale_notif_shown_at");
 
   const st = await getState();
   if (st && st.status === "paused") {
@@ -295,6 +304,35 @@ async function pollCookieAndMaybeResume() {
     void processNext();
   }
 }
+
+async function maybeNotifyStale(cs) {
+  if (!cs?.expiredSince) return;
+  const ageMs = Date.now() - cs.expiredSince;
+  if (ageMs < STALE_NOTIFICATION_MS) return;
+  // Daha önce gösterildi mi? (spam önle — bir oturumda tek bildirim)
+  const r = await chrome.storage.local.get("stale_notif_shown_at");
+  if (r.stale_notif_shown_at) return;
+  try {
+    await chrome.notifications.create(STALE_NOTIFICATION_ID, {
+      type: "basic",
+      iconUrl: "icon.png",
+      title: "Sahibinden cookie expired",
+      message: `${Math.round(ageMs / 60000)} dk önce expire oldu. sahibinden.com'a girin (1 sayfa gez), extension scrape'i otomatik devam ettirir.`,
+      priority: 2,
+      requireInteraction: true,
+    });
+    await chrome.storage.local.set({ stale_notif_shown_at: Date.now() });
+    console.log("[bg] stale cookie notification gösterildi");
+  } catch (err) {
+    console.warn("[bg] notifications.create fail:", err?.message);
+  }
+}
+
+chrome.notifications.onClicked.addListener(async (notifId) => {
+  if (notifId !== STALE_NOTIFICATION_ID) return;
+  try { await chrome.tabs.create({ url: COOKIE_TEST_URL, active: true }); } catch { /* yut */ }
+  try { await chrome.notifications.clear(STALE_NOTIFICATION_ID); } catch { /* yut */ }
+});
 
 async function initScrape(sessionId) {
   const st = {
