@@ -24,7 +24,7 @@ interface InitResponse {
   presets: { dealer: string[] };
 }
 
-export default function BayiCalisanDavetPage() {
+export default function KullaniciDavetPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token");
 
@@ -53,7 +53,7 @@ export default function BayiCalisanDavetPage() {
 
   useEffect(() => {
     if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/bayi-calisan-davet/init?t=${encodeURIComponent(token)}`)
+    fetch(`/api/kullanici-davet/init?t=${encodeURIComponent(token)}`)
       .then(async r => {
         const d = await r.json();
         if (!r.ok) { setStatus("error"); setError(d.error || "Link doğrulanamadı."); return; }
@@ -92,7 +92,7 @@ export default function BayiCalisanDavetPage() {
     setStatus("saving");
 
     try {
-      const res = await fetch(`/api/bayi-calisan-davet/save`, {
+      const res = await fetch(`/api/kullanici-davet/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -124,7 +124,7 @@ export default function BayiCalisanDavetPage() {
   if (status === "done") return <Center>
     <div className="text-4xl mb-3">✅</div>
     <h1 className="text-xl font-bold mb-2">Davet gönderildi!</h1>
-    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{name} kişisine kayıt kodu WhatsApp&apos;tan gitti. Çalışan kodu yazınca sisteme girecek.</p>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{name} kişisine kayıt kodu WhatsApp&apos;tan gitti. Kullanıcı kodu yazınca sisteme girecek.</p>
     <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
   </Center>;
 
@@ -133,9 +133,9 @@ export default function BayiCalisanDavetPage() {
       <div className="max-w-md mx-auto p-4">
         <div className="bg-gradient-to-br from-emerald-600 to-teal-600 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">👤</div>
-          <h1 className="text-xl font-bold">Çalışan Davet</h1>
+          <h1 className="text-xl font-bold">Kullanıcı Davet</h1>
           <p className="text-emerald-100 text-sm mt-1">
-            Yeni çalışanı ekle — hangi işlemleri yapabileceğini sen seç.
+            Şirket içi yeni kullanıcı ekle — hangi işlemleri yapabileceğini sen seç.
           </p>
         </div>
 

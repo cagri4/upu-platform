@@ -39,9 +39,9 @@ export async function handleCalisanEkle(ctx: WaContext): Promise<void> {
     expires_at: expiresAt,
   });
 
-  const formUrl = `https://retailai.upudev.nl/tr/bayi-calisan-davet?t=${token}`;
+  const formUrl = `https://retailai.upudev.nl/tr/kullanici-davet?t=${token}`;
   await sendUrlButton(ctx.phone,
-    `👤 *Çalışan Davet*\n\nYeni çalışana tam olarak hangi işlemleri yapabileceğini sen seç. Telefon numarasını yazınca davet mesajı otomatik gidecek.\n\n_Link 2 saat geçerlidir._`,
+    `👤 *Kullanıcı Davet*\n\nŞirket içi yeni kullanıcıya tam olarak hangi işlemleri yapabileceğini sen seç. Telefon numarasını yazınca davet mesajı otomatik gidecek.\n\n_Link 2 saat geçerlidir._`,
     "📝 Davet Formunu Aç",
     formUrl,
     { skipNav: true },

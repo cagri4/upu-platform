@@ -24,6 +24,7 @@ import {
   PackageX,
   Mail,
   UserPlus,
+  Users,
   ShoppingCart,
   Bell,
   Megaphone,
@@ -151,7 +152,8 @@ export default function BayiPanelimPage() {
           Hızlı işlem
         </div>
         <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
-          <ActionCircle Icon={UserPlus}     label="Bayi Davet"     href={q("/tr/bayiler?invite=1")} />
+          <ActionCircle Icon={UserPlus}     label="Bayi Davet"     href={q("/tr/bayi-davetleri")} />
+          <ActionCircle Icon={Users}        label="Kullanıcı Ekle" href={q("/tr/kullanici-davet")} />
           <ActionCircle Icon={ShoppingCart} label="Sipariş Kaydet" href={q("/tr/bayi-siparis")} />
           <ActionCircle Icon={Bell}         label="Tahsilat"       href={q("/tr/bayi-tahsilatlarim")} />
           <ActionCircle Icon={Megaphone}    label="Kampanya"       href={q("/tr/bayi-kampanya")} />
