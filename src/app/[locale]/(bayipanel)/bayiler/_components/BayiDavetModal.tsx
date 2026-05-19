@@ -8,7 +8,7 @@
  */
 
 import { useState } from "react";
-import { X, Loader2, CheckCircle2 } from "lucide-react";
+import { X, Loader2, CheckCircle2, Copy, MessageCircle, Smartphone, Check } from "lucide-react";
 
 interface BayiDavetModalProps {
   open: boolean;
@@ -19,7 +19,8 @@ interface BayiDavetModalProps {
 interface SuccessResult {
   invite_code: string;
   accept_url: string;
-  wa_sent: boolean;
+  share_message: string;
+  share_phone: string;
 }
 
 export function BayiDavetModal({ open, onClose, onSuccess }: BayiDavetModalProps) {
@@ -32,6 +33,7 @@ export function BayiDavetModal({ open, onClose, onSuccess }: BayiDavetModalProps
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<SuccessResult | null>(null);
+  const [copied, setCopied] = useState(false);
 
   if (!open) return null;
 
@@ -44,6 +46,29 @@ export function BayiDavetModal({ open, onClose, onSuccess }: BayiDavetModalProps
     setNote("");
     setError("");
     setSuccess(null);
+    setCopied(false);
+  }
+
+  async function handleCopy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* sessiz */
+    }
+  }
+
+  function handleWhatsApp(phoneDigits: string, message: string) {
+    window.open(
+      `https://wa.me/${phoneDigits}?text=${encodeURIComponent(message)}`,
+      "_blank",
+      "noopener",
+    );
+  }
+
+  function handleSms(phoneDigits: string, message: string) {
+    window.location.href = `sms:+${phoneDigits}?body=${encodeURIComponent(message)}`;
   }
 
   function handleClose() {
@@ -77,7 +102,8 @@ export function BayiDavetModal({ open, onClose, onSuccess }: BayiDavetModalProps
       setSuccess({
         invite_code: d.invite_code,
         accept_url: d.accept_url,
-        wa_sent: d.wa_sent,
+        share_message: d.share_message,
+        share_phone: d.share_phone,
       });
       if (onSuccess) onSuccess();
     } catch {
@@ -121,9 +147,7 @@ export function BayiDavetModal({ open, onClose, onSuccess }: BayiDavetModalProps
                   Davet hazır.
                 </p>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                  {success.wa_sent
-                    ? "WhatsApp mesajı bayiye gönderildi."
-                    : "WhatsApp mesajı gönderilemedi — link'i manuel paylaşabilirsiniz."}
+                  Aşağıdan bayiye iletmek istediğiniz kanalı seçin.
                 </p>
               </div>
             </div>
@@ -139,17 +163,50 @@ export function BayiDavetModal({ open, onClose, onSuccess }: BayiDavetModalProps
               </div>
             </div>
 
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => handleCopy(success.accept_url)}
+                className="flex flex-col items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-300 active:scale-95 transition rounded-xl py-3"
+              >
+                {copied ? (
+                  <Check className="w-5 h-5 text-emerald-600" strokeWidth={2.2} />
+                ) : (
+                  <Copy className="w-5 h-5 text-slate-700 dark:text-slate-300" strokeWidth={2.2} />
+                )}
+                <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                  {copied ? "Kopyalandı" : "Kopyala"}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleWhatsApp(success.share_phone, success.share_message)}
+                className="flex flex-col items-center gap-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition rounded-xl py-3 text-white"
+              >
+                <MessageCircle className="w-5 h-5" strokeWidth={2.2} />
+                <span className="text-[11px] font-medium">WhatsApp</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSms(success.share_phone, success.share_message)}
+                className="flex flex-col items-center gap-1 bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition rounded-xl py-3 text-white"
+              >
+                <Smartphone className="w-5 h-5" strokeWidth={2.2} />
+                <span className="text-[11px] font-medium">SMS</span>
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={() => { resetForm(); }}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-semibold"
+              className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 py-2.5 rounded-xl text-sm font-semibold"
             >
               Yeni Davet Oluştur
             </button>
             <button
               type="button"
               onClick={handleClose}
-              className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 py-2.5 rounded-xl text-sm font-semibold"
+              className="w-full text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 py-2 text-sm font-medium"
             >
               Kapat
             </button>

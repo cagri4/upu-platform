@@ -2,7 +2,10 @@
  * POST /api/bayi-davet/create
  *
  * Dağıtıcı panel formundan controlled bayi davet oluşturur. dealer_invitations
- * tablosuna satır + WA bot bayiye davet mesajı.
+ * tablosuna satır + paylaş şablonu (mesaj + accept_url) döner. Bot otomatik
+ * WA göndermez — WA Cloud API 24-saat customer service window kuralı:
+ * bayi bot'a hiç yazmadıysa freeform mesaj silent drop. Dağıtıcı paylaş
+ * butonlarıyla (WhatsApp / SMS / Kopyala) linki kendi iletişiminden gönderir.
  *
  * Body: { phone, name, store_name, store_address?, tax_no?, note? }
  *
@@ -14,7 +17,6 @@ import { randomBytes } from "crypto";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { resolvePanelAuth } from "@/platform/auth/panel-auth";
 import { getTenantByDomain, getTenantByKey } from "@/tenants/config";
-import { sendText, sendUrlButton } from "@/platform/whatsapp/send";
 
 export const dynamic = "force-dynamic";
 
@@ -142,42 +144,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Davet oluşturulamadı." }, { status: 500 });
     }
 
-    // WA mesaj — bayiye davet
+    // Paylaş şablonu — dağıtıcı kendi WA/SMS'inden bayiye iletecek.
     const distributorName =
       (distributorProfile.metadata as Record<string, unknown> | null)?.firma_profili
         ? ((distributorProfile.metadata as { firma_profili?: { ticari_unvan?: string } }).firma_profili?.ticari_unvan as string) || distributorProfile.display_name || "Dağıtıcınız"
         : distributorProfile.display_name || "Dağıtıcınız";
 
     const acceptUrl = `${APP_URL}/davet/${inviteCode}`;
-    let waSent = true;
-    try {
-      await sendText(
-        phone,
-        `👋 Merhaba ${name}!\n\n` +
-          `*${distributorName}* sizi UPU sistemine davet etti.\n\n` +
-          `🏪 Mağaza: ${storeName}\n` +
-          `🆔 Davet kodu: *${inviteCode}*\n\n` +
-          `Aşağıdaki butona tıklayarak hesabınızı aktifleştirin.\n` +
-          `⏰ Bu davet 7 gün geçerlidir.`,
-      );
-      await sendUrlButton(
-        phone,
-        "🎯 *Hesabımı Aktifleştir*\n\nKendi şifrenizle giriş yapın, panele ulaşın.",
-        "🎯 Hesabımı Aktifleştir",
-        acceptUrl,
-        { skipNav: true },
-      );
-    } catch (err) {
-      console.error("[bayi-davet/create] WA send error:", err);
-      waSent = false;
-    }
+    const shareMessage =
+      `Merhaba ${name}, ${distributorName} sizi UPU sistemine davet etti. ` +
+      `Mağaza: ${storeName}. Hesabınızı aktifleştirmek için: ${acceptUrl} (7 gün geçerli).`;
 
     return NextResponse.json({
       ok: true,
       invite_id: invitation.id,
       invite_code: invitation.invite_code,
-      wa_sent: waSent,
       accept_url: acceptUrl,
+      share_message: shareMessage,
+      share_phone: phone,
+      distributor_name: distributorName,
     });
   } catch (err) {
     console.error("[bayi-davet/create]", err);

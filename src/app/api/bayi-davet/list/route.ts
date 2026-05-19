@@ -23,6 +23,25 @@ export async function GET(req: NextRequest) {
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const sb = getServiceClient();
+
+  // Dağıtıcı adı (paylaş şablonu için) — multi-tenant aware lookup.
+  const { data: ownProfile } = await sb
+    .from("profiles")
+    .select("auth_user_id")
+    .eq("id", auth.userId)
+    .maybeSingle();
+  const authUserId = ownProfile?.auth_user_id || auth.userId;
+  const { data: distributorProfile } = await sb
+    .from("profiles")
+    .select("display_name, metadata")
+    .eq("auth_user_id", authUserId)
+    .eq("tenant_id", bayiCfg.tenantId)
+    .maybeSingle();
+  const distMeta = (distributorProfile?.metadata as Record<string, unknown> | null) || null;
+  const distFirma = (distMeta?.firma_profili as { ticari_unvan?: string } | null) || null;
+  const distributorName =
+    distFirma?.ticari_unvan || distributorProfile?.display_name || "Dağıtıcınız";
+
   const status = req.nextUrl.searchParams.get("status") || "pending";
 
   let query = sb
@@ -53,5 +72,5 @@ export async function GET(req: NextRequest) {
     return { ...r, daysLeft };
   });
 
-  return NextResponse.json({ rows, total: rows.length });
+  return NextResponse.json({ rows, total: rows.length, distributor_name: distributorName });
 }
