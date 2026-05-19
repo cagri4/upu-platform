@@ -26,8 +26,10 @@ const STATE_KEY = "scrape_state";
 const COOKIE_STATE_KEY = "cookie_state";
 const STEP_ALARM = "scrape-step";
 const KEEPALIVE_ALARM = "ws-keepalive";
+const COOKIE_POLL_ALARM = "cookie-poll";
 
 const COOKIE_TEST_URL = "https://www.sahibinden.com/";
+const COOKIE_POLL_PERIOD_MIN = 1; // 60sn
 
 let ws = null;
 let wsReconnectTimer = null;
@@ -56,6 +58,11 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === STEP_ALARM) {
     console.log("[bg] step alarm tetiklendi");
     void processNext();
+    return;
+  }
+  if (alarm.name === COOKIE_POLL_ALARM) {
+    void pollCookieAndMaybeResume();
+    return;
   }
 });
 
@@ -144,6 +151,8 @@ async function handleServerMessage(msg) {
         st0.status = "paused";
         await setState(st0);
       }
+      // Poller'ı SET — kullanıcı sahibinden açtığında otomatik resume
+      await schedulePollIfExpired();
       return;
     }
 
@@ -235,6 +244,58 @@ async function setCookieState(s) {
   await chrome.storage.local.set({ [COOKIE_STATE_KEY]: s });
 }
 
+async function schedulePollIfExpired() {
+  const cs = await getCookieState();
+  if (cs && cs.ok === false) {
+    // Mevcut alarm varsa Chrome yenisini ezer; idempotent
+    await chrome.alarms.create(COOKIE_POLL_ALARM, {
+      delayInMinutes: COOKIE_POLL_PERIOD_MIN,
+      periodInMinutes: COOKIE_POLL_PERIOD_MIN,
+    });
+    console.log("[bg] cookie poll alarm SET (60sn period)");
+  }
+}
+
+/**
+ * Cookie state expired ise self-test tekrarla. OK olunca scrape state'i
+ * paused → running'e çek + processNext, alarm CLEAR. Hala expired ise alarm
+ * 60sn sonra otomatik tekrar tetikler.
+ */
+async function pollCookieAndMaybeResume() {
+  const cs = await getCookieState();
+  if (!cs || cs.ok !== false) {
+    // Expired değil — alarm idle, CLEAR
+    await chrome.alarms.clear(COOKIE_POLL_ALARM);
+    return;
+  }
+
+  const test = await cookieSelfTest();
+  console.log("[bg] poll cookie:", test);
+
+  await setCookieState({
+    ok: test.ok,
+    reason: test.reason || null,
+    lastCheck: Date.now(),
+    expiredSince: test.ok ? null : (cs.expiredSince || Date.now()),
+  });
+
+  if (!test.ok) {
+    return; // Yine expired — alarm 60sn sonra tekrar tetikler
+  }
+
+  // ✓ Cookie tazedi → server'a bildir + scrape resume
+  console.log("[bg] cookie OK — scrape resume");
+  await postJson("/cookie-refresh", { recoveredAt: Date.now() });
+  await chrome.alarms.clear(COOKIE_POLL_ALARM);
+
+  const st = await getState();
+  if (st && st.status === "paused") {
+    st.status = "running";
+    await setState(st);
+    void processNext();
+  }
+}
+
 async function initScrape(sessionId) {
   const st = {
     sessionId,
@@ -314,7 +375,16 @@ async function _processNext() {
     });
     st2.status = "paused";
     await setState(st2);
-    return; // resume mesajı bekleniyor (kullanıcı login yapıp /resume tetikler)
+    // Cookie state'i expired olarak işaretle + poller SET — kullanıcı
+    // sahibinden açtığında otomatik resume (manuel /resume gerekmez)
+    await setCookieState({
+      ok: false,
+      reason: `mid-scrape-${result.reason || "login-required"}`,
+      lastCheck: Date.now(),
+      expiredSince: Date.now(),
+    });
+    await schedulePollIfExpired();
+    return;
   }
 
   if (result.captcha) {
