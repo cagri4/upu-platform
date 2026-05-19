@@ -118,6 +118,11 @@ export default function BayilerPage() {
 
   const [searchInput, setSearchInput] = useState(q);
 
+  // Hızlı işlemler menüsünden gelindiğinde davet modalını otomatik aç.
+  useEffect(() => {
+    if (params.get("invite") === "1") setDavetOpen(true);
+  }, [params]);
+
   const apiUrl = useMemo(() => {
     // Token boş ise t param atlanır → /api/bayiler/list cookie session fallback
     // ile auth eder (multi-tenant aware, bayi profili).
@@ -233,12 +238,6 @@ export default function BayilerPage() {
             >
               <span>+</span> Bayi Davet Et
             </button>
-            <a
-              href={`/tr/bayi-calisan-davet?t=${encodeURIComponent(token)}`}
-              className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-3 py-2 rounded-lg transition"
-            >
-              <span>+</span> Bayi Ekle
-            </a>
           </div>
         </div>
 
