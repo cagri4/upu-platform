@@ -90,9 +90,7 @@ export async function POST(req: NextRequest) {
     if (name.length < 2) {
       return NextResponse.json({ error: "İsim soyisim en az 2 karakter olmalı." }, { status: 400 });
     }
-    if (storeName.length < 2) {
-      return NextResponse.json({ error: "Mağaza adı en az 2 karakter olmalı." }, { status: 400 });
-    }
+    // Mağaza adı opsiyonel — bayi sonradan profil sayfasından doldurabilir.
 
     // Aynı tenant'ta zaten bayi profili var mı?
     const { data: existingProfile } = await sb
@@ -128,7 +126,7 @@ export async function POST(req: NextRequest) {
         distributor_user_id: distributorProfile.id,
         phone,
         name,
-        store_name: storeName,
+        store_name: storeName || "(Belirsiz)",
         store_address: body.store_address?.trim() || null,
         tax_no: body.tax_no?.trim() || null,
         note: body.note?.trim() || null,
@@ -151,9 +149,10 @@ export async function POST(req: NextRequest) {
         : distributorProfile.display_name || "Dağıtıcınız";
 
     const acceptUrl = `${APP_URL}/davet/${inviteCode}`;
+    const storePart = storeName ? ` Mağaza: ${storeName}.` : "";
     const shareMessage =
-      `Merhaba ${name}, ${distributorName} sizi UPU sistemine davet etti. ` +
-      `Mağaza: ${storeName}. Hesabınızı aktifleştirmek için: ${acceptUrl} (7 gün geçerli).`;
+      `Merhaba ${name}, ${distributorName} sizi UPU sistemine davet etti.` +
+      `${storePart} Hesabınızı aktifleştirmek için: ${acceptUrl} (7 gün geçerli).`;
 
     return NextResponse.json({
       ok: true,

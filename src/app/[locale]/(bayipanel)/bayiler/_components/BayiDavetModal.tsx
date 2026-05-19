@@ -1,10 +1,17 @@
 "use client";
 
 /**
- * Bayi Davet Modal — controlled signup flow.
+ * Manuel Bayi Ekle Modal — dinamik invite_code üretir.
  *
- * Dağıtıcı panel'den bayinin telefon + isim + mağaza adı (+ opsiyonel adres,
- * vergi no, not) bilgilerini girer, sistem WA mesajı + accept link gönderir.
+ * Dağıtıcı tek tek bayi için davet linki üretmek istediğinde (telefon
+ * zorunlu + isim + opsiyonel mağaza adı/adres/vergi/not). Mevcut
+ * /api/bayi-davet/create endpoint'i çağırır → dealer_invitations row +
+ * 7-gün TTL invite_code + paylaş şablonu döner. Bot otomatik mesaj
+ * göndermez — modal'da Kopyala/WA/SMS butonlarıyla dağıtıcı manuel
+ * paylaşır.
+ *
+ * Statik evergreen davet ayrı sayfada (/tr/bayi-davet) — tek link tüm
+ * bayilere paylaşılır, bayi kendisi telefon/isim doldurur.
  */
 
 import { useState } from "react";
@@ -126,7 +133,7 @@ export function BayiDavetModal({ open, onClose, onSuccess }: BayiDavetModalProps
       >
         <header className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-5 py-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-            {success ? "Davet Gönderildi" : "+ Bayi Davet Et"}
+            {success ? "Davet Linkin Hazır" : "Manuel Bayi Ekle"}
           </h2>
           <button
             type="button"
@@ -232,12 +239,12 @@ export function BayiDavetModal({ open, onClose, onSuccess }: BayiDavetModalProps
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800"
               />
             </Field>
-            <Field label="Mağaza Adı" required>
+            <Field label="Mağaza Adı (opsiyonel)">
               <input
                 type="text"
-                required
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
+                placeholder="Bayi sonradan profilinden doldurabilir"
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800"
               />
             </Field>
@@ -278,7 +285,7 @@ export function BayiDavetModal({ open, onClose, onSuccess }: BayiDavetModalProps
               className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              {submitting ? "Gönderiliyor…" : "Davet Et"}
+              {submitting ? "Üretiliyor…" : "Davet Linki Üret"}
             </button>
           </form>
         )}
