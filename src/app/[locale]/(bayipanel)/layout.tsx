@@ -32,6 +32,12 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
   const [error, setError] = useState("");
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [firmaUnvani, setFirmaUnvani] = useState<string | null>(null);
+  // Spinner flash önleme: 250ms'den hızlı fetch'lerde göstermez.
+  const [showSpinner, setShowSpinner] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShowSpinner(true), 250);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,7 +80,9 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
   if (state === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="text-4xl">⏳</div>
+        {showSpinner && (
+          <div className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-800 border-t-emerald-500 animate-spin transition-opacity duration-300" />
+        )}
       </div>
     );
   }
