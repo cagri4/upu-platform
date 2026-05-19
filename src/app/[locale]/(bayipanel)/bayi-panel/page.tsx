@@ -23,15 +23,10 @@ import {
   TrendingUp,
   PackageX,
   Mail,
-  UserPlus,
-  Users,
-  ShoppingCart,
-  Bell,
-  Megaphone,
-  Clock,
-  BarChart3,
   ClipboardCheck,
   Sparkles,
+  Settings,
+  Bell,
 } from "lucide-react";
 import {
   HeroBanner,
@@ -41,6 +36,8 @@ import {
   Skeleton,
   KvkkConsentModal,
 } from "@/components/banking";
+import { BAYI_QUICK_ACTIONS } from "@/platform/quick-actions/bayi-catalog";
+import { DEFAULT_BAYI_QUICK_ACTIONS, type BayiQuickActionKey } from "@/platform/quick-actions/bayi-keys";
 
 interface KPIs {
   dealer_count: number;
@@ -65,6 +62,7 @@ export default function BayiPanelimPage() {
 
   const [kpis, setKpis] = useState<KPIs | null>(null);
   const [kpisLoading, setKpisLoading] = useState(true);
+  const [quickActions, setQuickActions] = useState<BayiQuickActionKey[]>(DEFAULT_BAYI_QUICK_ACTIONS);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [showKvkkModal, setShowKvkkModal] = useState(false);
 
@@ -74,6 +72,9 @@ export default function BayiPanelimPage() {
       .then((r) => r.json())
       .then((d) => {
         if (!d?.error && d?.kpis) setKpis(d.kpis);
+        if (Array.isArray(d?.quickActions) && d.quickActions.length > 0) {
+          setQuickActions(d.quickActions as BayiQuickActionKey[]);
+        }
       })
       .catch(() => { /* layout init zaten validate etti */ })
       .finally(() => setKpisLoading(false));
@@ -146,19 +147,33 @@ export default function BayiPanelimPage() {
         />
       )}
 
-      {/* Quick actions — horizontal scrollable row */}
+      {/* Quick actions — kullanıcı seçimine göre dinamik render */}
       <div>
-        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-1 mb-2">
-          Hızlı işlem
+        <div className="flex items-center justify-between px-1 mb-2">
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+            Hızlı işlem
+          </div>
+          <a
+            href={q("/tr/bayi-panel-ayarlari")}
+            className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
+          >
+            <Settings className="w-3 h-3" strokeWidth={2.2} />
+            Düzenle
+          </a>
         </div>
         <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
-          <ActionCircle Icon={UserPlus}     label="Bayi Davet"     href={q("/tr/bayi-davet")} />
-          <ActionCircle Icon={Users}        label="Kullanıcı Ekle" href={q("/tr/kullanici-davet")} />
-          <ActionCircle Icon={ShoppingCart} label="Sipariş Kaydet" href={q("/tr/bayi-siparis")} />
-          <ActionCircle Icon={Bell}         label="Tahsilat"       href={q("/tr/bayi-tahsilatlarim")} />
-          <ActionCircle Icon={Megaphone}    label="Kampanya"       href={q("/tr/bayi-kampanya")} />
-          <ActionCircle Icon={Clock}        label="Vade Hatırla"   href={q("/tr/bayi-vade-hatirlatma")} />
-          <ActionCircle Icon={BarChart3}    label="Cirolarım"      href={q("/tr/bayi-raporlar")} />
+          {quickActions.map((key) => {
+            const def = BAYI_QUICK_ACTIONS[key];
+            if (!def) return null;
+            return (
+              <ActionCircle
+                key={key}
+                Icon={def.Icon}
+                label={def.label}
+                href={def.hrefFor(token)}
+              />
+            );
+          })}
         </div>
       </div>
 
