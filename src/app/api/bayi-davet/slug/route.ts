@@ -1,13 +1,17 @@
 /**
- * GET  /api/bayi-davet/slug — dağıtıcının statik davet slug'ı.
+ * GET /api/bayi-davet/slug — dağıtıcının statik davet slug'ı (tenant + dağıtıcı).
  *
- * Dağıtıcı paneli "Bayi Davet" sayfasında çağrılır. Slug yoksa firma
- * ünvanından (veya display_name'den) kebab-case üretilir, çakışma varsa
- * -2/-3 suffix ile UNIQUE kayıt yapılır. Slug evergreen — bir kere
- * üretilince değişmez (paylaşılan link'ler kırılmasın).
+ * Yeni format: /davet/<tenant_slug>/<slug>
+ *   - tenant_slug: firma ticari_unvan'dan slugify (örn "karsel"). Aynı
+ *     tenant'taki tüm dağıtıcılar paylaşır (firma seviyesi namespace).
+ *   - slug: dağıtıcı display_name'den slugify (örn "cagr"). (tenant_slug,
+ *     slug) composite unique — farklı firmalar aynı dağıtıcı slug
+ *     kullanabilir.
  *
- * Auth: subdomain bayi + cookie session (resolvePanelAuth).
- * Multi-tenant aware: resolveTenantProfile composite lookup.
+ * Slug evergreen — bir kere üretilince değişmez (paylaşılan link'ler
+ * kırılmasın).
+ *
+ * Auth: subdomain bayi + cookie session.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
@@ -26,13 +30,15 @@ const TR_MAP: Record<string, string> = {
   ö: "o", Ö: "o",
 };
 
-function slugify(raw: string): string {
-  return raw
-    .replace(/[şŞıIİçÇğĞüÜöÖ]/g, (c) => TR_MAP[c] || c)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40) || "bayi";
+function slugify(raw: string, fallback = "bayi"): string {
+  return (
+    raw
+      .replace(/[şŞıIİçÇğĞüÜöÖ]/g, (c) => TR_MAP[c] || c)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40) || fallback
+  );
 }
 
 export async function GET(req: NextRequest) {
@@ -60,10 +66,10 @@ export async function GET(req: NextRequest) {
   const distributorProfileId = lookup.profile.id;
   const tenantId = lookup.tenantId;
 
-  // Mevcut slug var mı?
+  // Mevcut kayıt var mı (bu admin için)?
   const { data: existing } = await sb
     .from("distributor_slugs")
-    .select("slug, display_name")
+    .select("slug, tenant_slug, display_name")
     .eq("distributor_user_id", distributorProfileId)
     .eq("tenant_id", tenantId)
     .maybeSingle();
@@ -71,41 +77,82 @@ export async function GET(req: NextRequest) {
   if (existing) {
     return NextResponse.json({
       ok: true,
+      tenant_slug: existing.tenant_slug,
       slug: existing.slug,
       display_name: existing.display_name,
     });
   }
 
-  // Slug üret: firma ticari_unvan → display_name fallback
-  const meta = (lookup.profile.metadata as Record<string, unknown>) || {};
-  const firma = (meta.firma_profili as { ticari_unvan?: string } | null) || null;
-  const source = firma?.ticari_unvan || lookup.profile.display_name || "bayi";
-  let base = slugify(source);
+  // Tenant slug: bu tenant_id için zaten kayıt var mı (başka bir admin)?
+  // Varsa aynı tenant_slug kullan; yoksa yeni üret + global çakışma kontrolü.
+  const { data: tenantPeer } = await sb
+    .from("distributor_slugs")
+    .select("tenant_slug")
+    .eq("tenant_id", tenantId)
+    .limit(1)
+    .maybeSingle();
 
-  // Çakışma kontrolü — -2, -3, ... suffix
-  let slug = base;
+  let tenantSlug: string;
+  if (tenantPeer?.tenant_slug) {
+    tenantSlug = tenantPeer.tenant_slug;
+  } else {
+    const meta = (lookup.profile.metadata as Record<string, unknown>) || {};
+    const firma = (meta.firma_profili as { ticari_unvan?: string } | null) || null;
+    const tenantSource = firma?.ticari_unvan || "bayi";
+    const tenantBase = slugify(tenantSource, "bayi");
+    tenantSlug = tenantBase;
+    // Global tenant_slug uniqueness (her firmanın kendi namespace'i)
+    for (let i = 2; i <= 99; i++) {
+      const { data: taken } = await sb
+        .from("distributor_slugs")
+        .select("tenant_slug")
+        .eq("tenant_slug", tenantSlug)
+        .neq("tenant_id", tenantId)
+        .limit(1)
+        .maybeSingle();
+      if (!taken) break;
+      tenantSlug = `${tenantBase}-${i}`;
+    }
+  }
+
+  // Dağıtıcı slug: display_name'den; (tenant_slug, slug) composite UNIQUE
+  const distName = lookup.profile.display_name || "bayi";
+  const distBase = slugify(distName, "bayi");
+  let slug = distBase;
   for (let i = 2; i <= 99; i++) {
     const { data: taken } = await sb
       .from("distributor_slugs")
       .select("slug")
+      .eq("tenant_slug", tenantSlug)
       .eq("slug", slug)
       .maybeSingle();
     if (!taken) break;
-    slug = `${base}-${i}`;
+    slug = `${distBase}-${i}`;
   }
+
+  const displaySource =
+    ((lookup.profile.metadata as Record<string, unknown>)?.firma_profili as { ticari_unvan?: string } | null)?.ticari_unvan ||
+    lookup.profile.display_name ||
+    "Dağıtıcınız";
 
   const { error: insertErr } = await sb
     .from("distributor_slugs")
     .insert({
+      tenant_slug: tenantSlug,
       slug,
       distributor_user_id: distributorProfileId,
       tenant_id: tenantId,
-      display_name: source,
+      display_name: displaySource,
     });
   if (insertErr) {
     console.error("[bayi-davet/slug] insert error:", insertErr);
     return NextResponse.json({ error: "Slug oluşturulamadı." }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, slug, display_name: source });
+  return NextResponse.json({
+    ok: true,
+    tenant_slug: tenantSlug,
+    slug,
+    display_name: displaySource,
+  });
 }

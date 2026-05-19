@@ -18,11 +18,13 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://retailai.upudev.nl";
 
 interface SlugResp {
   ok: true;
+  tenant_slug: string;
   slug: string;
   display_name: string | null;
 }
 
 export default function BayiDavetPage() {
+  const [tenantSlug, setTenantSlug] = useState<string | null>(null);
   const [slug, setSlug] = useState<string | null>(null);
   const [distributorName, setDistributorName] = useState<string>("Firmanız");
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,7 @@ export default function BayiDavetPage() {
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Slug alınamadı.");
         const sr = d as SlugResp;
+        setTenantSlug(sr.tenant_slug);
         setSlug(sr.slug);
         if (sr.display_name) setDistributorName(sr.display_name);
       })
@@ -42,7 +45,7 @@ export default function BayiDavetPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const acceptUrl = slug ? `${APP_URL}/davet/${slug}` : "";
+  const acceptUrl = tenantSlug && slug ? `${APP_URL}/davet/${tenantSlug}/${slug}` : "";
   const shareMessage = slug
     ? `Merhaba, ${distributorName} sizi UPU sistemine bayi olarak davet ediyor. Aşağıdaki linke tıklayarak hesabınızı açabilirsiniz: ${acceptUrl}`
     : "";

@@ -29,6 +29,7 @@ function normalizePhone(input: string): string {
 export async function POST(req: NextRequest) {
   try {
     let body: {
+      tenant_slug?: string;
       slug?: string;
       phone?: string;
       name?: string;
@@ -42,12 +43,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Geçersiz JSON gövdesi." }, { status: 400 });
     }
 
+    const tenantSlug = body.tenant_slug?.toLowerCase();
     const slug = body.slug?.toLowerCase();
     const phone = normalizePhone(body.phone ?? "");
     const name = (body.name ?? "").trim();
     const storeName = (body.store_name ?? "").trim();
 
-    if (!slug) return NextResponse.json({ error: "Slug gerekli." }, { status: 400 });
+    if (!tenantSlug || !slug) {
+      return NextResponse.json({ error: "tenant_slug + slug gerekli." }, { status: 400 });
+    }
     if (!/^[0-9]{10,15}$/.test(phone)) {
       return NextResponse.json({ error: "Geçerli bir telefon girin (10-15 hane)." }, { status: 400 });
     }
@@ -57,10 +61,11 @@ export async function POST(req: NextRequest) {
 
     const sb = getServiceClient();
 
-    // 1) Slug → distributor lookup
+    // 1) (tenant_slug, slug) composite → distributor lookup
     const { data: slugRow } = await sb
       .from("distributor_slugs")
-      .select("slug, distributor_user_id, tenant_id, display_name")
+      .select("slug, tenant_slug, distributor_user_id, tenant_id, display_name")
+      .eq("tenant_slug", tenantSlug)
       .eq("slug", slug)
       .maybeSingle();
     if (!slugRow) return NextResponse.json({ error: "Davet bulunamadı." }, { status: 404 });
