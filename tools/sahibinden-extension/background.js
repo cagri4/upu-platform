@@ -23,8 +23,11 @@ import {
 } from "./config.js";
 
 const STATE_KEY = "scrape_state";
+const COOKIE_STATE_KEY = "cookie_state";
 const STEP_ALARM = "scrape-step";
 const KEEPALIVE_ALARM = "ws-keepalive";
+
+const COOKIE_TEST_URL = "https://www.sahibinden.com/";
 
 let ws = null;
 let wsReconnectTimer = null;
@@ -114,6 +117,36 @@ async function handleServerMessage(msg) {
       console.warn("[bg] start-scrape ignored — running:", st.sessionId);
       return;
     }
+
+    // Cookie self-test ÖNCESİ — expired ise scrape başlatmadan pause
+    const test = await cookieSelfTest();
+    console.log("[bg] cookie self-test:", test);
+    await setCookieState({
+      ok: test.ok,
+      reason: test.reason || null,
+      lastCheck: Date.now(),
+      expiredSince: test.ok ? null : Date.now(),
+    });
+
+    if (!test.ok) {
+      console.warn(`[bg] start-scrape paused — cookie ${test.reason}`);
+      // Telegram alert + server queue paused state (mevcut /login-required reuse)
+      await postJson("/login-required", {
+        sessionId: msg.sessionId,
+        url: COOKIE_TEST_URL,
+        category: "pre-scrape-check",
+        reason: `cookie-${test.reason || "unknown"}`,
+      });
+      // Boş scrape state: index=0 + status=paused, polling cookieOK olunca devam
+      await initScrape(msg.sessionId);
+      const st0 = await getState();
+      if (st0) {
+        st0.status = "paused";
+        await setState(st0);
+      }
+      return;
+    }
+
     await initScrape(msg.sessionId);
     void processNext();
   } else if (msg.type === "resume") {
@@ -155,6 +188,51 @@ async function setState(st) {
 
 async function clearState() {
   await chrome.storage.local.remove(STATE_KEY);
+}
+
+// ─── Cookie Self-Test ─────────────────────────────────────────────────────
+// Scrape öncesi (ve poller içinde) sahibinden ana sayfasına hafif GET.
+// Cookie hala geçerli ise body'de "Çıkış Yap"/"hesabım" gibi authenticated
+// marker'ları görünür; expired ise /giris'e redirect ya da "Üye Girişi" linki.
+// Anti-bot tetiklenmesini önlemek için ana sayfa kullanılıyor (warmup'a
+// yakın davranır, listing scrape öncesi doğal trafik).
+
+async function cookieSelfTest() {
+  try {
+    const r = await fetch(COOKIE_TEST_URL, {
+      method: "GET",
+      credentials: "include",
+      redirect: "follow",
+      cache: "no-store",
+    });
+    if (!r.ok) return { ok: false, reason: `http-${r.status}` };
+    if (/\/giris|\/login|olagan-disi/i.test(r.url)) {
+      return { ok: false, reason: "redirected-to-login" };
+    }
+    const html = (await r.text()).slice(0, 80_000);
+    // Authenticated marker'ları öncelikli (false-positive riski daha düşük)
+    if (/(çıkış\s*yap|hesab[ıi]m|My\s*Account|user-info)/i.test(html)) {
+      return { ok: true };
+    }
+    // Logged-out marker'ları
+    if (/(üye\s*girişi|sign-in|giriş\s*yap)/i.test(html)) {
+      return { ok: false, reason: "logged-out-marker" };
+    }
+    // Belirsiz — false-negative tercih (scrape devam etsin, login-required
+    // pattern listing parse sırasında zaten yakalar).
+    return { ok: true, ambiguous: true };
+  } catch (err) {
+    return { ok: false, reason: `fetch-fail: ${err?.message || "unknown"}` };
+  }
+}
+
+async function getCookieState() {
+  const r = await chrome.storage.local.get(COOKIE_STATE_KEY);
+  return r[COOKIE_STATE_KEY] || null;
+}
+
+async function setCookieState(s) {
+  await chrome.storage.local.set({ [COOKIE_STATE_KEY]: s });
 }
 
 async function initScrape(sessionId) {
