@@ -68,11 +68,8 @@ export default function BayiPanelimPage() {
   const [showKvkkModal, setShowKvkkModal] = useState(false);
 
   useEffect(() => {
-    if (!token) {
-      setKpisLoading(false);
-      return;
-    }
-    fetch(`/api/bayi-panel/dashboard?t=${encodeURIComponent(token)}`)
+    const qs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/bayi-panel/dashboard${qs}`, { credentials: "same-origin" })
       .then((r) => r.json())
       .then((d) => {
         if (!d?.error && d?.kpis) setKpis(d.kpis);
@@ -83,8 +80,8 @@ export default function BayiPanelimPage() {
 
   // Profile completeness — firma_profili.ticari_unvan eksikse banner
   useEffect(() => {
-    if (!token) return;
-    fetch(`/api/bayi-panel/profile?t=${encodeURIComponent(token)}`)
+    const qs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/bayi-panel/profile${qs}`, { credentials: "same-origin" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!d) return;
