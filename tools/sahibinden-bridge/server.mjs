@@ -68,6 +68,14 @@ const state = {
   pending: null,        // { sessionId, source, queuedAt, status: 'pending'|'running'|'paused' }
   lastScrape: null,     // { sessionId, totalListings, totalSaved, finishedAt }
   wsClients: new Set(), // connected extension(s)
+  // Cookie self-test durumu — extension /login-required veya /cookie-refresh
+  // call ettiğinde güncellenir. claude-telegram-bot polling ile sorgulayabilir.
+  cookieStatus: {
+    ok: null,           // null = bilinmiyor, true/false = bilinen son durum
+    expiredSince: null, // expired olduğu andan beri timestamp (ms)
+    recoveredAt: null,  // son auto-recover timestamp
+    lastUpdate: null,
+  },
 };
 
 // ── EXPRESS ────────────────────────────────────────────────────────────
@@ -235,15 +243,56 @@ app.post("/login-required", async (req, res) => {
     state.pending.status = "login-required";
   }
 
+  // Cookie status'i expired olarak güncelle (auto-recover takip için)
+  state.cookieStatus = {
+    ok: false,
+    expiredSince: state.cookieStatus?.expiredSince || Date.now(),
+    recoveredAt: null,
+    lastUpdate: Date.now(),
+  };
+
   const shortId = (sessionId || "").slice(0, 8);
   await tgNotify(
-    `⚠️ Sahibinden cookie expire — re-login yap.\n\n` +
-      `Chrome → sahibinden.com → Giriş Yap → bir ilana tıkla (warmup).\n\n` +
-      `Sonra: POST /resume veya botla "devam" yaz.\n\n` +
+    `⚠️ Sahibinden cookie expire — extension otomatik resume bekliyor.\n\n` +
+      `Chrome'da sahibinden.com aç (1 sayfa gez yeter); extension cookie'yi yakalayıp scrape'i otomatik devam ettirir.\n\n` +
       `Session: ${shortId}, kategori: ${category || "?"}, reason: ${reason || "?"}`,
   );
 
   res.json({ ok: true, status: "login-required" });
+});
+
+app.post("/cookie-refresh", (req, res) => {
+  // Extension auto-recovery polling cookie OK aldığında çağırır.
+  const now = Date.now();
+  const wasExpiredSince = state.cookieStatus?.expiredSince || null;
+  state.cookieStatus = {
+    ok: true,
+    expiredSince: null,
+    recoveredAt: now,
+    lastUpdate: now,
+  };
+  const ageMs = wasExpiredSince ? now - wasExpiredSince : 0;
+  log("info", `cookie auto-recovered`, { ageMs, ageMin: Math.round(ageMs / 60000) });
+  // Resume zaten paused scrape'i extension kendi içinde processNext ediyor;
+  // server'ın WS broadcast'i opsiyonel (mid-scrape login-required durumunda
+  // ekstra signal için)
+  if (state.pending && state.pending.status === "login-required") {
+    state.pending.status = "running";
+    broadcast({ type: "resume", sessionId: state.pending.sessionId });
+  }
+  res.json({ ok: true, cookieStatus: state.cookieStatus });
+});
+
+app.get("/cookie-status", (_req, res) => {
+  res.json({
+    ok: state.cookieStatus?.ok ?? null,
+    expiredSince: state.cookieStatus?.expiredSince ?? null,
+    recoveredAt: state.cookieStatus?.recoveredAt ?? null,
+    lastUpdate: state.cookieStatus?.lastUpdate ?? null,
+    expiredAgeMin: state.cookieStatus?.expiredSince
+      ? Math.round((Date.now() - state.cookieStatus.expiredSince) / 60000)
+      : null,
+  });
 });
 
 app.post("/resume", (req, res) => {
