@@ -12,7 +12,31 @@ npm run build      # Production build
 npm run lint       # ESLint
 ```
 
-No test framework is configured. No ORM or migration tooling — schema is managed in Supabase dashboard.
+No test framework is configured. No ORM — Supabase JS client direct access.
+
+## Database Migrations
+
+Migrations live in `supabase/migrations/` and are applied via Supabase CLI to the linked project (`eodjowwdhsircwebxcmh`).
+
+**File location**: `supabase/migrations/YYYYMMDDHHMMSS_kebab_name.sql` — NOT `.planning/migrations/` (that folder is for planning notes only, won't be applied)
+
+**Naming**: 14-digit timestamp prefix (e.g., `20260519120000_distributor_slugs.sql`). Use `date "+%Y%m%d%H%M%S"` to generate.
+
+**Apply**: From repo root, run `supabase db push` — it auto-detects new files and applies to production. No interactive prompt in CI mode.
+
+**Workflow when YOU (Claude) need a schema change**:
+1. Write the SQL file directly in `supabase/migrations/` (correct filename format)
+2. Run `supabase db push` to apply
+3. `git add supabase/migrations/<file>.sql && git commit -m "chore(db): ..."` and push
+4. If another worker (emlak/bayi/etc.) is editing the same repo in parallel, mention in your report so they `git pull` before next commit
+
+**Safety rules**:
+- Prefer additive changes: `CREATE TABLE IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`
+- AVOID `DROP TABLE`, `DROP COLUMN`, destructive `ALTER` — production data loss
+- For renames/drops, ask user explicit approval first (links to "Never modify user data" rule)
+- Test SQL locally if possible before push (or in supabase SQL Editor sandbox)
+
+**Do not** ask the user to "apply this migration" — apply it yourself. The CLI is installed at `/usr/local/bin/supabase` and the project is already linked.
 
 ## Architecture
 
