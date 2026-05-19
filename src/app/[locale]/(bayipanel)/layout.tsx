@@ -17,21 +17,30 @@
  */
 
 import { useEffect, useState, type ReactNode } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import { AdminLayout } from "@/components/admin-layout";
 import { PanelAuthFail } from "@/components/panel-auth-fail";
-import { BAYI_SIDEBAR, BAYI_BRAND_TITLE, BAYI_BRAND_ICON, BAYI_ACCENT } from "@/tenants/bayi/components/sidebar";
+import { Forbidden } from "@/components/banking";
+import {
+  BAYI_SIDEBAR,
+  BAYI_BRAND_TITLE,
+  BAYI_BRAND_ICON,
+  BAYI_ACCENT,
+  BAYI_ROLE_REQUIREMENTS,
+} from "@/tenants/bayi/components/sidebar";
 
 type InitState = "loading" | "ready" | "error";
 
 export default function BayiPanelGroupLayout({ children }: { children: ReactNode }) {
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token");
+  const pathname = usePathname() || "";
 
   const [state, setState] = useState<InitState>("loading");
   const [error, setError] = useState("");
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [firmaUnvani, setFirmaUnvani] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   // Spinner flash önleme: 250ms'den hızlı fetch'lerde göstermez.
   const [showSpinner, setShowSpinner] = useState(false);
   useEffect(() => {
@@ -41,10 +50,11 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
 
   useEffect(() => {
     let cancelled = false;
-    const apply = (d: { displayName?: string | null; firmaUnvani?: string | null; officeName?: string | null }) => {
+    const apply = (d: { displayName?: string | null; firmaUnvani?: string | null; officeName?: string | null; role?: string | null }) => {
       if (cancelled) return;
       setDisplayName(d.displayName ?? null);
       setFirmaUnvani(d.firmaUnvani ?? d.officeName ?? null);
+      setUserRole(d.role ?? null);
       setState("ready");
     };
     const fail = (msg: string) => {
@@ -91,18 +101,32 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
     return <PanelAuthFail tenantKey="bayi" message={error} />;
   }
 
+  // Pathname-based rol check — locale prefix'i strip et ("/tr/bayi-x" → match).
+  // BAYI_ROLE_REQUIREMENTS map'inde olmayan yol = public, herkes erişir.
+  const normalizedPath = pathname.replace(/^\/(tr|en|nl)/, "/tr").replace(/\?.*$/, "");
+  const requiredRoles = (BAYI_ROLE_REQUIREMENTS as Record<string, readonly string[]>)[normalizedPath];
+  const blocked = requiredRoles && requiredRoles.length > 0 &&
+    (!userRole || !requiredRoles.includes(userRole));
+
   return (
     <AdminLayout
       token={token}
       displayName={displayName}
       officeName={firmaUnvani}
       sidebarItems={BAYI_SIDEBAR}
+      userRole={userRole}
       brandTitle={BAYI_BRAND_TITLE}
       brandIconCollapsed={BAYI_BRAND_ICON}
       accentColor={BAYI_ACCENT}
       tenantKey="bayi"
     >
-      {children}
+      {blocked ? (
+        <Forbidden
+          message={`Bu sayfa için yetkiniz yok. Gerekli rol: ${requiredRoles.join(" / ")}. Yöneticinizden yetki talep edebilirsiniz.`}
+        />
+      ) : (
+        children
+      )}
     </AdminLayout>
   );
 }

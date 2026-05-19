@@ -27,10 +27,11 @@ export async function GET(_req: NextRequest) {
       display_name: string | null;
       tenant_id: string;
       metadata: Record<string, unknown> | null;
+      role: string | null;
     }>(supabase, {
       userId: session.uid,
       tenantKey: "bayi",
-      select: "id, display_name, tenant_id, metadata",
+      select: "id, display_name, tenant_id, metadata, role",
     });
 
     if ("error" in lookup) {
@@ -49,6 +50,7 @@ export async function GET(_req: NextRequest) {
       displayName: lookup.profile.display_name || null,
       firmaUnvani,
       officeName: firmaUnvani,
+      role: lookup.profile.role || "user",
       tenantId: lookup.tenantId,
       botPhone: "31644967207",
     });

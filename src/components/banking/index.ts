@@ -9,3 +9,4 @@ export { StepUpModal } from "./StepUpModal";
 export { KvkkConsentModal } from "./KvkkConsentModal";
 export { BackButton } from "./BackButton";
 export { CookieBanner } from "./CookieBanner";
+export { Forbidden } from "./Forbidden";

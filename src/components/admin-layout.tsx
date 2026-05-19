@@ -42,6 +42,13 @@ export interface SidebarItem {
   matchPath?: string;
   /** Bu item'dan ÖNCE bir ayraç çizgi render et (info bölümü ayırıcı). */
   separatorBefore?: boolean;
+  /**
+   * Bu sayfaya erişebilen role'ler. Geçilmezse herkes (auth'lı user) erişir.
+   * AdminLayout sidebar render'da kullanıcının role'ünü görmediği item'ı
+   * gizler (en az defense-in-depth — sayfanın kendi RLS/route guard'ı da
+   * gerekli). Örnek: ['admin', 'muhasebe'] → sadece bu iki role görür.
+   */
+  requiredRoles?: string[];
 }
 
 /**
@@ -89,6 +96,12 @@ export interface AdminLayoutProps {
    * Replikasyon brief'i her tenant için kendi listesini geçirir.
    */
   sidebarItems?: SidebarItem[];
+  /**
+   * Kullanıcının rol'ü (admin/muhasebe/depocu/satis/user). Geçilirse
+   * requiredRoles içeren sidebar item'ları filter eder. Tenant-spesifik
+   * (her panel kendi rolünü propa geçer).
+   */
+  userRole?: string | null;
   /** Sidebar üst başlığı — örn "🖥 UPU Emlak", "🏨 UPU Otel". */
   brandTitle?: string;
   /** Sidebar collapsed (tablet) modda gösterilen ikon. */
@@ -133,6 +146,7 @@ export function AdminLayout({
   activeItem,
   botPhone = "31644967207",
   sidebarItems,
+  userRole,
   brandTitle = "🖥 UPU Emlak",
   brandIconCollapsed = "🖥",
   accentColor = "emerald",
@@ -147,7 +161,15 @@ export function AdminLayout({
   const pathname = usePathname() || "";
   const searchParams = useSearchParams();
   const searchParamsToken = searchParams?.get("t") || searchParams?.get("token") || "";
-  const items = sidebarItems ?? DEFAULT_SIDEBAR_ITEMS;
+  const rawItems = sidebarItems ?? DEFAULT_SIDEBAR_ITEMS;
+  // Yetki bazlı sidebar filter — requiredRoles geçen item'ı sadece role
+  // eşleşen kullanıcı görür. requiredRoles yoksa herkes görür. userRole
+  // null/undefined ise sadece public item'lar görünür.
+  const items = rawItems.filter((it) => {
+    if (!it.requiredRoles || it.requiredRoles.length === 0) return true;
+    if (!userRole) return false;
+    return it.requiredRoles.includes(userRole);
+  });
   const accent = ACCENT_CLASSES[accentColor];
 
   // (Multi-tenant SaaS switcher kaldırıldı — her tenant artık ayrı PWA.
