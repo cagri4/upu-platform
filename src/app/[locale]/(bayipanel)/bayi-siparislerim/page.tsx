@@ -81,13 +81,12 @@ export default function SiparislerimPage() {
   }, [searchInput]);
 
   useEffect(() => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
-    const url = `/api/bayi-siparis/list?t=${encodeURIComponent(token)}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
-    fetch(url)
+    const sp = new URLSearchParams();
+    if (token) sp.set("t", token);
+    if (q) sp.set("q", q);
+    const url = `/api/bayi-siparis/list${sp.toString() ? `?${sp.toString()}` : ""}`;
+    fetch(url, { credentials: "same-origin" })
       .then(async (r) => {
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Liste alınamadı");

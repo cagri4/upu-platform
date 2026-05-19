@@ -31,8 +31,8 @@ export default function BayiKampanyaPage() {
   const [broadcast, setBroadcast] = useState(0);
 
   useEffect(() => {
-    if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/bayi-kampanya/init?t=${encodeURIComponent(token)}`)
+    const qs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/bayi-kampanya/init${qs}`, { credentials: "same-origin" })
       .then(async r => {
         const d = await r.json();
         if (!r.ok) { setStatus("error"); setError(d.error || "Link doğrulanamadı."); return; }

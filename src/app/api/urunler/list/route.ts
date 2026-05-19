@@ -19,6 +19,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { resolvePanelAuth } from "@/platform/auth/panel-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 
@@ -31,28 +33,18 @@ function clampInt(v: string | null, min: number, max: number, def: number): numb
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
-  const token = sp.get("t") || sp.get("token");
-  if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+
+  const auth = await resolvePanelAuth(req);
+  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const supabase = getServiceClient();
-  const { data: magicToken } = await supabase
-    .from("magic_link_tokens")
-    .select("user_id, expires_at")
-    .eq("token", token)
-    .maybeSingle();
-  if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-  if (new Date(magicToken.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, tenant_id")
-    .eq("id", magicToken.user_id)
-    .single();
-  if (!profile?.tenant_id) return NextResponse.json({ error: "Profil eksik." }, { status: 500 });
-
-  const tenantId = profile.tenant_id;
+  const lookup = await resolveTenantProfile<{ tenant_id: string }>(supabase, {
+    userId: auth.userId,
+    tenantKey: "bayi",
+    select: "id, tenant_id",
+  });
+  if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+  const tenantId = lookup.tenantId;
   const page = clampInt(sp.get("page"), 1, 10000, 1);
   const pageSize = clampInt(sp.get("pageSize"), 6, 100, 24);
   const q = (sp.get("q") || "").trim().slice(0, 100);

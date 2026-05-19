@@ -53,8 +53,8 @@ export default function ProfilimPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!token) return;
-    fetch(`/api/bayi-panel/profile?t=${encodeURIComponent(token)}`)
+    const qs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/bayi-panel/profile${qs}`, { credentials: "same-origin" })
       .then(async r => {
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Profil yüklenemedi");

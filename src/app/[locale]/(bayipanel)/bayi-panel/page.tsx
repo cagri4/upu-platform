@@ -145,6 +145,21 @@ export default function BayiPanelimPage() {
         />
       )}
 
+      {/* Quick actions — horizontal scrollable row */}
+      <div>
+        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-1 mb-2">
+          Hızlı işlem
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+          <ActionCircle Icon={UserPlus}     label="Bayi Davet"     href={q("/tr/bayiler?invite=1")} />
+          <ActionCircle Icon={ShoppingCart} label="Sipariş Kaydet" href={q("/tr/bayi-siparis")} />
+          <ActionCircle Icon={Bell}         label="Tahsilat"       href={q("/tr/bayi-tahsilatlarim")} />
+          <ActionCircle Icon={Megaphone}    label="Kampanya"       href={q("/tr/bayi-kampanya")} />
+          <ActionCircle Icon={Clock}        label="Vade Hatırla"   href={q("/tr/bayi-vade-hatirlatma")} />
+          <ActionCircle Icon={BarChart3}    label="Cirolarım"      href={q("/tr/bayi-raporlar")} />
+        </div>
+      </div>
+
       {/* KPI grid — 2 mobile, 3 desktop */}
       {kpisLoading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -192,21 +207,6 @@ export default function BayiPanelimPage() {
           />
         </div>
       )}
-
-      {/* Quick actions — horizontal scrollable row */}
-      <div>
-        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-1 mb-2">
-          Hızlı işlem
-        </div>
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
-          <ActionCircle Icon={UserPlus}     label="Bayi Davet"     href={q("/tr/bayiler?invite=1")} />
-          <ActionCircle Icon={ShoppingCart} label="Sipariş Kaydet" href={q("/tr/bayi-siparis")} />
-          <ActionCircle Icon={Bell}         label="Tahsilat"       href={q("/tr/bayi-tahsilatlarim")} />
-          <ActionCircle Icon={Megaphone}    label="Kampanya"       href={q("/tr/bayi-kampanya")} />
-          <ActionCircle Icon={Clock}        label="Vade Hatırla"   href={q("/tr/bayi-vade-hatirlatma")} />
-          <ActionCircle Icon={BarChart3}    label="Cirolarım"      href={q("/tr/bayi-raporlar")} />
-        </div>
-      </div>
 
       {/* Hesap & ayarlar — emlak pattern paralel */}
       <div className="space-y-2">

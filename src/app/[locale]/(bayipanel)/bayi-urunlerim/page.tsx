@@ -82,17 +82,13 @@ export default function UrunlerimPage() {
   }, [searchInput]);
 
   useEffect(() => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     const sp = new URLSearchParams();
-    sp.set("t", token);
+    if (token) sp.set("t", token);
     sp.set("pageSize", "100");
     if (q) sp.set("q", q);
     if (activeStock !== "tum") sp.set("stock", activeStock);
-    fetch(`/api/urunler/list?${sp.toString()}`)
+    fetch(`/api/urunler/list?${sp.toString()}`, { credentials: "same-origin" })
       .then(async (r) => {
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Liste alınamadı");

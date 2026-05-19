@@ -46,8 +46,8 @@ export default function TahsilatlarimPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!token) return;
-    fetch(`/api/bayi-fatura/init?t=${encodeURIComponent(token)}`)
+    const qs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/bayi-fatura/init${qs}`, { credentials: "same-origin" })
       .then(async r => {
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Liste alınamadı");
