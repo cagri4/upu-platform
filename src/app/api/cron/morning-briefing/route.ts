@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { sendNotification } from "@/platform/notifications/send-notification";
 import { getBriefingFn, getTenantKey } from "@/platform/cron/briefing-registry";
+import { getTenantPanelUrl } from "@/platform/auth/qr";
 import "@/platform/cron/tenant-briefings"; // registers all tenant briefings
 
 export const dynamic = "force-dynamic";
@@ -35,6 +36,9 @@ export async function GET(req: Request) {
         const message = await briefingFn(user.id, user.tenant_id);
         if (!message) continue;
 
+        // Tenant-aware panel URL (emlak /tr/panel, bayi /tr/bayi-panel, vs.)
+        const panelUrl = getTenantPanelUrl(tenantKey) || "https://estateai.upudev.nl/tr/panel";
+
         // sendNotification handles shouldNotify (preference + DND) +
         // DB log + WA interactive button. Tercih kapalıysa skipped++.
         const result = await sendNotification({
@@ -42,7 +46,7 @@ export async function GET(req: Request) {
           type: "sabah_brif",
           title: "🌅 Sabah Brifingi",
           body: message,
-          payload: { click_target: "/tr/panel" },
+          payload: { click_target: panelUrl },
         });
         if (result.notification_id) sent++;
         else skipped++;

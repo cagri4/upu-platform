@@ -13,6 +13,8 @@ import { getServiceClient } from "@/platform/auth/supabase";
 import { sendText, sendUrlButton } from "@/platform/whatsapp/send";
 import { randomBytes } from "crypto";
 import type { WaContext } from "@/platform/whatsapp/types";
+import { getTenantPanelUrl } from "@/platform/auth/qr";
+import { getTenantKey } from "@/platform/cron/briefing-registry";
 
 interface NotificationPayload {
   click_target?: string;
@@ -57,10 +59,13 @@ export async function handleNotificationButton(ctx: WaContext, buttonId: string)
   // action === "view" — panel URL'ine yönlendir
   const payload = (notif.payload as NotificationPayload | null) || {};
   const clickTarget = payload.click_target || "/tr/panel";
-  const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
 
-  // Magic-link token mint (panel cookie-aware, ama legacy WA URL flow için
-  // token kullanılır — kullanıcı kim cookie kaybetse de açılır)
+  // Tenant-aware base URL — bayi/market/otel/restoran kullanıcılarının
+  // bildirimleri emlak (estateai) subdomain'ine yönlendirmesin diye.
+  // 1) click_target zaten full URL ise (https://...) direkt kullan
+  // 2) Path ise: user'ın tenant'ından panel base URL'ini çöz
+  // 3) Fallback: env APP_URL veya estateai
+  let url: string;
   const token = randomBytes(16).toString("hex");
   const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   await sb.from("magic_link_tokens").insert({
@@ -69,8 +74,33 @@ export async function handleNotificationButton(ctx: WaContext, buttonId: string)
     expires_at: expires,
   });
 
-  const sep = clickTarget.includes("?") ? "&" : "?";
-  const url = `${appUrl}${clickTarget}${sep}t=${token}`;
+  if (/^https?:\/\//i.test(clickTarget)) {
+    // Full URL (yeni pattern — cron tarafı tenant-aware oluşturuyor)
+    const sep = clickTarget.includes("?") ? "&" : "?";
+    url = `${clickTarget}${sep}t=${token}`;
+  } else {
+    // Path (legacy) — user tenant'ını çöz
+    let baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://estateai.upudev.nl";
+    try {
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("tenant_id")
+        .or(`auth_user_id.eq.${ctx.userId},id.eq.${ctx.userId}`)
+        .maybeSingle();
+      if (profile?.tenant_id) {
+        const tenantKey = await getTenantKey(profile.tenant_id);
+        const panelBase = tenantKey ? getTenantPanelUrl(tenantKey) : null;
+        if (panelBase) {
+          // panelBase = "https://retailai.upudev.nl/tr/bayi-panel" — origin'ini çıkar
+          baseUrl = new URL(panelBase).origin;
+        }
+      }
+    } catch (err) {
+      console.warn("[notif-button] tenant resolve fail, fallback:", err);
+    }
+    const sep = clickTarget.includes("?") ? "&" : "?";
+    url = `${baseUrl}${clickTarget}${sep}t=${token}`;
+  }
   await sendUrlButton(
     ctx.phone,
     `📂 *${notif.title || "Bildirim"}*\n\nDetay için aşağıdaki butona basın.`,
