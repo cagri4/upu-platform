@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
   const tenantKey = getTenantByDomain(host)?.key || null;
   if (!tenantKey || !SUPPORTED_TENANTS.has(tenantKey)) {
     return NextResponse.json(
-      { error: "Bu subdomain'de UPU agent desteği yok." },
-      { status: 400 },
+      { error: `UPU agent bu domain'de aktif değil (tenant: ${tenantKey || "unknown"}).` },
+      { status: 403 },
     );
   }
 

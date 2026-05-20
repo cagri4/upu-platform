@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
   const tenantKey = getTenantByDomain(host)?.key || null;
   if (!tenantKey || !SUPPORTED_TENANTS.has(tenantKey)) {
     return NextResponse.json(
-      { error: "Bu subdomain'de UPU agent desteği yok." },
-      { status: 400 },
+      { error: `UPU agent bu domain'de aktif değil (tenant: ${tenantKey || "unknown"}).` },
+      { status: 403 },
     );
   }
 
@@ -33,10 +33,14 @@ export async function POST(req: NextRequest) {
   });
   if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
 
+  // Defense-in-depth: delete'i user_id + tenant_id'ye scope'la (RLS yoksa
+  // bile cross-tenant temizleme imkânsız). lookup zaten tenant'a göre profile
+  // resolve etti — buradaki tenant_id eq ek katman.
   const { error } = await sb
     .from("agent_conversations")
     .delete()
-    .eq("user_id", lookup.profile.id);
+    .eq("user_id", lookup.profile.id)
+    .eq("tenant_id", lookup.tenantId);
   if (error) return NextResponse.json({ error: "Silinemedi." }, { status: 500 });
 
   return NextResponse.json({ ok: true });

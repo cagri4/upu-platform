@@ -23,9 +23,10 @@ import { getTenantByDomain } from "@/tenants/config";
 import { BAYI_TOOLS, BAYI_TOOLS_BY_NAME } from "@/platform/agent/tools/bayi";
 import { EMLAK_TOOLS, EMLAK_TOOLS_BY_NAME } from "@/platform/agent/tools/emlak";
 import { buildUpuSystemPrompt, buildUpuEmlakSystemPrompt } from "@/platform/agent/prompt";
-import type { ToolContext, ToolDef } from "@/platform/agent/types";
+import type { ToolContext, ToolDef, TenantKey } from "@/platform/agent/types";
 import { getOrCreateQuota, incrementQuota, logUsageEvent } from "@/platform/agent/quota";
 import { calculateCostUsd } from "@/platform/agent/cost";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -40,9 +41,13 @@ interface DbMessageRow {
   tool_use_id: string | null;
 }
 
-const SUPPORTED_TENANTS = new Set(["bayi", "emlak"]);
+const SUPPORTED_TENANTS = new Set<TenantKey>(["bayi", "emlak"]);
 
-function getApiKey(tenantKey: string): string {
+function isSupportedTenant(key: string | null | undefined): key is TenantKey {
+  return !!key && SUPPORTED_TENANTS.has(key as TenantKey);
+}
+
+function getApiKey(tenantKey: TenantKey): string {
   const envKey = tenantKey === "emlak"
     ? (process.env.ANTHROPIC_API_KEY_EMLAK || process.env.ANTHROPIC_API_KEY)
     : (process.env.ANTHROPIC_API_KEY_BAYI || process.env.ANTHROPIC_API_KEY);
@@ -50,21 +55,71 @@ function getApiKey(tenantKey: string): string {
   return envKey;
 }
 
-function getToolsForTenant(tenantKey: string): { list: ToolDef[]; byName: Record<string, ToolDef> } {
+function getToolsForTenant(tenantKey: TenantKey): { list: ToolDef[]; byName: Record<string, ToolDef> } {
   if (tenantKey === "emlak") return { list: EMLAK_TOOLS, byName: EMLAK_TOOLS_BY_NAME };
-  return { list: BAYI_TOOLS, byName: BAYI_TOOLS_BY_NAME };
+  if (tenantKey === "bayi") return { list: BAYI_TOOLS, byName: BAYI_TOOLS_BY_NAME };
+  // Exhaustive: TenantKey union compile-time guard. Runtime defense (yeni tenant
+  // tip-listesine eklenip catalog'u eklenmediyse fail fast — sessizce bayi'ye düşmez).
+  throw new Error(`Tool catalog yok: ${tenantKey as string}`);
+}
+
+/**
+ * Defense-in-depth: agent_conversations'a yazmadan önce profile.tenant_id'yi
+ * ctx.tenantId ile karşılaştır. Cross-tenant contamination tek satırlık riski
+ * burada engellenir; tüm conversation insertleri bu helper'dan geçer.
+ *
+ * Cost: her save'de 1 profile select. Sohbet başına 2-4 insert; toplam ek
+ * round-trip kabul edilebilir (cache layer yok, role/permission değişimleri
+ * agresif yansımalı).
+ */
+async function saveMessage(
+  sb: SupabaseClient,
+  args: {
+    userId: string;
+    tenantId: string;
+    role: "user" | "assistant" | "tool";
+    content: unknown;
+    toolUseId?: string;
+  },
+): Promise<void> {
+  const { data: prof, error: profErr } = await sb
+    .from("profiles")
+    .select("tenant_id")
+    .eq("id", args.userId)
+    .maybeSingle();
+  if (profErr || !prof) {
+    throw new Error(`saveMessage: profile yok (${args.userId}).`);
+  }
+  if (prof.tenant_id !== args.tenantId) {
+    throw new Error(
+      `saveMessage tenant mismatch: profile.tenant_id=${prof.tenant_id}, ctx.tenantId=${args.tenantId}. ` +
+      `Conversation YAZILMADI — cross-tenant contamination engellendi.`,
+    );
+  }
+  const row: Record<string, unknown> = {
+    user_id: args.userId,
+    tenant_id: args.tenantId,
+    role: args.role,
+    content: args.content,
+  };
+  if (args.toolUseId) row.tool_use_id = args.toolUseId;
+  const { error } = await sb.from("agent_conversations").insert(row);
+  if (error) throw new Error(`saveMessage insert: ${error.message}`);
 }
 
 export async function POST(req: NextRequest) {
   const host = req.headers.get("host") || "";
   const tenantCfg = getTenantByDomain(host);
-  const tenantKey = tenantCfg?.key || null;
-  if (!tenantKey || !SUPPORTED_TENANTS.has(tenantKey)) {
+  const rawTenantKey = tenantCfg?.key || null;
+  // Strict resolve: bilinmeyen tenant → 403 (no fallback to bayi/emlak). Brief
+  // gereği — defense-in-depth katmanlarının ilki.
+  if (!isSupportedTenant(rawTenantKey)) {
     return NextResponse.json(
-      { error: "Bu subdomain'de UPU agent desteği yok." },
-      { status: 400 },
+      { error: `UPU agent bu domain'de aktif değil (tenant: ${rawTenantKey || "unknown"}).` },
+      { status: 403 },
     );
   }
+  const tenantKey: TenantKey = rawTenantKey;
 
   let body: { message?: string };
   try { body = await req.json(); } catch {
@@ -150,14 +205,19 @@ export async function POST(req: NextRequest) {
       };
     });
 
-  // User mesajı history'e ve DB'ye ekle
+  // User mesajı history'e ve DB'ye ekle (integrity check'li save)
   history.push({ role: "user", content: userMessage });
-  await sb.from("agent_conversations").insert({
-    user_id: lookup.profile.id,
-    tenant_id: lookup.tenantId,
-    role: "user",
-    content: userMessage,
-  });
+  try {
+    await saveMessage(sb, {
+      userId: lookup.profile.id,
+      tenantId: lookup.tenantId,
+      role: "user",
+      content: userMessage,
+    });
+  } catch (err) {
+    console.error("[agent/chat] saveMessage user", err);
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  }
 
   const promptInput = {
     displayName: lookup.profile.display_name || "Kullanıcı",
@@ -172,6 +232,7 @@ export async function POST(req: NextRequest) {
     sb,
     userId: lookup.profile.id,
     tenantId: lookup.tenantId,
+    tenantKey,
     displayName: lookup.profile.display_name,
     role: lookup.profile.role,
   };
@@ -248,10 +309,10 @@ export async function POST(req: NextRequest) {
       totalCacheRead += usage.cache_read_input_tokens || 0;
       totalCacheWrite += usage.cache_creation_input_tokens || 0;
 
-      // Assistant message DB'ye + conversation history'e
-      await sb.from("agent_conversations").insert({
-        user_id: lookup.profile.id,
-        tenant_id: lookup.tenantId,
+      // Assistant message DB'ye + conversation history'e (integrity check'li)
+      await saveMessage(sb, {
+        userId: lookup.profile.id,
+        tenantId: lookup.tenantId,
         role: "assistant",
         content: response.content,
       });
@@ -292,13 +353,13 @@ export async function POST(req: NextRequest) {
         toolCalls.push({ name: tu.name, input: tu.input, output });
 
         const outputStr = JSON.stringify(output);
-        // tool_result DB'ye save
-        await sb.from("agent_conversations").insert({
-          user_id: lookup.profile.id,
-          tenant_id: lookup.tenantId,
+        // tool_result DB'ye save (integrity check'li)
+        await saveMessage(sb, {
+          userId: lookup.profile.id,
+          tenantId: lookup.tenantId,
           role: "tool",
           content: { tool_name: tu.name, output },
-          tool_use_id: tu.id,
+          toolUseId: tu.id,
         });
 
         toolResults.push({
