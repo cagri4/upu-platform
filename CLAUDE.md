@@ -82,6 +82,59 @@ All DB access via Supabase JS client — no ORM. Two clients:
 - `getServiceClient()` — Service role, for API routes (bypasses RLS)
 - `getAnonClient()` — Anon key, for browser/server components (respects RLS)
 
+### API Endpoint Auth Kuralı
+
+Her **fetcher** API endpoint (`/src/app/api/*/route.ts`) `requireAuth` veya `requireAuthFromBody` ile başlar:
+
+```ts
+// GET endpoint (query token + cookie session)
+import { requireAuth } from "@/platform/auth/require-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
+
+export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if ("error" in auth) return auth.error;
+
+  const sb = getServiceClient();
+  const lookup = await resolveTenantProfile<{ id: string; tenant_id: string }>(sb, {
+    userId: auth.userId,
+    tenantKey: "bayi",
+    select: "id, tenant_id",
+  });
+  if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+  const profile = lookup.profile;
+  // ... DB query'lerde eq("tenant_id", profile.tenant_id) zorunlu ...
+}
+```
+
+POST endpoint'leri body'den token okur, magic-link single-use davranışını korur:
+
+```ts
+import { requireAuthFromBody } from "@/platform/auth/require-auth";
+
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const auth = await requireAuthFromBody(req, body);
+  if ("error" in auth) return auth.error;
+  // ... işle ...
+  if (auth.magicTokenId) {
+    await sb.from("magic_link_tokens").update({ used_at: now }).eq("id", auth.magicTokenId);
+  }
+}
+```
+
+**Yasak:**
+- Manuel `if (!token) return "Token gerekli"` pattern — cookie session ile gelirse 400 atar, sidebar nav kırılır
+- Tenant ID'siz DB query — her zaman `eq("tenant_id", profile.tenant_id)` filter
+- `profiles` lookup'ta sadece `.eq("id", userId)` — multi-tenant profilde 0 row döner; `resolveTenantProfile` kullan (composite `or(id, auth_user_id)` + tenant filter)
+
+**İstisnalar (refactor edilmez):**
+- **Login endpoint'leri**: `attachSessionToResponse` çağıranlar (bayi-panel/init, market/init, otel-panel/init, restoran-panel/init, site/init, panel/init, setup/init, auth/magic-verify). Magic-link verify → cookie attach pattern'i korunur.
+- **Misafir tek-amaçlı linkler**: `otel-cekin/*` (purpose='otel-pre-checkin'). Misafirin cookie session'ı olmaz.
+- **Sunum token'ları**: `emlak_presentations.magic_token` ayrı bir auth (viewer auth değil owner auth).
+
+**Sebep:** Sidebar nav'dan tıklandığında token URL'de yok, cookie session kullanılır. `requireAuth` ikisini de destekler — eski WhatsApp token URL'leri backward compat olarak çalışır.
+
 ### Conventions
 
 - Commands and aliases are in Turkish: `portfoyum`, `musterilerim`, `fiyatsor`
