@@ -10,36 +10,22 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuth } from "@/platform/auth/require-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const token = req.nextUrl.searchParams.get("t") || req.nextUrl.searchParams.get("token");
-  if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+  const auth = await requireAuth(req);
+  if ("error" in auth) return auth.error;
 
   const sb = getServiceClient();
-  const { data: pt } = await sb
-    .from("magic_link_tokens")
-    .select("user_id, expires_at")
-    .eq("token", token)
-    .maybeSingle();
-
-  if (!pt) return NextResponse.json({ error: "Geçersiz link" }, { status: 404 });
-  if (new Date(pt.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Linkin süresi dolmuş" }, { status: 400 });
-  }
-
-  const userId = pt.user_id;
-
-  // Profile → tenant_id (mkt_* tabloları tenant scope'lu)
-  const { data: profile } = await sb
-    .from("profiles")
-    .select("tenant_id")
-    .eq("id", userId)
-    .single();
-
-  const tenantId = profile?.tenant_id;
-  if (!tenantId) {
+  const lookup = await resolveTenantProfile<{ tenant_id: string }>(sb, {
+    userId: auth.userId,
+    tenantKey: "market",
+    select: "tenant_id",
+  });
+  if ("error" in lookup) {
     return NextResponse.json({
       success: true,
       kpis: {
@@ -52,6 +38,7 @@ export async function GET(req: NextRequest) {
       },
     });
   }
+  const tenantId = lookup.tenantId;
 
   const now = new Date();
   const todayStart = new Date(now);

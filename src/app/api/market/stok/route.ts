@@ -4,39 +4,29 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuth } from "@/platform/auth/require-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const token = req.nextUrl.searchParams.get("t") || req.nextUrl.searchParams.get("token");
-  if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+  const auth = await requireAuth(req);
+  if ("error" in auth) return auth.error;
 
   const sb = getServiceClient();
-  const { data: pt } = await sb
-    .from("magic_link_tokens")
-    .select("user_id, expires_at")
-    .eq("token", token)
-    .maybeSingle();
-
-  if (!pt) return NextResponse.json({ error: "Geçersiz link" }, { status: 404 });
-  if (new Date(pt.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Linkin süresi dolmuş" }, { status: 400 });
-  }
-
-  const { data: profile } = await sb
-    .from("profiles")
-    .select("tenant_id")
-    .eq("id", pt.user_id)
-    .single();
-
-  if (!profile?.tenant_id) {
+  const lookup = await resolveTenantProfile<{ tenant_id: string }>(sb, {
+    userId: auth.userId,
+    tenantKey: "market",
+    select: "tenant_id",
+  });
+  if ("error" in lookup) {
     return NextResponse.json({ success: true, products: [] });
   }
 
   const { data: products, error } = await sb
     .from("mkt_products")
     .select("id, name, quantity, unit, price, category, expiry_date, min_stock")
-    .eq("tenant_id", profile.tenant_id)
+    .eq("tenant_id", lookup.tenantId)
     .eq("is_active", true)
     .order("name", { ascending: true })
     .limit(200);

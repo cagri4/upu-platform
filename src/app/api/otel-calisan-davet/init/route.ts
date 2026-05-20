@@ -8,6 +8,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuth } from "@/platform/auth/require-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import {
   CAPABILITY_LABELS,
   ROLE_PRESETS,
@@ -17,36 +19,19 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const token = req.nextUrl.searchParams.get("token") || req.nextUrl.searchParams.get("t");
-  if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+  const auth = await requireAuth(req);
+  if ("error" in auth) return auth.error;
 
   const supabase = getServiceClient();
-  const { data: magicToken } = await supabase
-    .from("magic_link_tokens")
-    .select("id, user_id, expires_at, used_at, purpose")
-    .eq("token", token)
-    .maybeSingle();
-
-  if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-  if (magicToken.used_at) return NextResponse.json({ error: "Bu link zaten kullanılmış." }, { status: 400 });
-  if (new Date(magicToken.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-  }
-  if (magicToken.purpose && magicToken.purpose !== "otel-calisan-davet") {
-    return NextResponse.json({ error: "Bu link otel çalışan daveti için değil." }, { status: 400 });
-  }
-
-  // Verify owner — must belong to otel tenant
-  const { data: owner } = await supabase
-    .from("profiles")
-    .select("display_name, tenant_id, tenants(saas_type)")
-    .eq("id", magicToken.user_id)
-    .single();
-
-  const saasType = (owner?.tenants as unknown as { saas_type: string } | null)?.saas_type;
-  if (saasType !== "otel") {
-    return NextResponse.json({ error: "Bu form yalnızca otel tenant'ı için." }, { status: 403 });
-  }
+  const lookup = await resolveTenantProfile<{
+    id: string; display_name: string | null; tenant_id: string;
+  }>(supabase, {
+    userId: auth.userId,
+    tenantKey: "otel",
+    select: "id, display_name, tenant_id",
+  });
+  if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+  const owner = lookup.profile;
 
   // Capability gruplarını oluştur — sadece form'a görünenler (F&B + misafir-tarafı gizli)
   const visible = new Set<string>(FORM_VISIBLE_CAPABILITIES);
@@ -69,7 +54,7 @@ export async function GET(req: NextRequest) {
   const { data: hotels } = await supabase
     .from("otel_user_hotels")
     .select("hotel_id, otel_hotels(id, name, city, address)")
-    .eq("user_id", magicToken.user_id);
+    .eq("user_id", owner.id);
 
   const hotelOptions = (hotels || []).map((row: any) => ({
     id: row.hotel_id,

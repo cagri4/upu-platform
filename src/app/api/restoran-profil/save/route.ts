@@ -20,6 +20,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuthFromBody } from "@/platform/auth/require-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { sendText, sendUrlButton } from "@/platform/whatsapp/send";
 import { randomBytes } from "crypto";
 import {
@@ -36,7 +38,7 @@ const ACCOUNTING_VALUES = new Set(["yuki", "exact", "snelstart", "other", "none"
 const BRIFING_VALUES = new Set(["evet", "hayir"]);
 
 interface Payload {
-  token: string;
+  token?: string;
   display_name: string;
   restaurant_name: string;
   location: string;
@@ -58,8 +60,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
   }
 
-  const token = s(body.token);
-  if (!token) return NextResponse.json({ error: "Token gerekli." }, { status: 400 });
+  const auth = await requireAuthFromBody(req, body);
+  if ("error" in auth) return auth.error;
 
   // ── Validation ─────────────────────────────────────────────────────────
   const display_name = s(body.display_name);
@@ -80,30 +82,20 @@ export async function POST(req: NextRequest) {
 
   const supabase = getServiceClient();
 
-  // ── Token doğrulama ────────────────────────────────────────────────────
-  const { data: magicToken } = await supabase
-    .from("magic_link_tokens")
-    .select("id, user_id, expires_at, used_at")
-    .eq("token", token)
-    .maybeSingle();
-  if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-  if (magicToken.used_at) return NextResponse.json({ error: "Bu link zaten kullanılmış." }, { status: 400 });
-  if (new Date(magicToken.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-  }
-
-  const userId = magicToken.user_id as string;
-
-  // ── Mevcut profile çek ─────────────────────────────────────────────────
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("whatsapp_phone, tenant_id, metadata")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (!profile?.tenant_id) return NextResponse.json({ error: "Profil eksik." }, { status: 500 });
-  const tenantId = profile.tenant_id as string;
-  const userPhone = profile.whatsapp_phone as string | null;
+  // ── Profile lookup (tenant-aware) ───────────────────────────────────────
+  const lookup = await resolveTenantProfile<{
+    id: string; whatsapp_phone: string | null; tenant_id: string;
+    metadata: Record<string, unknown> | null;
+  }>(supabase, {
+    userId: auth.userId,
+    tenantKey: "restoran",
+    select: "id, whatsapp_phone, tenant_id, metadata",
+  });
+  if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+  const profile = lookup.profile;
+  const userId = profile.id;
+  const tenantId = profile.tenant_id;
+  const userPhone = profile.whatsapp_phone;
 
   // ── Profile güncelle ───────────────────────────────────────────────────
   const newMeta = {
@@ -127,10 +119,12 @@ export async function POST(req: NextRequest) {
     })
     .eq("id", userId);
 
-  // ── Token kullanıldı işaretle ──────────────────────────────────────────
-  await supabase.from("magic_link_tokens")
-    .update({ used_at: new Date().toISOString() })
-    .eq("id", magicToken.id);
+  // ── Token kullanıldı işaretle (sadece magic-link akışından geldiyse) ───
+  if (auth.magicTokenId) {
+    await supabase.from("magic_link_tokens")
+      .update({ used_at: new Date().toISOString() })
+      .eq("id", auth.magicTokenId);
+  }
 
   // ── Onboarding state tamamlandı işaretle ───────────────────────────────
   // (Eski WA-onboarding flow'una düşmesin diye)

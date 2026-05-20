@@ -6,11 +6,13 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuthFromBody } from "@/platform/auth/require-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 
 interface MarketProfilBody {
-  token: string;
+  token?: string;
   market_adi?: string;
   sektor?: string;
   urun_sayisi?: string;
@@ -22,26 +24,17 @@ interface MarketProfilBody {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as MarketProfilBody;
-    if (!body?.token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+    const auth = await requireAuthFromBody(req, body);
+    if ("error" in auth) return auth.error;
 
     const sb = getServiceClient();
-    const { data: pt } = await sb
-      .from("magic_link_tokens")
-      .select("user_id, expires_at")
-      .eq("token", body.token)
-      .maybeSingle();
-
-    if (!pt) return NextResponse.json({ error: "Geçersiz link" }, { status: 404 });
-    if (new Date(pt.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Linkin süresi dolmuş" }, { status: 400 });
-    }
-
-    const { data: profile } = await sb
-      .from("profiles")
-      .select("metadata")
-      .eq("id", pt.user_id)
-      .single();
-
+    const lookup = await resolveTenantProfile<{ id: string; metadata: Record<string, unknown> | null }>(sb, {
+      userId: auth.userId,
+      tenantKey: "market",
+      select: "id, metadata",
+    });
+    if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+    const profile = lookup.profile;
     const meta = (profile?.metadata as Record<string, unknown>) || {};
     const newMeta = {
       ...meta,
@@ -70,7 +63,7 @@ export async function POST(req: NextRequest) {
     const { error } = await sb
       .from("profiles")
       .update(updateFields)
-      .eq("id", pt.user_id);
+      .eq("id", profile.id);
 
     if (error) {
       console.error("[market:profil:save]", error);

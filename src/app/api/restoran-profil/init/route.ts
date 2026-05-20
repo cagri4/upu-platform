@@ -6,32 +6,24 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuth } from "@/platform/auth/require-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const token = url.searchParams.get("t");
-  if (!token) return NextResponse.json({ error: "Token gerekli." }, { status: 400 });
+  const auth = await requireAuth(req);
+  if ("error" in auth) return auth.error;
 
   const supabase = getServiceClient();
-  const { data: magicToken } = await supabase
-    .from("magic_link_tokens")
-    .select("user_id, expires_at, used_at")
-    .eq("token", token)
-    .maybeSingle();
-
-  if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-  if (magicToken.used_at) return NextResponse.json({ error: "Bu link zaten kullanılmış." }, { status: 400 });
-  if (new Date(magicToken.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name, metadata, tenant_id")
-    .eq("id", magicToken.user_id)
-    .maybeSingle();
+  const lookup = await resolveTenantProfile<{
+    display_name: string | null; metadata: Record<string, unknown> | null; tenant_id: string;
+  }>(supabase, {
+    userId: auth.userId,
+    tenantKey: "restoran",
+    select: "display_name, metadata, tenant_id",
+  });
+  const profile = "error" in lookup ? null : lookup.profile;
 
   return NextResponse.json({
     ok: true,

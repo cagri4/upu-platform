@@ -3,25 +3,24 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuth } from "@/platform/auth/require-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const token = req.nextUrl.searchParams.get("t") || req.nextUrl.searchParams.get("token");
-  if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+  const auth = await requireAuth(req);
+  if ("error" in auth) return auth.error;
 
   const sb = getServiceClient();
-  const { data: pt } = await sb
-    .from("magic_link_tokens")
-    .select("user_id, expires_at")
-    .eq("token", token)
-    .maybeSingle();
-  if (!pt) return NextResponse.json({ error: "Geçersiz link" }, { status: 404 });
-  if (new Date(pt.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Linkin süresi dolmuş" }, { status: 400 });
-  }
+  const lookup = await resolveTenantProfile<{ id: string }>(sb, {
+    userId: auth.userId,
+    tenantKey: "otel",
+    select: "id",
+  });
+  if ("error" in lookup) return NextResponse.json({ success: true, rooms: [] });
 
-  const { data: ouhRows } = await sb.from("otel_user_hotels").select("hotel_id").eq("user_id", pt.user_id);
+  const { data: ouhRows } = await sb.from("otel_user_hotels").select("hotel_id").eq("user_id", lookup.profile.id);
   const hotelIds = (ouhRows || []).map((r: any) => r.hotel_id).filter(Boolean);
   if (hotelIds.length === 0) return NextResponse.json({ success: true, rooms: [] });
 
