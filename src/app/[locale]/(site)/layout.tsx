@@ -39,8 +39,8 @@ export default function SitePanelGroupLayout({ children }: { children: ReactNode
   const [buildingName, setBuildingName] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) { setState("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/site/init?t=${encodeURIComponent(token)}`)
+    const qs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/site/init${qs}`, { credentials: "same-origin" })
       .then((r) => r.json())
       .then((d) => {
         if (d?.error) { setState("error"); setError(d.error); return; }

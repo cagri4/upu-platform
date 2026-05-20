@@ -100,8 +100,8 @@ export default function UrunlerPage() {
 
   // Init + tour Adım 4 advance fire-once
   useEffect(() => {
-    if (!token) { setError("Geçersiz link — token bulunamadı."); return; }
-    fetch(`/api/urunler/init?t=${encodeURIComponent(token)}`)
+    const qs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/urunler/init${qs}`, { credentials: "same-origin" })
       .then(async r => {
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Init hatası");

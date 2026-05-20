@@ -198,11 +198,8 @@ export default function BayiUrunImportPage() {
 
   // Init: token doğrula
   useEffect(() => {
-    if (!token) {
-      setInitError("Geçersiz link — token bulunamadı.");
-      return;
-    }
-    fetch(`/api/bayi-urun-import/init?t=${encodeURIComponent(token)}`)
+    const qs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/bayi-urun-import/init${qs}`, { credentials: "same-origin" })
       .then(async r => {
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || "Init hatası");

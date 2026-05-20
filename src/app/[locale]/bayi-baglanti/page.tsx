@@ -68,9 +68,8 @@ export default function BayiBaglantiPage() {
   const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
   useEffect(() => {
-    if (!token) { setStep("error"); setError("Link geçersiz."); return; }
-    // Token doğrulama backend'e gerek yok — magic link önceki adımda doğrulandı.
-    // Sadece varlığını kontrol et, kullanıcıyı seçim ekranına götür.
+    // Cookie session geçerse direkt method seçimine git; token yoksa da kabul
+    // — backend endpoint her iki yolu da resolvePanelAuth ile çözer.
     setStep("select_method");
   }, [token]);
 

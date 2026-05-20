@@ -167,8 +167,9 @@ export default function BayiDetayPage() {
   }
 
   useEffect(() => {
-    if (!token || !id) { setError("Geçersiz link."); setLoading(false); return; }
-    fetch(`/api/bayiler/${id}?t=${encodeURIComponent(token)}`)
+    if (!id) { setError("Geçersiz id."); setLoading(false); return; }
+    const qs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/bayiler/${id}${qs}`, { credentials: "same-origin" })
       .then(async r => {
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Detay alınamadı");

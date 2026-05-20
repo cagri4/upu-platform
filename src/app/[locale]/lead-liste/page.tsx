@@ -50,8 +50,8 @@ export default function LeadListePage() {
   const [filter, setFilter] = useState<"all" | "pending" | "done">("pending");
 
   useEffect(() => {
-    if (!token) { setStatus("error"); setError("Link geçersiz."); return; }
-    fetch(`/api/lead-liste/init?token=${encodeURIComponent(token)}`)
+    const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+    fetch(`/api/lead-liste/init${qs}`, { credentials: "same-origin" })
       .then(async r => {
         const d = await r.json();
         if (!r.ok) { setStatus("error"); setError(d.error || "Link doğrulanamadı."); return; }

@@ -48,8 +48,8 @@ export default function MarketProfilimPage() {
   const [briefingEnabled, setBriefingEnabled] = useState(true);
 
   useEffect(() => {
-    if (!token) { setState("error"); setErrorMsg("Link geçersiz."); return; }
-    fetch(`/api/market/profil/init?t=${encodeURIComponent(token)}`)
+    const qs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/market/profil/init${qs}`, { credentials: "same-origin" })
       .then((r) => r.json())
       .then((d: InitData & { error?: string }) => {
         if (d.error) { setState("error"); setErrorMsg(d.error); return; }
