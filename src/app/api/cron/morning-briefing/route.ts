@@ -39,13 +39,25 @@ export async function GET(req: Request) {
         // Tenant-aware panel URL (emlak /tr/panel, bayi /tr/bayi-panel, vs.)
         const panelUrl = getTenantPanelUrl(tenantKey) || "https://estateai.upudev.nl/tr/panel";
 
+        // Bayi WA pivot (2026-05-20): AI Eleman web'de yaşıyor — uzun
+        // "Günlük Platform Raporu" yerine kısa text + paneli aç linki.
+        // Detay panel'deki UPU asistanından alınır.
+        let title = "🌅 Sabah Brifingi";
+        let body = message;
+        if (tenantKey === "bayi") {
+          title = "🌅 Bugün ne var?";
+          // İlk 200 karakter (manşet + kritik metrik), devamı panelde
+          body = message.length > 200 ? `${message.slice(0, 197)}…` : message;
+          body += "\n\nDetay için paneli aç — UPU asistanına sorabilirsin.";
+        }
+
         // sendNotification handles shouldNotify (preference + DND) +
         // DB log + WA interactive button. Tercih kapalıysa skipped++.
         const result = await sendNotification({
           userId: user.id,
           type: "sabah_brif",
-          title: "🌅 Sabah Brifingi",
-          body: message,
+          title,
+          body,
           payload: { click_target: panelUrl },
         });
         if (result.notification_id) sent++;
