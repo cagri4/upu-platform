@@ -74,7 +74,16 @@ import {
 
 const ph = createPlaceholderHandler("bayi");
 
-export const bayiCommands: TenantCommandRegistry = {
+/**
+ * WA pivot (2026-05-20): bayi tenant için WA komut sistemi DEVRE DIŞI.
+ * AI Eleman web panel'de yaşıyor (UpuAgentWidget); WA sadece notification
+ * push + paneli aç linki kanalı oldu.
+ *
+ * Rollback: bu flag'i `true` yap, command handler dosyaları zaten yerinde.
+ */
+export const BAYI_COMMANDS_ENABLED = false;
+
+const bayiCommandsLegacy: TenantCommandRegistry = {
   commands: {
     // ── Yonetim / Asistan ────────────────────────────
     ozet: handleOzet,
@@ -277,3 +286,14 @@ export const bayiCommands: TenantCommandRegistry = {
     mesajgonder: null,
   },
 };
+
+const EMPTY_REGISTRY: TenantCommandRegistry = {
+  commands: {},
+  aliases: {},
+  stepHandlers: {},
+  callbackPrefixes: {},
+  requiredCapabilities: {},
+};
+
+export const bayiCommands: TenantCommandRegistry =
+  BAYI_COMMANDS_ENABLED ? bayiCommandsLegacy : EMPTY_REGISTRY;
