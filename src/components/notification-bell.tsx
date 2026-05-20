@@ -24,9 +24,12 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
 }
 
-export function NotificationBell({ accentColor = "indigo", token = "" }: {
+export function NotificationBell({ accentColor = "indigo", token = "", historyHref }: {
   accentColor?: string;
   token?: string;
+  /** Tüm bildirimler geçmiş sayfası. Tenant-aware (örn bayi: /tr/bayi-bildirimler).
+   *  Verilmezse default `/tr/bildirimler` (emlak legacy). */
+  historyHref?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
@@ -89,17 +92,15 @@ export function NotificationBell({ accentColor = "indigo", token = "" }: {
     const target = n.payload?.click_target;
     if (!target) {
       e.preventDefault();
-      const fallback = token
-        ? `/tr/bildirimler?t=${encodeURIComponent(token)}&tab=history`
-        : `/tr/bildirimler?tab=history`;
-      window.location.href = fallback;
+      window.location.href = allHref;
     }
     // Else default <a> behavior follows
   }
 
+  const basePath = historyHref || "/tr/bildirimler";
   const allHref = token
-    ? `/tr/bildirimler?t=${encodeURIComponent(token)}&tab=history`
-    : `/tr/bildirimler?tab=history`;
+    ? `${basePath}?t=${encodeURIComponent(token)}&tab=history`
+    : `${basePath}?tab=history`;
 
   return (
     <div className="relative" ref={dropdownRef}>

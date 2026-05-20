@@ -120,6 +120,7 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
       brandIconCollapsed={BAYI_BRAND_ICON}
       accentColor={BAYI_ACCENT}
       tenantKey="bayi"
+      notificationHistoryHref="/tr/bayi-bildirimler"
     >
       {blocked ? (
         <Forbidden

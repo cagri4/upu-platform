@@ -120,6 +120,12 @@ export interface AdminLayoutProps {
    * En fazla ilk 4 item gösterilir; 5. otomatik "Daha" → drawer açar.
    */
   bottomTabs?: SidebarItem[];
+  /**
+   * Tüm bildirimler sayfasının tenant-aware URL'i (örn bayi:
+   * "/tr/bayi-bildirimler"). Geçilmezse NotificationBell default
+   * "/tr/bildirimler" verir (emlak legacy).
+   */
+  notificationHistoryHref?: string;
   children: ReactNode;
 }
 
@@ -152,6 +158,7 @@ export function AdminLayout({
   accentColor = "emerald",
   tenantKey = "emlak",
   bottomTabs,
+  notificationHistoryHref,
   children,
 }: AdminLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -344,7 +351,7 @@ export function AdminLayout({
             <div className="flex-1" />
             <div className="flex items-center gap-2 text-slate-500">
               <ThemeToggle />
-              <NotificationBell token={searchParamsToken} />
+              <NotificationBell token={searchParamsToken} historyHref={notificationHistoryHref} />
               <a
                 href={`https://wa.me/${botPhone}`}
                 target="_blank" rel="noopener noreferrer"
