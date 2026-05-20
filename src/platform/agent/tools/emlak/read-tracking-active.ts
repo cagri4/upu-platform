@@ -1,4 +1,4 @@
-import type { ToolDef } from "@/platform/agent/types";
+import { assertTenant, type ToolDef } from "@/platform/agent/types";
 
 /**
  * Aktif takipler — emlak_tracking_criteria (kullanıcının açtığı arama
@@ -9,11 +9,13 @@ export const readTrackingActiveTool: ToolDef = {
   name: "read_tracking_active",
   description:
     "Aktif takip kriterlerini döner: müşteri için açılmış arama kriterleri (mahalle, property type, fiyat aralığı). Toplam aktif takip + son 10 detay. 'Bugün takipte ne var', 'kim hangi mülkü arıyor', 'aktif takiplerim' soruları için.",
+  expectedTenantKey: "emlak",
   input_schema: {
     type: "object",
     properties: {},
   },
   async handler(_input, ctx) {
+    assertTenant(ctx, "emlak", "read_tracking_active");
     const { data, count } = await ctx.sb
       .from("emlak_tracking_criteria")
       .select("id, name, neighborhoods, property_types, listing_type, price_min, price_max, active, created_at", { count: "exact" })

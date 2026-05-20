@@ -1,8 +1,9 @@
-import type { ToolDef } from "@/platform/agent/types";
+import { assertTenant, type ToolDef } from "@/platform/agent/types";
 
 export const listOverdueInvoicesTool: ToolDef = {
   name: "list_overdue_invoices",
   description: "Vadesi geçmiş AKTİF faturaları listeler (status=open AND due_date < today). Hatırlatma yapma, tahsilat planı, kritik müşteri tespiti için kullan.",
+  expectedTenantKey: "bayi",
   input_schema: {
     type: "object",
     properties: {
@@ -10,6 +11,7 @@ export const listOverdueInvoicesTool: ToolDef = {
     },
   },
   async handler(input, ctx) {
+    assertTenant(ctx, "bayi", "list_overdue_invoices");
     const limit = Math.min(100, Number(input.limit) || 20);
     const isAdmin = ["admin", "muhasebe"].includes(ctx.role || "");
     const today = new Date().toISOString().slice(0, 10);

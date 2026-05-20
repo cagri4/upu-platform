@@ -1,4 +1,4 @@
-import type { ToolDef } from "@/platform/agent/types";
+import { assertTenant, type ToolDef } from "@/platform/agent/types";
 
 /**
  * Mülk portföyü özeti — toplam aktif mülk, listing_type ve property_type
@@ -9,6 +9,7 @@ export const readPortfolioOverviewTool: ToolDef = {
   name: "read_portfolio_overview",
   description:
     "Emlak portföyünün özetini döner: toplam aktif mülk sayısı, listing_type (satılık/kiralık) ve property_type (daire/villa/arsa vb.) dağılımı, son eklenen 5 mülk. 'Portföyüm', 'kaç mülküm var', 'son ne ekledim' sorularında kullan.",
+  expectedTenantKey: "emlak",
   input_schema: {
     type: "object",
     properties: {
@@ -24,6 +25,7 @@ export const readPortfolioOverviewTool: ToolDef = {
     },
   },
   async handler(input, ctx) {
+    assertTenant(ctx, "emlak", "read_portfolio_overview");
     const listingType = typeof input.listing_type === "string" ? input.listing_type : null;
     const propertyType = typeof input.property_type === "string" ? input.property_type : null;
 

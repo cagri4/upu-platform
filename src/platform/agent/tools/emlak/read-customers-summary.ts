@@ -1,4 +1,4 @@
-import type { ToolDef } from "@/platform/agent/types";
+import { assertTenant, type ToolDef } from "@/platform/agent/types";
 
 /**
  * Aktif müşteri özeti — toplam ve aktif sayısı, arama tipine göre
@@ -9,6 +9,7 @@ export const readCustomersSummaryTool: ToolDef = {
   name: "read_customers_summary",
   description:
     "Aktif müşteri portföyünün özetini döner: toplam müşteri, arama tipine göre dağılım (satılık arayanlar / kiralık arayanlar), pipeline aşaması, son 5 müşteri. 'Müşterilerim', 'kim arıyor', 'kaç müşterim var' soruları için.",
+  expectedTenantKey: "emlak",
   input_schema: {
     type: "object",
     properties: {
@@ -20,6 +21,7 @@ export const readCustomersSummaryTool: ToolDef = {
     },
   },
   async handler(input, ctx) {
+    assertTenant(ctx, "emlak", "read_customers_summary");
     const lookingFor = typeof input.looking_for === "string" ? input.looking_for : null;
 
     let listQuery = ctx.sb

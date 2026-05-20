@@ -1,4 +1,4 @@
-import type { ToolDef } from "@/platform/agent/types";
+import { assertTenant, type ToolDef } from "@/platform/agent/types";
 
 /**
  * Önümüzdeki N gün (default 7) hatırlatma + randevu listesi.
@@ -10,6 +10,7 @@ export const readCalendarUpcomingTool: ToolDef = {
   name: "read_calendar_upcoming",
   description:
     "Önümüzdeki N gün içindeki hatırlatma ve randevuları döner. Status pending olanlar 'henüz tetiklenmemiş' demek. 'Bugünkü hatırlatmalar', 'yarın ne var', 'haftalık ajanda' soruları için.",
+  expectedTenantKey: "emlak",
   input_schema: {
     type: "object",
     properties: {
@@ -20,6 +21,7 @@ export const readCalendarUpcomingTool: ToolDef = {
     },
   },
   async handler(input, ctx) {
+    assertTenant(ctx, "emlak", "read_calendar_upcoming");
     const days = typeof input.days === "number" ? Math.max(1, Math.min(30, Math.floor(input.days))) : 7;
     const now = new Date();
     const until = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);

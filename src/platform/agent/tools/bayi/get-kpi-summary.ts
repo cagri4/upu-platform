@@ -1,8 +1,9 @@
-import type { ToolDef } from "@/platform/agent/types";
+import { assertTenant, type ToolDef } from "@/platform/agent/types";
 
 export const getKpiSummaryTool: ToolDef = {
   name: "get_kpi_summary",
   description: "Bayi panelinin KPI özetini döner: aktif bayi sayısı, bekleyen sipariş, geçmiş tahsilat, bu ay ciro, kritik stok, aktif davet. Sabah özet / 'bugün ne var?' soruları için kullan.",
+  expectedTenantKey: "bayi",
   input_schema: {
     type: "object",
     properties: {
@@ -14,6 +15,7 @@ export const getKpiSummaryTool: ToolDef = {
     },
   },
   async handler(_input, ctx) {
+    assertTenant(ctx, "bayi", "get_kpi_summary");
     const [
       dealerCountRes,
       pendingOrdersRes,

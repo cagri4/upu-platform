@@ -1,8 +1,9 @@
-import type { ToolDef } from "@/platform/agent/types";
+import { assertTenant, type ToolDef } from "@/platform/agent/types";
 
 export const getAccountStatementTool: ToolDef = {
   name: "get_account_statement",
   description: "Bayi cari ekstresini döner: hareketler (sipariş/fatura borç + tahsilat alacak) + opening/closing bakiye + debit/credit toplamları. Müşteri 'bakiye ne kadar' veya 'cari özet' sorduğunda kullan.",
+  expectedTenantKey: "bayi",
   input_schema: {
     type: "object",
     properties: {
@@ -16,6 +17,7 @@ export const getAccountStatementTool: ToolDef = {
     },
   },
   async handler(input, ctx) {
+    assertTenant(ctx, "bayi", "get_account_statement");
     const isAdmin = ["admin", "muhasebe"].includes(ctx.role || "");
     const dealerId = isAdmin
       ? ((input.dealer_id as string | undefined) || ctx.userId)

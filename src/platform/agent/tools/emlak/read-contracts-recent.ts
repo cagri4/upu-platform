@@ -1,4 +1,4 @@
-import type { ToolDef } from "@/platform/agent/types";
+import { assertTenant, type ToolDef } from "@/platform/agent/types";
 
 /**
  * Son sözleşmeler — durum dağılımı + son N (default 10) sözleşme.
@@ -10,6 +10,7 @@ export const readContractsRecentTool: ToolDef = {
   name: "read_contracts_recent",
   description:
     "Son sözleşmelerin listesini döner — toplam aktif/iptal/taslak sayısı, son N (default 10) sözleşmenin türü, durumu ve imza tarihi. 'Son sözleşmelerim', 'bu hafta kaç sözleşme', 'imzalı kaç tane' soruları için.",
+  expectedTenantKey: "emlak",
   input_schema: {
     type: "object",
     properties: {
@@ -24,6 +25,7 @@ export const readContractsRecentTool: ToolDef = {
     },
   },
   async handler(input, ctx) {
+    assertTenant(ctx, "emlak", "read_contracts_recent");
     const limit = typeof input.limit === "number" ? Math.max(1, Math.min(50, Math.floor(input.limit))) : 10;
     const status = typeof input.status === "string" ? input.status : null;
 

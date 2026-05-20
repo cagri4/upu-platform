@@ -1,8 +1,9 @@
-import type { ToolDef } from "@/platform/agent/types";
+import { assertTenant, type ToolDef } from "@/platform/agent/types";
 
 export const listOrdersTool: ToolDef = {
   name: "list_orders",
   description: "Bayi'nin gelen siparişlerini listeler. Durum + bayi + tutar + tarih bilgisi döner. Pending sipariş kontrolü, onay bekleyen iş takibi için kullan.",
+  expectedTenantKey: "bayi",
   input_schema: {
     type: "object",
     properties: {
@@ -18,6 +19,7 @@ export const listOrdersTool: ToolDef = {
     },
   },
   async handler(input, ctx) {
+    assertTenant(ctx, "bayi", "list_orders");
     const status = (input.status as string | undefined) || null;
     const limit = Math.min(50, Number(input.limit) || 10);
 

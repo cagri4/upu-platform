@@ -1,9 +1,10 @@
 import { sendText } from "@/platform/whatsapp/send";
-import type { ToolDef } from "@/platform/agent/types";
+import { assertTenant, type ToolDef } from "@/platform/agent/types";
 
 export const sendDealerMessageTool: ToolDef = {
   name: "send_dealer_message",
   description: "Belirli bir bayiye WhatsApp üzerinden mesaj gönderir (ödeme hatırlatma, sipariş bilgi, vs.). KRİTİK AKSİYON — Kullanıcı her seferinde onay vermeli. Mesajda kullanıcının niyetini kibar Türkçe ile aktarın.",
+  expectedTenantKey: "bayi",
   requiresConfirmation: true,
   input_schema: {
     type: "object",
@@ -14,6 +15,7 @@ export const sendDealerMessageTool: ToolDef = {
     required: ["dealer_id", "message"],
   },
   async handler(input, ctx) {
+    assertTenant(ctx, "bayi", "send_dealer_message");
     if (!["admin", "satis"].includes(ctx.role || "")) {
       return { error: "Bu işlem için yetkiniz yok (admin/satis gerekli)." };
     }
