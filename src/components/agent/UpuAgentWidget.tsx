@@ -32,6 +32,28 @@ interface ChatResponse {
   ok: true;
   reply: string;
   tool_calls: Array<{ name: string; input: unknown; output: unknown }>;
+  quota?: { used: number; limit: number; remaining: number };
+}
+
+interface QuotaState {
+  used: number;
+  limit: number;
+  remaining: number;
+  percent: number;
+  status: "ok" | "warning" | "critical" | "exceeded";
+  plan: string;
+  plan_display: string;
+  period_end: string;
+  days_until_reset: number;
+}
+
+interface QuotaExceededInfo {
+  used: number;
+  limit: number;
+  plan: string;
+  plan_display: string;
+  period_end: string;
+  days_until_reset: number;
 }
 
 const BAYI_QUICK_PROMPTS = [
@@ -72,7 +94,28 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
   const [error, setError] = useState("");
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [quota, setQuota] = useState<QuotaState | null>(null);
+  const [quotaExceeded, setQuotaExceeded] = useState<QuotaExceededInfo | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Quota durumu çek — mount'ta + her chat sonrası
+  const fetchQuota = async () => {
+    try {
+      const r = await fetch("/api/agent/quota", { credentials: "same-origin" });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d?.ok) {
+        setQuota({
+          used: d.used, limit: d.limit, remaining: d.remaining,
+          percent: d.percent, status: d.status,
+          plan: d.plan, plan_display: d.plan_display,
+          period_end: d.period_end, days_until_reset: d.days_until_reset,
+        });
+      }
+    } catch { /* sessiz */ }
+  };
+
+  useEffect(() => { fetchQuota(); }, []);
 
   // History hydrate
   useEffect(() => {
@@ -118,6 +161,18 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
         body: JSON.stringify({ message: text }),
       });
       const d = await r.json();
+      if (r.status === 429 && d?.error === "quota_exceeded") {
+        // KATMAN C — limit modal aç
+        setQuotaExceeded({
+          used: d.used, limit: d.limit, plan: d.plan,
+          plan_display: d.plan_display,
+          period_end: d.period_end,
+          days_until_reset: d.days_until_reset,
+        });
+        // Optimistic user message'i geri çek
+        setMessages((prev) => prev.slice(0, -1));
+        return;
+      }
       if (!r.ok) {
         setError(d.error || "AI yanıt veremedi.");
         return;
@@ -136,6 +191,8 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
         ...toolMsgs,
         { role: "assistant", content: cd.reply, clientId: genId() },
       ]);
+      // Quota'yı tazele (her chat sonrası backend cumulative tutuyor)
+      fetchQuota();
     } catch {
       setError("Bağlantı hatası.");
     } finally {
@@ -151,23 +208,39 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
 
   return (
     <>
-      {/* Floating button — UPU avatar (Meta WA profil görseli) */}
+      {/* Floating button — UPU avatar (Meta WA profil görseli)
+          KATMAN A: pasif quota rozeti (used/limit) — sadece görünür, dikkat çekmez */}
       {!open && (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="UPU AI aç"
-          className="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full shadow-lg hover:shadow-xl active:scale-95 transition overflow-hidden bg-white"
-        >
-          <Image
-            src={AVATAR_SRC}
-            alt="UPU"
-            width={56}
-            height={56}
-            className="w-full h-full object-cover"
-            priority
-          />
-        </button>
+        <div className="fixed bottom-4 right-4 z-50">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="UPU AI aç"
+            className="w-14 h-14 rounded-full shadow-lg hover:shadow-xl active:scale-95 transition overflow-hidden bg-white"
+          >
+            <Image
+              src={AVATAR_SRC}
+              alt="UPU"
+              width={56}
+              height={56}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </button>
+          {quota && (
+            <div
+              className={`absolute -top-1 -right-1 text-white text-[10px] font-medium rounded-full px-1.5 py-0.5 shadow ${
+                quota.status === "exceeded" ? "bg-rose-600"
+                  : quota.status === "critical" ? "bg-orange-500"
+                  : quota.status === "warning" ? "bg-amber-500"
+                  : "bg-slate-700"
+              }`}
+              title={`${quota.plan_display} — ${quota.days_until_reset} gün sonra yenilenir`}
+            >
+              {quota.used}/{quota.limit}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Slide-in panel */}
@@ -196,6 +269,29 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
               </button>
             </div>
           </header>
+
+          {/* KATMAN B — uyarı bar (%70+) — motivasyon tonu */}
+          {quota && quota.percent >= 70 && quota.status !== "exceeded" && (
+            <div className={`border-b px-4 py-2 ${
+              quota.status === "critical" ? "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50"
+                : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50"
+            }`}>
+              <div className="flex items-center justify-between text-xs">
+                <span className={`font-medium ${quota.status === "critical" ? "text-orange-800 dark:text-orange-200" : "text-amber-800 dark:text-amber-200"}`}>
+                  {quota.status === "critical" ? "🎯" : "🚀"} Bu ay {quota.used} mesaj attın
+                </span>
+                <span className={quota.status === "critical" ? "text-orange-700 dark:text-orange-300" : "text-amber-700 dark:text-amber-300"}>
+                  {quota.days_until_reset} gün sonra yenilenir
+                </span>
+              </div>
+              <div className="mt-1.5 h-1 bg-white/40 dark:bg-slate-900/40 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all ${quota.percent >= 90 ? "bg-orange-500" : "bg-amber-500"}`}
+                  style={{ width: `${Math.min(100, quota.percent)}%` }}
+                />
+              </div>
+            </div>
+          )}
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
             {!hydrated ? (
@@ -252,6 +348,44 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
                   {q}
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* KATMAN C — limit modal (quota_exceeded 429) */}
+          {quotaExceeded && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-4 z-10 sm:rounded-2xl">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 max-w-sm w-full shadow-2xl">
+                <div className="text-center mb-3">
+                  <div className="text-4xl mb-2">🎯</div>
+                  <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+                    Aylık quota&apos;n doldu
+                  </h2>
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mb-3 leading-relaxed">
+                  Bu ay <span className="font-semibold">{quotaExceeded.limit} mesajını</span> kullandın
+                  — harika kullanıyorsun! {quotaExceeded.days_until_reset} gün sonra
+                  ({quotaExceeded.period_end}) otomatik yenilenecek.
+                </p>
+                <p className="text-xs text-slate-500 mb-4">
+                  Plan: <span className="font-medium">{quotaExceeded.plan_display}</span>
+                </p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => alert("Plan yükseltme V2'de açılacak. Şimdilik admin paneli üzerinden talep iletebilirsin.")}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 rounded-lg transition"
+                  >
+                    Pakete geç (daha fazla mesaj)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuotaExceeded(null)}
+                    className="w-full text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-sm py-1.5 transition"
+                  >
+                    Sonra
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
