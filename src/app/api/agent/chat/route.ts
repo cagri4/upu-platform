@@ -21,8 +21,9 @@ import { resolvePanelAuth } from "@/platform/auth/panel-auth";
 import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { getTenantByDomain } from "@/tenants/config";
 import { BAYI_TOOLS, BAYI_TOOLS_BY_NAME } from "@/platform/agent/tools/bayi";
-import { buildUpuSystemPrompt } from "@/platform/agent/prompt";
-import type { ToolContext } from "@/platform/agent/types";
+import { EMLAK_TOOLS, EMLAK_TOOLS_BY_NAME } from "@/platform/agent/tools/emlak";
+import { buildUpuSystemPrompt, buildUpuEmlakSystemPrompt } from "@/platform/agent/prompt";
+import type { ToolContext, ToolDef } from "@/platform/agent/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -37,16 +38,30 @@ interface DbMessageRow {
   tool_use_id: string | null;
 }
 
-function getApiKey(): string {
-  const key = process.env.ANTHROPIC_API_KEY_BAYI || process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY_BAYI env yok.");
-  return key;
+const SUPPORTED_TENANTS = new Set(["bayi", "emlak"]);
+
+function getApiKey(tenantKey: string): string {
+  const envKey = tenantKey === "emlak"
+    ? (process.env.ANTHROPIC_API_KEY_EMLAK || process.env.ANTHROPIC_API_KEY)
+    : (process.env.ANTHROPIC_API_KEY_BAYI || process.env.ANTHROPIC_API_KEY);
+  if (!envKey) throw new Error(`ANTHROPIC_API_KEY_${tenantKey.toUpperCase()} env yok.`);
+  return envKey;
+}
+
+function getToolsForTenant(tenantKey: string): { list: ToolDef[]; byName: Record<string, ToolDef> } {
+  if (tenantKey === "emlak") return { list: EMLAK_TOOLS, byName: EMLAK_TOOLS_BY_NAME };
+  return { list: BAYI_TOOLS, byName: BAYI_TOOLS_BY_NAME };
 }
 
 export async function POST(req: NextRequest) {
   const host = req.headers.get("host") || "";
-  if (getTenantByDomain(host)?.key !== "bayi") {
-    return NextResponse.json({ error: "Yalnızca bayi subdomain'inde." }, { status: 400 });
+  const tenantCfg = getTenantByDomain(host);
+  const tenantKey = tenantCfg?.key || null;
+  if (!tenantKey || !SUPPORTED_TENANTS.has(tenantKey)) {
+    return NextResponse.json(
+      { error: "Bu subdomain'de UPU agent desteği yok." },
+      { status: 400 },
+    );
   }
 
   let body: { message?: string };
@@ -69,14 +84,14 @@ export async function POST(req: NextRequest) {
     role: string | null;
   }>(sb, {
     userId: auth.userId,
-    tenantKey: "bayi",
+    tenantKey,
     select: "id, display_name, metadata, role",
   });
   if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
 
   const meta = (lookup.profile.metadata as Record<string, unknown>) || {};
   const firma = (meta.firma_profili as { ticari_unvan?: string } | null) || null;
-  const firmaUnvani = firma?.ticari_unvan || null;
+  const firmaUnvani = firma?.ticari_unvan || (meta.company_name as string) || null;
 
   // Upsert agent_profiles
   await sb.from("agent_profiles").upsert({
@@ -122,11 +137,14 @@ export async function POST(req: NextRequest) {
     content: userMessage,
   });
 
-  const systemPrompt = buildUpuSystemPrompt({
+  const promptInput = {
     displayName: lookup.profile.display_name || "Kullanıcı",
     firmaUnvani,
     role: lookup.profile.role,
-  });
+  };
+  const systemPrompt = tenantKey === "emlak"
+    ? buildUpuEmlakSystemPrompt(promptInput)
+    : buildUpuSystemPrompt(promptInput);
 
   const ctx: ToolContext = {
     sb,
@@ -138,12 +156,13 @@ export async function POST(req: NextRequest) {
 
   let anthropic: Anthropic;
   try {
-    anthropic = new Anthropic({ apiKey: getApiKey() });
+    anthropic = new Anthropic({ apiKey: getApiKey(tenantKey) });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
 
-  const toolDefs = BAYI_TOOLS.map((t) => ({
+  const { list: TOOL_LIST, byName: TOOL_BY_NAME } = getToolsForTenant(tenantKey);
+  const toolDefs = TOOL_LIST.map((t) => ({
     name: t.name,
     description: t.description,
     input_schema: t.input_schema,
@@ -219,7 +238,7 @@ export async function POST(req: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const toolResults: any[] = [];
       for (const tu of toolUses) {
-        const tool = BAYI_TOOLS_BY_NAME[tu.name];
+        const tool = TOOL_BY_NAME[tu.name];
         let output: unknown;
         if (!tool) {
           output = { error: `Bilinmeyen tool: ${tu.name}` };

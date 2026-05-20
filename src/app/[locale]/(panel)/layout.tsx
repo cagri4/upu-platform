@@ -16,6 +16,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { AdminLayout, type SidebarItem } from "@/components/admin-layout";
 import { PanelAuthFail } from "@/components/panel-auth-fail";
+import { UpuAgentWidget } from "@/components/agent/UpuAgentWidget";
 
 /**
  * Bottom tab item'larının tam kataloğu — kullanıcı /tr/panel-ayarlari'da
@@ -131,6 +132,7 @@ export default function PanelGroupLayout({ children }: { children: ReactNode }) 
       bottomTabs={bottomTabs}
     >
       {children}
+      <UpuAgentWidget tenantKey="emlak" />
     </AdminLayout>
   );
 }

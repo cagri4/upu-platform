@@ -31,16 +31,37 @@ interface ChatResponse {
   tool_calls: Array<{ name: string; input: unknown; output: unknown }>;
 }
 
-const QUICK_PROMPTS = [
+const BAYI_QUICK_PROMPTS = [
   "📊 Bugün ne var?",
   "💰 Cari özet getir",
   "📦 Bekleyen siparişler",
   "🔔 Vadesi geçmiş faturalar",
 ];
 
+const EMLAK_QUICK_PROMPTS = [
+  "🏠 Portföyüm",
+  "👤 Aktif müşteriler",
+  "📋 Son sözleşmeler",
+  "🎯 Bugünkü takipler",
+  "📅 Yakın hatırlatmalar",
+];
+
+const TENANT_LABELS: Record<string, string> = {
+  bayi: "Bayi asistanın",
+  emlak: "Emlak asistanın",
+};
+
+interface UpuAgentWidgetProps {
+  /** Tenant key — quick prompts + subtitle bu key'e göre seçilir.
+   *  Default "bayi" (geriye uyum: prop geçilmemişse mevcut bayi davranışı). */
+  tenantKey?: "bayi" | "emlak";
+}
+
 function genId() { return Math.random().toString(36).slice(2); }
 
-export function UpuAgentWidget() {
+export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {}) {
+  const QUICK_PROMPTS = tenantKey === "emlak" ? EMLAK_QUICK_PROMPTS : BAYI_QUICK_PROMPTS;
+  const subtitle = TENANT_LABELS[tenantKey] || "AI asistanın";
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -150,7 +171,7 @@ export function UpuAgentWidget() {
               </div>
               <div>
                 <p className="font-semibold text-sm text-slate-900 dark:text-white leading-tight">UPU</p>
-                <p className="text-[10px] text-slate-500 leading-tight">Bayi asistanın</p>
+                <p className="text-[10px] text-slate-500 leading-tight">{subtitle}</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -177,7 +198,9 @@ export function UpuAgentWidget() {
                   Merhaba {displayName || "Kullanıcı"}! 👋
                 </p>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Ben UPU — bayi yönetiminde sana nasıl yardım edeyim?
+                  {tenantKey === "emlak"
+                    ? "Ben UPU — emlak portföyünde sana nasıl yardım edeyim?"
+                    : "Ben UPU — bayi yönetiminde sana nasıl yardım edeyim?"}
                 </p>
               </div>
             ) : (

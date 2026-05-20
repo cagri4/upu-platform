@@ -12,10 +12,16 @@ import { getTenantByDomain } from "@/tenants/config";
 
 export const dynamic = "force-dynamic";
 
+const SUPPORTED_TENANTS = new Set(["bayi", "emlak"]);
+
 export async function GET(req: NextRequest) {
   const host = req.headers.get("host") || "";
-  if (getTenantByDomain(host)?.key !== "bayi") {
-    return NextResponse.json({ error: "Yalnızca bayi subdomain'inde." }, { status: 400 });
+  const tenantKey = getTenantByDomain(host)?.key || null;
+  if (!tenantKey || !SUPPORTED_TENANTS.has(tenantKey)) {
+    return NextResponse.json(
+      { error: "Bu subdomain'de UPU agent desteği yok." },
+      { status: 400 },
+    );
   }
 
   const auth = await resolvePanelAuth(req);
@@ -24,7 +30,7 @@ export async function GET(req: NextRequest) {
   const sb = getServiceClient();
   const lookup = await resolveTenantProfile<{ display_name: string | null }>(sb, {
     userId: auth.userId,
-    tenantKey: "bayi",
+    tenantKey,
     select: "id, display_name",
   });
   if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
