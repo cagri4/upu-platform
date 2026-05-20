@@ -24,6 +24,8 @@ import { BAYI_TOOLS, BAYI_TOOLS_BY_NAME } from "@/platform/agent/tools/bayi";
 import { EMLAK_TOOLS, EMLAK_TOOLS_BY_NAME } from "@/platform/agent/tools/emlak";
 import { buildUpuSystemPrompt, buildUpuEmlakSystemPrompt } from "@/platform/agent/prompt";
 import type { ToolContext, ToolDef } from "@/platform/agent/types";
+import { getOrCreateQuota, incrementQuota, logUsageEvent } from "@/platform/agent/quota";
+import { calculateCostUsd } from "@/platform/agent/cost";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -88,6 +90,26 @@ export async function POST(req: NextRequest) {
     select: "id, display_name, metadata, role",
   });
   if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+
+  // Quota check — limit aşıldıysa 429 + plan + period_end döner
+  let quota;
+  try {
+    quota = await getOrCreateQuota(sb, lookup.profile.id, lookup.tenantId);
+  } catch (err) {
+    console.error("[agent/chat] quota init err", err);
+    return NextResponse.json({ error: "Quota servisi yanıt veremedi." }, { status: 500 });
+  }
+  if (quota.row.used_messages >= quota.limit) {
+    return NextResponse.json({
+      error: "quota_exceeded",
+      used: quota.row.used_messages,
+      limit: quota.limit,
+      plan: quota.row.plan_key,
+      plan_display: quota.plan_display,
+      period_end: quota.row.period_end,
+      days_until_reset: quota.days_until_reset,
+    }, { status: 429 });
+  }
 
   const meta = (lookup.profile.metadata as Record<string, unknown>) || {};
   const firma = (meta.firma_profili as { ticari_unvan?: string } | null) || null;
@@ -175,6 +197,11 @@ export async function POST(req: NextRequest) {
   let replyText = "";
   let turns = 0;
   let usedModel = PRIMARY_MODEL;
+  // Token + cost accumulators (loop boyunca tüm turn'lerin toplamı)
+  let totalInput = 0;
+  let totalOutput = 0;
+  let totalCacheRead = 0;
+  let totalCacheWrite = 0;
 
   try {
     while (turns < MAX_TOOL_TURNS) {
@@ -208,6 +235,18 @@ export async function POST(req: NextRequest) {
           throw err;
         }
       }
+
+      // Usage accumulation (her turn cumulative)
+      const usage = response.usage as {
+        input_tokens?: number;
+        output_tokens?: number;
+        cache_read_input_tokens?: number;
+        cache_creation_input_tokens?: number;
+      };
+      totalInput += usage.input_tokens || 0;
+      totalOutput += usage.output_tokens || 0;
+      totalCacheRead += usage.cache_read_input_tokens || 0;
+      totalCacheWrite += usage.cache_creation_input_tokens || 0;
 
       // Assistant message DB'ye + conversation history'e
       await sb.from("agent_conversations").insert({
@@ -278,11 +317,37 @@ export async function POST(req: NextRequest) {
     }, { status: 500 });
   }
 
+  // Quota + usage track (1 mesaj = 1 chat çağrısı, multi-turn'lerin token toplamı)
+  const costUsd = calculateCostUsd(usedModel, totalInput, totalOutput, totalCacheRead, totalCacheWrite);
+  try {
+    await incrementQuota(sb, lookup.profile.id, quota.row.period_start, {
+      input_tokens: totalInput,
+      output_tokens: totalOutput,
+      cache_read: totalCacheRead,
+      cost_usd: costUsd,
+    });
+    await logUsageEvent(sb, lookup.profile.id, lookup.tenantId, null, usedModel, {
+      input_tokens: totalInput,
+      output_tokens: totalOutput,
+      cache_read: totalCacheRead,
+      cache_write: totalCacheWrite,
+      cost_usd: costUsd,
+      tool_calls: toolCalls.map((tc) => tc.name),
+    });
+  } catch (err) {
+    console.error("[agent/chat] usage track err", err);
+  }
+
   return NextResponse.json({
     ok: true,
     reply: replyText || "(Boş yanıt — tekrar dener misin?)",
     tool_calls: toolCalls,
     turn_count: turns,
     model: usedModel,
+    quota: {
+      used: quota.row.used_messages + 1,
+      limit: quota.limit,
+      remaining: Math.max(0, quota.limit - quota.row.used_messages - 1),
+    },
   });
 }
