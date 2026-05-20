@@ -27,8 +27,8 @@ import type { ToolContext } from "@/platform/agent/types";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const PRIMARY_MODEL = "claude-sonnet-4-5";
-const FALLBACK_MODEL = "claude-haiku-4-5";
+const PRIMARY_MODEL = "claude-sonnet-4-6";
+const FALLBACK_MODEL = "claude-haiku-4-5-20251001";
 const MAX_TOOL_TURNS = 5;
 
 interface DbMessageRow {
