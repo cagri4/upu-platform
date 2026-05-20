@@ -21,6 +21,7 @@ import { useSearchParams, usePathname } from "next/navigation";
 import { AdminLayout } from "@/components/admin-layout";
 import { PanelAuthFail } from "@/components/panel-auth-fail";
 import { Forbidden } from "@/components/banking";
+import { UpuAgentWidget } from "@/components/agent/UpuAgentWidget";
 import {
   BAYI_SIDEBAR,
   BAYI_BRAND_TITLE,
@@ -127,6 +128,7 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
       ) : (
         children
       )}
+      <UpuAgentWidget />
     </AdminLayout>
   );
 }
