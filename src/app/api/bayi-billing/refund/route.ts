@@ -15,6 +15,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuthFromBody } from "@/platform/auth/require-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { getTenantByKey } from "@/tenants/config";
 
 export const dynamic = "force-dynamic";
@@ -27,25 +29,20 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  if (!body.token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+  const auth = await requireAuthFromBody(req, body);
+  if ("error" in auth) return auth.error;
 
   const supabase = getServiceClient();
-  const { data: magicToken } = await supabase
-    .from("magic_link_tokens")
-    .select("user_id, expires_at, used_at")
-    .eq("token", body.token)
-    .maybeSingle();
-  if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-  if (new Date(magicToken.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, role, tenant_id, metadata, created_at")
-    .eq("id", magicToken.user_id)
-    .maybeSingle();
-  if (!profile) return NextResponse.json({ error: "Profil bulunamadı." }, { status: 404 });
+  const lookup = await resolveTenantProfile<{
+    id: string; role: string | null; tenant_id: string;
+    metadata: Record<string, unknown> | null; created_at: string;
+  }>(supabase, {
+    userId: auth.userId,
+    tenantKey: "bayi",
+    select: "id, role, tenant_id, metadata, created_at",
+  });
+  if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+  const profile = lookup.profile;
   if (profile.role !== "admin" && profile.role !== "user") {
     return NextResponse.json({ error: "Sadece firma sahibi iade isteyebilir." }, { status: 403 });
   }

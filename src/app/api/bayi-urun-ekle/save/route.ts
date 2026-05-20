@@ -12,6 +12,8 @@
  */
 import { NextRequest, NextResponse, after } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuthFromBody } from "@/platform/auth/require-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -46,8 +48,8 @@ function slugifyCode(input: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const token = s(body.token);
-    if (!token) return NextResponse.json({ error: "Token gerekli." }, { status: 400 });
+    const auth = await requireAuthFromBody(req, body);
+    if ("error" in auth) return auth.error;
 
     const name = s(body.name);
     const unit = s(body.unit) || "adet";
@@ -58,24 +60,16 @@ export async function POST(req: NextRequest) {
     if (!VALID_UNITS.has(unit)) return NextResponse.json({ error: "Geçersiz birim." }, { status: 400 });
 
     const supabase = getServiceClient();
-    const { data: magicToken } = await supabase
-      .from("magic_link_tokens")
-      .select("id, user_id, expires_at, used_at")
-      .eq("token", token)
-      .maybeSingle();
-
-    if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-    if (magicToken.used_at) return NextResponse.json({ error: "Bu link zaten kullanılmış." }, { status: 400 });
-    if (new Date(magicToken.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id, tenant_id, capabilities, role, invited_by, whatsapp_phone")
-      .eq("id", magicToken.user_id)
-      .single();
-    if (!profile?.tenant_id) return NextResponse.json({ error: "Profil eksik." }, { status: 500 });
+    const lookup = await resolveTenantProfile<{
+      id: string; tenant_id: string; capabilities: string[] | null;
+      role: string | null; invited_by: string | null; whatsapp_phone: string | null;
+    }>(supabase, {
+      userId: auth.userId,
+      tenantKey: "bayi",
+      select: "id, tenant_id, capabilities, role, invited_by, whatsapp_phone",
+    });
+    if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+    const profile = lookup.profile;
 
     const caps = (profile.capabilities as string[] | null) || [];
     const canEdit = caps.includes("*") || caps.includes("products:edit");
@@ -144,7 +138,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error?.message || "Kaydedilemedi." }, { status: 500 });
     }
 
-    await supabase.from("magic_link_tokens").update({ used_at: new Date().toISOString() }).eq("id", magicToken.id);
+    if (auth.magicTokenId) {
+      await supabase.from("magic_link_tokens").update({ used_at: new Date().toISOString() }).eq("id", auth.magicTokenId);
+    }
 
     const userId = profile.id;
     const userPhone = profile.whatsapp_phone as string | undefined;

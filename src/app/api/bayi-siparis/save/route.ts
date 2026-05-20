@@ -14,6 +14,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuthFromBody } from "@/platform/auth/require-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { sendButtons } from "@/platform/whatsapp/send";
 import { BAYI_CAPABILITIES } from "@/tenants/bayi/capabilities";
 
@@ -27,8 +29,8 @@ function formatPrice(n: number): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const token = body.token as string;
-    if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+    const auth = await requireAuthFromBody(req, body);
+    if ("error" in auth) return auth.error;
 
     const dealerId = String(body.dealer_id || "").trim();
     const notes = body.notes ? String(body.notes).trim() : null;
@@ -48,21 +50,16 @@ export async function POST(req: NextRequest) {
     if (items.length === 0) return NextResponse.json({ error: "Geçerli ürün/miktar yok." }, { status: 400 });
 
     const supabase = getServiceClient();
-    const { data: magicToken } = await supabase
-      .from("magic_link_tokens")
-      .select("id, user_id, expires_at, used_at")
-      .eq("token", token)
-      .maybeSingle();
-    if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-    if (magicToken.used_at) return NextResponse.json({ error: "Bu link zaten kullanılmış." }, { status: 400 });
-    if (new Date(magicToken.expires_at) < new Date()) return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id, tenant_id, role, capabilities, dealer_id, whatsapp_phone, invited_by")
-      .eq("id", magicToken.user_id)
-      .single();
-    if (!profile?.tenant_id) return NextResponse.json({ error: "Profil eksik." }, { status: 500 });
+    const lookup = await resolveTenantProfile<{
+      id: string; tenant_id: string; role: string | null; capabilities: string[] | null;
+      dealer_id: string | null; whatsapp_phone: string | null; invited_by: string | null;
+    }>(supabase, {
+      userId: auth.userId,
+      tenantKey: "bayi",
+      select: "id, tenant_id, role, capabilities, dealer_id, whatsapp_phone, invited_by",
+    });
+    if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+    const profile = lookup.profile;
 
     const caps = (profile.capabilities as string[] | null) || [];
     const canCreateOrder = caps.includes("*") || caps.includes(BAYI_CAPABILITIES.ORDERS_CREATE);
@@ -172,7 +169,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Sipariş kalemleri kaydedilemedi." }, { status: 500 });
     }
 
-    await supabase.from("magic_link_tokens").update({ used_at: new Date().toISOString() }).eq("id", magicToken.id);
+    if (auth.magicTokenId) {
+      await supabase.from("magic_link_tokens").update({ used_at: new Date().toISOString() }).eq("id", auth.magicTokenId);
+    }
 
     // Notify caller
     if (profile.whatsapp_phone) {

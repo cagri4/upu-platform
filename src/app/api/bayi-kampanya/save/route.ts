@@ -15,6 +15,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuthFromBody } from "@/platform/auth/require-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { sendButtons } from "@/platform/whatsapp/send";
 import { BAYI_CAPABILITIES } from "@/tenants/bayi/capabilities";
 
@@ -24,8 +26,8 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const token = body.token as string;
-    if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+    const auth = await requireAuthFromBody(req, body);
+    if ("error" in auth) return auth.error;
 
     const name = String(body.name || "").trim();
     const description = String(body.description || "").trim() || null;
@@ -46,21 +48,16 @@ export async function POST(req: NextRequest) {
     if (productIds.length === 0) return NextResponse.json({ error: "En az bir ürün seçin." }, { status: 400 });
 
     const supabase = getServiceClient();
-    const { data: magicToken } = await supabase
-      .from("magic_link_tokens")
-      .select("id, user_id, expires_at, used_at")
-      .eq("token", token)
-      .maybeSingle();
-    if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-    if (magicToken.used_at) return NextResponse.json({ error: "Bu link zaten kullanılmış." }, { status: 400 });
-    if (new Date(magicToken.expires_at) < new Date()) return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id, tenant_id, capabilities, whatsapp_phone, display_name")
-      .eq("id", magicToken.user_id)
-      .single();
-    if (!profile?.tenant_id) return NextResponse.json({ error: "Profil eksik." }, { status: 500 });
+    const lookup = await resolveTenantProfile<{
+      id: string; tenant_id: string; capabilities: string[] | null;
+      whatsapp_phone: string | null; display_name: string | null;
+    }>(supabase, {
+      userId: auth.userId,
+      tenantKey: "bayi",
+      select: "id, tenant_id, capabilities, whatsapp_phone, display_name",
+    });
+    if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+    const profile = lookup.profile;
 
     const caps = (profile.capabilities as string[] | null) || [];
     if (!(caps.includes("*") || caps.includes(BAYI_CAPABILITIES.CAMPAIGNS_CREATE))) {
@@ -95,7 +92,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: campErr?.message || "Kampanya kaydedilemedi." }, { status: 500 });
     }
 
-    await supabase.from("magic_link_tokens").update({ used_at: new Date().toISOString() }).eq("id", magicToken.id);
+    if (auth.magicTokenId) {
+      await supabase.from("magic_link_tokens").update({ used_at: new Date().toISOString() }).eq("id", auth.magicTokenId);
+    }
 
     // Broadcast to dealers
     let recipients: Array<{ user_id: string; phone: string; company: string }> = [];

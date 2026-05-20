@@ -14,6 +14,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuthFromBody } from "@/platform/auth/require-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { seedTenantDemoData } from "@/tenants/bayi/demo-import/seed";
 
 export const dynamic = "force-dynamic";
@@ -26,26 +28,20 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const token = body.token;
-  if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+  const auth = await requireAuthFromBody(req, body);
+  if ("error" in auth) return auth.error;
 
   const supabase = getServiceClient();
-  const { data: magicToken } = await supabase
-    .from("magic_link_tokens")
-    .select("id, user_id, expires_at, used_at")
-    .eq("token", token)
-    .maybeSingle();
-  if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-  if (new Date(magicToken.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, tenant_id, role, metadata")
-    .eq("id", magicToken.user_id)
-    .maybeSingle();
-  if (!profile?.tenant_id) return NextResponse.json({ error: "Profil eksik." }, { status: 500 });
+  const lookup = await resolveTenantProfile<{
+    id: string; tenant_id: string; role: string | null;
+    metadata: Record<string, unknown> | null;
+  }>(supabase, {
+    userId: auth.userId,
+    tenantKey: "bayi",
+    select: "id, tenant_id, role, metadata",
+  });
+  if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+  const profile = lookup.profile;
   if (profile.role !== "admin" && profile.role !== "user") {
     return NextResponse.json({ error: "Sadece firma sahibi demo veri içe aktarabilir." }, { status: 403 });
   }

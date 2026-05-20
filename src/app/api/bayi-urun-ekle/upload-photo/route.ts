@@ -6,6 +6,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { getSessionFromCookies } from "@/platform/auth/session";
 import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -20,9 +21,6 @@ export async function POST(req: NextRequest) {
     const token = form.get("token");
     const file = form.get("file");
 
-    if (typeof token !== "string" || !token) {
-      return NextResponse.json({ error: "Token gerekli." }, { status: 400 });
-    }
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "Dosya gerekli." }, { status: 400 });
     }
@@ -33,21 +31,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Fotoğraf 8 MB'dan büyük olamaz." }, { status: 400 });
     }
 
+    // Cookie session öncelikli; yoksa formData token fallback.
     const supabase = getServiceClient();
-    const { data: magicToken } = await supabase
-      .from("magic_link_tokens")
-      .select("id, user_id, expires_at, used_at")
-      .eq("token", token)
-      .maybeSingle();
-
-    if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-    if (magicToken.used_at) return NextResponse.json({ error: "Bu link zaten kullanılmış." }, { status: 400 });
-    if (new Date(magicToken.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
+    let userId: string;
+    const session = await getSessionFromCookies();
+    if (session?.uid) {
+      userId = session.uid;
+    } else {
+      if (typeof token !== "string" || !token) {
+        return NextResponse.json({ error: "Oturum bulunamadı." }, { status: 401 });
+      }
+      const { data: magicToken } = await supabase
+        .from("magic_link_tokens")
+        .select("id, user_id, expires_at, used_at")
+        .eq("token", token)
+        .maybeSingle();
+      if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
+      if (magicToken.used_at) return NextResponse.json({ error: "Bu link zaten kullanılmış." }, { status: 400 });
+      if (new Date(magicToken.expires_at) < new Date()) {
+        return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
+      }
+      userId = magicToken.user_id;
     }
 
     const ext = file.type.includes("png") ? "png" : file.type.includes("webp") ? "webp" : "jpg";
-    const filePath = `products/pending/${magicToken.user_id}/${Date.now()}_${randomBytes(4).toString("hex")}.${ext}`;
+    const filePath = `products/pending/${userId}/${Date.now()}_${randomBytes(4).toString("hex")}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
     const { error: upErr } = await supabase.storage
