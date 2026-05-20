@@ -49,6 +49,33 @@ function hasCommandCapability(
 // ── Main router ──────────────────────────────────────────────────────────
 
 export async function routeCommand(ctx: WaContext): Promise<void> {
+  // ── Bayi WA pivot: AI Eleman web'de yaşıyor, WA komut menüsü kaldırıldı ──
+  //
+  // Bayi tenant için yeni session başlatma, komut handler dispatch, menü
+  // render KAPALI. Sadece korunan akışlar:
+  //   - Notification button click (notif_view_* / notif_ack_*) — panel deeplink
+  //   - cmd:webpanel — handleWebpanelShared zaten panel link verir (legacy notif)
+  //
+  // Geri kalan her şey (text, callback, açık session) → bayiWaFallback,
+  // kullanıcıya "Paneli aç" magic link döner.
+  if (ctx.tenantKey === "bayi") {
+    if (ctx.interactiveId?.startsWith("notif_")) {
+      const { handleNotificationButton } = await import("@/platform/notifications/button-handler");
+      const handled = await handleNotificationButton(ctx, ctx.interactiveId);
+      if (handled) {
+        logCommand(ctx, ctx.interactiveId, true);
+        return;
+      }
+    }
+    // Açık multi-step session varsa graceful close (kullanıcı arada kalmasın)
+    const openSession = await getSession(ctx.userId);
+    if (openSession) await endSession(ctx.userId);
+
+    const { bayiWaFallback } = await import("@/tenants/bayi/wa-fallback");
+    await bayiWaFallback(ctx);
+    return;
+  }
+
   const registry = REGISTRIES[ctx.tenantKey];
   if (!registry) {
     await sendText(ctx.phone, "Bu SaaS için komut sistemi henüz kurulmamış.");
