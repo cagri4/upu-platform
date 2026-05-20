@@ -14,17 +14,15 @@
  * — UI "Henüz hazır değil, manuel kullanmaya devam edin" mesajı gösterir.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuth } from "@/platform/auth/require-auth";
 
 export const dynamic = "force-dynamic";
 
 const CHIFT_API_BASE = "https://api.chift.eu";
 
 export async function GET(req: NextRequest) {
-  const token = req.nextUrl.searchParams.get("t") || req.nextUrl.searchParams.get("token");
   const integration = req.nextUrl.searchParams.get("integration"); // yuki | exact | snelstart
 
-  if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
   if (!integration || !["yuki", "exact", "snelstart"].includes(integration)) {
     return NextResponse.json({ error: "Geçersiz entegrasyon (yuki|exact|snelstart)." }, { status: 400 });
   }
@@ -38,16 +36,8 @@ export async function GET(req: NextRequest) {
     }, { status: 503 });
   }
 
-  const supabase = getServiceClient();
-  const { data: magicToken } = await supabase
-    .from("magic_link_tokens")
-    .select("id, user_id, expires_at, used_at")
-    .eq("token", token)
-    .maybeSingle();
-  if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-  if (new Date(magicToken.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-  }
+  const auth = await requireAuth(req);
+  if ("error" in auth) return auth.error;
 
   // Chift integration_key map (Chift dokümana göre normalize)
   const integrationKey = integration === "yuki" ? "yuki"
@@ -65,7 +55,7 @@ export async function GET(req: NextRequest) {
       },
       body: JSON.stringify({
         integration_key: integrationKey,
-        consumer_id: magicToken.user_id,    // Chift consumer = bizim user
+        consumer_id: auth.userId,           // Chift consumer = bizim user
         return_url: `${req.nextUrl.origin}/tr/bayi-profil?chift=connected`,
         webhook_url: callbackUrl,
       }),

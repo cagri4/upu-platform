@@ -8,6 +8,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuthFromBody } from "@/platform/auth/require-auth";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { sendButtons } from "@/platform/whatsapp/send";
 import { randomBytes } from "crypto";
 import { BAYI_CAPABILITIES } from "@/tenants/bayi/capabilities";
@@ -27,13 +29,14 @@ function normalizePhone(raw: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const token = body.token as string;
+    const auth = await requireAuthFromBody(req, body);
+    if ("error" in auth) return auth.error;
+
     const name = String(body.name || "").trim();
     const phoneRaw = String(body.phone || "").trim();
     const position = String(body.position || "").trim();
     const caps = Array.isArray(body.capabilities) ? body.capabilities.filter((c: unknown) => typeof c === "string") : [];
 
-    if (!token) return NextResponse.json({ error: "Token gerekli." }, { status: 400 });
     if (name.length < 2) return NextResponse.json({ error: "İsim en az 2 karakter olmalı." }, { status: 400 });
     if (phoneRaw.length < 8) return NextResponse.json({ error: "Geçerli telefon numarası gerekli." }, { status: 400 });
     if (caps.length === 0) return NextResponse.json({ error: "En az bir yetki seçmelisiniz." }, { status: 400 });
@@ -46,22 +49,15 @@ export async function POST(req: NextRequest) {
     const phone = normalizePhone(phoneRaw);
 
     const supabase = getServiceClient();
-    const { data: magicToken } = await supabase
-      .from("magic_link_tokens")
-      .select("id, user_id, expires_at, used_at")
-      .eq("token", token)
-      .maybeSingle();
-
-    if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-    if (magicToken.used_at) return NextResponse.json({ error: "Bu link zaten kullanılmış." }, { status: 400 });
-    if (new Date(magicToken.expires_at) < new Date()) return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-
-    const { data: owner } = await supabase
-      .from("profiles")
-      .select("id, tenant_id, display_name, whatsapp_phone")
-      .eq("id", magicToken.user_id)
-      .single();
-    if (!owner?.tenant_id) return NextResponse.json({ error: "Profil eksik." }, { status: 500 });
+    const lookup = await resolveTenantProfile<{
+      id: string; tenant_id: string; display_name: string | null; whatsapp_phone: string | null;
+    }>(supabase, {
+      userId: auth.userId,
+      tenantKey: "bayi",
+      select: "id, tenant_id, display_name, whatsapp_phone",
+    });
+    if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+    const owner = lookup.profile;
 
     // Aşama 6 — Tier quota check: Starter 3 / Growth 10 / Pro sınırsız
     const { canAddEmployee } = await import("@/tenants/bayi/billing/tier-features");
@@ -118,7 +114,9 @@ export async function POST(req: NextRequest) {
       status: "active",
     });
 
-    await supabase.from("magic_link_tokens").update({ used_at: new Date().toISOString() }).eq("id", magicToken.id);
+    if (auth.magicTokenId) {
+      await supabase.from("magic_link_tokens").update({ used_at: new Date().toISOString() }).eq("id", auth.magicTokenId);
+    }
 
     // Fire invite to employee's WhatsApp with the join code. The
     // employee replies with the code and their profile resolves via

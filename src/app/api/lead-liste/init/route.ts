@@ -4,24 +4,15 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuth } from "@/platform/auth/require-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const token = req.nextUrl.searchParams.get("token");
-  if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+  const auth = await requireAuth(req);
+  if ("error" in auth) return auth.error;
 
   const supabase = getServiceClient();
-  const { data: magicToken } = await supabase
-    .from("magic_link_tokens")
-    .select("id, user_id, expires_at, used_at")
-    .eq("token", token).maybeSingle();
-
-  if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-  if (new Date(magicToken.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
-  }
-
   const today = new Date().toISOString().slice(0, 10);
 
   const { data: leads } = await supabase
@@ -33,7 +24,7 @@ export async function GET(req: NextRequest) {
   const { data: calls } = await supabase
     .from("emlak_lead_calls")
     .select("source_id, status, note, called_at")
-    .eq("user_id", magicToken.user_id);
+    .eq("user_id", auth.userId);
 
   const callMap = new Map<string, { status: string; note: string | null; called_at: string }>();
   for (const c of calls || []) {
