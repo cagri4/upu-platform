@@ -60,7 +60,6 @@ interface DripStats {
   sends_attempted: number;
   sends_ok: number;
   sends_failed: number;
-  auto_enrolled: number;
   completed: number;
 }
 
@@ -214,7 +213,6 @@ export async function processDueSends(sb: SupabaseClient): Promise<DripStats> {
     sends_attempted: 0,
     sends_ok: 0,
     sends_failed: 0,
-    auto_enrolled: 0,
     completed: 0,
   };
 

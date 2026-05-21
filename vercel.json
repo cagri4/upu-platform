@@ -59,6 +59,14 @@
     {
       "path": "/api/cron/recommendations",
       "schedule": "30 * * * *"
+    },
+    {
+      "path": "/api/cron/bayi-drip",
+      "schedule": "15 * * * *"
+    },
+    {
+      "path": "/api/cron/bayi-referral-award",
+      "schedule": "30 2 * * *"
     }
   ]
 }

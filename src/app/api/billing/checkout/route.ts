@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     const customer = await mollie.customers.create({
       email: owner.email || `${owner.id}@placeholder.upudev.nl`,
       name: owner.display_name || "UPU Bayi",
-      locale: "tr_NL",
+      locale: "tr_TR" as never,
       metadata: { user_id: owner.id, tenant_id: lookup.tenantId, tenant_key: "bayi" },
     });
     customerId = customer.id;

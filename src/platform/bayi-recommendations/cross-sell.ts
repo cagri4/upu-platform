@@ -39,17 +39,21 @@ export async function computeCrossSellPairs(
   }
 
   // Flatten + filter
+  interface JoinRow {
+    order_id: string;
+    product_id: string;
+    bayi_orders: { dealer_id: string; created_at: string; tenant_id: string }
+      | Array<{ dealer_id: string; created_at: string; tenant_id: string }>;
+  }
   const rows: OrderItemJoin[] = [];
-  for (const it of (items || []) as Array<{
-    order_id: string; product_id: string;
-    bayi_orders: { dealer_id: string; created_at: string; tenant_id: string };
-  }>) {
-    if (!it.product_id || !it.bayi_orders?.dealer_id) continue;
+  for (const it of (items || []) as unknown as JoinRow[]) {
+    const order = Array.isArray(it.bayi_orders) ? it.bayi_orders[0] : it.bayi_orders;
+    if (!it.product_id || !order?.dealer_id) continue;
     rows.push({
       order_id: it.order_id,
       product_id: it.product_id,
-      dealer_id: it.bayi_orders.dealer_id,
-      created_at: it.bayi_orders.created_at,
+      dealer_id: order.dealer_id,
+      created_at: order.created_at,
     });
   }
 

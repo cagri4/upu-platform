@@ -74,15 +74,17 @@ export async function POST(req: NextRequest) {
     campaignId = data.id;
   }
 
-  const stepRows = steps.map((s: { step_order?: number; delay_days?: number; channel?: string; subject?: string; body?: string }, idx: number) => ({
-    campaign_id: campaignId,
+  interface StepInput { step_order?: number; delay_days?: number; channel?: string; subject?: string; body?: string }
+  interface StepRow { campaign_id: string; step_order: number; delay_days: number; channel: string; subject: string | null; body: string; is_active: boolean }
+  const stepRows: StepRow[] = (steps as StepInput[]).map((s, idx) => ({
+    campaign_id: campaignId as string,
     step_order: Number(s.step_order) || idx + 1,
     delay_days: Math.max(0, Number(s.delay_days) || 0),
     channel: s.channel || channel,
     subject: s.subject ? String(s.subject).slice(0, 200) : null,
     body: String(s.body || "").slice(0, 2000),
     is_active: true,
-  })).filter(s => s.body);
+  })).filter((s: StepRow) => s.body);
 
   if (stepRows.length === 0) {
     return NextResponse.json({ error: "Step body'leri boş olamaz." }, { status: 400 });

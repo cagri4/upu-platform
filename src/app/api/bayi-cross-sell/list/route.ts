@@ -162,17 +162,17 @@ async function enrich(
     .in("id", ids)
     .eq("user_id", ownerId);
   const map = new Map((products || []).map(p => [p.id, p]));
-  return pairs
-    .map(p => {
-      const prod = map.get(p.product_id);
-      if (!prod) return null;
-      return {
-        ...p,
-        name: prod.name,
-        code: prod.code || prod.sku || null,
-        unit_price: Number(prod.unit_price || prod.base_price || 0),
-        stock_quantity: Number(prod.stock_quantity) || 0,
-      };
-    })
-    .filter((p): p is PairOut => p !== null);
+  const out: PairOut[] = [];
+  for (const p of pairs) {
+    const prod = map.get(p.product_id);
+    if (!prod) continue;
+    out.push({
+      ...p,
+      name: prod.name,
+      code: prod.code || prod.sku || null,
+      unit_price: Number(prod.unit_price || prod.base_price || 0),
+      stock_quantity: Number(prod.stock_quantity) || 0,
+    });
+  }
+  return out;
 }

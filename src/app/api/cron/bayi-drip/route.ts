@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
   const stats = await processDueSends(sb).catch(err => {
     console.error("[cron:bayi-drip] process due", err);
-    return { campaigns_evaluated: 0, sends_attempted: 0, sends_ok: 0, sends_failed: 0, auto_enrolled: 0, completed: 0 };
+    return { campaigns_evaluated: 0, sends_attempted: 0, sends_ok: 0, sends_failed: 0, completed: 0 };
   });
 
   return NextResponse.json({
