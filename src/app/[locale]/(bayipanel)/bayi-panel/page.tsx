@@ -44,6 +44,7 @@ import {
 } from "@/platform/kpi-cards/bayi-keys";
 import { ItemAddModal } from "@/components/panel-edit/item-add-modal";
 import { ChurnRiskBanner } from "@/components/bayi/ChurnRiskBanner";
+import { RecommendationCard } from "@/components/recommendations/RecommendationCard";
 
 interface KPIs {
   dealer_count: number;
@@ -208,6 +209,7 @@ export default function BayiPanelimPage() {
         subtitle="Bayilerinizi, siparişleri ve tahsilatları tek yerden takip edin."
       />
 
+      <RecommendationCard token={token} />
       <ChurnRiskBanner token={token} />
 
       {profileIncomplete && (

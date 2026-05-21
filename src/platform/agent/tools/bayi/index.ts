@@ -18,6 +18,8 @@ import { listOverdueInvoicesTool } from "./list-overdue-invoices";
 import { sendDealerMessageTool } from "./send-dealer-message";
 import { getDealerScoreTool } from "./get-dealer-score";
 import { getChurnRisksTool } from "./get-churn-risks";
+import { suggestCrossSellTool } from "./suggest-cross-sell";
+import { getRecommendationsTool } from "./get-recommendations";
 
 export const BAYI_TOOLS: ToolDef[] = [
   listOrdersTool,
@@ -27,6 +29,8 @@ export const BAYI_TOOLS: ToolDef[] = [
   sendDealerMessageTool,
   getDealerScoreTool,
   getChurnRisksTool,
+  suggestCrossSellTool,
+  getRecommendationsTool,
 ];
 
 export const BAYI_TOOLS_BY_NAME: Record<string, ToolDef> = Object.fromEntries(
