@@ -370,13 +370,13 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
                   Plan: <span className="font-medium">{quotaExceeded.plan_display}</span>
                 </p>
                 <div className="flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={() => alert("Plan yükseltme V2'de açılacak. Şimdilik admin paneli üzerinden talep iletebilirsin.")}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 rounded-lg transition"
+                  <a
+                    href={tenantKey === "bayi" ? "/tr/bayi-billing?from=quota" : "#"}
+                    onClick={(e) => { if (tenantKey !== "bayi") { e.preventDefault(); alert("Plan yükseltme bu tenant için henüz açık değil."); } }}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 rounded-lg transition text-center"
                   >
                     Pakete geç (daha fazla mesaj)
-                  </button>
+                  </a>
                   <button
                     type="button"
                     onClick={() => setQuotaExceeded(null)}

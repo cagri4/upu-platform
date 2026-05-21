@@ -58,6 +58,7 @@ export const BAYI_SIDEBAR: SidebarItem[] = [
   { id: "bildirimler",   label: "Bildirimler",     icon: "🔔", href: q("/tr/bayi-bildirimler"),     matchPath: "/tr/bayi-bildirimler", separatorBefore: true },
   { id: "kullanicilar",  label: "Kullanıcılar",    icon: "👥", href: q("/tr/bayi-kullanicilar"),    matchPath: "/tr/bayi-kullanicilar", requiredRoles: ADMIN_ONLY },
   { id: "ayarlar",       label: "Tenant Ayarları", icon: "⚙️",  href: q("/tr/bayi-ayarlar"),         matchPath: "/tr/bayi-ayarlar" },
+  { id: "billing",       label: "Faturalama",      icon: "💳", href: q("/tr/bayi-billing"),         matchPath: "/tr/bayi-billing",       requiredRoles: ADMIN_ONLY },
   { id: "gizlilik",      label: "Gizlilik",        icon: "🔒", href: q("/tr/bayi-gizlilik"),        matchPath: "/tr/bayi-gizlilik", separatorBefore: true },
   { id: "hakkinda",      label: "UPUDev Hakkında", icon: "ℹ️",  href: q("/tr/bayi-hakkinda"),        matchPath: "/tr/bayi-hakkinda", separatorBefore: true },
   { id: "oneri",         label: "Öneri / Şikayet", icon: "💬", href: q("/tr/bayi-oneri"),           matchPath: "/tr/bayi-oneri" },
@@ -79,6 +80,7 @@ export const BAYI_ROLE_REQUIREMENTS: Record<string, readonly string[]> = {
   "/tr/bayi-davet": ADMIN_ONLY,
   "/tr/kullanici-davet": ADMIN_ONLY,
   "/tr/bayi-kullanicilar": ADMIN_ONLY,
+  "/tr/bayi-billing": ADMIN_ONLY,
 };
 
 export const BAYI_BRAND_TITLE = "🏢 UPU Bayi";
