@@ -23,6 +23,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { DealerPerformanceCard } from "@/components/bayi/DealerPerformanceCard";
 
 interface Dealer {
   id: string;
@@ -291,6 +292,11 @@ export default function BayiDetayPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Performans skoru + risk özeti */}
+      <div className="max-w-6xl mx-auto px-4 pt-4">
+        <DealerPerformanceCard dealerId={dealer.id} token={token} />
       </div>
 
       {/* 3 Sütun layout */}

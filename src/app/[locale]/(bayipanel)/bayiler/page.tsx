@@ -18,6 +18,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { DealerScoreBadge } from "@/components/bayi/DealerScoreBadge";
+
+interface DealerScore {
+  score: number;
+  sub: { volume: number; regularity: number; collection: number; trend: number };
+}
 
 interface BayiRow {
   id: string;
@@ -106,6 +112,15 @@ export default function BayilerPage() {
   const [error, setError] = useState("");
   const [data, setData] = useState<ListResp | null>(null);
   const [loading, setLoading] = useState(true);
+  const [scores, setScores] = useState<Record<string, DealerScore>>({});
+
+  useEffect(() => {
+    const qs = token ? `?t=${encodeURIComponent(token)}` : "";
+    fetch(`/api/bayi-scoring/list${qs}`, { credentials: "same-origin" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.scores) setScores(d.scores); })
+      .catch(() => { /* silent — skor yoksa badge "—" göster */ });
+  }, [token]);
 
   // URL params (controlled)
   const page = parseInt(params.get("page") || "1", 10);
@@ -285,11 +300,16 @@ export default function BayilerPage() {
 
                     {/* Bilgi */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                         <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">{row.name}</h3>
                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap ${badge.cls}`}>
                           {badge.text}
                         </span>
+                        <DealerScoreBadge
+                          score={scores[row.id]?.score ?? null}
+                          sub={scores[row.id]?.sub}
+                          size="sm"
+                        />
                       </div>
                       <div className="text-xs text-slate-500 flex flex-wrap gap-x-3 gap-y-0.5">
                         {row.city && <span>📍 {row.city}{row.country ? `/${row.country}` : ""}</span>}

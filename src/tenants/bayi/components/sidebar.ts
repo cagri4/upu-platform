@@ -41,6 +41,7 @@ const WAREHOUSE = ["admin", "depocu"];
 export const BAYI_SIDEBAR: SidebarItem[] = [
   { id: "panelim",       label: "Panelim",         icon: "🏠", href: q("/tr/bayi-panel"),           matchPath: "/tr/bayi-panel" },
   { id: "bayilerim",     label: "Bayilerim",       icon: "🏢", href: q("/tr/bayiler"),              matchPath: "/tr/bayiler",            requiredRoles: SALES },
+  { id: "risk",          label: "Churn Risk",      icon: "⚠️",  href: q("/tr/bayi-risk"),            matchPath: "/tr/bayi-risk",          requiredRoles: SALES },
   { id: "urunlerim",     label: "Ürünlerim",       icon: "📦", href: q("/tr/bayi-urunlerim"),       matchPath: "/tr/bayi-urunlerim",     requiredRoles: WAREHOUSE },
   { id: "stok",          label: "Stok Yönetimi",   icon: "🏷", href: q("/tr/bayi-stok"),            matchPath: "/tr/bayi-stok",          requiredRoles: WAREHOUSE },
   { id: "siparislerim",  label: "Siparişlerim",    icon: "📋", href: q("/tr/bayi-siparislerim"),    matchPath: "/tr/bayi-siparislerim",  requiredRoles: SALES },
@@ -68,6 +69,7 @@ export const BAYI_SIDEBAR: SidebarItem[] = [
 // Hassas sayfa erişim check'i (sayfa içi guard için export).
 export const BAYI_ROLE_REQUIREMENTS: Record<string, readonly string[]> = {
   "/tr/bayiler": SALES,
+  "/tr/bayi-risk": SALES,
   "/tr/bayi-urunlerim": WAREHOUSE,
   "/tr/bayi-stok": WAREHOUSE,
   "/tr/bayi-siparislerim": SALES,
