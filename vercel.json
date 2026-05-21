@@ -39,6 +39,14 @@
     {
       "path": "/api/cron/quota-renewal",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/bayi-scoring",
+      "schedule": "0 2 * * 1"
+    },
+    {
+      "path": "/api/cron/bayi-churn",
+      "schedule": "0 3 * * *"
     }
   ]
 }
