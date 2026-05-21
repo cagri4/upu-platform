@@ -46,6 +46,7 @@ export const NOTIFICATION_TYPES: NotificationTypeDef[] = [
   { type: "destek_yanit", label: "Destek talebine yanıt", description: "Açtığın destek talebine yanıt geldiğinde.", category: "sistem_destek", tier: "free", trigger: "admin reply" },
   { type: "faturalama", label: "Faturalama / abonelik", description: "Fatura kesimi, ödeme uyarısı, abonelik durumu.", category: "sistem_destek", tier: "free", trigger: "billing event" },
   { type: "hatirlatma_manuel", label: "Manuel hatırlatma", description: "Senin kurduğun hatırlatmalar zamanı geldiğinde.", category: "gunluk", tier: "free", trigger: "scheduled" },
+  { type: "bayi_kampanya_mesaji", label: "Kampanya / drip mesajı", description: "Bayi marketing kampanyaları ve drip mesaj dizileri.", category: "sistem_destek", tier: "free", trigger: "marketing automation" },
 
   // ── Pro (19) ───────────────────────────────────────────────────────────
   // Mülk
