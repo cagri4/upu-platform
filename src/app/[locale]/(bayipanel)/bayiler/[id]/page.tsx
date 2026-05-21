@@ -24,6 +24,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { DealerPerformanceCard } from "@/components/bayi/DealerPerformanceCard";
+import { CrossSellSuggestions } from "@/components/bayi/CrossSellSuggestions";
 
 interface Dealer {
   id: string;
@@ -294,9 +295,10 @@ export default function BayiDetayPage() {
         </div>
       </div>
 
-      {/* Performans skoru + risk özeti */}
-      <div className="max-w-6xl mx-auto px-4 pt-4">
+      {/* Performans skoru + risk özeti + cross-sell öneri */}
+      <div className="max-w-6xl mx-auto px-4 pt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
         <DealerPerformanceCard dealerId={dealer.id} token={token} />
+        <CrossSellSuggestions dealerId={dealer.id} token={token} />
       </div>
 
       {/* 3 Sütun layout */}
