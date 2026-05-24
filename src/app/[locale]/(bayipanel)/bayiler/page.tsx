@@ -18,7 +18,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { Users } from "lucide-react";
 import { DealerScoreBadge } from "@/components/bayi/DealerScoreBadge";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface DealerScore {
   score: number;
@@ -278,8 +280,18 @@ export default function BayilerPage() {
         {loading && !data ? (
           <div className="text-center text-sm text-slate-500 py-8">Yükleniyor...</div>
         ) : data && data.rows.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-8 text-center text-sm text-slate-500">
-            Bu filtreyle eşleşen bayi yok.
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl">
+            <EmptyState
+              icon={Users}
+              title={searchInput ? "Bu filtreyle eşleşen bayi yok" : "Henüz bayin yok"}
+              description={searchInput
+                ? "Aramayı temizle veya başka bir kelime dene."
+                : "İlk bayini davet et — WhatsApp'tan davet linki gönder, dakikada sisteme katılsın."}
+              cta={searchInput
+                ? undefined
+                : { label: "Bayi Davet Et", href: `/tr/bayi-davet${token ? `?t=${encodeURIComponent(token)}` : ""}` }}
+              accent="indigo"
+            />
           </div>
         ) : (
           <div className="space-y-2">

@@ -12,6 +12,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { ClipboardList, ShoppingCart, X, Clock, Loader2 } from "lucide-react";
 import { HeroBanner, Skeleton } from "@/components/banking";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Status = "pending" | "confirmed" | "preparing" | "shipped" | "delivered" | "cancelled" | "rejected";
 
@@ -134,12 +135,15 @@ export default function SiparislerimPage() {
       ) : loading ? (
         <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height="h-16" />)}</div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center">
-          <ShoppingCart className="w-10 h-10 text-slate-400 mx-auto mb-3" strokeWidth={1.5} />
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">Henüz sipariş yok.</p>
-          <a href="/tr/bayi-siparis-ver" className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-semibold px-4 py-2 rounded-lg">
-            + Yeni Sipariş
-          </a>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+          <EmptyState
+            icon={ShoppingCart}
+            title="Henüz sipariş yok"
+            description="Bayilerinin sipariş vermesi için onları sisteme davet et — ya da kendi adına sipariş gir."
+            cta={{ label: "+ Yeni Sipariş", href: "/tr/bayi-siparis-ver" }}
+            secondary={{ label: "Bayi davet et →", href: "/tr/bayi-davet" }}
+            accent="emerald"
+          />
         </div>
       ) : (
         <div className="space-y-2">

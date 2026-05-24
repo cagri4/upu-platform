@@ -7,6 +7,8 @@
  */
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { Inbox } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface Lead {
   id: string;
@@ -106,9 +108,15 @@ export default function BayiMusteriTalepleriPage() {
       {loading ? (
         <div className="text-center text-sm text-slate-500 py-6">Yükleniyor…</div>
       ) : leads.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-xl p-8 text-center">
-          <div className="text-4xl mb-2">📭</div>
-          <p className="text-sm text-slate-500">Bu sekmede talep yok.</p>
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-xl">
+          <EmptyState
+            icon={Inbox}
+            title="Henüz müşteri talebi yok"
+            description="Vitrinini paylaş → müşterilerin sana sipariş talebi göndersin. Talepler buradan onay/dönüşüme çevrilir."
+            cta={{ label: "Vitrinime git", href: "/tr/bayi-vitrinim" }}
+            secondary={{ label: "Vitrin nasıl çalışır?", href: "/tr/bayi-vitrinim" }}
+            accent="indigo"
+          />
         </div>
       ) : (
         <div className="space-y-2">

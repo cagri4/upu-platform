@@ -19,6 +19,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { Bell } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface Notification {
   id: number;
@@ -177,14 +179,13 @@ export default function BayiBildirimlerPage() {
       {loading ? (
         <div className="text-center py-12 text-sm text-slate-500">Yükleniyor…</div>
       ) : items.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-10 text-center">
-          <div className="text-5xl mb-3">📭</div>
-          <p className="text-base font-medium text-slate-700 dark:text-slate-200 mb-1">
-            {filter === "unread" ? "Okunmamış bildirim yok" : "Henüz bildirim yok"}
-          </p>
-          <p className="text-sm text-slate-500">
-            Yeni sipariş, tahsilat veya kritik durumda burada görünecek.
-          </p>
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl">
+          <EmptyState
+            icon={Bell}
+            title={filter === "unread" ? "Okunmamış bildirim yok" : "Henüz bildirim yok"}
+            description="Sistem aksiyon aldıkça (yeni sipariş, tahsilat, churn riski, kampanya tetiği) burada görünür."
+            accent="indigo"
+          />
         </div>
       ) : (
         <div className="space-y-2">

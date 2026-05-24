@@ -12,6 +12,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Wallet, Download } from "lucide-react";
 import { HeroBanner, Skeleton } from "@/components/banking";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface StatementRow {
   entry_type: string;
@@ -158,32 +159,42 @@ export default function BayiCariPage() {
             <Stat label="Bakiye" value={fmtTRY(data.closing_balance)} cls={data.closing_balance > 0 ? "text-rose-600" : "text-emerald-600"} />
           </div>
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 dark:bg-slate-950 text-xs uppercase text-slate-500">
-                <tr>
-                  <th className="px-3 py-2 text-left">Tarih</th>
-                  <th className="px-3 py-2 text-left">Açıklama</th>
-                  <th className="px-3 py-2 text-right">Borç</th>
-                  <th className="px-3 py-2 text-right">Alacak</th>
-                  <th className="px-3 py-2 text-right">Bakiye</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.rows.length === 0 ? (
-                  <tr><td colSpan={5} className="px-3 py-6 text-center text-slate-500 text-xs">Hareket yok.</td></tr>
-                ) : data.rows.map((r) => (
-                  <tr key={`${r.entry_type}-${r.reference_id}`} className="border-t border-slate-100 dark:border-slate-800">
-                    <td className="px-3 py-2 text-xs">{fmtDate(r.entry_date)}</td>
-                    <td className="px-3 py-2 text-xs">{r.description}</td>
-                    <td className="px-3 py-2 text-right text-rose-600">{r.debit ? fmtTRY(r.debit) : "—"}</td>
-                    <td className="px-3 py-2 text-right text-emerald-600">{r.credit ? fmtTRY(r.credit) : "—"}</td>
-                    <td className="px-3 py-2 text-right font-medium">{fmtTRY(r.balance)}</td>
+          {data.rows.length === 0 ? (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+              <EmptyState
+                icon={Wallet}
+                title="Cari ekstre boş"
+                description="Bayilerin sipariş + ödeme yaptıkça hareketler burada birikir."
+                cta={{ label: "Bayi davet et", href: "/tr/bayi-davet" }}
+                accent="indigo"
+              />
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 dark:bg-slate-950 text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Tarih</th>
+                    <th className="px-3 py-2 text-left">Açıklama</th>
+                    <th className="px-3 py-2 text-right">Borç</th>
+                    <th className="px-3 py-2 text-right">Alacak</th>
+                    <th className="px-3 py-2 text-right">Bakiye</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {data.rows.map((r) => (
+                    <tr key={`${r.entry_type}-${r.reference_id}`} className="border-t border-slate-100 dark:border-slate-800">
+                      <td className="px-3 py-2 text-xs">{fmtDate(r.entry_date)}</td>
+                      <td className="px-3 py-2 text-xs">{r.description}</td>
+                      <td className="px-3 py-2 text-right text-rose-600">{r.debit ? fmtTRY(r.debit) : "—"}</td>
+                      <td className="px-3 py-2 text-right text-emerald-600">{r.credit ? fmtTRY(r.credit) : "—"}</td>
+                      <td className="px-3 py-2 text-right font-medium">{fmtTRY(r.balance)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </>
       )}
     </div>

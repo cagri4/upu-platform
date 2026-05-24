@@ -6,6 +6,8 @@
  */
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { Send } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface DripStats { active: number; completed: number; total: number }
 interface Campaign {
@@ -152,10 +154,14 @@ export default function BayiMarketingPage() {
       {loading ? (
         <div className="text-center text-sm text-slate-500 py-6">Yükleniyor…</div>
       ) : campaigns.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-xl p-8 text-center">
-          <div className="text-4xl mb-2">📭</div>
-          <p className="text-sm text-slate-500">Henüz drip kampanyası yok.</p>
-          <button onClick={openNew} className="mt-3 text-sm text-indigo-600 hover:underline">İlkini oluştur →</button>
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-xl">
+          <EmptyState
+            icon={Send}
+            title="Henüz drip kampanyası yok"
+            description="İlk drip diziyi kur: yeni bayi onboarding, churn recovery veya upsell. Bir kez kur, sistem yıl boyu yürütsün."
+            cta={{ label: "+ Yeni Drip", onClick: openNew }}
+            accent="indigo"
+          />
         </div>
       ) : (
         <div className="space-y-2">
