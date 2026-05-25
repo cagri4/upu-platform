@@ -1,14 +1,15 @@
 /**
  * /api/site/dashboard — siteyönetim Dashboard KPI count'ları.
- * Token doğrula + yöneticinin binasından 6 paralel sayım.
+ * Token doğrula + yöneticinin binasından paralel sayım.
  *
  * KPI'lar:
  *   payment_due_units       — Ödenmemiş aidatı olan distinct daire
  *   open_complaints         — Açık arıza/şikayet talebi
  *   active_residents        — Aktif sakin
  *   monthly_dues_collected  — Bu ay aidat tahsilatı (TL)
- *   upcoming_events         — Yaklaşan etkinlik (placeholder, modül henüz yok)
- *   active_staff_tasks      — Aktif personel görevi (placeholder, modül henüz yok)
+ *   total_units             — Bina toplam daire sayısı
+ *   overdue_amount          — Tüm dönemler toplam ödenmemiş borç (TL)
+ *   occupancy_rate          — Doluluk oranı (% — sakinli daire / toplam daire)
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
@@ -18,6 +19,14 @@ import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 export const dynamic = "force-dynamic";
 
 const SITEYONETIM_TENANT_ID = "c12010c7-7b13-44d5-bdc7-fc7c2c1ac82e";
+
+interface DuesLedgerRow {
+  unit_id: string | null;
+  amount: number | null;
+  paid_amount: number | null;
+  late_charge_kurus: number | null;
+  is_paid: boolean | null;
+}
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -32,8 +41,6 @@ export async function GET(req: NextRequest) {
   if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
   const userId = lookup.profile.id;
 
-  // Yöneticilik yaptığı bina(lar). Tek bina varsayımı — birden fazla
-  // varsa ilki alınır (multi-building V2'de adreslenecek).
   const { data: building } = await sb
     .from("sy_buildings")
     .select("id")
@@ -42,38 +49,34 @@ export async function GET(req: NextRequest) {
     .limit(1)
     .maybeSingle();
 
+  const emptyKpis = {
+    payment_due_units: 0,
+    open_complaints: 0,
+    active_residents: 0,
+    monthly_dues_collected: 0,
+    total_units: 0,
+    overdue_amount: 0,
+    occupancy_rate: 0,
+  };
+
   if (!building?.id) {
-    return NextResponse.json({
-      success: true,
-      kpis: {
-        payment_due_units: 0,
-        open_complaints: 0,
-        active_residents: 0,
-        monthly_dues_collected: 0,
-        upcoming_events: 0,
-        active_staff_tasks: 0,
-      },
-    });
+    return NextResponse.json({ success: true, kpis: emptyKpis });
   }
 
   const buildingId = building.id;
-
-  // Bu ay periyodu — sy_dues_ledger.period 'YYYY-MM' formatında saklanır.
   const now = new Date();
   const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-  // 6 paralel sorgu
   const [
-    paymentDueRes,
+    duesLedgerRes,
     openComplaintsRes,
     activeResidentsRes,
-    monthlyDuesRes,
+    monthlyIncomeRes,
+    totalUnitsRes,
   ] = await Promise.all([
-    // Ödenmemiş aidat — distinct unit_id sayımı için unit_id seç + Set'le say
     sb.from("sy_dues_ledger")
-      .select("unit_id")
-      .eq("building_id", buildingId)
-      .eq("is_paid", false),
+      .select("unit_id, amount, paid_amount, late_charge_kurus, is_paid")
+      .eq("building_id", buildingId),
     sb.from("sy_maintenance_tickets")
       .select("*", { count: "exact", head: true })
       .eq("building_id", buildingId)
@@ -87,29 +90,42 @@ export async function GET(req: NextRequest) {
       .eq("building_id", buildingId)
       .eq("type", "income")
       .eq("period", currentPeriod),
+    sb.from("sy_units")
+      .select("*", { count: "exact", head: true })
+      .eq("building_id", buildingId),
   ]);
 
-  // Distinct daire sayısı — bir daire birden fazla dönem borçlu olabilir
   const dueUnitIds = new Set<string>();
-  for (const row of paymentDueRes.data || []) {
-    if (row.unit_id) dueUnitIds.add(row.unit_id as string);
+  let overdueKurus = 0;
+  for (const row of (duesLedgerRes.data || []) as DuesLedgerRow[]) {
+    if (row.is_paid) continue;
+    if (row.unit_id) dueUnitIds.add(row.unit_id);
+    const owed = (row.amount || 0) - (row.paid_amount || 0) + (row.late_charge_kurus || 0);
+    if (owed > 0) overdueKurus += owed;
   }
 
-  // Bu ay tahsilat toplamı (kuruş → TL)
   let monthlyDuesTL = 0;
-  for (const r of monthlyDuesRes.data || []) {
+  for (const r of monthlyIncomeRes.data || []) {
     monthlyDuesTL += (r.amount_kurus as number || 0) / 100;
   }
+
+  const totalUnits = totalUnitsRes.count || 0;
+  const activeResidents = activeResidentsRes.count || 0;
+  // Sakinli daire = aktif sakin sayısı (her sakin tek dairede tutuluyor — basit yaklaşım)
+  const occupancyRate = totalUnits > 0
+    ? Math.round((Math.min(activeResidents, totalUnits) / totalUnits) * 100)
+    : 0;
 
   return NextResponse.json({
     success: true,
     kpis: {
       payment_due_units: dueUnitIds.size,
       open_complaints: openComplaintsRes.count || 0,
-      active_residents: activeResidentsRes.count || 0,
+      active_residents: activeResidents,
       monthly_dues_collected: Math.round(monthlyDuesTL),
-      upcoming_events: 0,        // modül V2
-      active_staff_tasks: 0,     // modül V2
+      total_units: totalUnits,
+      overdue_amount: Math.round(overdueKurus / 100),
+      occupancy_rate: occupancyRate,
     },
   });
 }

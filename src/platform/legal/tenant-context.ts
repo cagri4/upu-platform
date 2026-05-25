@@ -1,5 +1,5 @@
 /**
- * Tenant-aware legal copy resolver — Sprint A.
+ * Tenant-aware legal copy resolver — Sprint A + siteyönetim.
  *
  * /tr/aydinlatma-metni, /tr/hizmet-sartlari, /tr/iade-iptal sayfaları
  * tenant'a göre brand + sektörel veri tipleri + rol metni değiştirir.
@@ -10,7 +10,7 @@
  *   3) "emlak" default (backward compat)
  */
 
-export type LegalTenantKey = "emlak" | "bayi";
+export type LegalTenantKey = "emlak" | "bayi" | "siteyonetim";
 
 export interface LegalTenantContext {
   key: LegalTenantKey;
@@ -66,10 +66,35 @@ const CONTEXTS: Record<LegalTenantKey, LegalTenantContext> = {
       "Vade hatırlatma ve gecikme bildirimlerinin otomasyonu",
     ],
   },
+  siteyonetim: {
+    key: "siteyonetim",
+    brand: "UPU Site",
+    brandFull: "UPU Dev (UPU Site)",
+    serviceDescription:
+      "UPU Site (“Platform”), apartman ve site yöneticilerine yönelik olarak sakin yönetimi, aidat ledger ve tahsilat takibi, şikayet/arıza talep yönetimi, duyuru/etkinlik mesajlaşması ile WhatsApp üzerinden otomatik bildirim ve iş akışı asistanlığı hizmetlerini sunan bir SaaS (Software as a Service) çözümüdür.",
+    audienceClaim:
+      "Site/apartman yöneticisi veya yönetim kurulu üyesi olarak resmi yetkili olduğunuzu beyan edersiniz.",
+    sectoralDataTypes: [
+      "Bina ve daire bilgileri (kat sayısı, daire numarası, doluluk)",
+      "Sakin kayıtları (ad-soyad, iletişim, daire bilgisi)",
+      "Aidat ledger ve tahsilat kayıtları (dönem, tutar, ödeme durumu, gecikme)",
+      "Şikayet ve arıza/bakım talepleri (kategori, açıklama, durum)",
+      "Duyuru ve etkinlik mesajları",
+      "Gelir-gider hareketleri",
+      "Hesap tercihleri ve ayarlar",
+    ],
+    sectoralPurposes: [
+      "Sakin yönetimi ve aidat tahsilatı süreçlerinin yürütülmesi",
+      "Bakım/arıza talep takibi ve teknik servis koordinasyonu",
+      "Duyuru ve etkinlik mesajlarının sakinlere ulaştırılması",
+      "Yasal tebligat ve KMK uyumluluğu kapsamındaki bildirimler",
+    ],
+  },
 };
 
 export function getLegalTenantContext(input: string | null | undefined): LegalTenantContext {
   if (input === "bayi") return CONTEXTS.bayi;
+  if (input === "siteyonetim") return CONTEXTS.siteyonetim;
   return CONTEXTS.emlak;
 }
 
@@ -81,7 +106,17 @@ export async function resolveLegalTenantContext(opts: {
   searchParamTenant?: string | null;
   headerTenant?: string | null;
 }): Promise<LegalTenantContext> {
-  const fromQuery = opts.searchParamTenant === "bayi" ? "bayi" : null;
-  const fromHeader = opts.headerTenant === "bayi" ? "bayi" : null;
+  const fromQuery =
+    opts.searchParamTenant === "bayi"
+      ? "bayi"
+      : opts.searchParamTenant === "siteyonetim"
+        ? "siteyonetim"
+        : null;
+  const fromHeader =
+    opts.headerTenant === "bayi"
+      ? "bayi"
+      : opts.headerTenant === "siteyonetim"
+        ? "siteyonetim"
+        : null;
   return getLegalTenantContext(fromQuery ?? fromHeader ?? "emlak");
 }
