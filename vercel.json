@@ -54,15 +54,15 @@
     },
     {
       "path": "/api/cron/bayi-campaign-triggers",
-      "schedule": "0 * * * *"
+      "schedule": "0 9 * * *"
     },
     {
       "path": "/api/cron/recommendations",
-      "schedule": "30 * * * *"
+      "schedule": "30 9 * * *"
     },
     {
       "path": "/api/cron/bayi-drip",
-      "schedule": "15 * * * *"
+      "schedule": "15 10 * * *"
     },
     {
       "path": "/api/cron/bayi-referral-award",
