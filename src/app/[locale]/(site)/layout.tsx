@@ -22,7 +22,7 @@ type InitState = "loading" | "ready" | "error";
 const SITE_SIDEBAR_ITEMS: SidebarItem[] = [
   { id: "dashboard", label: "Dashboard",        icon: "🏠", href: t => `/tr/site?t=${encodeURIComponent(t)}`,                                  matchPath: "/tr/site" },
   { id: "sakinler",  label: "Sakinler",         icon: "👥", href: t => `/tr/site-sakinlerim?t=${encodeURIComponent(t)}`, matchPath: "/tr/site-sakinlerim" },
-  { id: "aidat",     label: "Aidat",            icon: "💰", href: t => `/api/panel/start?cmd=aidat&t=${encodeURIComponent(t)}` },
+  { id: "aidat",     label: "Aidat",            icon: "💰", href: t => `/tr/site-aidat?t=${encodeURIComponent(t)}`, matchPath: "/tr/site-aidat" },
   { id: "talep",     label: "Şikayet/Talep",    icon: "🔧", href: t => `/api/panel/start?cmd=bakim&t=${encodeURIComponent(t)}` },
   { id: "duyuru",    label: "Etkinlik & Duyuru", icon: "📣", href: t => `/api/panel/start?cmd=duyuru&t=${encodeURIComponent(t)}` },
   { id: "personel",  label: "Personel",         icon: "🛠", href: t => `/api/panel/start?cmd=menu&t=${encodeURIComponent(t)}` },
