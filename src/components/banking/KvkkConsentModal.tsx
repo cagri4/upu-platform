@@ -11,7 +11,7 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, ExternalLink } from "lucide-react";
 
-type TenantKey = "emlak" | "bayi";
+type TenantKey = "emlak" | "bayi" | "siteyonetim" | "market" | "otel";
 
 interface KvkkConsentModalProps {
   onAccepted: () => void;
@@ -28,6 +28,12 @@ const TENANT_BODY: Record<TenantKey, string> = {
     "UPU Emlak'ı kullanırken kişisel verilerinizin işlenmesi konusunda sizi bilgilendiren KVKK aydınlatma metnimizi onaylamanız gerekmektedir.",
   bayi:
     "UPU Bayi'yi kullanırken kişisel verilerinizin (bayi telefonu, sipariş bilgisi, vade tutarları, IBAN vb.) yasal çerçeve içinde işlenmesi için onayınızı rica ederiz.",
+  siteyonetim:
+    "UPU Site'yi kullanırken sakin iletişim bilgileri, aidat ledger'ı, şikayet/talep verileri ve duyuru mesajlarınızın yasal çerçeve içinde işlenmesi için onayınızı rica ederiz.",
+  market:
+    "UPU Market'i kullanırken ürün/stok verileri, tedarikçi iletişim bilgileri, satış kayıtları, müşteri sadakat verileri ve KvK/BTW bilgilerinizin yasal çerçeve içinde işlenmesi için onayınızı rica ederiz.",
+  otel:
+    "UPU Otel'i kullanırken misafir kişisel verileri (TC kimlik, telefon, oda bilgisi, ödeme tutarı vb.) yasal çerçeve içinde işlenir. Sahibi olarak aydınlatma metnini onaylamanızı rica ederiz.",
 };
 
 export function KvkkConsentModal({ onAccepted, onDefer, tenantKey = "emlak" }: KvkkConsentModalProps) {
