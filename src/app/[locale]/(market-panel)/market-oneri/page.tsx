@@ -1,23 +1,31 @@
 "use client";
 
+import { MessageSquare, MessageCircle } from "lucide-react";
+import { HeroBanner } from "@/components/banking";
+
 export default function MarketOneriPage() {
   return (
-    <div className="space-y-4">
-      <div className="bg-gradient-to-br from-amber-600 to-orange-700 text-white rounded-2xl p-6 shadow-lg">
-        <h1 className="text-2xl font-bold">Öneri / Şikayet</h1>
-        <p className="text-amber-100 text-sm mt-2">Görüş ve önerilerinizi bizimle paylaşın.</p>
-      </div>
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow-sm">
-        <div className="text-4xl mb-3">💬</div>
-        <p className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Yakında</p>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+    <div className="space-y-5 sm:space-y-6">
+      <HeroBanner
+        Icon={MessageSquare}
+        title="Öneri / Şikayet"
+        subtitle="Görüş ve önerilerinizi bizimle paylaşın."
+      />
+
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/70 dark:border-slate-800 shadow-sm text-center">
+        <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-3">
+          <MessageCircle className="w-7 h-7" strokeWidth={2.2} />
+        </div>
+        <p className="font-semibold text-slate-900 dark:text-white mb-1.5">Form yakında açılacak</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-4">
           Öneri ve şikayet formu yakında burada açılacak. Şimdilik WhatsApp üzerinden bize ulaşabilirsiniz.
         </p>
         <a
           href="https://wa.me/31644967207?text=%C3%96neri%2F%C5%9Eikayet%3A%20"
-          className="inline-block bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition"
+          className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition active:scale-95"
         >
-          💬 WhatsApp&apos;tan Yaz
+          <MessageCircle className="w-4 h-4" strokeWidth={2.4} />
+          WhatsApp&apos;tan Yaz
         </a>
       </div>
     </div>

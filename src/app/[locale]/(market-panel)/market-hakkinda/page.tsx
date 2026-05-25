@@ -1,14 +1,18 @@
 "use client";
 
+import { Info, Globe, Mail } from "lucide-react";
+import { HeroBanner, InfoChip } from "@/components/banking";
+
 export default function MarketHakkindaPage() {
   return (
-    <div className="space-y-4">
-      <div className="bg-gradient-to-br from-amber-600 to-orange-700 text-white rounded-2xl p-6 shadow-lg">
-        <h1 className="text-2xl font-bold">UPUDev Hakkında</h1>
-        <p className="text-amber-100 text-sm mt-2">Türk diaspora KOBİ&apos;leri için WhatsApp + AI destekli SaaS platformu.</p>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <HeroBanner
+        Icon={Info}
+        title="UPUDev Hakkında"
+        subtitle="Türk diaspora KOBİ'leri için WhatsApp + AI destekli SaaS platformu."
+      />
 
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm space-y-4 text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/70 dark:border-slate-800 shadow-sm space-y-4 text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
         <p>
           <strong>UPU</strong>, Hollanda ve Avrupa&apos;daki Türk küçük işletmelerinin (market, restoran, emlak, dağıtım, otel) günlük operasyonlarını WhatsApp + yapay zeka ile yönetmesini sağlayan bir platformdur.
         </p>
@@ -18,13 +22,12 @@ export default function MarketHakkindaPage() {
         <p>
           <strong>Pazar:</strong> NL Türk diasporası özelinde sıcak Türk dilinde, KvK/BTW uyumlu, EUR para biriminde çalışırız. NL, BE, DE, TR pazarına yayılma planlanıyor.
         </p>
-        <div className="pt-3 border-t border-slate-100">
-          <p className="font-semibold text-slate-900 dark:text-slate-100 mb-1">İletişim</p>
-          <p className="text-slate-600 dark:text-slate-400">
-            Web: <span className="font-mono">upudev.nl</span><br />
-            E-posta: <span className="font-mono">info@upudev.nl</span>
-          </p>
-        </div>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-1">İletişim</p>
+        <InfoChip Icon={Globe} text="upudev.nl" href="https://upudev.nl" />
+        <InfoChip Icon={Mail} text="info@upudev.nl" href="mailto:info@upudev.nl" />
       </div>
     </div>
   );
