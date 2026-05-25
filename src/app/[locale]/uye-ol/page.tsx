@@ -14,6 +14,7 @@
 import { headers } from "next/headers";
 import { isTenantAwareIdentityEnabled } from "@/platform/auth/tenant-identity";
 import { getTenantBrandShort } from "@/platform/tenants/brand";
+import { getTenantPanelPath } from "@/platform/auth/qr";
 import UyeOlClient from "./_components/UyeOlClient";
 
 const BASE_TEXT = "Üye olmak istiyorum";
@@ -32,6 +33,7 @@ export default async function UyeOlPage() {
   const flagOn = isTenantAwareIdentityEnabled();
   const waText = buildWaText(tenantKey, flagOn);
   const brandName = getTenantBrandShort(tenantKey);
+  const panelPath = getTenantPanelPath(tenantKey);
 
-  return <UyeOlClient waText={waText} brandName={brandName} />;
+  return <UyeOlClient waText={waText} brandName={brandName} panelPath={panelPath} />;
 }

@@ -3,6 +3,21 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
+/**
+ * Subdomain → tenant panel path (banking parity).
+ * qr.ts TENANT_PANEL ile senkron — client-side server config import edemez.
+ */
+function derivePanelPathFromHost(): string {
+  if (typeof window === 'undefined') return '/tr/panel';
+  const host = window.location.host;
+  if (host.startsWith('retailai.')) return '/tr/bayi-panel';
+  if (host.startsWith('marketai.')) return '/tr/market-panelim';
+  if (host.startsWith('hotelai.')) return '/tr/otel-panel';
+  if (host.startsWith('restoranai.')) return '/tr/restoran-panel';
+  if (host.startsWith('residenceai.')) return '/tr/site';
+  return '/tr/panel'; // emlak default (estateai + localhost)
+}
+
 export default function MagicLinkPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -33,9 +48,11 @@ export default function MagicLinkPage() {
       // Save user info for dashboard
       if (data.userId) localStorage.setItem('upu_user_id', data.userId);
       if (data.name) localStorage.setItem('upu_user_name', data.name);
-      // Redirect to dashboard after short delay
+      // Redirect to dashboard after short delay — tenant-aware.
+      // Subdomain'den tenant'ı tespit eder (residenceai → /tr/site,
+      // retailai → /tr/bayi-panel, vb.). Bilinmeyen host → emlak default.
       setTimeout(() => {
-        window.location.href = '/tr/panel';
+        window.location.href = derivePanelPathFromHost();
       }, 1500);
     } catch {
       setStatus('error');

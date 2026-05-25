@@ -14,16 +14,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getSessionFromCookies } from "@/platform/auth/session";
+import { getTenantByDomain } from "@/tenants/config";
+import { getTenantPanelPath } from "@/platform/auth/qr";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const mode = url.searchParams.get("mode") || "";
-  // Link mode default next → panel-ayarlari; login mode → panel
+  // Tenant-aware default panelPath — host header'dan resolve. siteyonetim'de
+  // /tr/site, bayi'de /tr/bayi-panel, vs. Explicit ?next= override eder.
+  const host = req.headers.get("host") || "";
+  const hostTenant = getTenantByDomain(host);
+  const tenantPanelPath = getTenantPanelPath(hostTenant?.key ?? null);
+  // Link mode default next → panel-ayarlari; login mode → tenant panel
   const next =
     url.searchParams.get("next") ||
-    (mode === "link" ? "/tr/panel-ayarlari" : "/tr/panel");
+    (mode === "link" ? "/tr/panel-ayarlari" : tenantPanelPath);
 
   // Link mode: cookie session zorunlu (pid server-derived, client'a güvenmeyiz).
   // Cookie yoksa panel-ayarlari'na error ile dön (kullanıcı oraya giriş yapmaya

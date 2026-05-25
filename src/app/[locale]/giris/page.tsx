@@ -14,6 +14,7 @@
 import { headers } from "next/headers";
 import { isTenantAwareIdentityEnabled } from "@/platform/auth/tenant-identity";
 import { getTenantBrandShort } from "@/platform/tenants/brand";
+import { getTenantPanelPath } from "@/platform/auth/qr";
 import GirisClient from "./_components/GirisClient";
 
 const BASE_TEXT = "Giriş yap";
@@ -34,5 +35,13 @@ export default async function GirisPage({
   const flagOn = isTenantAwareIdentityEnabled();
   const brandName = getTenantBrandShort(tenantKey);
   const waText = buildWaText(tenantKey, flagOn);
-  return <GirisClient brandName={brandName} waText={waText} locale={locale} />;
+  const panelPath = getTenantPanelPath(tenantKey);
+  return (
+    <GirisClient
+      brandName={brandName}
+      waText={waText}
+      locale={locale}
+      panelPath={panelPath}
+    />
+  );
 }

@@ -26,13 +26,19 @@ interface GirisClientProps {
   waText: string;
   /** URL locale segmenti (tr/en/nl). */
   locale: string;
+  /**
+   * Tenant'ın panel ana URL'i — Google login sonrası dönülecek default path.
+   * Server wrapper getTenantPanelPath(headerTenantKey) ile hesaplar.
+   * Örn. siteyonetim → "/tr/site", bayi → "/tr/bayi-panel".
+   */
+  panelPath: string;
 }
 
-function GirisInner({ brandName, waText, locale }: GirisClientProps) {
+function GirisInner({ brandName, waText, locale, panelPath }: GirisClientProps) {
   const params = useSearchParams();
   const error = params.get("error");
   const hint = params.get("hint");
-  const next = params.get("next") || `/${locale}/panel`;
+  const next = params.get("next") || panelPath;
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
 
   useEffect(() => {

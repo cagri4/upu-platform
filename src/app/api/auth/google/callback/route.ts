@@ -23,6 +23,8 @@ import {
   attachSessionToResponse,
   getSessionFromCookies,
 } from "@/platform/auth/session";
+import { getTenantByDomain } from "@/tenants/config";
+import { getTenantPanelPath } from "@/platform/auth/qr";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +36,11 @@ interface MinimalProfile {
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
-  const next = url.searchParams.get("next") || "/tr/panel";
+  // Tenant-aware default — start endpoint zaten next'i set ediyor ama
+  // direct callback hit (test/legacy) durumunda host header'dan resolve.
+  const host = req.headers.get("host") || "";
+  const hostTenant = getTenantByDomain(host);
+  const next = url.searchParams.get("next") || getTenantPanelPath(hostTenant?.key ?? null);
   const mode = url.searchParams.get("mode") || "";
   const pid = url.searchParams.get("pid") || "";
 

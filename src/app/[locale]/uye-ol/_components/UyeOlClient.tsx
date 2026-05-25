@@ -26,9 +26,15 @@ interface UyeOlClientProps {
   waText: string;
   /** Tenant-aware sade marka adı — header'da gösterilir (örn. "UPU Bayi"). */
   brandName: string;
+  /**
+   * Tenant'ın panel ana URL'i — login olduktan sonra dönülecek path.
+   * Server wrapper getTenantPanelPath(headerTenantKey) ile geçirir.
+   * Örn. siteyonetim → "/tr/site", bayi → "/tr/bayi-panel".
+   */
+  panelPath: string;
 }
 
-export default function UyeOlClient({ waText, brandName }: UyeOlClientProps) {
+export default function UyeOlClient({ waText, brandName, panelPath }: UyeOlClientProps) {
   const t = useTranslations("signup");
   const locale = useLocale();
 
@@ -51,7 +57,7 @@ export default function UyeOlClient({ waText, brandName }: UyeOlClientProps) {
       .then((d) => {
         if (cancelled) return;
         if (d?.success) {
-          window.location.replace(`/${locale}/panel`);
+          window.location.replace(panelPath);
         } else {
           setAuthChecked(true);
         }
@@ -62,7 +68,7 @@ export default function UyeOlClient({ waText, brandName }: UyeOlClientProps) {
     return () => {
       cancelled = true;
     };
-  }, [locale]);
+  }, [panelPath]);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");

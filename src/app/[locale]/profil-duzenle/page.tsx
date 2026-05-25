@@ -23,9 +23,29 @@ type Status = "loading" | "form" | "saving" | "done" | "error";
 
 const inputCls = "w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition";
 
+/**
+ * Subdomain → tenant panel path. qr.ts TENANT_PANEL ile senkron — client
+ * server config import edemediği için hardcoded. Bilinmeyen host → emlak.
+ */
+function panelPathFromHost(): string {
+  if (typeof window === "undefined") return "/tr/panel";
+  const host = window.location.host;
+  if (host.startsWith("retailai.")) return "/tr/bayi-panel";
+  if (host.startsWith("marketai.")) return "/tr/market-panelim";
+  if (host.startsWith("hotelai.")) return "/tr/otel-panel";
+  if (host.startsWith("restoranai.")) return "/tr/restoran-panel";
+  if (host.startsWith("residenceai.")) return "/tr/site";
+  return "/tr/panel";
+}
+
 export default function ProfilDuzenlePage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token");
+
+  // Tenant-aware panel "Geri" hedefi. host-based fallback — SSR sırasında
+  // emlak default'una düşer ama tarayıcıda doğru tenant path'i alır.
+  const panelBase = typeof window !== "undefined" ? panelPathFromHost() : "/tr/panel";
+  const panelHref = token ? `${panelBase}?t=${encodeURIComponent(token)}` : panelBase;
 
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState("");
@@ -137,7 +157,7 @@ export default function ProfilDuzenlePage() {
       <DoneState
         title="Profil kaydedildi"
         subtitle="Web sayfanız hazır."
-        panelHref={token ? `/tr/panel?t=${encodeURIComponent(token)}` : "/tr/panel"}
+        panelHref={panelHref}
       />
     );
   }
@@ -148,7 +168,7 @@ export default function ProfilDuzenlePage() {
         {/* Hero */}
         <div className="flex items-center gap-3">
           <a
-            href={token ? `/tr/panel?t=${encodeURIComponent(token)}` : "/tr/panel"}
+            href={panelHref}
             className="p-2 -ml-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
             aria-label="Geri"
           >
