@@ -1,7 +1,20 @@
 "use client";
 
+/**
+ * Market Stok — banking primitive port.
+ *
+ * - HeroBanner üst (Package icon, ürün/uyarı özet subtitle)
+ * - LoadingState card variant
+ * - Empty state: HeroBanner + InfoChip "stokekle" WA hint
+ * - Liste: banking-style white card + divide-y rows, kritik stok rose
+ *   highlight, SKT yaklaşan amber. Listenin kendisi ListCard değil
+ *   (chevron + tek-tıklama navigasyonu için değil, görüntüleme).
+ */
+
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Package, MessageCircle, AlertTriangle } from "lucide-react";
+import { HeroBanner, InfoChip, LoadingState } from "@/components/banking";
 
 interface Product {
   id: string;
@@ -47,81 +60,78 @@ export default function MarketStokPage() {
     return t <= sevenDaysLater && t >= now;
   }
 
+  const waUrl = `https://wa.me/${process.env.NEXT_PUBLIC_WA_NUMBER || "31610000000"}?text=stokekle`;
+
   if (error) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow">
-        <div className="text-3xl mb-3">⚠️</div>
-        <p className="text-slate-700 dark:text-slate-300">{error}</p>
+      <div className="space-y-5">
+        <HeroBanner Icon={Package} title="Stok" subtitle="Listeleme yüklenemedi." />
+        <InfoChip Icon={AlertTriangle} text={error} />
       </div>
     );
   }
 
   if (!products) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 text-center shadow">
-        <div className="text-3xl">⏳</div>
-        <p className="text-slate-500 text-sm mt-2">Stok yükleniyor...</p>
+      <div className="space-y-5">
+        <HeroBanner Icon={Package} title="Stok" subtitle="Yükleniyor..." />
+        <LoadingState variant="card" label="Stok listesi yükleniyor" />
       </div>
     );
   }
 
   if (products.length === 0) {
     return (
-      <div className="space-y-4">
-        <div className="bg-gradient-to-br from-amber-600 to-orange-700 text-white rounded-2xl p-6 shadow-lg">
-          <h1 className="text-2xl font-bold">Stok</h1>
-          <p className="text-amber-100 text-sm mt-2">Henüz ürün eklenmemiş.</p>
-        </div>
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 text-sm text-slate-600 dark:text-slate-400 shadow-sm">
-          <p className="font-semibold text-slate-900 dark:text-slate-100 mb-2">📦 İlk ürününüzü ekleyin</p>
-          <p>
-            WhatsApp&apos;tan{" "}
-            <span className="font-mono bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">stokekle</span>
-            {" "}komutu ile ürün ekleyebilirsiniz. Ürün adı, miktar ve birim adımlarını sırayla girin.
-          </p>
-        </div>
+      <div className="space-y-5">
+        <HeroBanner
+          Icon={Package}
+          title="Stok"
+          subtitle="Henüz ürün eklenmemiş. WhatsApp'tan ilk ürününüzü ekleyin."
+        />
+        <InfoChip
+          Icon={MessageCircle}
+          text="WhatsApp'ta 'stokekle' yazarak ekle"
+          href={waUrl}
+        />
       </div>
     );
   }
 
   const lowCount = products.filter(isLowStock).length;
   const expiringCount = products.filter(isExpiringSoon).length;
+  const subtitle = `${products.length} ürün${lowCount > 0 ? ` · ${lowCount} kritik` : ""}${expiringCount > 0 ? ` · ${expiringCount} SKT yaklaşan` : ""}`;
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-amber-600 to-orange-700 text-white rounded-2xl p-6 shadow-lg">
-        <h1 className="text-2xl font-bold">Stok</h1>
-        <p className="text-amber-100 text-sm mt-2">
-          {products.length} ürün{lowCount > 0 ? ` · ${lowCount} kritik` : ""}{expiringCount > 0 ? ` · ${expiringCount} SKT yaklaşan` : ""}
-        </p>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <HeroBanner Icon={Package} title="Stok" subtitle={subtitle} />
 
-      {/* Liste */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
-        <div className="divide-y divide-slate-100">
+      {/* Liste — banking white card + divide rows */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="divide-y divide-slate-100 dark:divide-slate-800">
           {products.map((p) => {
             const low = isLowStock(p);
             const expiring = isExpiringSoon(p);
             return (
-              <div key={p.id} className="px-4 py-3 flex items-center gap-3">
+              <div key={p.id} className="px-4 py-3.5 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-slate-900 dark:text-slate-100 truncate">{p.name}</div>
-                  <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap gap-2">
+                  <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                    {p.name}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
                     {p.category && <span>{p.category}</span>}
                     {p.expiry_date && (
-                      <span className={expiring ? "text-amber-700 font-semibold" : ""}>
+                      <span className={expiring ? "text-amber-600 dark:text-amber-400 font-semibold" : ""}>
                         SKT: {new Date(p.expiry_date).toLocaleDateString("tr-TR")}
                       </span>
                     )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className={`font-bold ${low ? "text-rose-600" : "text-slate-900 dark:text-slate-100"}`}>
+                <div className="text-right flex-shrink-0">
+                  <div className={`text-sm font-bold ${low ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-white"}`}>
                     {p.quantity} {p.unit || "adet"}
                   </div>
                   {p.price != null && (
-                    <div className="text-xs text-slate-500 mt-0.5">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                       {Number(p.price).toLocaleString("tr-TR")} €
                     </div>
                   )}
@@ -132,14 +142,12 @@ export default function MarketStokPage() {
         </div>
       </div>
 
-      {/* Hint */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 text-sm text-slate-600 dark:text-slate-400 shadow-sm">
-        <p>
-          Yeni ürün eklemek için WhatsApp&apos;tan{" "}
-          <span className="font-mono bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">stokekle</span>
-          {" "}komutunu kullanın. Düşük stoklar kırmızı, son kullanma tarihi yaklaşanlar sarı renkle işaretlenir.
-        </p>
-      </div>
+      {/* WA stokekle ipucu */}
+      <InfoChip
+        Icon={MessageCircle}
+        text="Yeni ürün için WhatsApp'tan 'stokekle' yazın"
+        href={waUrl}
+      />
     </div>
   );
 }
