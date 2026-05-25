@@ -1,7 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  Sparkles,
+  CalendarDays,
+  UtensilsCrossed,
+  Heart,
+  Wallet,
+  Cake,
+  AlertTriangle,
+  ClipboardList,
+  Users,
+  MessageCircle,
+} from "lucide-react";
 import { RestoranPanelShell } from "@/tenants/restoran/components/panel-shell";
+import {
+  HeroBanner,
+  StatCard,
+  ActionCircle,
+  ListCard,
+  Skeleton,
+} from "@/tenants/restoran/components/banking";
 
 interface Kpis {
   today_reservations: number;
@@ -52,129 +71,146 @@ function Dashboard({ token, restaurantName }: { token: string; restaurantName: s
     })();
   }, [token]);
 
-  return (
-    <div>
-      {/* Hero */}
-      <div className="bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl p-6 sm:p-8 mb-6 shadow">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-1">
-          {restaurantName || "Restoran"} — Dashboard
-        </h1>
-        <p className="text-amber-50 text-sm sm:text-base">
-          Sisteminizi buradan yönetin. Müdavim ilişkileri, rezervasyonlar, gün sonu — hepsi tek panelde.
-        </p>
-      </div>
+  const q = (path: string) => (token ? `${path}?t=${encodeURIComponent(token)}` : path);
+  const wa = (cmd: string) => `https://wa.me/31644967207?text=${encodeURIComponent(cmd)}`;
 
-      {loading && <div className="text-slate-500 text-sm">KPI'lar yükleniyor…</div>}
+  return (
+    <div className="space-y-5 sm:space-y-6">
+      <HeroBanner
+        Icon={Sparkles}
+        title={restaurantName ? `${restaurantName} — Dashboard` : "Restoran Yönetim Paneli"}
+        subtitle="Müdavim ilişkileri, rezervasyonlar, gün sonu — hepsi tek panelde."
+      />
+
       {errorMsg && (
-        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 rounded-lg px-4 py-3 text-sm mb-6">
+        <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 rounded-2xl px-4 py-3 text-sm">
           {errorMsg}
         </div>
       )}
 
-      {kpis && (
-        <>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-            <KpiCard
-              icon="📅"
-              label="Bugün rezervasyon"
-              value={String(kpis.today_reservations)}
-              hint={kpis.today_reservation_guests ? `${kpis.today_reservation_guests} kişi` : undefined}
-              gradient="from-amber-400 to-orange-500"
-            />
-            <KpiCard
-              icon="🍽"
-              label="Boş masa"
-              value={`${kpis.free_tables}/${kpis.total_tables}`}
-              hint={kpis.occupied_tables > 0 ? `${kpis.occupied_tables} dolu` : undefined}
-              gradient="from-emerald-400 to-teal-500"
-            />
-            <KpiCard
-              icon="💝"
-              label="Müdavim"
-              value={String(kpis.member_count)}
-              hint={kpis.today_birthdays > 0 ? `${kpis.today_birthdays} doğum günü 🎂` : undefined}
-              gradient="from-rose-400 to-pink-500"
-            />
-            <KpiCard
-              icon="💰"
-              label="Bu hafta satış"
-              value={fmtEur(kpis.week_revenue)}
-              hint="son 7 gün"
-              gradient="from-indigo-400 to-blue-500"
-            />
-            <KpiCard
-              icon="🎂"
-              label="Bugün doğum günü"
-              value={String(kpis.today_birthdays)}
-              hint={kpis.today_birthday_names.length > 0 ? kpis.today_birthday_names.slice(0, 2).join(", ") : "—"}
-              gradient="from-violet-400 to-fuchsia-500"
-            />
-            <KpiCard
-              icon="🔴"
-              label="Kritik stok"
-              value={String(kpis.critical_stock)}
-              hint={kpis.critical_stock > 0 ? "uyarı" : "yeterli"}
-              gradient="from-stone-400 to-slate-500"
-            />
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4">
+        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3 px-1">
+          Hızlı işlem
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="flex-shrink-0">
+            <ActionCircle Icon={CalendarDays} label="Yeni rezervasyon" href={wa("rezervasyonekle")} external />
           </div>
-
-          {/* Kritik stok detay */}
-          {kpis.critical_stock_items.length > 0 && (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 dark:border-slate-800/50 p-5 mb-6">
-              <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-                🔴 Kritik Stok Kalemleri
-              </h2>
-              <ul className="space-y-1.5">
-                {kpis.critical_stock_items.map((item, i) => (
-                  <li key={i} className="flex items-center justify-between text-sm">
-                    <span className="text-slate-700 dark:text-slate-300">{item.name}</span>
-                    <span className="text-slate-500 font-medium">
-                      {item.quantity} {item.unit}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Quick actions */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 dark:border-slate-800/50 p-5">
-            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-3">Hızlı İşlemler</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <QuickAction icon="📅" label="Yeni rezervasyon" href={`https://wa.me/31644967207?text=rezervasyonekle`} external />
-              <QuickAction icon="💝" label="Müdavim panosu" href={`/tr/restoran-mudavimler?t=${token}`} />
-              <QuickAction icon="📋" label="Bugünkü brifing" href={`https://wa.me/31644967207?text=brifing`} external />
-            </div>
+          <div className="flex-shrink-0">
+            <ActionCircle Icon={Heart} label="Müdavim panosu" href={q("/tr/restoran-mudavimler")} />
           </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function KpiCard({ icon, label, value, hint, gradient }: { icon: string; label: string; value: string; hint?: string; gradient: string }) {
-  return (
-    <div className={`bg-gradient-to-br ${gradient} text-white rounded-2xl p-4 sm:p-5 shadow`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-2xl">{icon}</span>
+          <div className="flex-shrink-0">
+            <ActionCircle Icon={ClipboardList} label="Bugünkü brifing" href={wa("brifing")} external />
+          </div>
+          <div className="flex-shrink-0">
+            <ActionCircle Icon={MessageCircle} label="WhatsApp" href={wa("yardim")} external />
+          </div>
+        </div>
       </div>
-      <div className="text-2xl sm:text-3xl font-bold leading-tight">{value}</div>
-      <div className="text-xs sm:text-sm opacity-90 mt-1">{label}</div>
-      {hint && <div className="text-xs opacity-75 mt-1">{hint}</div>}
-    </div>
-  );
-}
 
-function QuickAction({ icon, label, href, external }: { icon: string; label: string; href: string; external?: boolean }) {
-  return (
-    <a
-      href={href}
-      target={external ? "_blank" : undefined}
-      rel={external ? "noopener noreferrer" : undefined}
-      className="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-950 hover:bg-amber-50 rounded-xl border border-slate-200 dark:border-slate-800/50 transition text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
-    >
-      <span className="text-xl">{icon}</span>
-      <span>{label}</span>
-    </a>
+      {loading ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} height="h-28" />
+          ))}
+        </div>
+      ) : (
+        kpis && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <StatCard
+              Icon={CalendarDays}
+              value={kpis.today_reservations}
+              label="Bugün rezervasyon"
+              trend={
+                kpis.today_reservation_guests > 0
+                  ? { text: `${kpis.today_reservation_guests} kişi`, positive: true }
+                  : undefined
+              }
+              href={q("/tr/restoran-rezervasyonlar")}
+            />
+            <StatCard
+              Icon={UtensilsCrossed}
+              value={`${kpis.free_tables}/${kpis.total_tables}`}
+              label="Boş masa"
+              trend={
+                kpis.occupied_tables > 0
+                  ? { text: `${kpis.occupied_tables} dolu`, positive: false }
+                  : undefined
+              }
+              href={q("/tr/restoran-masalar")}
+            />
+            <StatCard
+              Icon={Heart}
+              value={kpis.member_count}
+              label="Müdavim"
+              trend={
+                kpis.today_birthdays > 0
+                  ? { text: `${kpis.today_birthdays} doğum günü`, positive: true }
+                  : undefined
+              }
+              href={q("/tr/restoran-mudavimler")}
+            />
+            <StatCard
+              Icon={Wallet}
+              value={fmtEur(kpis.week_revenue)}
+              label="Bu hafta satış"
+              trend={{ text: "son 7 gün", positive: true }}
+            />
+            <StatCard
+              Icon={Cake}
+              value={kpis.today_birthdays}
+              label="Bugün doğum günü"
+              trend={
+                kpis.today_birthday_names.length > 0
+                  ? { text: kpis.today_birthday_names.slice(0, 2).join(", "), positive: true }
+                  : undefined
+              }
+              href={q("/tr/restoran-mudavimler")}
+            />
+            <StatCard
+              Icon={AlertTriangle}
+              value={kpis.critical_stock}
+              label="Kritik stok"
+              trend={
+                kpis.critical_stock > 0
+                  ? { text: "uyarı", positive: false }
+                  : { text: "yeterli", positive: true }
+              }
+            />
+          </div>
+        )
+      )}
+
+      {kpis && kpis.critical_stock_items.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-1">
+            Kritik stok kalemleri
+          </div>
+          {kpis.critical_stock_items.map((item, i) => (
+            <ListCard
+              key={i}
+              Icon={AlertTriangle}
+              title={item.name}
+              subtitle={`Stok: ${item.quantity} ${item.unit}`}
+              rightLabel="Kritik"
+              rightTone="rose"
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-1">
+          Hesap & ayarlar
+        </div>
+        <ListCard
+          Icon={Users}
+          title="Restoran Profilim"
+          subtitle="Marka adı, açılış saatleri, brifing tercihi"
+          rightLabel="Düzenle"
+          href={q("/tr/restoran-profil")}
+        />
+      </div>
+    </div>
   );
 }

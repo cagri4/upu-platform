@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CalendarDays, Heart, Phone } from "lucide-react";
 import { RestoranPanelShell } from "@/tenants/restoran/components/panel-shell";
+import {
+  HeroBanner,
+  ListCard,
+  Skeleton,
+} from "@/tenants/restoran/components/banking";
 
 interface Reservation {
   id: string;
@@ -16,13 +22,15 @@ interface Reservation {
   loyalty_member_id: string | null;
 }
 
-const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  pending:   { label: "Bekliyor",   cls: "bg-amber-100 text-amber-700" },
-  confirmed: { label: "Onaylı",     cls: "bg-emerald-100 text-emerald-700" },
-  seated:    { label: "Oturdu",     cls: "bg-sky-100 text-sky-700" },
-  completed: { label: "Tamamlandı", cls: "bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300" },
-  cancelled: { label: "İptal",      cls: "bg-red-100 text-red-700" },
-  no_show:   { label: "Gelmedi",    cls: "bg-stone-100 text-stone-700" },
+type Tone = "amber" | "emerald" | "rose" | "slate";
+
+const STATUS_META: Record<string, { label: string; tone: Tone }> = {
+  pending: { label: "Bekliyor", tone: "amber" },
+  confirmed: { label: "Onaylı", tone: "emerald" },
+  seated: { label: "Oturdu", tone: "emerald" },
+  completed: { label: "Tamamlandı", tone: "slate" },
+  cancelled: { label: "İptal", tone: "rose" },
+  no_show: { label: "Gelmedi", tone: "rose" },
 };
 
 export default function ReservationsPage() {
@@ -48,71 +56,94 @@ function List({ token }: { token: string }) {
     })();
   }, [token]);
 
-  // Group by day
   const groups: Record<string, Reservation[]> = {};
   for (const r of items || []) {
     const day = r.reserved_at.slice(0, 10);
     (groups[day] = groups[day] || []).push(r);
   }
+  const today = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const dayLabels: Record<string, string> = {
-    [new Date().toISOString().slice(0, 10)]: "Bugün",
-    [new Date(Date.now() + 86400000).toISOString().slice(0, 10)]: "Yarın",
+    [today]: "Bugün",
+    [tomorrow]: "Yarın",
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">📅 Rezervasyonlar</h1>
-        <a
-          href="https://wa.me/31644967207?text=rezervasyonekle"
-          target="_blank" rel="noopener noreferrer"
-          className="bg-amber-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-amber-700 transition"
-        >
-          ➕ Yeni Ekle
-        </a>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <HeroBanner
+        Icon={CalendarDays}
+        title="Rezervasyonlar"
+        subtitle={
+          items
+            ? `${items.length} rezervasyon · bugün + yarın`
+            : "Rezervasyonlar yükleniyor…"
+        }
+        ctaLabel="WhatsApp ile yeni ekle"
+        ctaHref="https://wa.me/31644967207?text=rezervasyonekle"
+      />
 
-      {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 rounded-lg px-4 py-3 text-sm mb-4">{error}</div>}
-      {!items && !error && <div className="text-slate-500">Yükleniyor…</div>}
+      {error && (
+        <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 rounded-2xl px-4 py-3 text-sm">
+          {error}
+        </div>
+      )}
+
+      {!items && !error && (
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} height="h-16" />
+          ))}
+        </div>
+      )}
+
       {items && items.length === 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 dark:border-slate-800/50 p-8 text-center text-slate-500">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-8 text-center text-slate-500 dark:text-slate-400 text-sm">
           Bugün ve yarın için rezervasyon yok.
         </div>
       )}
 
-      {Object.keys(groups).sort().map(day => (
-        <div key={day} className="mb-6">
-          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">
-            {dayLabels[day] || new Date(day).toLocaleDateString("tr-TR", { day: "numeric", month: "long", weekday: "long" })}
-            {" · "}
-            {groups[day].length} rezervasyon
-          </h2>
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 dark:border-slate-800/50 divide-y divide-slate-100">
-            {groups[day].map(r => {
-              const t = new Date(r.reserved_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
-              const badge = STATUS_BADGE[r.status] || { label: r.status, cls: "bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300" };
+      {Object.keys(groups)
+        .sort()
+        .map((day) => (
+          <div key={day} className="space-y-2">
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-1">
+              {dayLabels[day] ||
+                new Date(day).toLocaleDateString("tr-TR", {
+                  day: "numeric",
+                  month: "long",
+                  weekday: "long",
+                })}
+              {" · "}
+              {groups[day].length} rezervasyon
+            </div>
+            {groups[day].map((r) => {
+              const t = new Date(r.reserved_at).toLocaleTimeString("tr-TR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+              const meta = STATUS_META[r.status] || { label: r.status, tone: "slate" as Tone };
+              const subParts: string[] = [];
+              subParts.push(`${t}`);
+              subParts.push(`${r.party_size} kişi`);
+              if (r.table_label) subParts.push(`Masa ${r.table_label}`);
+              if (r.guest_phone) subParts.push(r.guest_phone);
               return (
-                <div key={r.id} className="p-4 sm:p-5 flex items-start gap-4">
-                  <div className="flex-shrink-0 w-16 text-center">
-                    <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{t}</div>
-                    {r.table_label && <div className="text-xs text-slate-500 mt-0.5">Masa {r.table_label}</div>}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-slate-900 dark:text-slate-100">{r.guest_name}</span>
-                      <span className="text-sm text-slate-500">({r.party_size}p)</span>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
-                      {r.loyalty_member_id && <span className="text-xs">💝</span>}
-                    </div>
-                    {r.guest_phone && <div className="text-xs text-slate-500 mt-0.5">{r.guest_phone}</div>}
-                    {r.notes && <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">{r.notes}</div>}
-                  </div>
-                </div>
+                <ListCard
+                  key={r.id}
+                  Icon={r.loyalty_member_id ? Heart : r.guest_phone ? Phone : CalendarDays}
+                  title={r.guest_name + (r.loyalty_member_id ? "  💝" : "")}
+                  subtitle={
+                    r.notes
+                      ? `${subParts.join(" · ")} — ${r.notes}`
+                      : subParts.join(" · ")
+                  }
+                  rightLabel={meta.label}
+                  rightTone={meta.tone}
+                />
               );
             })}
           </div>
-        </div>
-      ))}
+        ))}
     </div>
   );
 }

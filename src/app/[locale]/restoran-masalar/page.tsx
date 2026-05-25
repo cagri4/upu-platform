@@ -1,7 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  UtensilsCrossed,
+  CircleCheck,
+  CircleX,
+  Clock,
+  Sparkles,
+} from "lucide-react";
 import { RestoranPanelShell } from "@/tenants/restoran/components/panel-shell";
+import {
+  HeroBanner,
+  ListCard,
+  Skeleton,
+} from "@/tenants/restoran/components/banking";
 
 interface Table {
   id: string;
@@ -12,11 +24,13 @@ interface Table {
   current_check_amount: number | null;
 }
 
-const STATUS_INFO: Record<string, { label: string; cls: string; icon: string }> = {
-  free:     { label: "Boş",          cls: "bg-emerald-100 text-emerald-700 border-emerald-300", icon: "🟢" },
-  occupied: { label: "Dolu",         cls: "bg-rose-100 text-rose-700 border-rose-300", icon: "🔴" },
-  reserved: { label: "Rezerve",      cls: "bg-amber-100 text-amber-700 border-amber-300", icon: "🟡" },
-  cleaning: { label: "Temizleniyor", cls: "bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600", icon: "🧹" },
+type Tone = "amber" | "emerald" | "rose" | "slate";
+
+const STATUS_META: Record<string, { label: string; tone: Tone; Icon: typeof CircleCheck }> = {
+  free: { label: "Boş", tone: "emerald", Icon: CircleCheck },
+  occupied: { label: "Dolu", tone: "rose", Icon: CircleX },
+  reserved: { label: "Rezerve", tone: "amber", Icon: Clock },
+  cleaning: { label: "Temizleniyor", tone: "slate", Icon: Sparkles },
 };
 
 export default function TablesPage() {
@@ -42,7 +56,6 @@ function Grid({ token }: { token: string }) {
     })();
   }, [token]);
 
-  // Group by zone
   const zones: Record<string, Table[]> = {};
   for (const t of items || []) {
     const z = t.zone || "Genel";
@@ -50,50 +63,66 @@ function Grid({ token }: { token: string }) {
   }
 
   const total = items?.length || 0;
-  const free = (items || []).filter(t => t.status === "free").length;
-  const occupied = (items || []).filter(t => t.status === "occupied").length;
+  const free = (items || []).filter((t) => t.status === "free").length;
+  const occupied = (items || []).filter((t) => t.status === "occupied").length;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">🍽 Masalar</h1>
-      {items && (
-        <p className="text-sm text-slate-500 mb-5">
-          {total} masa · {free} boş · {occupied} dolu
-        </p>
+    <div className="space-y-5 sm:space-y-6">
+      <HeroBanner
+        Icon={UtensilsCrossed}
+        title="Masalar"
+        subtitle={
+          items
+            ? `${total} masa · ${free} boş · ${occupied} dolu`
+            : "Masalarınız yükleniyor…"
+        }
+      />
+
+      {error && (
+        <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 rounded-2xl px-4 py-3 text-sm">
+          {error}
+        </div>
       )}
 
-      {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 rounded-lg px-4 py-3 text-sm mb-4">{error}</div>}
-      {!items && !error && <div className="text-slate-500">Yükleniyor…</div>}
+      {!items && !error && (
+        <div className="space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} height="h-16" />
+          ))}
+        </div>
+      )}
+
       {items && items.length === 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 dark:border-slate-800/50 p-8 text-center text-slate-500">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-8 text-center text-slate-500 dark:text-slate-400 text-sm">
           Henüz masa tanımlanmamış.
         </div>
       )}
 
       {Object.entries(zones).map(([zone, tables]) => (
-        <div key={zone} className="mb-6">
-          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">{zone}</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {tables.map(t => {
-              const s = STATUS_INFO[t.status] || STATUS_INFO.free;
-              return (
-                <div
-                  key={t.id}
-                  className={`bg-white dark:bg-slate-800 rounded-xl border-2 ${s.cls.split(" ").find(c => c.startsWith("border-")) || "border-slate-200 dark:border-slate-800/50"} p-4 text-center shadow-sm`}
-                >
-                  <div className="text-3xl mb-1">{s.icon}</div>
-                  <div className="text-xl font-bold text-slate-900 dark:text-slate-100">Masa {t.label}</div>
-                  {t.capacity && <div className="text-xs text-slate-500 mt-0.5">{t.capacity} kişilik</div>}
-                  <div className={`text-xs font-medium mt-2 inline-block px-2 py-0.5 rounded-full ${s.cls}`}>{s.label}</div>
-                  {t.current_check_amount && t.current_check_amount > 0 && (
-                    <div className="text-xs text-slate-700 dark:text-slate-300 font-semibold mt-1">
-                      €{t.current_check_amount.toLocaleString("tr-NL", { maximumFractionDigits: 0 })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+        <div key={zone} className="space-y-2">
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-1">
+            {zone}
           </div>
+          {tables.map((t) => {
+            const meta = STATUS_META[t.status] || STATUS_META.free;
+            const parts: string[] = [];
+            if (t.capacity) parts.push(`${t.capacity} kişilik`);
+            if (t.current_check_amount && t.current_check_amount > 0) {
+              parts.push(
+                `Hesap: €${t.current_check_amount.toLocaleString("tr-NL", { maximumFractionDigits: 0 })}`
+              );
+            }
+            return (
+              <ListCard
+                key={t.id}
+                Icon={meta.Icon}
+                title={`Masa ${t.label}`}
+                subtitle={parts.length > 0 ? parts.join(" · ") : undefined}
+                rightLabel={meta.label}
+                rightTone={meta.tone}
+              />
+            );
+          })}
         </div>
       ))}
     </div>

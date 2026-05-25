@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import {
+  UtensilsCrossed,
+  AlertTriangle,
+  CheckCircle2,
+  MessageCircle,
+} from "lucide-react";
+import { LoadingState } from "@/tenants/restoran/components/banking";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -60,7 +67,6 @@ export default function RestoranProfilPage() {
       setError("Geçersiz veya eksik link.");
       return;
     }
-    // Init: token doğrula + varsa mevcut form değerlerini al
     (async () => {
       try {
         const res = await fetch(`/api/restoran-profil/init?t=${token}`);
@@ -72,7 +78,7 @@ export default function RestoranProfilPage() {
         }
         if (json.profile) {
           const meta = json.profile.metadata || {};
-          setForm(f => ({
+          setForm((f) => ({
             ...f,
             display_name: json.profile.display_name || "",
             restaurant_name: meta.restaurant_name || "",
@@ -92,7 +98,7 @@ export default function RestoranProfilPage() {
   }, [token]);
 
   function update<K extends keyof Form>(key: K, value: Form[K]) {
-    setForm(f => ({ ...f, [key]: value }));
+    setForm((f) => ({ ...f, [key]: value }));
   }
 
   async function submit() {
@@ -130,16 +136,18 @@ export default function RestoranProfilPage() {
   }
 
   if (status === "loading") {
-    return <div className="min-h-screen flex items-center justify-center text-gray-500">Yükleniyor…</div>;
+    return <LoadingState label="Profiliniz hazırlanıyor…" />;
   }
 
   if (status === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow p-8 text-center">
-          <div className="text-5xl mb-4">⚠️</div>
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">Bir sorun var</h1>
-          <p className="text-gray-600">{error || "Beklenmedik hata."}</p>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
+        <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/70 dark:border-slate-800 p-8 text-center">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-3">
+            <AlertTriangle className="w-7 h-7" strokeWidth={2.2} />
+          </div>
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">Bir sorun var</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm">{error || "Beklenmedik hata."}</p>
         </div>
       </div>
     );
@@ -148,25 +156,30 @@ export default function RestoranProfilPage() {
   if (status === "done") {
     const waUrl = `https://wa.me/${BOT_WA_NUMBER}?text=brifing`;
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
-        <div className="max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow p-8 text-center">
-          <div className="text-5xl mb-4">🎉</div>
-          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Hoş geldiniz!</h1>
-          <p className="text-gray-600 mb-6">
-            Profiliniz kaydedildi. Örnek restoran (<b>Sultan Ahmet Kebabevi</b>) verisini yükledim — 8 masa, 30 menü kalemi, 8 müdavim, bugün 4 rezervasyon.
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-8">
+        <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/70 dark:border-slate-800 p-8 text-center">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4">
+            <CheckCircle2 className="w-8 h-8" strokeWidth={2.2} />
+          </div>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">Hoş geldiniz!</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-5">
+            Profiliniz kaydedildi. Örnek restoran <b>Sultan Ahmet Kebabevi</b> verisi yüklendi —
+            8 masa, 30 menü kalemi, 8 müdavim, bugün 4 rezervasyon.
           </p>
-          <p className="text-sm text-gray-500 mb-6">
-            WhatsApp&apos;a dönün ve şu komutları sırayla deneyin:<br />
-            <code className="text-orange-600">brifing</code>{" · "}
-            <code className="text-orange-600">rezervasyon</code>{" · "}
-            <code className="text-orange-600">sadakat</code>{" · "}
-            <code className="text-orange-600">menukalemleri</code>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+            WhatsApp&apos;a dönün ve şu komutları sırayla deneyin:
+            <br />
+            <code className="text-amber-600 dark:text-amber-400">brifing</code> ·{" "}
+            <code className="text-amber-600 dark:text-amber-400">rezervasyon</code> ·{" "}
+            <code className="text-amber-600 dark:text-amber-400">sadakat</code> ·{" "}
+            <code className="text-amber-600 dark:text-amber-400">menukalemleri</code>
           </p>
           <a
             href={waUrl}
-            className="inline-block bg-green-600 text-white font-medium px-6 py-3 rounded-xl hover:bg-green-700 transition"
+            className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 py-3 rounded-xl transition active:scale-95"
           >
-            💬 WhatsApp&apos;a Dön
+            <MessageCircle className="w-5 h-5" strokeWidth={2.2} />
+            WhatsApp&apos;a Dön
           </a>
         </div>
       </div>
@@ -174,19 +187,29 @@ export default function RestoranProfilPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow p-6 sm:p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Restoran Profili</h1>
-          <p className="text-sm text-gray-500 mt-1">Sizi tanıyalım — 2-3 dakika sürer.</p>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8 px-4">
+      <div className="max-w-lg mx-auto space-y-5">
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-600 dark:to-orange-700 text-white rounded-2xl p-5 sm:p-6 shadow-md">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
+              <UtensilsCrossed className="w-6 h-6" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold leading-tight">Restoran Profili</h1>
+              <p className="text-amber-50/95 text-sm mt-1.5 leading-relaxed">
+                Sizi tanıyalım — 2-3 dakika sürer. Bilgileriniz örnek demo verisi
+                ile birlikte panelinize hazırlanır.
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-5">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/70 dark:border-slate-800 p-6 sm:p-7 space-y-5">
           <Field label="Ad soyad *">
             <input
               type="text"
               value={form.display_name}
-              onChange={e => update("display_name", e.target.value)}
+              onChange={(e) => update("display_name", e.target.value)}
               placeholder="Mehmet Yılmaz"
               className={inputCls}
             />
@@ -196,7 +219,7 @@ export default function RestoranProfilPage() {
             <input
               type="text"
               value={form.restaurant_name}
-              onChange={e => update("restaurant_name", e.target.value)}
+              onChange={(e) => update("restaurant_name", e.target.value)}
               placeholder="Anadolu Sofrası"
               className={inputCls}
             />
@@ -206,7 +229,7 @@ export default function RestoranProfilPage() {
             <input
               type="text"
               value={form.location}
-              onChange={e => update("location", e.target.value)}
+              onChange={(e) => update("location", e.target.value)}
               placeholder="Rotterdam Centrum"
               className={inputCls}
             />
@@ -215,7 +238,7 @@ export default function RestoranProfilPage() {
           <Field label="İşletme tipi *">
             <select
               value={form.segment}
-              onChange={e => update("segment", e.target.value as Form["segment"])}
+              onChange={(e) => update("segment", e.target.value as Form["segment"])}
               className={inputCls}
             >
               {Object.entries(SEGMENT_LABELS).map(([k, v]) => (
@@ -227,7 +250,7 @@ export default function RestoranProfilPage() {
           <Field label="Kapasite">
             <select
               value={form.capacity}
-              onChange={e => update("capacity", e.target.value as Form["capacity"])}
+              onChange={(e) => update("capacity", e.target.value as Form["capacity"])}
               className={inputCls}
             >
               {Object.entries(CAPACITY_LABELS).map(([k, v]) => (
@@ -239,36 +262,39 @@ export default function RestoranProfilPage() {
           <Field label="Muhasebe yazılımı (opsiyonel)">
             <select
               value={form.accounting}
-              onChange={e => update("accounting", e.target.value as Form["accounting"])}
+              onChange={(e) => update("accounting", e.target.value as Form["accounting"])}
               className={inputCls}
             >
               <option value="">Şimdilik boş bırak</option>
-              {Object.entries(ACCOUNTING_LABELS).filter(([k]) => k !== "").map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
-              ))}
+              {Object.entries(ACCOUNTING_LABELS)
+                .filter(([k]) => k !== "")
+                .map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
             </select>
           </Field>
 
           <Field label="Sabah brifingi">
             <div className="flex gap-3">
-              <BriefingChip
+              <ChoiceChip
                 label="Evet, gönder"
                 active={form.brifing_enabled === "evet"}
                 onClick={() => update("brifing_enabled", "evet")}
               />
-              <BriefingChip
+              <ChoiceChip
                 label="Hayır"
                 active={form.brifing_enabled === "hayir"}
                 onClick={() => update("brifing_enabled", "hayir")}
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Her sabah 9:00&apos;da WhatsApp&apos;a günlük brifing — dünkü satış, bugün rezervasyonlar, doğum günü, kritik stok.
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+              Her sabah 9:00&apos;da WhatsApp&apos;a günlük brifing — dünkü satış,
+              bugün rezervasyonlar, doğum günü, kritik stok.
             </p>
           </Field>
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 rounded-lg px-4 py-3 text-sm">
+            <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 rounded-2xl px-4 py-3 text-sm">
               {error}
             </div>
           )}
@@ -277,13 +303,14 @@ export default function RestoranProfilPage() {
             type="button"
             onClick={submit}
             disabled={status === "saving"}
-            className="w-full bg-orange-600 text-white font-medium py-3 rounded-xl hover:bg-orange-700 disabled:bg-gray-300 transition"
+            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-3 rounded-xl disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition active:scale-[0.98]"
           >
             {status === "saving" ? "Kaydediliyor…" : "Kaydet ve Demo Yükle"}
           </button>
 
-          <p className="text-xs text-gray-500 text-center">
-            Form bitince Sultan Ahmet Kebabevi örnek verisi yüklenir. WhatsApp komutlarınızda gerçek bir gün gibi görünür.
+          <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+            Form bitince Sultan Ahmet Kebabevi örnek verisi yüklenir. WhatsApp
+            komutlarınızda gerçek bir gün gibi görünür.
           </p>
         </div>
       </div>
@@ -291,26 +318,37 @@ export default function RestoranProfilPage() {
   );
 }
 
-const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent";
+const inputCls =
+  "w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+        {label}
+      </label>
       {children}
     </div>
   );
 }
 
-function BriefingChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function ChoiceChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex-1 px-4 py-2 rounded-lg border text-sm font-medium transition ${
+      className={`flex-1 px-4 py-2 rounded-xl border text-sm font-medium transition ${
         active
-          ? "bg-orange-600 text-white border-orange-600"
-          : "bg-white dark:bg-slate-800 text-gray-700 border-gray-300 hover:bg-gray-50"
+          ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+          : "bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
       }`}
     >
       {label}
