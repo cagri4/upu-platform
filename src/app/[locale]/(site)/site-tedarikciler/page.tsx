@@ -1,28 +1,30 @@
 "use client";
 
 /**
- * /tr/site-personelim — Personel CRUD (Modül 5, Sprint 2).
+ * /tr/site-tedarikciler — Tedarikçi CRUD (Modül 5, Sprint 2).
  *
- * Banking style ListCard pattern + inline modal form (yeni ekle / düzenle).
- * Soft-delete = is_active=false. Aktif önce, pasif altta gray gösterilir.
+ * Banking style ListCard + inline modal. site-personelim ile simetrik.
+ * Sözleşme bitiş tarihine 30 gün kala uyarı vurgu (rose chip).
  */
 
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { Hammer, Plus, Phone, Calendar, X, Trash2, RotateCw } from "lucide-react";
+import { Briefcase, Plus, X, Trash2, RotateCw, AlertTriangle } from "lucide-react";
 import { HeroBanner, ListCard, Skeleton } from "@/components/banking";
 
-interface Personnel {
+interface Supplier {
   id: string;
-  full_name: string;
-  role: string;
-  phone: string | null;
-  monthly_salary_kurus: number | null;
-  sgk_no: string | null;
-  start_date: string | null;
+  company_name: string;
+  sector: string;
+  contact_name: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
+  service: string | null;
+  monthly_fee_kurus: number | null;
+  contract_start: string | null;
   contract_end: string | null;
-  is_active: boolean;
   contract_pdf_url: string | null;
+  is_active: boolean;
   notes: string | null;
   created_at: string;
 }
@@ -32,23 +34,30 @@ function formatTL(kurus: number | null): string {
   return `₺${Math.round(kurus / 100).toLocaleString("tr-TR")}`;
 }
 
-export default function SitePersonelimPage() {
+function daysUntil(date: string | null): number | null {
+  if (!date) return null;
+  const t = new Date(date).getTime();
+  if (isNaN(t)) return null;
+  return Math.ceil((t - Date.now()) / (1000 * 60 * 60 * 24));
+}
+
+export default function SiteTedarikcilerPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token") || "";
 
   const [loading, setLoading] = useState(true);
-  const [list, setList] = useState<Personnel[]>([]);
+  const [list, setList] = useState<Supplier[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [modal, setModal] = useState<{ mode: "new" | "edit"; data?: Personnel } | null>(null);
+  const [modal, setModal] = useState<{ mode: "new" | "edit"; data?: Supplier } | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
     const qs = token ? `?t=${encodeURIComponent(token)}` : "";
-    fetch(`/api/site/personel${qs}`, { credentials: "same-origin" })
+    fetch(`/api/site/tedarikciler${qs}`, { credentials: "same-origin" })
       .then((r) => r.json())
       .then((d) => {
         if (d?.error) setError(d.error);
-        else setList(d.personnel || []);
+        else setList(d.suppliers || []);
       })
       .catch(() => setError("Bağlantı hatası."))
       .finally(() => setLoading(false));
@@ -56,18 +65,32 @@ export default function SitePersonelimPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const activeList = list.filter((p) => p.is_active);
-  const inactiveList = list.filter((p) => !p.is_active);
+  const activeList = list.filter((s) => s.is_active);
+  const inactiveList = list.filter((s) => !s.is_active);
+
+  const expiringSoon = activeList.filter((s) => {
+    const d = daysUntil(s.contract_end);
+    return d !== null && d <= 30 && d >= 0;
+  });
 
   return (
     <div className="space-y-5 sm:space-y-6">
       <HeroBanner
-        Icon={Hammer}
-        title="Personel"
-        subtitle={`${activeList.length} aktif · ${list.length} toplam kayıt`}
-        ctaLabel="Yeni Personel"
+        Icon={Briefcase}
+        title="Tedarikçiler"
+        subtitle={`${activeList.length} aktif · ${list.length} toplam`}
+        ctaLabel="Yeni Tedarikçi"
         ctaOnClick={() => setModal({ mode: "new" })}
       />
+
+      {expiringSoon.length > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-4 text-sm text-amber-900 dark:text-amber-200">
+          <p className="font-semibold mb-1 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" /> Sözleşme yenileme yaklaşıyor
+          </p>
+          <p>{expiringSoon.length} tedarikçi sözleşmesi 30 gün içinde sona eriyor.</p>
+        </div>
+      )}
 
       {error && (
         <div className="bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 rounded-2xl p-4 text-sm">
@@ -77,7 +100,7 @@ export default function SitePersonelimPage() {
 
       <div className="space-y-2">
         <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-1">
-          Aktif Personel
+          Aktif Tedarikçiler
         </div>
         {loading ? (
           <div className="space-y-2">
@@ -86,20 +109,26 @@ export default function SitePersonelimPage() {
         ) : activeList.length === 0 ? (
           <EmptyState onAdd={() => setModal({ mode: "new" })} />
         ) : (
-          activeList.map((p) => (
-            <ListCard
-              key={p.id}
-              Icon={Hammer}
-              title={`${p.full_name} · ${p.role}`}
-              subtitle={[
-                p.phone && `📞 ${p.phone}`,
-                p.monthly_salary_kurus && `💰 ${formatTL(p.monthly_salary_kurus)}`,
-                p.contract_end && `📅 ${p.contract_end}`,
-              ].filter(Boolean).join("  ·  ")}
-              rightLabel="Düzenle"
-              onClick={() => setModal({ mode: "edit", data: p })}
-            />
-          ))
+          activeList.map((s) => {
+            const days = daysUntil(s.contract_end);
+            const rightLabel = days !== null && days <= 30 && days >= 0
+              ? `${days} gün kaldı`
+              : "Düzenle";
+            return (
+              <ListCard
+                key={s.id}
+                Icon={Briefcase}
+                title={`${s.company_name} · ${s.sector}`}
+                subtitle={[
+                  s.contact_phone && `📞 ${s.contact_phone}`,
+                  s.monthly_fee_kurus && `💰 ${formatTL(s.monthly_fee_kurus)}/ay`,
+                  s.contract_end && `📅 sözleşme ${s.contract_end}`,
+                ].filter(Boolean).join("  ·  ")}
+                rightLabel={rightLabel}
+                onClick={() => setModal({ mode: "edit", data: s })}
+              />
+            );
+          })
         )}
       </div>
 
@@ -108,25 +137,23 @@ export default function SitePersonelimPage() {
           <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-1">
             Pasif ({inactiveList.length})
           </div>
-          {inactiveList.map((p) => (
+          {inactiveList.map((s) => (
             <div
-              key={p.id}
+              key={s.id}
               className="bg-slate-100 dark:bg-slate-900/50 rounded-2xl px-4 py-3 border border-slate-200/70 dark:border-slate-800 opacity-60 cursor-pointer hover:opacity-100 transition"
-              onClick={() => setModal({ mode: "edit", data: p })}
+              onClick={() => setModal({ mode: "edit", data: s })}
             >
               <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                {p.full_name} · {p.role}
+                {s.company_name} · {s.sector}
               </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">
-                Pasif · Düzenlemek için tıklayın
-              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">Pasif · Düzenlemek için tıklayın</div>
             </div>
           ))}
         </div>
       )}
 
       {modal && (
-        <PersonnelModal
+        <SupplierModal
           mode={modal.mode}
           initial={modal.data}
           token={token}
@@ -141,17 +168,17 @@ export default function SitePersonelimPage() {
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 p-6 text-center space-y-3">
-      <div className="text-4xl">🛠</div>
-      <div className="font-semibold text-slate-900 dark:text-white">Henüz aktif personel yok</div>
+      <div className="text-4xl">🤝</div>
+      <div className="font-semibold text-slate-900 dark:text-white">Tedarikçi kaydı yok</div>
       <p className="text-sm text-slate-600 dark:text-slate-400">
-        Kapıcı, güvenlik, temizlikçi gibi çalışanlarınızı buraya kaydedin.
+        Asansör, peyzaj, güvenlik, temizlik firmalarınızı buraya kaydedin.
       </p>
       <button
         type="button"
         onClick={onAdd}
         className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition active:scale-95"
       >
-        <Plus className="w-4 h-4" /> Yeni Personel Ekle
+        <Plus className="w-4 h-4" /> Yeni Tedarikçi Ekle
       </button>
     </div>
   );
@@ -159,21 +186,23 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 
 interface ModalProps {
   mode: "new" | "edit";
-  initial?: Personnel;
+  initial?: Supplier;
   token: string;
   onClose: () => void;
   onSaved: () => void;
 }
 
-function PersonnelModal({ mode, initial, token, onClose, onSaved }: ModalProps) {
-  const [full_name, setFullName] = useState(initial?.full_name || "");
-  const [role, setRole] = useState(initial?.role || "");
-  const [phone, setPhone] = useState(initial?.phone || "");
-  const [salaryTL, setSalaryTL] = useState(
-    initial?.monthly_salary_kurus ? String(Math.round(initial.monthly_salary_kurus / 100)) : "",
+function SupplierModal({ mode, initial, token, onClose, onSaved }: ModalProps) {
+  const [company_name, setCompanyName] = useState(initial?.company_name || "");
+  const [sector, setSector] = useState(initial?.sector || "");
+  const [contact_name, setContactName] = useState(initial?.contact_name || "");
+  const [contact_phone, setContactPhone] = useState(initial?.contact_phone || "");
+  const [contact_email, setContactEmail] = useState(initial?.contact_email || "");
+  const [service, setService] = useState(initial?.service || "");
+  const [feeTL, setFeeTL] = useState(
+    initial?.monthly_fee_kurus ? String(Math.round(initial.monthly_fee_kurus / 100)) : "",
   );
-  const [sgk_no, setSgkNo] = useState(initial?.sgk_no || "");
-  const [start_date, setStartDate] = useState(initial?.start_date || "");
+  const [contract_start, setContractStart] = useState(initial?.contract_start || "");
   const [contract_end, setContractEnd] = useState(initial?.contract_end || "");
   const [notes, setNotes] = useState(initial?.notes || "");
   const [is_active, setIsActive] = useState(initial?.is_active !== false);
@@ -182,8 +211,8 @@ function PersonnelModal({ mode, initial, token, onClose, onSaved }: ModalProps) 
   const [msg, setMsg] = useState<string | null>(null);
 
   async function save() {
-    if (!full_name.trim() || !role.trim()) {
-      setMsg("Ad-soyad ve görev zorunlu.");
+    if (!company_name.trim() || !sector.trim()) {
+      setMsg("Firma adı ve sektör zorunlu.");
       return;
     }
     setSaving(true);
@@ -191,12 +220,14 @@ function PersonnelModal({ mode, initial, token, onClose, onSaved }: ModalProps) 
 
     const payload = {
       id: initial?.id,
-      full_name: full_name.trim(),
-      role: role.trim(),
-      phone: phone.trim() || null,
-      monthly_salary_kurus: salaryTL ? Number(salaryTL) * 100 : null,
-      sgk_no: sgk_no.trim() || null,
-      start_date: start_date || null,
+      company_name: company_name.trim(),
+      sector: sector.trim(),
+      contact_name: contact_name.trim() || null,
+      contact_phone: contact_phone.trim() || null,
+      contact_email: contact_email.trim() || null,
+      service: service.trim() || null,
+      monthly_fee_kurus: feeTL ? Number(feeTL) * 100 : null,
+      contract_start: contract_start || null,
       contract_end: contract_end || null,
       notes: notes.trim() || null,
       is_active,
@@ -204,7 +235,7 @@ function PersonnelModal({ mode, initial, token, onClose, onSaved }: ModalProps) 
 
     try {
       const qs = token ? `?t=${encodeURIComponent(token)}` : "";
-      const res = await fetch(`/api/site/personel${qs}`, {
+      const res = await fetch(`/api/site/tedarikciler${qs}`, {
         method: mode === "new" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
@@ -222,11 +253,11 @@ function PersonnelModal({ mode, initial, token, onClose, onSaved }: ModalProps) 
 
   async function softDelete() {
     if (!initial?.id) return;
-    if (!confirm(`${initial.full_name} pasifleştirilsin mi?`)) return;
+    if (!confirm(`${initial.company_name} pasifleştirilsin mi?`)) return;
     setSaving(true);
     try {
       const qs = `?id=${encodeURIComponent(initial.id)}${token ? `&t=${encodeURIComponent(token)}` : ""}`;
-      const res = await fetch(`/api/site/personel${qs}`, {
+      const res = await fetch(`/api/site/tedarikciler${qs}`, {
         method: "DELETE",
         credentials: "same-origin",
       });
@@ -244,19 +275,21 @@ function PersonnelModal({ mode, initial, token, onClose, onSaved }: ModalProps) 
       >
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-slate-900 dark:text-white">
-            {mode === "new" ? "Yeni Personel" : "Personel Düzenle"}
+            {mode === "new" ? "Yeni Tedarikçi" : "Tedarikçi Düzenle"}
           </h2>
           <button type="button" onClick={onClose} aria-label="Kapat" className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded">
             <X className="w-5 h-5 text-slate-500" />
           </button>
         </div>
 
-        <Field label="Ad Soyad *" value={full_name} onChange={setFullName} />
-        <Field label="Görev * (örn. Kapıcı, Güvenlik, Temizlikçi)" value={role} onChange={setRole} />
-        <Field label="Telefon" value={phone} onChange={setPhone} />
-        <Field label="Maaş (₺/ay)" value={salaryTL} onChange={setSalaryTL} type="number" />
-        <Field label="SGK No" value={sgk_no} onChange={setSgkNo} />
-        <Field label="Başlangıç" value={start_date} onChange={setStartDate} type="date" />
+        <Field label="Firma Adı *" value={company_name} onChange={setCompanyName} />
+        <Field label="Sektör * (asansör, peyzaj, güvenlik...)" value={sector} onChange={setSector} />
+        <Field label="Yetkili Adı" value={contact_name} onChange={setContactName} />
+        <Field label="Yetkili Telefon" value={contact_phone} onChange={setContactPhone} />
+        <Field label="Email" value={contact_email} onChange={setContactEmail} type="email" />
+        <Field label="Hizmet Açıklaması" value={service} onChange={setService} />
+        <Field label="Aylık Ücret (₺)" value={feeTL} onChange={setFeeTL} type="number" />
+        <Field label="Sözleşme Başlangıç" value={contract_start} onChange={setContractStart} type="date" />
         <Field label="Sözleşme Bitiş" value={contract_end} onChange={setContractEnd} type="date" />
         <Field label="Notlar" value={notes} onChange={setNotes} textarea />
 
