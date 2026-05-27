@@ -36,13 +36,21 @@
 - Sprint 1 migration 3'te `sy_*_sakin_read` policy'leri YAZILMADI
 - Sprint 2'nin ilk migration'ı bu policy'leri ekleyecek + sakin paneli
 
-## 📅 Sprint 2 (16-22 sa) — Mali
+## 📅 Sprint 2 (16-22 sa) — Mali ✅ TAMAMLANDI 2026-05-27
 
-### Modüller
-- [ ] Modül 1: Tahsilat & Banka POS (mock) — `/tr/site-tahsilat`
-- [ ] Modül 2: Gider & Bütçe — `/tr/site-butce`
-- [ ] Modül 5: Personel & Tedarikçi — `/tr/site-personel-detay`, `/tr/site-tedarikciler`
-- [ ] Sakin RBAC final test
+### Modüller ✅
+- [x] Sakin RLS migration (Sprint 1'den ertelenmişti) (`7b0cafa`)
+- [x] M5 Personel & Tedarikçi — `/tr/site-personelim` + `/tr/site-tedarikciler` (`9fb257c`)
+- [x] M2 Gider & Bütçe — `/tr/site-butce` + plan vs gerçekleşen rapor (`cd05dbd`)
+- [x] M1 Tahsilat & Mock POS — `/tr/site-tahsilat` + provider abstraction (`164372c`)
+
+### Sprint 2 sayfa & API artifact'leri
+- `/tr/site-personelim` (CRUD, rewrite — placeholder'dan gerçek)
+- `/tr/site-tedarikciler` (CRUD + 30gün sözleşme uyarı)
+- `/tr/site-butce` (yıl bazlı plan-vs-actual + plansız harcama tespiti)
+- `/tr/site-tahsilat` (borçlu liste + mock POS modal)
+- `/api/site/{personel,tedarikciler,butce,tahsilat}` — 4 yeni endpoint
+- `src/platform/payments/site-pos.ts` — PaymentProvider interface + MockSitePosProvider
 
 ## 📅 Sprint 3 (12-18 sa) — Yönetsel + İletişim
 
@@ -63,8 +71,8 @@
 | Sprint | Başlangıç | Bitiş | Saat | Durum |
 |---|---|---|---|---|
 | Sprint 1 | 2026-05-27 | 2026-05-27 | ~3 sa | ✅ Tamamlandı |
-| Sprint 2 | 2026-05-27 | — | — | 🟡 Başlatılıyor |
-| Sprint 3 | — | — | — | ⏳ Bekliyor |
+| Sprint 2 | 2026-05-27 | 2026-05-27 | ~4 sa | ✅ Tamamlandı |
+| Sprint 3 | 2026-05-27 | — | — | 🟡 Başlatılıyor |
 
 ## 📦 Sprint 1 Commit Zinciri
 
