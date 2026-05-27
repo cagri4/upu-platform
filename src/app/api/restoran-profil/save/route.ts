@@ -269,6 +269,9 @@ async function upsertPublicRestaurant(
       accepts_dine_in: true,
       delivery_zones: [{ name: args.location, min_order: 15, fee: 3.5 }],
       estimated_prep_minutes: 30,
+      enabled_languages: ["tr", "nl", "en"],
+      default_language: "tr",
+      menu_greeting: `Hoş geldiniz! ${args.brandName}'da bugün size ne ikram edelim?`,
     })
     .select("id")
     .single();
