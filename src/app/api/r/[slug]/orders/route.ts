@@ -20,6 +20,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getRestaurantBySlug } from "@/tenants/restoran/b2c/restaurant-resolver";
 import { createOrderPayment } from "@/platform/mollie/restoran-payments";
+import { getPOSProvider, type POSOrder } from "@/platform/pos/POSProvider";
 
 export const dynamic = "force-dynamic";
 
@@ -320,6 +321,40 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
       .from("rst_b2c_orders")
       .update({ status: "received" })
       .eq("id", orderId);
+
+    // POSProvider best-effort push (MVP NoopPOSProvider, V2 gerçek POS)
+    try {
+      const pos = getPOSProvider("noop", sb);
+      const posOrder: POSOrder = {
+        id: orderId,
+        orderNumber,
+        customerName: body.customer_name.trim(),
+        customerPhone: body.customer_phone.trim(),
+        deliveryType: body.delivery_type,
+        tableId,
+        items: verifiedItems.map((vi) => ({
+          menuItemId: vi.menu_item_id,
+          name: vi.name,
+          variantName: vi.variant_name,
+          addons: vi.addons.map((a) => ({ name: a.name, price: a.price })),
+          quantity: vi.quantity,
+          unitPrice: vi.unit_price,
+          total: vi.total,
+          notes: vi.notes,
+        })),
+        subtotal: serverSubtotal,
+        deliveryFee: serverDeliveryFee,
+        total: serverTotal,
+        paymentMethod: body.payment_method,
+        paymentStatus: "pending",
+        notes: body.notes?.trim() || null,
+        createdAt: new Date().toISOString(),
+      };
+      await pos.pushOrder(posOrder);
+    } catch (err) {
+      console.error("[orders] POS push error (best-effort)", err);
+      // POS başarısızlığı sipariş akışını engellemez
+    }
 
     return NextResponse.json({
       orderId,
