@@ -718,9 +718,17 @@ async function handleWebpanelShared(ctx: WaContext, tenant: ReturnType<typeof ge
   // Evergreen pattern — server fresh token mint eder, eski mesajlardan bile
   // çalışır ("süresi dolmuş" hatası yok). Bayi ve emlak'ın kendi endpoint'i
   // var; diğer tenant'lar için (market/otel/restoran/...) magic mint fallback.
+  // Tüm tenant'lar için evergreen endpoint mevcut (Sprint 3'te 5 tenant
+  // eksik eklenmişti). Fallback /auth/magic?token=... yolu cookie set
+  // etmediği için /tr/site init "Token gerekli" hatası veriyordu.
   const evergreenEndpoint: Record<string, string> = {
-    bayi: "/api/bayi-panel/evergreen",
-    emlak: "/api/emlak-panel/evergreen",
+    bayi:        "/api/bayi-panel/evergreen",
+    emlak:       "/api/emlak-panel/evergreen",
+    siteyonetim: "/api/site-panel/evergreen",
+    market:      "/api/market-panel/evergreen",
+    otel:        "/api/otel-panel/evergreen",
+    restoran:    "/api/restoran-panel/evergreen",
+    muhasebe:    "/api/muhasebe-panel/evergreen",
   };
   const evergreenPath = evergreenEndpoint[ctx.tenantKey];
 
