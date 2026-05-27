@@ -36,12 +36,27 @@ export async function GET(req: NextRequest) {
 
     const meta = (profile?.metadata || {}) as { restaurant_name?: string; location?: string };
 
+    // rst_restaurants public kart varsa id + slug döndür — panel realtime + public link için
+    let restaurantId: string | null = null;
+    let restaurantSlug: string | null = null;
+    if (profile?.tenant_id) {
+      const { data: rest } = await supabase
+        .from("rst_restaurants")
+        .select("id, slug")
+        .eq("tenant_id", profile.tenant_id)
+        .maybeSingle();
+      restaurantId = rest?.id || null;
+      restaurantSlug = rest?.slug || null;
+    }
+
     return NextResponse.json({
       success: true,
       displayName: profile?.display_name || null,
       restaurantName: meta.restaurant_name || null,
       location: meta.location || null,
       tenantId: profile?.tenant_id || null,
+      restaurantId,
+      restaurantSlug,
       botPhone: "31644967207",
     });
   } catch (err) {

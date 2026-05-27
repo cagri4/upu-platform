@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import {
   Sparkles,
   CalendarDays,
@@ -21,6 +22,8 @@ import {
   ListCard,
   Skeleton,
 } from "@/tenants/restoran/components/banking";
+import { useB2cOrdersRealtime } from "@/tenants/restoran/b2c/use-b2c-orders-realtime";
+import { NewOrderBanner } from "@/tenants/restoran/b2c/new-order-banner";
 
 interface Kpis {
   today_reservations: number;
@@ -43,12 +46,32 @@ function fmtEur(n: number): string {
 export default function RestoranDashboardPage() {
   return (
     <RestoranPanelShell>
-      {({ token, init }) => <Dashboard token={token} restaurantName={init.restaurantName} />}
+      {({ token, init }) => (
+        <Dashboard
+          token={token}
+          restaurantName={init.restaurantName}
+          restaurantId={init.restaurantId}
+          restaurantSlug={init.restaurantSlug}
+        />
+      )}
     </RestoranPanelShell>
   );
 }
 
-function Dashboard({ token, restaurantName }: { token: string; restaurantName: string | null }) {
+function Dashboard({
+  token,
+  restaurantName,
+  restaurantId,
+  restaurantSlug,
+}: {
+  token: string;
+  restaurantName: string | null;
+  restaurantId: string | null;
+  restaurantSlug: string | null;
+}) {
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale || "tr";
+  const { newOrder, dismissNew } = useB2cOrdersRealtime(restaurantId);
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -76,10 +99,25 @@ function Dashboard({ token, restaurantName }: { token: string; restaurantName: s
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      {newOrder && (
+        <NewOrderBanner
+          order={newOrder}
+          locale={locale}
+          token={token}
+          onDismiss={dismissNew}
+        />
+      )}
+
       <HeroBanner
         Icon={Sparkles}
         title={restaurantName ? `${restaurantName} — Dashboard` : "Restoran Yönetim Paneli"}
-        subtitle="Müdavim ilişkileri, rezervasyonlar, gün sonu — hepsi tek panelde."
+        subtitle={
+          restaurantSlug
+            ? `Müşterileriniz: restoranai.upudev.nl/tr/r/${restaurantSlug}`
+            : "Müdavim ilişkileri, rezervasyonlar, gün sonu — hepsi tek panelde."
+        }
+        ctaLabel={restaurantSlug ? "Public Site →" : undefined}
+        ctaHref={restaurantSlug ? `/${locale}/r/${restaurantSlug}` : undefined}
       />
 
       {errorMsg && (

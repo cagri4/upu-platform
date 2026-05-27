@@ -27,6 +27,8 @@ interface InitData {
   displayName: string | null;
   restaurantName: string | null;
   location: string | null;
+  restaurantId: string | null;
+  restaurantSlug: string | null;
 }
 
 type Status = "loading" | "ready" | "error";
@@ -40,7 +42,13 @@ export function RestoranPanelShell({
   const token = searchParams?.get("t") || searchParams?.get("token") || "";
   const [status, setStatus] = useState<Status>("loading");
   const [errorMsg, setErrorMsg] = useState<string>("");
-  const [init, setInit] = useState<InitData>({ displayName: null, restaurantName: null, location: null });
+  const [init, setInit] = useState<InitData>({
+    displayName: null,
+    restaurantName: null,
+    location: null,
+    restaurantId: null,
+    restaurantSlug: null,
+  });
 
   useEffect(() => {
     if (!token) {
@@ -61,6 +69,8 @@ export function RestoranPanelShell({
           displayName: json.displayName,
           restaurantName: json.restaurantName,
           location: json.location,
+          restaurantId: json.restaurantId || null,
+          restaurantSlug: json.restaurantSlug || null,
         });
         setStatus("ready");
       } catch {
