@@ -113,6 +113,16 @@ export default async function MenuPage({ params }: { params: Promise<RouteParams
 
   const { categories, items } = await fetchMenu(restaurant.id);
 
+  // Restoran metadata'sından menu_greeting al (Sprint 3 D1'de eklendi)
+  // PublicRestaurant tipinde yok — DB'den ek lookup
+  const sb2 = getServiceClient();
+  const { data: rest2 } = await sb2
+    .from("rst_restaurants")
+    .select("menu_greeting")
+    .eq("id", restaurant.id)
+    .maybeSingle();
+  const menuGreeting = (rest2?.menu_greeting as string | null) || null;
+
   return (
     <MenuView
       locale={locale}
@@ -121,6 +131,7 @@ export default async function MenuPage({ params }: { params: Promise<RouteParams
       primaryColor={restaurant.primary_color}
       categories={categories}
       items={items}
+      menuGreeting={menuGreeting}
     />
   );
 }

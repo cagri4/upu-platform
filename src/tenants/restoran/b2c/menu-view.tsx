@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { useCart } from "./cart-context";
 import { cartItemCount, cartSubtotal } from "./cart-types";
+import { useTableContext } from "./use-table-context";
+import { TableActionsBar } from "./table-actions-bar";
 
 export interface Category {
   id: string;
@@ -55,6 +57,7 @@ export function MenuView({
   primaryColor,
   categories,
   items,
+  menuGreeting,
 }: {
   locale: string;
   slug: string;
@@ -62,8 +65,10 @@ export function MenuView({
   primaryColor: string;
   categories: Category[];
   items: MenuItemFull[];
+  menuGreeting?: string | null;
 }) {
   const { cart, hydrated } = useCart();
+  const { tableContext } = useTableContext(slug);
   const [activeCatId, setActiveCatId] = useState<string | null>(
     categories[0]?.id || null,
   );
@@ -121,9 +126,30 @@ export function MenuView({
           </Link>
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-slate-900 dark:text-slate-100 truncate">{brandName}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Menü</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              {tableContext ? `Masa ${tableContext.tableLabel}` : "Menü"}
+            </div>
           </div>
         </div>
+
+        {/* Masa-aware: Garson Çağır + Hesap İste */}
+        {tableContext && (
+          <TableActionsBar
+            slug={slug}
+            primaryColor={primaryColor}
+            tableContext={tableContext}
+          />
+        )}
+
+        {/* Samimi karşılama (Butlaroo paterni) — sadece tableContext'te göster */}
+        {tableContext && menuGreeting && (
+          <div
+            className="mx-4 mb-2 px-4 py-2 rounded-xl text-xs italic text-center"
+            style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
+          >
+            {menuGreeting}
+          </div>
+        )}
         {/* Kategori sticky tab bar */}
         {allCategories.length > 1 && (
           <nav className="overflow-x-auto px-2 pb-2 -mx-2 flex gap-1.5 scroll-smooth no-scrollbar">

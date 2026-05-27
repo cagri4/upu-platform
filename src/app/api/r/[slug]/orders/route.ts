@@ -46,6 +46,7 @@ interface IncomingBody {
   subtotal: number;
   delivery_fee: number;
   total: number;
+  table_qr_token?: string | null;  // Sprint 3 D4 — QR'dan gelen masa
 }
 
 function makeOrderNumber(): string {
@@ -213,6 +214,30 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
 
     const serverTotal = Math.round((serverSubtotal + serverDeliveryFee) * 100) / 100;
 
+    // Masa QR token → table_id resolve (Sprint 3 D4)
+    let tableId: string | null = null;
+    let orderSource: "web" | "qr" = "web";
+    if (body.table_qr_token) {
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.table_qr_token)) {
+        return NextResponse.json({ error: "Geçersiz masa token." }, { status: 400 });
+      }
+      const { data: tableRow } = await sb
+        .from("rst_tables")
+        .select("id, restaurant_id, is_active")
+        .eq("qr_token", body.table_qr_token)
+        .eq("restaurant_id", restaurant.id)
+        .maybeSingle();
+      if (!tableRow || !tableRow.is_active) {
+        return NextResponse.json({ error: "Masa bulunamadı." }, { status: 400 });
+      }
+      tableId = tableRow.id as string;
+      orderSource = "qr";
+      // Masa siparişlerinde delivery_type=dine_in zorunlu (cart-view bunu zaten lock'luyor)
+      if (body.delivery_type !== "dine_in") {
+        return NextResponse.json({ error: "Masa siparişlerinde teslimat masa olmalı." }, { status: 400 });
+      }
+    }
+
     // Order INSERT
     const orderNumber = makeOrderNumber();
     const estimatedReadyAt = new Date(Date.now() + (restaurant.estimated_prep_minutes || 30) * 60_000).toISOString();
@@ -228,6 +253,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
         customer_email: body.customer_email?.trim() || null,
         delivery_type: body.delivery_type,
         delivery_address: body.delivery_address,
+        table_id: tableId,
         items: verifiedItems,
         notes: body.notes?.trim().substring(0, 300) || null,
         subtotal: serverSubtotal,
@@ -236,7 +262,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
         status: "pending_payment",
         payment_method: body.payment_method,
         payment_status: "pending",
-        source: "web",
+        source: orderSource,
         estimated_ready_at: estimatedReadyAt,
       })
       .select("id")

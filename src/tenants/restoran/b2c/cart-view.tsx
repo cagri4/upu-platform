@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useCart } from "./cart-context";
 import { cartSubtotal, lineTotal } from "./cart-types";
+import { useTableContext } from "./use-table-context";
 
 interface DeliveryZone {
   name: string;
@@ -54,9 +55,12 @@ export function CartView({
 }) {
   const router = useRouter();
   const { cart, hydrated, setQuantity, removeItem, setNotes, clear } = useCart();
+  const { tableContext } = useTableContext(slug);
 
-  // Delivery type — default 'delivery' (en yaygın)
-  const [deliveryType, setDeliveryType] = useState<DeliveryType>("delivery");
+  // Delivery type — masa context varsa dine_in zorla, yoksa default 'delivery'
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>(
+    tableContext ? "dine_in" : "delivery",
+  );
 
   // Customer info
   const [customerName, setCustomerName] = useState("");
@@ -71,8 +75,12 @@ export function CartView({
   const [addrCity, setAddrCity] = useState("");
   const [addrNote, setAddrNote] = useState("");
 
-  // Payment
-  const defaultPayment: PaymentMethod = acceptsOnlinePayment ? "ideal" : "cash_on_delivery";
+  // Payment — masa context varsa dine_in_later default, yoksa iDEAL veya cash
+  const defaultPayment: PaymentMethod = tableContext
+    ? "dine_in_later"
+    : acceptsOnlinePayment
+      ? "ideal"
+      : "cash_on_delivery";
   const [payment, setPayment] = useState<PaymentMethod>(defaultPayment);
 
   // Order note
@@ -137,6 +145,7 @@ export function CartView({
       customer_phone: customerPhone.trim(),
       customer_email: customerEmail.trim() || null,
       delivery_type: deliveryType,
+      table_qr_token: tableContext?.qrToken || null,
       delivery_address:
         deliveryType === "delivery"
           ? {
@@ -329,41 +338,62 @@ export function CartView({
           </div>
         </section>
 
-        {/* Teslimat tipi */}
+        {/* Teslimat tipi — QR'dan geldiyse masa zorunlu, gizli */}
         <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Teslimat</h2>
-          <div className="space-y-2">
-            <ChoiceRadio
-              checked={deliveryType === "delivery"}
-              onChange={() => setDeliveryType("delivery")}
-              primaryColor={primaryColor}
-              icon={<Truck className="w-4 h-4" strokeWidth={2.2} />}
-              label="Eve teslimat"
-              hint={
-                selectedZone
-                  ? `${selectedZone.name}${selectedZone.min_order ? ` · min ${fmtEur(selectedZone.min_order, { decimals: 0 })}` : ""}${selectedZone.fee != null ? (selectedZone.fee === 0 ? " · ücretsiz" : ` · ${fmtEur(selectedZone.fee)}`) : ""}`
-                  : `~${estimatedPrepMinutes} dk`
-              }
-            />
-            <ChoiceRadio
-              checked={deliveryType === "pickup"}
-              onChange={() => setDeliveryType("pickup")}
-              primaryColor={primaryColor}
-              icon={<ShoppingBag className="w-4 h-4" strokeWidth={2.2} />}
-              label="Gel-al"
-              hint={`Restoran'dan teslim · ~${estimatedPrepMinutes} dk`}
-            />
-            {acceptsDineIn && (
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
+            {tableContext ? "Masaya servis" : "Teslimat"}
+          </h2>
+          {tableContext ? (
+            <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl p-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <Store className="w-5 h-5" strokeWidth={2.2} />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Masa {tableContext.tableLabel}
+                </div>
+                <div className="text-xs text-slate-600 dark:text-slate-400">
+                  Siparişiniz masanıza getirilir. Ödeme yemekten sonra garsondan.
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
               <ChoiceRadio
-                checked={deliveryType === "dine_in"}
-                onChange={() => setDeliveryType("dine_in")}
+                checked={deliveryType === "delivery"}
+                onChange={() => setDeliveryType("delivery")}
                 primaryColor={primaryColor}
-                icon={<Store className="w-4 h-4" strokeWidth={2.2} />}
-                label="Masada (QR ile geldiyseniz)"
-                hint="Sipariş masaya gelir, ödeme garsondan"
+                icon={<Truck className="w-4 h-4" strokeWidth={2.2} />}
+                label="Eve teslimat"
+                hint={
+                  selectedZone
+                    ? `${selectedZone.name}${selectedZone.min_order ? ` · min ${fmtEur(selectedZone.min_order, { decimals: 0 })}` : ""}${selectedZone.fee != null ? (selectedZone.fee === 0 ? " · ücretsiz" : ` · ${fmtEur(selectedZone.fee)}`) : ""}`
+                    : `~${estimatedPrepMinutes} dk`
+                }
               />
-            )}
-          </div>
+              <ChoiceRadio
+                checked={deliveryType === "pickup"}
+                onChange={() => setDeliveryType("pickup")}
+                primaryColor={primaryColor}
+                icon={<ShoppingBag className="w-4 h-4" strokeWidth={2.2} />}
+                label="Gel-al"
+                hint={`Restoran'dan teslim · ~${estimatedPrepMinutes} dk`}
+              />
+              {acceptsDineIn && (
+                <ChoiceRadio
+                  checked={deliveryType === "dine_in"}
+                  onChange={() => setDeliveryType("dine_in")}
+                  primaryColor={primaryColor}
+                  icon={<Store className="w-4 h-4" strokeWidth={2.2} />}
+                  label="Masada (QR ile geldiyseniz)"
+                  hint="Sipariş masaya gelir, ödeme garsondan"
+                />
+              )}
+            </div>
+          )}
 
           {deliveryType === "delivery" && (
             <div className="mt-4 pt-4 border-t border-slate-200/70 dark:border-slate-800 space-y-3">
