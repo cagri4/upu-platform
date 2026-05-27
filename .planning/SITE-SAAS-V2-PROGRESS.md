@@ -52,13 +52,20 @@
 - `/api/site/{personel,tedarikciler,butce,tahsilat}` — 4 yeni endpoint
 - `src/platform/payments/site-pos.ts` — PaymentProvider interface + MockSitePosProvider
 
-## 📅 Sprint 3 (12-18 sa) — Yönetsel + İletişim
+## 📅 Sprint 3 (12-18 sa) — Yönetsel + İletişim ✅ TAMAMLANDI 2026-05-27
 
-### Modüller
-- [ ] Modül 3: Duyuru & İletişim — `/tr/site-duyuru-yonetim` + WA template taslakları
-- [ ] Modül 4: Toplantı & Karar (KMK 634) — `/tr/site-toplantilar`
-- [ ] Modül 6: Bakım Planlama — `/tr/site-bakim-takvim`
-- [ ] Sandbox tenant temizliği
+### Modüller ✅
+- [x] M3 Duyuru & İletişim — `/tr/site-duyurularim` + 4 WA template taslak + provider katmanı (`1815536`)
+- [x] M4 Toplantı & Karar (KMK 634) — `/tr/site-toplantilar` + arsa payı çoğunluk hesabı (`7f5cd6f`)
+- [x] M6 Bakım Planlama — `/tr/site-bakim` + 7 standart TR preset + auto next_due shift
+- [ ] Sandbox tenant temizliği — gereksiz (sandbox yaratılmadı)
+
+### Sprint 3 sayfa & API artifact'leri
+- `/tr/site-duyurularim` (rewrite — taslak + send + 4 kanal toggle)
+- `/tr/site-toplantilar` (KMK 634 olağan/olağanüstü + gündem)
+- `/tr/site-bakim` (3 grup: vadesi geçmiş + 30 gün + diğer + "Yapıldı" tek tık)
+- `/api/site/{duyuru,toplantilar,bakim}` — 3 yeni endpoint
+- `src/platform/notifications/site-channels.ts` — provider abstraction + WA template taslakları
 
 ## 🏷 Commit Etiketleri
 - `feat(siteyonetim-v2): sprint 1 — ...`
@@ -72,7 +79,23 @@
 |---|---|---|---|---|
 | Sprint 1 | 2026-05-27 | 2026-05-27 | ~3 sa | ✅ Tamamlandı |
 | Sprint 2 | 2026-05-27 | 2026-05-27 | ~4 sa | ✅ Tamamlandı |
-| Sprint 3 | 2026-05-27 | — | — | 🟡 Başlatılıyor |
+| Sprint 3 | 2026-05-27 | 2026-05-27 | ~3 sa | ✅ Tamamlandı |
+
+## 🎉 V2 BİTTİ — 7 Modül Canlı
+
+- 4 migration · 7 modül · 16 sayfa · 13 API endpoint
+- 2 helper SQL fn + 12 RLS policy (sakin/yönetici/denetci/muhasebeci_site)
+- Mock POS + Notification provider abstraction (V2 gerçek SDK'lar buraya bağlanır)
+- 4 WA template taslak Meta onayına hazır
+- KMK 634 uyumlu toplantı yönetimi + arsa payı çoğunluk hesabı
+
+## 🚧 Sprint 3 sonrası açık konular (V2)
+- Karar defteri PDF üretim (sy_meetings.karar_defteri_pdf_url)
+- Iyzico/PayTR gerçek POS adapter
+- Bakım cron entegrasyonu (overdue otomatik + supplier mail)
+- AI Employee panel widget (Sprint 4 — ayrı brief)
+- WA Meta onay sonrası deploy
+- Sandbox tenant temizliği (yaratılmadı, gereksiz)
 
 ## 📦 Sprint 1 Commit Zinciri
 
