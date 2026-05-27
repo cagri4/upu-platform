@@ -23,6 +23,7 @@ const SITE_SIDEBAR_ITEMS: SidebarItem[] = [
   { id: "dashboard", label: "Dashboard",        icon: "🏠", href: t => `/tr/site?t=${encodeURIComponent(t)}`,                                  matchPath: "/tr/site" },
   { id: "sakinler",  label: "Sakinler",         icon: "👥", href: t => `/tr/site-sakinlerim?t=${encodeURIComponent(t)}`, matchPath: "/tr/site-sakinlerim" },
   { id: "aidat",     label: "Aidat",            icon: "💰", href: t => `/tr/site-aidat?t=${encodeURIComponent(t)}`, matchPath: "/tr/site-aidat" },
+  { id: "tahsilat",  label: "Tahsilat",         icon: "💳", href: t => `/tr/site-tahsilat?t=${encodeURIComponent(t)}`, matchPath: "/tr/site-tahsilat" },
   { id: "butce",     label: "Bütçe",            icon: "📊", href: t => `/tr/site-butce?t=${encodeURIComponent(t)}`, matchPath: "/tr/site-butce" },
   { id: "talep",     label: "Şikayet/Talep",    icon: "🔧", href: t => `/tr/site-talepler?t=${encodeURIComponent(t)}`, matchPath: "/tr/site-talepler" },
   { id: "duyuru",    label: "Etkinlik & Duyuru", icon: "📣", href: t => `/tr/site-duyurularim?t=${encodeURIComponent(t)}`, matchPath: "/tr/site-duyurularim" },
