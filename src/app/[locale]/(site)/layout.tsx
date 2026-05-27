@@ -16,6 +16,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { AdminLayout, type SidebarItem } from "@/components/admin-layout";
+import { SkeletonPanelShell } from "@/components/banking";
 
 type InitState = "loading" | "ready" | "error";
 
@@ -65,9 +66,13 @@ export default function SitePanelGroupLayout({ children }: { children: ReactNode
   }, [token]);
 
   if (state === "loading") {
+    // Banking skeleton placeholder — kum saati emoji yerine sayfa iskeleti
+    // (Çağrı 2026-05-27 onayı, İyileştirme 2).
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="text-4xl">⏳</div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 sm:p-6">
+        <div className="max-w-3xl mx-auto">
+          <SkeletonPanelShell />
+        </div>
       </div>
     );
   }
