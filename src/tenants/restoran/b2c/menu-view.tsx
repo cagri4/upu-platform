@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   UtensilsCrossed,
   Clock,
+  Sparkles,
 } from "lucide-react";
 import { useCart } from "./cart-context";
 import { cartItemCount, cartSubtotal } from "./cart-types";
@@ -47,6 +48,7 @@ export interface MenuItemFull {
   variants: Array<{ id: string; name: string; priceDiff: number; isDefault: boolean }>;
   addons: Array<{ id: string; name: string; price: number }>;
   translations?: TranslationsMap | null;
+  upsellIds?: string[];
 }
 
 function fmtEur(n: number, opts?: { decimals?: number }): string {
@@ -78,6 +80,7 @@ export function MenuView({
   const { cart, hydrated } = useCart();
   const { tableContext } = useTableContext(slug);
   const [uiLang, setUiLang] = useState<SupportedLanguage>("tr");
+  const [upsellFor, setUpsellFor] = useState<MenuItemFull | null>(null);
 
   // Lokalize edilmiş kategoriler + item'lar
   const localizedCategories = useMemo(
@@ -273,6 +276,29 @@ export function MenuView({
           item={openItem}
           primaryColor={primaryColor}
           onClose={() => setOpenItem(null)}
+          onAdded={(addedItem) => {
+            const upsellIds = addedItem.upsellIds || [];
+            if (upsellIds.length === 0) return;
+            // Sepetteki ürünler zaten ekleniyorsa tekrar önerme
+            const cartItemIds = new Set(cart.items.map((i) => i.menuItemId));
+            const candidates = localizedItems.filter(
+              (it) =>
+                upsellIds.includes(it.id) && it.isAvailable && !cartItemIds.has(it.id),
+            );
+            if (candidates.length > 0) {
+              setUpsellFor(addedItem);
+            }
+          }}
+        />
+      )}
+
+      {/* Upsell modal */}
+      {upsellFor && (
+        <UpsellModal
+          forItem={upsellFor}
+          allItems={localizedItems}
+          primaryColor={primaryColor}
+          onClose={() => setUpsellFor(null)}
         />
       )}
     </main>
@@ -347,10 +373,12 @@ function ItemModal({
   item,
   primaryColor,
   onClose,
+  onAdded,
 }: {
   item: MenuItemFull;
   primaryColor: string;
   onClose: () => void;
+  onAdded?: (item: MenuItemFull) => void;
 }) {
   const { addItem } = useCart();
 
@@ -385,6 +413,7 @@ function ItemModal({
       notes: notes.trim() || null,
     });
     onClose();
+    onAdded?.(item);
   }
 
   return (
@@ -620,6 +649,120 @@ function ItemModal({
           >
             <span>Sepete ekle</span>
             <span>{fmtEur(total)}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UpsellModal({
+  forItem,
+  allItems,
+  primaryColor,
+  onClose,
+}: {
+  forItem: MenuItemFull;
+  allItems: MenuItemFull[];
+  primaryColor: string;
+  onClose: () => void;
+}) {
+  const { addItem } = useCart();
+  const upsellIds = forItem.upsellIds || [];
+  const candidates = allItems.filter((it) => upsellIds.includes(it.id) && it.isAvailable);
+
+  if (candidates.length === 0) {
+    // Bu noktaya gelmemeli ama güvenli fallback
+    return null;
+  }
+
+  function addUpsell(item: MenuItemFull) {
+    addItem({
+      menuItemId: item.id,
+      name: item.name,
+      imageUrl: item.imageUrl,
+      basePrice: item.price,
+      variant: null,
+      addons: [],
+      quantity: 1,
+      notes: null,
+    });
+    onClose();
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-slate-900 w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl max-h-[80vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 pt-5 pb-3 text-center">
+          <div
+            className="w-12 h-12 mx-auto rounded-2xl text-white flex items-center justify-center mb-3"
+            style={{ backgroundColor: primaryColor }}
+          >
+            <Sparkles className="w-6 h-6" strokeWidth={2.2} />
+          </div>
+          <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+            Bunu da denemek ister misiniz?
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            {forItem.name} ile çok seven müşterilerin tercihi
+          </p>
+        </div>
+
+        <div className="px-5 pb-3 space-y-2">
+          {candidates.slice(0, 3).map((it) => (
+            <button
+              key={it.id}
+              type="button"
+              onClick={() => addUpsell(it)}
+              className="w-full bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-2xl p-3 flex items-center gap-3 transition active:scale-[0.99] text-left"
+            >
+              {it.imageUrl ? (
+                <div
+                  className="w-14 h-14 flex-shrink-0 rounded-xl bg-cover bg-center"
+                  style={{ backgroundImage: `url(${it.imageUrl})` }}
+                />
+              ) : (
+                <div className="w-14 h-14 flex-shrink-0 rounded-xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                  <UtensilsCrossed className="w-6 h-6 text-slate-400 dark:text-slate-500" strokeWidth={1.5} />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                  {it.name}
+                </div>
+                {it.description && (
+                  <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
+                    {it.description}
+                  </div>
+                )}
+              </div>
+              <div className="flex-shrink-0 text-right">
+                <div className="font-bold text-sm" style={{ color: primaryColor }}>
+                  +€{it.price.toLocaleString("tr-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <Plus
+                  className="w-5 h-5 mt-1 ml-auto text-white rounded-full p-0.5"
+                  style={{ backgroundColor: primaryColor }}
+                  strokeWidth={2.6}
+                />
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <div className="px-5 pb-5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full text-center text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 py-2 transition"
+          >
+            Hayır, teşekkürler
           </button>
         </div>
       </div>

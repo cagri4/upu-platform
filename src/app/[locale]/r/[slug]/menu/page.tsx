@@ -22,7 +22,7 @@ async function fetchMenu(restaurantId: string): Promise<{ categories: Category[]
       .from("rst_menu_items")
       .select(
         "id, name, description, category_id, category, price, image_url, allergens, calories, " +
-        "is_vegetarian, is_vegan, is_spicy, prep_minutes, is_available, order_index, translations",
+        "is_vegetarian, is_vegan, is_spicy, prep_minutes, is_available, order_index, translations, upsell_ids",
       )
       .eq("restaurant_id", restaurantId)
       .eq("is_active", true)
@@ -47,6 +47,7 @@ async function fetchMenu(restaurantId: string): Promise<{ categories: Category[]
     is_available: boolean;
     order_index: number;
     translations: Record<string, Record<string, string>> | null;
+    upsell_ids: string[] | null;
   }>;
   const itemIds = itemRows.map((i) => i.id);
   let variants: { id: string; menu_item_id: string; name: string; price_diff: number; is_default: boolean; order_index: number }[] = [];
@@ -95,6 +96,7 @@ async function fetchMenu(restaurantId: string): Promise<{ categories: Category[]
       variants: itemVariants,
       addons: itemAddons,
       translations: (it.translations || null) as MenuItemFull["translations"],
+      upsellIds: (it.upsell_ids || []) as string[],
     };
   });
 
