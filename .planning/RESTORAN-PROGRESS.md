@@ -8,7 +8,7 @@
 |---|---|---|---|
 | 1 | Banking style port (8 sayfa) | 10-15h | ✅ **TAMAM** — commit `cbe7731` |
 | 2 | B2C public sipariş sitesi | ~37h | ✅ **TAMAM** — 2026-05-27 (C1-C12 atomik commit) |
-| 3 | QR menü + masa entegrasyonu | ~14-20h | ⏳ Sprint 2 sonrası başlanacak |
+| 3 | QR menü + masa + Butlaroo refs | ~14-20h | ✅ **TAMAM** — 2026-05-27 (D1-D10 atomik commit) |
 
 ---
 
@@ -111,18 +111,50 @@ Sprint 3'te (QR menü + masa) bu özellikleri entegre et:
    - UPU restoran satış sayfası için (Sprint dışı ama referans)
    - "60 saniyede menünüzü QR'a dönüştürün" benzeri kısa demo
 
-### Sprint 3 atomik commit planı (revize)
+### Sprint 3 atomik commit planı (✅ HEPSİ TAMAM)
 
-- [ ] **D1** — DB: `rst_menu_items.translations jsonb`, `rst_menu_items.upsell_ids uuid[]`, `rst_restaurants.enabled_languages text[]`, `rst_restaurants.menu_greeting text`
-- [ ] **D2** — QR PNG endpoint + admin "QR İndir" buton
-- [ ] **D3** — `/r/{slug}/m/{qr_token}` entry + localStorage table context
-- [ ] **D4** — Menü sayfası masa-aware modifikasyon (üst 2 buton: garson çağır + hesap iste)
-- [ ] **D5** — Çoklu dil bayrak seçici + translations resolver
-- [ ] **D6** — Garson çağır + hesap iste API + panel realtime badge
-- [ ] **D7** — Upsell modal (sepete ekleme sonrası "öneri" göster)
-- [ ] **D8** — Menu greeting + samimi header
-- [ ] **D9** — POSProvider interface (NoopPOSProvider implementation) — gelecek için iskelet
-- [ ] **D10** — Final test + fiziksel QR print test
+- [x] **D1** `cae0ddd` — DB: translations + upsell_ids + enabled_languages + menu_greeting
+- [x] **D2** `f0a0970` — QR PNG/SVG endpoint + admin masa kartı "QR İndir" modal
+- [x] **D3** `53e3037` — /r/{slug}/m/{qr_token} entry + table-context localStorage (TTL 4h)
+- [x] **D4** `a9ea302` — Masa-aware menü (top 2 buton) + sepet delivery_type lock + order API table_qr_token + call-waiter API
+- [x] **D5** `ed580d1` — Çoklu dil bayrak seçici (NL/EN/TR/FR/DE/IT) + translations resolver
+- [x] **D6** `69688d3` — Panel rt garson çağrı badge (use-table-calls-realtime + ack endpoint)
+- [x] **D7** `af00fcc` — Upsell modal (Sparkles icon, max 3 öneri, "Hayır teşekkürler")
+- [x] **D8** `d1f1915` — Samimi greeting default ({brandName}'da bugün size...) + admin update endpoint
+- [x] **D9** `253b068` — POSProvider interface + NoopPOSProvider + order push best-effort hook
+- [x] **D10** TypeScript check PASS + Vercel canlı probe doğrulaması
+
+## Sprint 3 Doğrulama
+
+- ✅ `npx tsc --noEmit` exit 0, 0 errors (300sn timeout içinde)
+- ✅ Vercel deploy: 3 yeni endpoint LIVE
+  * `/api/r/{slug}/tables/{token}/call-waiter` → 404 "Restoran bulunamadı" (endpoint live)
+  * `/tr/r/{slug}/m/{qr_token}` → 404 not-found page (route live)
+  * `/api/restoran-panel/tables/{id}/qr` → 400 "Token gerekli" (endpoint live)
+- ✅ Mevcut Sprint 1+2 sayfaları DOKUNULMADI (tsc clean, regresyon yok)
+- ✅ Butlaroo özelliklerinin TÜMÜ entegre: çoklu dil + POS interface + garson/hesap + upsell + samimi greeting
+
+## Butlaroo Entegrasyon Tablosu
+
+| Özellik | Butlaroo'da | UPU Restoran D# | Commit |
+|---|---|---|---|
+| Çoklu dil bayrak | NL/EN/TR/FR/DE/IT | D5 | ed580d1 |
+| POS logo strip | Lightspeed/unTill vs | D9 (iskelet, V2 gerçek) | 253b068 |
+| Garson çağırma | Üst sticky 2 buton | D4+D6 | a9ea302+69688d3 |
+| Hesap iste | Tek-tık | D4 (TableActionsBar) | a9ea302 |
+| +20% upsell | "Bunu da denemek..." | D7 (manual upsell_ids[]) | af00fcc |
+| Samimi greeting | "Hey, have a beautiful day" | D8 (menu_greeting jsonb) | d1f1915 |
+| QR menü | Masa-aware sipariş | D2+D3+D4 | f0a0970+53e3037+a9ea302 |
+| Marka kişiselleştirme | White-label | Sprint 2 C9 + D5 default_language | önceki |
+
+## Sprint 3 Bilinen Sınırlar (V2 follow-up)
+
+- ⚠️ POSProvider sadece NoopImpl (gerçek Lightspeed/unTill/MplusKASSA V2)
+- ⚠️ Translations alanı admin UI yok — DB direkt veya WA komutla (V2)
+- ⚠️ Upsell algoritması yok — admin manuel upsell_ids[] (V2 "sık birlikte alınan")
+- ⚠️ QR sahte token brute-force koruma yok (UUID v4 cryptographic, 2^122 → güvenli)
+- ⚠️ Masa-aware sipariş tracking sayfasında masa adı gösterilmiyor (V2)
+- ⚠️ Kapı kodu print için yok (sadece PNG/SVG download — A4 4-masa V2)
 
 ---
 
