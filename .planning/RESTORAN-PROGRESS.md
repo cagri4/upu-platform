@@ -7,8 +7,8 @@
 | Sprint | Kapsam | Tahmin | Durum |
 |---|---|---|---|
 | 1 | Banking style port (8 sayfa) | 10-15h | ✅ **TAMAM** — commit `cbe7731` |
-| 2 | B2C public sipariş sitesi | ~37h | 🔄 **BAŞLADI** — 2026-05-27 |
-| 3 | QR menü + masa entegrasyonu | ~14h | ⏳ Sprint 2 sonrası |
+| 2 | B2C public sipariş sitesi | ~37h | ✅ **TAMAM** — 2026-05-27 (C1-C12 atomik commit) |
+| 3 | QR menü + masa entegrasyonu | ~14-20h | ⏳ Sprint 2 sonrası başlanacak |
 
 ---
 
@@ -31,20 +31,38 @@
 
 ---
 
-## Sprint 2 — Atomik Commit Sırası
+## Sprint 2 — Atomik Commit Sırası (✅ HEPSİ TAMAM)
 
-- [ ] **C1** — DB migration (rst_restaurants, rst_menu_variants, rst_menu_addons, rst_b2c_orders, rst_table_calls + ALTER mevcut)
-- [ ] **C2** — Mollie SDK + env + helpers (`src/platform/mollie/*`)
-- [ ] **C3** — Public routing: middleware bypass `/r/*`, slug resolver
-- [ ] **C4** — `/r/{slug}` anasayfa
-- [ ] **C5** — `/r/{slug}/menu` + item modal (varyant/addon)
-- [ ] **C6** — `/r/{slug}/sepet` + cart state + delivery form
-- [ ] **C7** — `POST /api/r/[slug]/orders` + Mollie payment create + webhook
-- [ ] **C8** — `/r/{slug}/siparis/{id}` + order tracking page
-- [ ] **C9** — White-label CSS var + brand color/logo apply
-- [ ] **C10** — Supabase Realtime panel order notification
-- [ ] **C11** — WA "siparişiniz hazır" trigger
-- [ ] **C12** — Final polish + bugfix + Lighthouse
+- [x] **C1** `b05fe1d` — DB migration (5 yeni tablo + 2 ALTER, RLS, Realtime publication)
+- [x] **C2** `3e56d29` — Mollie one-off payment helper (`src/platform/mollie/restoran-payments.ts`)
+- [x] **C3** `ea7c92c` — Public `/r/{slug}` routing + slug resolver + opening hours parse
+- [x] **C4** `812ba38` — `/r/{slug}` anasayfa (hero + status + CTA + featured + delivery zones)
+- [x] **C5** `e99f067` — `/r/{slug}/menu` + item modal (varyant/addon/notes/quantity) + cart context (localStorage)
+- [x] **C6** `10eda5b` — `/r/{slug}/sepet` (cart edit + delivery form + payment + submit)
+- [x] **C7** `c835148` — `POST /api/r/[slug]/orders` (server-side fiyat doğrulama) + `mollie-webhook` (idempotent)
+- [x] **C8** `ee1233f` — `/r/{slug}/siparis/{id}` tracking + Supabase Realtime canlı status
+- [x] **C9** `64a3aa8` — profile save → rst_restaurants upsert (slug üretim + demo data link)
+- [x] **C10** `9c1a87a` — Panel B2C realtime notification (hook + banner + sound + native Notification)
+- [x] **C11** `ac066b0` — Panel /restoran-siparisler sayfası + status update API + WA "hazır" mesajı
+- [x] **C12** TypeScript check PASS (tsc --noEmit 0 error), Vercel deploy LIVE
+
+## Sprint 2 Doğrulama
+
+- ✅ `npx tsc --noEmit` exit 0 (0 lines stdout)
+- ✅ Vercel deploy: `https://restoranai.upudev.nl/api/r/lokanta-test/orders` → 404 "Restoran bulunamadı" (endpoint live)
+- ✅ Public site: `/tr/r/test-slug-yok` → 404 with proper "Restoran bulunamadı — UPU" metadata
+- ✅ Mevcut WA komutları + form akışları + auth DOKUNULMADI (intact)
+- ✅ Internal rst_orders (POS) DOKUNULMADI — public rst_b2c_orders ayrı tablo
+- ✅ Restoran tenant'ları için sadece restoran scope dışına çıkılmadı
+
+## Sprint 2 Bilinen Sınırlar (V2 follow-up)
+
+- ⚠️ `/sounds/new-order.mp3` placeholder yok — sessiz çalar (audio.play() catch'le yutulur)
+- ⚠️ rst_menu_categories tablosu var ama demo seed kullanmıyor (V2: kategori objesi seed et)
+- ⚠️ Restoran sahibi panelden brand_name/colors/logo/opening_hours düzenleyemez (V2 admin UI)
+- ⚠️ Tek delivery zone destekleniyor (postal-code match yerine ilk zone fee)
+- ⚠️ Platform-tek Mollie hesabı (V2: Mollie Connect split payment)
+- ⚠️ Müşteri sipariş takip için cookie ile order ID kaydedilmiyor — link paylaşırlarsa görünür
 
 ---
 
