@@ -32,7 +32,7 @@ const SITE_SIDEBAR_ITEMS: SidebarItem[] = [
   { id: "personel",  label: "Personel",         icon: "🛠", href: t => `/tr/site-personelim?t=${encodeURIComponent(t)}`, matchPath: "/tr/site-personelim" },
   { id: "tedarikci", label: "Tedarikçi",        icon: "🤝", href: t => `/tr/site-tedarikciler?t=${encodeURIComponent(t)}`, matchPath: "/tr/site-tedarikciler" },
   { id: "roller",    label: "Roller",           icon: "🛡", href: t => `/tr/site-yonetim-rolleri?t=${encodeURIComponent(t)}`, matchPath: "/tr/site-yonetim-rolleri" },
-  { id: "profil",    label: "Profil & Ayarlar", icon: "⚙️",  href: t => `/tr/panel-ayarlari?t=${encodeURIComponent(t)}`, matchPath: "/tr/panel-ayarlari" },
+  { id: "profil",    label: "Profil & Ayarlar", icon: "⚙️",  href: t => `/tr/site-ayarlari?t=${encodeURIComponent(t)}`, matchPath: "/tr/site-ayarlari" },
 ];
 
 export default function SitePanelGroupLayout({ children }: { children: ReactNode }) {
