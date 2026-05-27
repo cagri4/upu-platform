@@ -11,12 +11,18 @@ import {
   Download,
   X,
   ExternalLink,
+  Bell,
+  Receipt,
+  AlertTriangle,
+  MessageCircle,
+  Check,
 } from "lucide-react";
 import { RestoranPanelShell } from "@/tenants/restoran/components/panel-shell";
 import {
   HeroBanner,
   Skeleton,
 } from "@/tenants/restoran/components/banking";
+import { useTableCallsRealtime, type PendingTableCall } from "@/tenants/restoran/b2c/use-table-calls-realtime";
 
 interface Table {
   id: string;
@@ -39,15 +45,16 @@ const STATUS_META: Record<string, { label: string; tone: Tone; Icon: typeof Circ
 export default function TablesPage() {
   return (
     <RestoranPanelShell>
-      {({ token }) => <Grid token={token} />}
+      {({ token, init }) => <Grid token={token} restaurantId={init.restaurantId} />}
     </RestoranPanelShell>
   );
 }
 
-function Grid({ token }: { token: string }) {
+function Grid({ token, restaurantId }: { token: string; restaurantId: string | null }) {
   const [items, setItems] = useState<Table[] | null>(null);
   const [error, setError] = useState<string>("");
   const [qrTable, setQrTable] = useState<Table | null>(null);
+  const { pendingByTable, newCall, dismissNew, ack } = useTableCallsRealtime(restaurantId, token);
 
   useEffect(() => {
     (async () => {
@@ -70,14 +77,32 @@ function Grid({ token }: { token: string }) {
   const free = (items || []).filter((t) => t.status === "free").length;
   const occupied = (items || []).filter((t) => t.status === "occupied").length;
 
+  const pendingCount = Object.keys(pendingByTable).length;
+
   return (
     <div className="space-y-5 sm:space-y-6">
+      {newCall && (
+        <div className="bg-rose-50 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 text-rose-800 dark:text-rose-300 rounded-2xl px-4 py-3 text-sm flex items-center justify-between gap-3 animate-pulse">
+          <span className="flex items-center gap-2 font-semibold">
+            <Bell className="w-4 h-4" strokeWidth={2.4} />
+            🛎 Yeni çağrı! Aşağıdaki masaya bakın
+          </span>
+          <button
+            type="button"
+            onClick={dismissNew}
+            className="text-xs font-semibold text-rose-700 dark:text-rose-300 hover:underline"
+          >
+            Tamam
+          </button>
+        </div>
+      )}
+
       <HeroBanner
         Icon={UtensilsCrossed}
         title="Masalar"
         subtitle={
           items
-            ? `${total} masa · ${free} boş · ${occupied} dolu · QR kodları aşağıdan indirin`
+            ? `${total} masa · ${free} boş · ${occupied} dolu${pendingCount > 0 ? ` · 🛎 ${pendingCount} çağrı bekliyor` : ""}`
             : "Masalarınız yükleniyor…"
         }
       />
@@ -117,34 +142,42 @@ function Grid({ token }: { token: string }) {
                 `Hesap: €${t.current_check_amount.toLocaleString("tr-NL", { maximumFractionDigits: 0 })}`
               );
             }
+            const pending = pendingByTable[t.id];
             return (
               <div
                 key={t.id}
-                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm px-4 py-3.5 flex items-center gap-3"
+                className={`bg-white dark:bg-slate-900 rounded-2xl border shadow-sm px-4 py-3.5 ${
+                  pending
+                    ? "border-2 border-rose-400 dark:border-rose-600 animate-pulse"
+                    : "border-slate-200/70 dark:border-slate-800"
+                }`}
               >
-                <div className={`w-10 h-10 rounded-xl ${meta.bg} ${meta.color} flex items-center justify-center flex-shrink-0`}>
-                  <StatusIcon className="w-5 h-5" strokeWidth={2.2} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
-                    Masa {t.label}
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl ${meta.bg} ${meta.color} flex items-center justify-center flex-shrink-0`}>
+                    <StatusIcon className="w-5 h-5" strokeWidth={2.2} />
                   </div>
-                  {parts.length > 0 && (
-                    <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                      {parts.join(" · ")}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                      Masa {t.label}
                     </div>
-                  )}
+                    {parts.length > 0 && (
+                      <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                        {parts.join(" · ")}
+                      </div>
+                    )}
+                  </div>
+                  <span className={`text-xs font-semibold ${meta.color}`}>{meta.label}</span>
+                  <button
+                    type="button"
+                    onClick={() => setQrTable(t)}
+                    className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-amber-100 dark:hover:bg-amber-950/30 text-slate-700 dark:text-slate-300 hover:text-amber-700 dark:hover:text-amber-300 text-xs font-medium transition active:scale-95"
+                    aria-label={`Masa ${t.label} QR kodu`}
+                  >
+                    <QrCode className="w-3.5 h-3.5" strokeWidth={2.4} />
+                    QR
+                  </button>
                 </div>
-                <span className={`text-xs font-semibold ${meta.color}`}>{meta.label}</span>
-                <button
-                  type="button"
-                  onClick={() => setQrTable(t)}
-                  className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-amber-100 dark:hover:bg-amber-950/30 text-slate-700 dark:text-slate-300 hover:text-amber-700 dark:hover:text-amber-300 text-xs font-medium transition active:scale-95"
-                  aria-label={`Masa ${t.label} QR kodu`}
-                >
-                  <QrCode className="w-3.5 h-3.5" strokeWidth={2.4} />
-                  QR
-                </button>
+                {pending && <PendingCallBanner call={pending} onAck={ack} />}
               </div>
             );
           })}
@@ -154,6 +187,48 @@ function Grid({ token }: { token: string }) {
       {qrTable && (
         <QrModal token={token} table={qrTable} onClose={() => setQrTable(null)} />
       )}
+    </div>
+  );
+}
+
+function PendingCallBanner({
+  call,
+  onAck,
+}: {
+  call: PendingTableCall;
+  onAck: (callId: string, resolved?: boolean) => void;
+}) {
+  const reasonMeta = {
+    call: { label: "Garson çağrısı", Icon: Bell, color: "text-rose-700 dark:text-rose-300" },
+    bill_request: { label: "Hesap istendi", Icon: Receipt, color: "text-amber-700 dark:text-amber-300" },
+    complaint: { label: "Şikayet", Icon: AlertTriangle, color: "text-rose-700 dark:text-rose-300" },
+    other: { label: "Başka", Icon: MessageCircle, color: "text-slate-700 dark:text-slate-300" },
+  }[call.reason];
+  const Icon = reasonMeta.Icon;
+  const ageSeconds = Math.floor((Date.now() - new Date(call.called_at).getTime()) / 1000);
+  const ageLabel = ageSeconds < 60 ? `${ageSeconds}sn` : `${Math.floor(ageSeconds / 60)}dk önce`;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-rose-200 dark:border-rose-900/50 flex items-center gap-2">
+      <Icon className={`w-4 h-4 flex-shrink-0 ${reasonMeta.color}`} strokeWidth={2.4} />
+      <div className="flex-1 min-w-0">
+        <div className={`text-xs font-semibold ${reasonMeta.color}`}>
+          🛎 {reasonMeta.label} · {ageLabel}
+        </div>
+        {call.notes && (
+          <div className="text-xs text-slate-600 dark:text-slate-400 italic mt-0.5">
+            “{call.notes}”
+          </div>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => onAck(call.id, true)}
+        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition active:scale-95"
+      >
+        <Check className="w-3.5 h-3.5" strokeWidth={2.4} />
+        Yanıtladım
+      </button>
     </div>
   );
 }
