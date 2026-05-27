@@ -61,7 +61,7 @@ export async function getRestaurantBySlug(
     .maybeSingle();
 
   if (error || !data) return null;
-  return data as PublicRestaurant;
+  return data as unknown as PublicRestaurant;
 }
 
 /**
