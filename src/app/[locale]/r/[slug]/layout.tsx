@@ -9,6 +9,7 @@
  */
 import { notFound } from "next/navigation";
 import { getRestaurantBySlug } from "@/tenants/restoran/b2c/restaurant-resolver";
+import { CartProvider } from "@/tenants/restoran/b2c/cart-context";
 
 interface RouteParams {
   locale: string;
@@ -56,9 +57,11 @@ export default async function RestaurantPublicLayout({
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: cssVars }} />
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-        {children}
-      </div>
+      <CartProvider restaurantSlug={slug}>
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+          {children}
+        </div>
+      </CartProvider>
     </>
   );
 }

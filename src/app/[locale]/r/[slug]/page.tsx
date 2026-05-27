@@ -7,8 +7,8 @@ import {
   UtensilsCrossed,
   CalendarDays,
   Navigation,
-  Instagram,
-  Facebook,
+  Globe,
+  Share2,
 } from "lucide-react";
 import {
   getRestaurantBySlug,
@@ -247,7 +247,7 @@ export default async function RestaurantHomePage({
                 aria-label="Instagram"
                 className="hover:text-slate-700 dark:hover:text-slate-300 transition"
               >
-                <Instagram className="w-5 h-5" strokeWidth={2.2} />
+                <Globe className="w-5 h-5" strokeWidth={2.2} />
               </a>
             )}
             {restaurant.social.facebook && (
@@ -258,7 +258,7 @@ export default async function RestaurantHomePage({
                 aria-label="Facebook"
                 className="hover:text-slate-700 dark:hover:text-slate-300 transition"
               >
-                <Facebook className="w-5 h-5" strokeWidth={2.2} />
+                <Share2 className="w-5 h-5" strokeWidth={2.2} />
               </a>
             )}
           </div>
