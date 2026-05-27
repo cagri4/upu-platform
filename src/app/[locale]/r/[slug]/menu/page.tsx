@@ -14,7 +14,7 @@ async function fetchMenu(restaurantId: string): Promise<{ categories: Category[]
   const [{ data: catData }, { data: itemData }] = await Promise.all([
     sb
       .from("rst_menu_categories")
-      .select("id, name, description, image_url, order_index")
+      .select("id, name, description, image_url, order_index, translations")
       .eq("restaurant_id", restaurantId)
       .eq("is_available", true)
       .order("order_index", { ascending: true }),
@@ -22,7 +22,7 @@ async function fetchMenu(restaurantId: string): Promise<{ categories: Category[]
       .from("rst_menu_items")
       .select(
         "id, name, description, category_id, category, price, image_url, allergens, calories, " +
-        "is_vegetarian, is_vegan, is_spicy, prep_minutes, is_available, order_index",
+        "is_vegetarian, is_vegan, is_spicy, prep_minutes, is_available, order_index, translations",
       )
       .eq("restaurant_id", restaurantId)
       .eq("is_active", true)
@@ -46,6 +46,7 @@ async function fetchMenu(restaurantId: string): Promise<{ categories: Category[]
     prep_minutes: number | null;
     is_available: boolean;
     order_index: number;
+    translations: Record<string, Record<string, string>> | null;
   }>;
   const itemIds = itemRows.map((i) => i.id);
   let variants: { id: string; menu_item_id: string; name: string; price_diff: number; is_default: boolean; order_index: number }[] = [];
@@ -93,14 +94,22 @@ async function fetchMenu(restaurantId: string): Promise<{ categories: Category[]
       isAvailable: !!it.is_available,
       variants: itemVariants,
       addons: itemAddons,
+      translations: (it.translations || null) as MenuItemFull["translations"],
     };
   });
 
-  const categories: Category[] = (catData || []).map((c) => ({
+  const categories: Category[] = ((catData || []) as unknown as Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    image_url: string | null;
+    translations: Record<string, Record<string, string>> | null;
+  }>).map((c) => ({
     id: c.id,
     name: c.name,
     description: c.description,
     imageUrl: c.image_url,
+    translations: (c.translations || null) as Category["translations"],
   }));
 
   return { categories, items };
@@ -113,15 +122,16 @@ export default async function MenuPage({ params }: { params: Promise<RouteParams
 
   const { categories, items } = await fetchMenu(restaurant.id);
 
-  // Restoran metadata'sından menu_greeting al (Sprint 3 D1'de eklendi)
-  // PublicRestaurant tipinde yok — DB'den ek lookup
+  // Restoran metadata'sından menu_greeting + enabled_languages + default_language al (Sprint 3 D1)
   const sb2 = getServiceClient();
   const { data: rest2 } = await sb2
     .from("rst_restaurants")
-    .select("menu_greeting")
+    .select("menu_greeting, enabled_languages, default_language")
     .eq("id", restaurant.id)
     .maybeSingle();
   const menuGreeting = (rest2?.menu_greeting as string | null) || null;
+  const enabledLanguages = (rest2?.enabled_languages as string[] | null) || ["tr", "nl", "en"];
+  const defaultLanguage = (rest2?.default_language as string | null) || "tr";
 
   return (
     <MenuView
@@ -132,6 +142,8 @@ export default async function MenuPage({ params }: { params: Promise<RouteParams
       categories={categories}
       items={items}
       menuGreeting={menuGreeting}
+      enabledLanguages={enabledLanguages}
+      defaultLanguage={defaultLanguage}
     />
   );
 }

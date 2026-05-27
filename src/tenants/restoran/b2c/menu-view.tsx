@@ -18,12 +18,15 @@ import { useCart } from "./cart-context";
 import { cartItemCount, cartSubtotal } from "./cart-types";
 import { useTableContext } from "./use-table-context";
 import { TableActionsBar } from "./table-actions-bar";
+import { LanguagePicker } from "./language-picker";
+import { resolveTranslation, type SupportedLanguage, type TranslationsMap } from "./i18n";
 
 export interface Category {
   id: string;
   name: string;
   description: string | null;
   imageUrl: string | null;
+  translations?: TranslationsMap | null;
 }
 
 export interface MenuItemFull {
@@ -43,6 +46,7 @@ export interface MenuItemFull {
   isAvailable: boolean;
   variants: Array<{ id: string; name: string; priceDiff: number; isDefault: boolean }>;
   addons: Array<{ id: string; name: string; price: number }>;
+  translations?: TranslationsMap | null;
 }
 
 function fmtEur(n: number, opts?: { decimals?: number }): string {
@@ -58,6 +62,8 @@ export function MenuView({
   categories,
   items,
   menuGreeting,
+  enabledLanguages,
+  defaultLanguage,
 }: {
   locale: string;
   slug: string;
@@ -66,28 +72,50 @@ export function MenuView({
   categories: Category[];
   items: MenuItemFull[];
   menuGreeting?: string | null;
+  enabledLanguages?: string[];
+  defaultLanguage?: string;
 }) {
   const { cart, hydrated } = useCart();
   const { tableContext } = useTableContext(slug);
+  const [uiLang, setUiLang] = useState<SupportedLanguage>("tr");
+
+  // Lokalize edilmiş kategoriler + item'lar
+  const localizedCategories = useMemo(
+    () =>
+      categories.map((c) => ({
+        ...c,
+        name: resolveTranslation(c.translations, "name", uiLang, c.name) || c.name,
+      })),
+    [categories, uiLang],
+  );
+  const localizedItems = useMemo(
+    () =>
+      items.map((it) => ({
+        ...it,
+        name: resolveTranslation(it.translations, "name", uiLang, it.name) || it.name,
+        description: resolveTranslation(it.translations, "description", uiLang, it.description),
+      })),
+    [items, uiLang],
+  );
   const [activeCatId, setActiveCatId] = useState<string | null>(
     categories[0]?.id || null,
   );
   const [openItem, setOpenItem] = useState<MenuItemFull | null>(null);
   const categoryRefs = useRef<Record<string, HTMLElement | null>>({});
 
-  // Kategori → items map
+  // Kategori → items map (lokalize üzerinden)
   const itemsByCategory = useMemo(() => {
     const map: Record<string, MenuItemFull[]> = {};
-    for (const it of items) {
+    for (const it of localizedItems) {
       const k = it.categoryId || "_uncategorized";
       (map[k] = map[k] || []).push(it);
     }
     return map;
-  }, [items]);
+  }, [localizedItems]);
 
   // "Kategorisi yok" kalemleri için pseudo-category
   const allCategories: Category[] = useMemo(() => {
-    const base = [...categories];
+    const base = [...localizedCategories];
     if (itemsByCategory["_uncategorized"]) {
       base.push({
         id: "_uncategorized",
@@ -97,7 +125,7 @@ export function MenuView({
       });
     }
     return base;
-  }, [categories, itemsByCategory]);
+  }, [localizedCategories, itemsByCategory]);
 
   function scrollToCategory(catId: string) {
     setActiveCatId(catId);
@@ -130,6 +158,14 @@ export function MenuView({
               {tableContext ? `Masa ${tableContext.tableLabel}` : "Menü"}
             </div>
           </div>
+          {enabledLanguages && enabledLanguages.length > 1 && (
+            <LanguagePicker
+              slug={slug}
+              enabledLanguages={enabledLanguages}
+              defaultLanguage={defaultLanguage || "tr"}
+              onChange={setUiLang}
+            />
+          )}
         </div>
 
         {/* Masa-aware: Garson Çağır + Hesap İste */}
