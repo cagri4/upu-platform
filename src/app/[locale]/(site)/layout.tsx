@@ -44,12 +44,19 @@ export default function SitePanelGroupLayout({ children }: { children: ReactNode
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [buildingName, setBuildingName] = useState<string | null>(null);
 
+  const [errorCode, setErrorCode] = useState<string | null>(null);
+
   useEffect(() => {
     const qs = token ? `?t=${encodeURIComponent(token)}` : "";
     fetch(`/api/site/init${qs}`, { credentials: "same-origin" })
       .then((r) => r.json())
       .then((d) => {
-        if (d?.error) { setState("error"); setError(d.error); return; }
+        if (d?.error) {
+          setState("error");
+          setError(d.error);
+          setErrorCode(d.code || null);
+          return;
+        }
         setDisplayName(d.displayName ?? null);
         setBuildingName(d.buildingName ?? null);
         setState("ready");
@@ -66,17 +73,28 @@ export default function SitePanelGroupLayout({ children }: { children: ReactNode
   }
 
   if (state === "error") {
+    const isExpired = errorCode === "expired" || errorCode === "invalid";
+    const waMsg = isExpired
+      ? "SITEYONETIM: Yeni link"
+      : "SITEYONETIM: Yardım";
+    const waUrl = `https://wa.me/31644967207?text=${encodeURIComponent(waMsg)}`;
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">
-          <div className="text-4xl mb-3">⚠️</div>
-          <h1 className="text-xl font-bold mb-2">Hata</h1>
-          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
+          <div className="text-4xl mb-3">{isExpired ? "⏰" : "⚠️"}</div>
+          <h1 className="text-xl font-bold mb-2">
+            {isExpired ? "Linkin süresi dolmuş" : "Hata"}
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
+            {isExpired
+              ? "Güvenlik için linkler 24 saat sonra deaktif olur. WhatsApp'tan yeni link isteyin."
+              : error}
+          </p>
           <a
-            href="https://wa.me/31644967207"
-            className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg"
+            href={waUrl}
+            className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition active:scale-[0.98]"
           >
-            WhatsApp&apos;a dön
+            {isExpired ? "📲 WhatsApp'tan yeni link iste" : "WhatsApp'a dön"}
           </a>
         </div>
       </div>

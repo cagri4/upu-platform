@@ -749,7 +749,8 @@ async function handleWebpanelShared(ctx: WaContext, tenant: ReturnType<typeof ge
     const supabase = getServiceClient();
     const { randomBytes } = await import("crypto");
     const token = randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    // Magic-link TTL: 24 saat (Çağrı 2026-05-27 onayı — eski 15dk ux blocker)
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
     await supabase.from("magic_link_tokens").insert({
       user_id: ctx.userId,

@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
   if (!userId) return NextResponse.redirect(`${APP_URL}/tr`);
 
   const token = randomBytes(16).toString("hex");
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 saat
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 saat (Çağrı 2026-05-27 onayı)
   await sb.from("magic_link_tokens").insert({
     user_id: userId,
     token,
