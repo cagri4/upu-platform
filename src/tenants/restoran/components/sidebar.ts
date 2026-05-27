@@ -9,6 +9,7 @@ import type { SidebarItem } from "@/components/admin-layout";
 
 export const RESTORAN_SIDEBAR: SidebarItem[] = [
   { id: "dashboard",    label: "Dashboard",     icon: "🏠",  href: t => `/tr/restoran-panel?t=${encodeURIComponent(t)}`,         matchPath: "/tr/restoran-panel" },
+  { id: "siparisler",   label: "Siparişler",    icon: "🛍",  href: t => `/tr/restoran-siparisler?t=${encodeURIComponent(t)}`,    matchPath: "/tr/restoran-siparisler" },
   { id: "rezervasyon",  label: "Rezervasyonlar", icon: "📅", href: t => `/tr/restoran-rezervasyonlar?t=${encodeURIComponent(t)}`, matchPath: "/tr/restoran-rezervasyonlar" },
   { id: "masalar",      label: "Masalar",       icon: "🍽",  href: t => `/tr/restoran-masalar?t=${encodeURIComponent(t)}`,       matchPath: "/tr/restoran-masalar" },
   { id: "mudavimler",   label: "Müdavimler",    icon: "💝",  href: t => `/tr/restoran-mudavimler?t=${encodeURIComponent(t)}`,    matchPath: "/tr/restoran-mudavimler" },
