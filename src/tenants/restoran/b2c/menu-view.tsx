@@ -68,7 +68,7 @@ export function MenuView({
     categories[0]?.id || null,
   );
   const [openItem, setOpenItem] = useState<MenuItemFull | null>(null);
-  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const categoryRefs = useRef<Record<string, HTMLElement | null>>({});
 
   // Kategori → items map
   const itemsByCategory = useMemo(() => {

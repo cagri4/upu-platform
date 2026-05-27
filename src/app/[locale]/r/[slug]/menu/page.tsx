@@ -29,7 +29,25 @@ async function fetchMenu(restaurantId: string): Promise<{ categories: Category[]
       .order("order_index", { ascending: true }),
   ]);
 
-  const itemIds = (itemData || []).map((i) => i.id);
+  // Supabase select dönüş tipi GenericStringError olarak inferred — cast.
+  const itemRows = (itemData || []) as unknown as Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    category_id: string | null;
+    category: string | null;
+    price: number;
+    image_url: string | null;
+    allergens: string[] | null;
+    calories: number | null;
+    is_vegetarian: boolean;
+    is_vegan: boolean;
+    is_spicy: boolean;
+    prep_minutes: number | null;
+    is_available: boolean;
+    order_index: number;
+  }>;
+  const itemIds = itemRows.map((i) => i.id);
   let variants: { id: string; menu_item_id: string; name: string; price_diff: number; is_default: boolean; order_index: number }[] = [];
   let addons: { id: string; menu_item_id: string; name: string; price: number; order_index: number }[] = [];
 
@@ -50,7 +68,7 @@ async function fetchMenu(restaurantId: string): Promise<{ categories: Category[]
     addons = (aData || []) as typeof addons;
   }
 
-  const items: MenuItemFull[] = (itemData || []).map((it) => {
+  const items: MenuItemFull[] = itemRows.map((it) => {
     const itemVariants = variants
       .filter((v) => v.menu_item_id === it.id)
       .map((v) => ({ id: v.id, name: v.name, priceDiff: Number(v.price_diff) || 0, isDefault: v.is_default }));
