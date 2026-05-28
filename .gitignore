@@ -51,3 +51,9 @@ scrape-log.txt
 # Local tools (sahibinden-bridge node_modules + lockfile)
 tools/sahibinden-bridge/node_modules/
 tools/sahibinden-bridge/package-lock.json
+
+# gstack security reports / artifacts (keep local)
+.gstack/
+
+# graphify generated graph artifacts
+graphify-out/

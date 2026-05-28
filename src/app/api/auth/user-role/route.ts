@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuth } from "@/platform/auth/require-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
-  if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
+  const auth = await requireAuth(req);
+  if ("error" in auth) return auth.error;
+  const userId = auth.userId;
 
   const supabase = getServiceClient();
   const { data } = await supabase
@@ -14,5 +16,6 @@ export async function GET(req: NextRequest) {
     .eq("id", userId)
     .single();
 
-  return NextResponse.json({ role: data?.role || "admin", dealerId: data?.dealer_id || null });
+  // Fail closed: unknown/missing profile gets least privilege, never "admin".
+  return NextResponse.json({ role: data?.role || "user", dealerId: data?.dealer_id || null });
 }

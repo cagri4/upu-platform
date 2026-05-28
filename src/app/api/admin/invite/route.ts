@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/platform/auth/supabase';
+import { requireAdminUser } from '@/platform/admin/auth';
 import { randomBytes } from 'crypto';
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdminUser(req);
+  if ("error" in auth) return auth.error;
+
   try {
     const body = await req.json();
     const { tenantId, name, email, phone, type } = body;

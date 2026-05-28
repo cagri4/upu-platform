@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuth } from "@/platform/auth/require-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +14,12 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireAuth(req);
+    if ("error" in auth) return auth.error;
+    const userId = auth.userId;
     const body = await req.json();
-    const { userId, csvData } = body;
-    if (!userId || !csvData) return NextResponse.json({ error: "userId and csvData required" }, { status: 400 });
+    const { csvData } = body;
+    if (!csvData) return NextResponse.json({ error: "csvData required" }, { status: 400 });
 
     const supabase = getServiceClient();
     const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", userId).single();

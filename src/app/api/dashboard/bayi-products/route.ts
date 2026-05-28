@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuth } from "@/platform/auth/require-auth";
 
 export const dynamic = "force-dynamic";
 
 // GET — list products for user
 export async function GET(req: NextRequest) {
   try {
-    const userId = req.nextUrl.searchParams.get("userId");
-    if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
+    const auth = await requireAuth(req);
+    if ("error" in auth) return auth.error;
+    const userId = auth.userId;
 
     const supabase = getServiceClient();
     const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", userId).single();
@@ -37,9 +39,12 @@ export async function GET(req: NextRequest) {
 // POST — create or update product
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireAuth(req);
+    if ("error" in auth) return auth.error;
+    const userId = auth.userId;
     const body = await req.json();
-    const { userId, product } = body;
-    if (!userId || !product) return NextResponse.json({ error: "userId and product required" }, { status: 400 });
+    const { product } = body;
+    if (!product) return NextResponse.json({ error: "product required" }, { status: 400 });
 
     const supabase = getServiceClient();
     const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", userId).single();
@@ -120,8 +125,11 @@ export async function POST(req: NextRequest) {
 // DELETE — delete product
 export async function DELETE(req: NextRequest) {
   try {
-    const { userId, productId } = await req.json();
-    if (!userId || !productId) return NextResponse.json({ error: "userId and productId required" }, { status: 400 });
+    const auth = await requireAuth(req);
+    if ("error" in auth) return auth.error;
+    const userId = auth.userId;
+    const { productId } = await req.json();
+    if (!productId) return NextResponse.json({ error: "productId required" }, { status: 400 });
 
     const supabase = getServiceClient();
     await supabase.from("bayi_products").delete().eq("id", productId).eq("user_id", userId);

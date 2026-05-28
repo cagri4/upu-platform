@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAuth } from "@/platform/auth/require-auth";
 
 export const dynamic = "force-dynamic";
 
 // GET — dealer data: catalog, orders, balance
 export async function GET(req: NextRequest) {
   try {
-    const userId = req.nextUrl.searchParams.get("userId");
+    const auth = await requireAuth(req);
+    if ("error" in auth) return auth.error;
+    const userId = auth.userId;
     const section = req.nextUrl.searchParams.get("section") || "catalog";
-    if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
 
     const supabase = getServiceClient();
     const { data: profile } = await supabase
@@ -119,8 +121,11 @@ export async function GET(req: NextRequest) {
 // POST — create order from cart
 export async function POST(req: NextRequest) {
   try {
-    const { userId, items, notes } = await req.json();
-    if (!userId || !items?.length) return NextResponse.json({ error: "userId and items required" }, { status: 400 });
+    const auth = await requireAuth(req);
+    if ("error" in auth) return auth.error;
+    const userId = auth.userId;
+    const { items, notes } = await req.json();
+    if (!items?.length) return NextResponse.json({ error: "items required" }, { status: 400 });
 
     const supabase = getServiceClient();
     const { data: profile } = await supabase

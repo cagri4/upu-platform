@@ -8,6 +8,7 @@
  */
 import { NextRequest, NextResponse, after } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAdminUser } from "@/platform/admin/auth";
 import { sendText } from "@/platform/whatsapp/send";
 import { shouldNotify } from "@/platform/notifications/should-notify";
 
@@ -17,6 +18,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = await requireAdminUser(req);
+  if ("error" in auth) return auth.error;
+
   try {
     const { id } = await params;
     const ticketId = parseInt(id, 10);

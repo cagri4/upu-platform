@@ -5,6 +5,7 @@
  * Resolves user + tenant, then routes to tenant-specific command handler.
  */
 
+import { createHmac, timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { logEvent, logError, logOnboarding } from "@/platform/analytics/logger";
 import { getServiceClient } from "@/platform/auth/supabase";
@@ -177,9 +178,53 @@ export async function GET(req: NextRequest) {
 
 // ─── POST: Handle incoming message ─────────────────────────────────────────
 
+/**
+ * Meta App Secret HMAC-SHA256 doğrulaması (X-Hub-Signature-256).
+ * Meta, raw body'yi App Secret ile imzalar; header `sha256=<hex>`.
+ *
+ * NOT: WHATSAPP_APP_SECRET set DEĞİLse imza atlanır (warn) — gateway
+ * forwarding + secret prod'da yapılandırılana kadar canlı entegrasyon
+ * kırılmasın diye. Secret set edilince zorunlu hale gelir. Gateway'in
+ * `x-hub-signature-256` header'ını VE değiştirilmemiş raw body'yi forward
+ * etmesi (ya da aynı secret ile imzalaması) şarttır.
+ */
+function verifyMetaSignature(
+  req: NextRequest,
+  rawBody: string,
+): { ok: boolean; reason?: string } {
+  const secret = process.env.WHATSAPP_APP_SECRET;
+  if (!secret) {
+    console.warn(
+      "[wa-platform] WHATSAPP_APP_SECRET set değil — imza doğrulaması atlandı",
+    );
+    return { ok: true };
+  }
+  const header = req.headers.get("x-hub-signature-256");
+  if (!header || !header.startsWith("sha256=")) {
+    return { ok: false, reason: "missing x-hub-signature-256 header" };
+  }
+  const provided = Buffer.from(header.slice("sha256=".length), "hex");
+  const expected = Buffer.from(
+    createHmac("sha256", secret).update(rawBody, "utf8").digest("hex"),
+    "hex",
+  );
+  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
+    return { ok: false, reason: "signature mismatch" };
+  }
+  return { ok: true };
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const payload = await req.json();
+    const rawBody = await req.text();
+
+    const sig = verifyMetaSignature(req, rawBody);
+    if (!sig.ok) {
+      console.warn(`[wa-platform] imza reddedildi: ${sig.reason}`);
+      return NextResponse.json({ error: "invalid signature" }, { status: 401 });
+    }
+
+    const payload = JSON.parse(rawBody);
     const parsed = parseWebhook(payload);
 
     if (!parsed) {

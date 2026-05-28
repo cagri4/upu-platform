@@ -7,14 +7,19 @@
  * Yanıt: { tickets: [{id, subject, status, user, last_message, ...}],
  *         stats: { open, in_progress, replied, resolved, closed, today, avgResponseHours } }
  *
- * Auth: adminpanel.upudev.nl domain gate (middleware).
+ * Auth: requireAdminUser (cookie session/token → profiles.role == 'admin').
+ *   NOT a middleware domain gate — middleware skips all /api/ paths.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { requireAdminUser } from "@/platform/admin/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAdminUser(req);
+  if ("error" in auth) return auth.error;
+
   const sb = getServiceClient();
   const url = req.nextUrl;
   const statusFilter = url.searchParams.get("status") || "all";
