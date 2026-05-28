@@ -1,14 +1,16 @@
 "use client";
 
 /**
- * /[locale]/giris — 2 buton login client (Faz 6.3 + Bug fix tenant-aware
- * brand + Bug 1 mobile WA deep link).
+ * /[locale]/giris — OTP-first login client.
  *
- *   1) WhatsApp ile bağlan:
- *      - Mobile (max-width: 768px): wa.me deep link → kullanıcının kendi
- *        WA app'ine düşer, pre-filled mesaj ("EMLAK: Giriş yap" vb.)
- *      - Desktop: /tr/qr-giris → panel scanner (başka cihaz tarar)
- *   2) Google ile gir → /api/auth/google/start?next=<next>
+ * Layout (Faz 6.7 — OTP-first refactor):
+ *   1) [PRIMARY] Telefon ile giriş — 2-step OTP form (PhoneOtpForm)
+ *      - Step 1: phone → /api/auth/otp/request (purpose=login)
+ *      - Step 2: 6-digit code → /api/auth/otp/verify → cookie attach +
+ *        redirect to tenant panel
+ *   2) [SECONDARY] "veya başka yöntem" divider
+ *   3) WhatsApp ile bağlan (mobile: wa.me deep-link, desktop: /tr/qr-giris)
+ *   4) Google ile gir → /api/auth/google/start
  *
  * Server wrapper tenant-aware brandName + waText + locale prop'larını geçer.
  */
@@ -16,6 +18,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowRight, AlertTriangle } from "lucide-react";
+import { PhoneOtpForm } from "@/components/auth/PhoneOtpForm";
 
 const WA_BOT = "31644967207";
 
@@ -28,8 +31,6 @@ interface GirisClientProps {
   locale: string;
   /**
    * Tenant'ın panel ana URL'i — Google login sonrası dönülecek default path.
-   * Server wrapper getTenantPanelPath(headerTenantKey) ile hesaplar.
-   * Örn. siteyonetim → "/tr/site", bayi → "/tr/bayi-panel".
    */
   panelPath: string;
 }
@@ -53,10 +54,10 @@ function GirisInner({ brandName, waText, locale, panelPath }: GirisClientProps) 
   const googleHref = `/api/auth/google/start?next=${encodeURIComponent(next)}`;
   const waMobileHref = `https://wa.me/${WA_BOT}?text=${encodeURIComponent(waText)}`;
   const waDesktopHref = `/${locale}/qr-giris`;
-  // SSR/loading: desktop akışına düş (mevcut davranış). Hidrate sonrası
-  // mobile detect olursa wa.me'ye geçer.
   const waHref = isMobile ? waMobileHref : waDesktopHref;
   const isWaTargetExternal = !!isMobile;
+
+  const otpLocale = (["tr", "en", "nl"] as const).includes(locale as "tr") ? (locale as "tr" | "en" | "nl") : "tr";
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
@@ -73,7 +74,7 @@ function GirisInner({ brandName, waText, locale, panelPath }: GirisClientProps) 
               Hoş geldin
             </h1>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Hesabına giriş yapmak için bir yöntem seç
+              Telefon numaranı yaz, WhatsApp&apos;a kod gelsin
             </p>
           </div>
 
@@ -89,25 +90,33 @@ function GirisInner({ brandName, waText, locale, panelPath }: GirisClientProps) 
             </div>
           )}
 
-          {/* WA buton — primary, mobile/desktop conditional */}
+          {/* PRIMARY — telefon ile giriş */}
+          <PhoneOtpForm
+            mode="login"
+            locale={otpLocale}
+            alternateHref={`/${locale}/uye-ol`}
+            alternateLabel="Üye ol →"
+          />
+
+          <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+            <span>veya başka yöntem</span>
+            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+          </div>
+
+          {/* WA buton — secondary, mobile/desktop conditional */}
           <a
             href={waHref}
             target={isWaTargetExternal ? "_blank" : undefined}
             rel={isWaTargetExternal ? "noopener noreferrer" : undefined}
-            className="flex items-center justify-between gap-3 w-full px-5 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shadow-lg active:scale-[0.98] transition"
+            className="flex items-center justify-between gap-3 w-full px-5 py-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:border-emerald-400 dark:hover:border-emerald-500 text-slate-900 dark:text-white font-medium shadow-sm active:scale-[0.98] transition"
           >
             <span className="flex items-center gap-3">
-              <WhatsAppGlyph className="w-6 h-6" />
+              <WhatsAppGlyph className="w-5 h-5 text-emerald-500" />
               WhatsApp ile bağlan
             </span>
-            <ArrowRight className="w-5 h-5" strokeWidth={2.4} />
+            <ArrowRight className="w-5 h-5 text-slate-400" strokeWidth={2.4} />
           </a>
-
-          <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
-            <span>veya</span>
-            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
-          </div>
 
           {/* Google buton — secondary */}
           <a
@@ -119,7 +128,13 @@ function GirisInner({ brandName, waText, locale, panelPath }: GirisClientProps) 
           </a>
 
           <p className="text-xs text-center text-slate-400 dark:text-slate-500 px-4 leading-relaxed">
-            Yeni misin? WhatsApp ile bağlanarak hemen başla.
+            Yeni misin?{" "}
+            <a
+              href={`/${locale}/uye-ol`}
+              className="text-emerald-600 dark:text-emerald-400 hover:underline"
+            >
+              Üye ol
+            </a>
           </p>
         </div>
       </main>
@@ -171,7 +186,7 @@ function GoogleGlyph({ className }: { className?: string }) {
   );
 }
 
-/** WhatsApp logo (currentColor, beyaz buton üstünde). */
+/** WhatsApp logo (currentColor). */
 function WhatsAppGlyph({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
