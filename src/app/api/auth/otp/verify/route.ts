@@ -20,7 +20,7 @@ import { headers } from "next/headers";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { attachSessionToResponse } from "@/platform/auth/session";
 import { getTenantPanelPath } from "@/platform/auth/qr";
-import { getAllTenants, getTenantByKey } from "@/tenants/config";
+import { getAllTenants, getTenantByKey, isAdminDomain } from "@/tenants/config";
 import {
   verifyOtp,
   isOtpPurpose,
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
   if (purpose === "login") {
     const { data: profile } = await sb
       .from("profiles")
-      .select("id, tenant_id")
+      .select("id, tenant_id, role")
       .eq("whatsapp_phone", phone)
       .limit(1)
       .maybeSingle();
@@ -87,9 +87,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "no_account" }, { status: 404 });
     }
 
-    const tenantKey = resolveTenantKeyByTenantId(profile.tenant_id as string | null);
-    const panelPath = getTenantPanelPath(tenantKey);
-    const redirect = `/${locale}${panelPath.replace(/^\/[a-z]{2}/, "")}`;
+    // Admin domaininden (adminpanel.upudev.nl) giren admin → admin paneli.
+    // Diğer tüm durumlar (normal tenant kullanıcısı VEYA admin'in bir tenant
+    // subdomain'inden girişi) değişmeden eski davranışta: tenant panel path.
+    const h = await headers();
+    const host = h.get("host") || "";
+    let redirect: string;
+    if (profile.role === "admin" && isAdminDomain(host)) {
+      redirect = `/${locale}/admin`;
+    } else {
+      const tenantKey = resolveTenantKeyByTenantId(profile.tenant_id as string | null);
+      const panelPath = getTenantPanelPath(tenantKey);
+      redirect = `/${locale}${panelPath.replace(/^\/[a-z]{2}/, "")}`;
+    }
 
     const res = NextResponse.json({ ok: true, redirect });
     return await attachSessionToResponse(res, {
