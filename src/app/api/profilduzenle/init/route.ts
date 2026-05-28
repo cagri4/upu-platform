@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { resolvePanelAuth } from "@/platform/auth/panel-auth";
+import { getTenantByDomain } from "@/tenants/config";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,17 @@ interface AgentProfile {
 
 export async function GET(req: NextRequest) {
   try {
+    // Defense-in-depth: bu endpoint emlak agent profilini (agent_profile +
+    // web_slug) yönetir — diğer SaaS'larda anlamsız ve sızıntı yaratır.
+    const host = req.headers.get("host") || "";
+    const tenantKey = getTenantByDomain(host)?.key || null;
+    if (tenantKey !== "emlak") {
+      return NextResponse.json(
+        { error: `Profil düzenleme yalnız emlak SaaS'ında aktif (tenant: ${tenantKey || "unknown"}).` },
+        { status: 403 },
+      );
+    }
+
     const auth = await resolvePanelAuth(req);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 

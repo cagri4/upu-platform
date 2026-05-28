@@ -38,6 +38,20 @@ function panelPathFromHost(): string {
   return "/tr/panel";
 }
 
+/**
+ * Bu sayfa emlak agent profil (agent_profile + web_slug) düzenleme — tüm
+ * SaaS'lardan paylaşımlı GÖRÜNÜRDÜ ama API'ler ve UI tamamen emlak-only.
+ * Subdomain emlak değilse kullanıcıyı kendi paneline yönlendir (residenceai
+ * → /tr/site, retailai → /tr/bayi-panel, vs.). API tarafı 403 dönüyor; bu
+ * client-side kısa yol kullanıcıyı yanlış sayfada bekletmemek için.
+ */
+function isEmlakHost(): boolean {
+  if (typeof window === "undefined") return true; // SSR'da render et, hydrate'da kontrol
+  const host = window.location.host;
+  // estateai.* veya localhost (emlak default)
+  return host.startsWith("estateai.") || host.startsWith("localhost") || host.startsWith("127.0.0.1");
+}
+
 export default function ProfilDuzenlePage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token");
@@ -62,7 +76,18 @@ export default function ProfilDuzenlePage() {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState("");
 
+  // Host-guard: emlak değilse kullanıcıyı kendi paneline yönlendir, init fetch
+  // hiç başlatma (API zaten 403 dönüyor; UI'da emlak formu flash etmesin).
   useEffect(() => {
+    if (!isEmlakHost()) {
+      const target = panelPathFromHost();
+      const url = token ? `${target}?t=${encodeURIComponent(token)}` : target;
+      window.location.replace(url);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (!isEmlakHost()) return; // wrong tenant — redirect effect handles it
     const tokenQs = token ? `?t=${encodeURIComponent(token)}` : "";
     fetch(`/api/profilduzenle/init${tokenQs}`, { credentials: "same-origin" })
       .then(async (r) => {

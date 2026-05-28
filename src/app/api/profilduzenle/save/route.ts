@@ -10,6 +10,7 @@ import { getServiceClient } from "@/platform/auth/supabase";
 import { resolvePanelAuthFromBody } from "@/platform/auth/panel-auth";
 import { sendUrlButton, sendText } from "@/platform/whatsapp/send";
 import { randomBytes } from "crypto";
+import { getTenantByDomain } from "@/tenants/config";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,17 @@ async function ensureUniqueSlug(supabase: ReturnType<typeof getServiceClient>, b
 
 export async function POST(req: NextRequest) {
   try {
+    // Defense-in-depth: emlak-only — after() callback estateai URL + emlak
+    // menu import içeriyor, başka SaaS'ta yazılırsa data + WA mesajı yanlış.
+    const host = req.headers.get("host") || "";
+    const tenantKey = getTenantByDomain(host)?.key || null;
+    if (tenantKey !== "emlak") {
+      return NextResponse.json(
+        { error: `Profil düzenleme yalnız emlak SaaS'ında aktif (tenant: ${tenantKey || "unknown"}).` },
+        { status: 403 },
+      );
+    }
+
     const body = await req.json();
     const auth = await resolvePanelAuthFromBody(req, body);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
