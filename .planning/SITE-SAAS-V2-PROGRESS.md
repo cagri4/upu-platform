@@ -89,6 +89,28 @@
 - 4 WA template taslak Meta onayına hazır
 - KMK 634 uyumlu toplantı yönetimi + arsa payı çoğunluk hesabı
 
+## 📦 V2 Sonrası Cross-Cutting İyileştirmeler (2026-05-27)
+
+### İyileştirme 1 — Magic-Link Mimari (`b929199`)
+- 8 evergreen endpoint TTL: 15dk / 60dk → **24 saat**
+- magic-verify single-use kaldırıldı (used_at check bypass, audit trail tutulur)
+- /api/site/init **cookie session bypass** — resolvePanelAuth + resolveTenantProfile multi-tenant
+- (site)/layout.tsx **expired CTA UX** — ⏰ "Linkin süresi dolmuş" + WA pre-fill `SITEYONETIM: Yeni link`
+- Önceki magic-verify cookie attach (21dfef0) + bu commit beraber link UX'i bitirir
+
+### İyileştirme 2 — Skeleton UX (`ef3109f`)
+- Yeni `src/components/banking/skeleton-variants.tsx`:
+  · SkeletonDashboard / SkeletonList / SkeletonPanelShell / SkeletonFullPage
+- 6 yeni loading.tsx (Next.js Suspense fallback):
+  · /(site) /(panel) /(bayipanel) /(otel-panel) /(market-panel) /[locale]
+- (site)/layout.tsx initial load: ⏳ kum saati → SkeletonPanelShell
+- Inline button spinner'lar (Kaydediliyor/İşleniyor) KORUNDU — action feedback
+
+### Audit önerileri (next sprint)
+- Diğer init endpoint'ler (bayi-panel/init, otel-panel/init, vb.) cookie bypass paterni
+- Diğer layout'larda initial load skeleton (panel/bayipanel/otel/market ⏳ varsa)
+- View transitions API enable (Next.js 16 experimental)
+
 ## 🚧 Sprint 3 sonrası açık konular (V2)
 - Karar defteri PDF üretim (sy_meetings.karar_defteri_pdf_url)
 - Iyzico/PayTR gerçek POS adapter
