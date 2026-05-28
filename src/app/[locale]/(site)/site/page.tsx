@@ -282,7 +282,7 @@ export default function SiteDashboardPage() {
           title="Profilim"
           subtitle="Yönetici bilgilerinizi düzenleyin"
           rightLabel="Düzenle"
-          href={q("/tr/profil-duzenle")}
+          href={q("/tr/site-profil")}
         />
       </div>
 
