@@ -363,9 +363,19 @@ export async function routeCommand(ctx: WaContext): Promise<void> {
       if (action === "portfoy_ok") {
         const { advanceDiscovery } = await import("./discovery-chain");
         await advanceDiscovery(ctx.userId, ctx.tenantKey, ctx.phone, "portfoy_tanitildi");
+      } else if (action === "devam_panel" && ctx.tenantKey === "bayi") {
+        // 2026-05-29: Otomatik demo seed kaldırıldı (gerçek tenant temiz
+        // başlar). Bu callback artık sadece step 2'ye ilerletir; panel
+        // açılır, Kurucu AI Eleman gerçek veri yüklemeyi devralır.
+        const { advanceDiscovery } = await import("./discovery-chain");
+        await advanceDiscovery(ctx.userId, "bayi", ctx.phone, "demo_seed_yuklendi");
       } else if (action === "demo_seed_yukle" && ctx.tenantKey === "bayi") {
-        const { runBayiDemoSeedFromCallback } = await import("@/tenants/bayi/onboarding/demo-seed-flow");
-        await runBayiDemoSeedFromCallback(ctx.userId, ctx.phone);
+        // BACKWARD COMPAT (geçici): eski WA mesajlarında "▶️ Devam Et"
+        // butonu hala çıkabilir; aynı şekilde otomatik seed YERİNE direkt
+        // panele yönlendiriyoruz. Demo data sadece admin/yönetim
+        // tarafından /api/bayi-demo/import endpoint'i ile manuel yüklenir.
+        const { advanceDiscovery } = await import("./discovery-chain");
+        await advanceDiscovery(ctx.userId, "bayi", ctx.phone, "demo_seed_yuklendi");
       } else if (action === "tour_atla" && ctx.tenantKey === "siteyonetim") {
         const { skipSiteyonetimTour } = await import("@/tenants/siteyonetim/onboarding/tour-progression");
         await skipSiteyonetimTour(ctx.userId, ctx.phone);

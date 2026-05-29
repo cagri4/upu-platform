@@ -137,19 +137,18 @@ async function sendBayiStepPrompt(userId: string, phone: string, step: number): 
 
   switch (step) {
     case 1: {
-      // Firma profili tamamlandı → demo modu açıklaması + "Devam Et" callback.
+      // Firma profili tamamlandı → boş tenant ile başla. (2026-05-29:
+      // Otomatik demo seed kaldırıldı; gerçek tenant TEMİZ açılır.
+      // Bayi kendi gerçek verisini Kurucu AI Eleman ile yükler.)
       // skipNav: koridor içi — Navigasyon kalabalığı yapma.
       await sendButtons(phone,
         `✅ *Firma profiliniz hazır!*\n\n` +
-        `🔧 *Demo modu*\n` +
-        `Ürün ve bayi sisteminizden veri çekme işlemi entegrasyon ekibimiz tarafından kurulum sürecinde yapılacaktır. ` +
-        `Şimdilik *sektörünüze uygun örnek veriyle* başlıyorum:\n\n` +
-        `   • 5 örnek bayi (1 kritik vade)\n` +
-        `   • 5 kategori\n` +
-        `   • 20 ürün\n` +
-        `   • Birkaç sipariş + vade hareketi\n\n` +
-        `Sistemi anında deneyebilirsiniz.`,
-        [{ id: "disc:demo_seed_yukle", title: "▶️ Devam Et" }],
+        `🚀 Şimdi panele geçelim — sana özel *Kurucu AI Eleman'ın* ` +
+        `bayi listesi, ürün katalogu ve ayarları adım adım kurmanda ` +
+        `yardımcı olacak.\n\n` +
+        `Excel/CSV yükle, fotoğraf gönder veya tek tek ekle — sen seç, ` +
+        `Kurucu yapsın.`,
+        [{ id: "disc:devam_panel", title: "▶️ Panele Geç" }],
         { skipNav: true },
       );
       return true;
