@@ -22,7 +22,9 @@ import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { getTenantByDomain } from "@/tenants/config";
 import { BAYI_TOOLS, BAYI_TOOLS_BY_NAME } from "@/platform/agent/tools/bayi";
 import { EMLAK_TOOLS, EMLAK_TOOLS_BY_NAME } from "@/platform/agent/tools/emlak";
+import { BAYI_KURUCU_TOOLS, BAYI_KURUCU_TOOLS_BY_NAME } from "@/platform/agent/tools/bayi-kurucu";
 import { buildUpuSystemPrompt, buildUpuEmlakSystemPrompt } from "@/platform/agent/prompt";
+import { buildKurucuSystemPrompt } from "@/platform/agent/prompts/bayi-kurucu";
 import type { ToolContext, ToolDef, TenantKey } from "@/platform/agent/types";
 import { getOrCreateQuota, incrementQuota, logUsageEvent } from "@/platform/agent/quota";
 import { calculateCostUsd } from "@/platform/agent/cost";
@@ -55,9 +57,23 @@ function getApiKey(tenantKey: TenantKey): string {
   return envKey;
 }
 
-function getToolsForTenant(tenantKey: TenantKey): { list: ToolDef[]; byName: Record<string, ToolDef> } {
+type AgentRoleId = "kurucu" | "yonetici" | "egitmen" | null;
+
+function getToolsForTenant(
+  tenantKey: TenantKey,
+  agentRole: AgentRoleId = null,
+): { list: ToolDef[]; byName: Record<string, ToolDef> } {
   if (tenantKey === "emlak") return { list: EMLAK_TOOLS, byName: EMLAK_TOOLS_BY_NAME };
-  if (tenantKey === "bayi") return { list: BAYI_TOOLS, byName: BAYI_TOOLS_BY_NAME };
+  if (tenantKey === "bayi") {
+    // Faz 2/3 — rol-bazlı tool seti:
+    //   kurucu  → KURUCU_TOOLS (yazma yetkili, kurulum odaklı)
+    //   yonetici → BAYI_TOOLS  (salt-okur ağırlıklı; Faz 3'te filter)
+    //   egitmen → boş set      (veriye dokunmaz; Faz 3'te route-only tool'lar)
+    //   null    → BAYI_TOOLS   (rol seçilmemiş eski davranış — backward compat)
+    if (agentRole === "kurucu") return { list: BAYI_KURUCU_TOOLS, byName: BAYI_KURUCU_TOOLS_BY_NAME };
+    if (agentRole === "egitmen") return { list: [], byName: {} };
+    return { list: BAYI_TOOLS, byName: BAYI_TOOLS_BY_NAME };
+  }
   // Exhaustive: TenantKey union compile-time guard. Runtime defense (yeni tenant
   // tip-listesine eklenip catalog'u eklenmediyse fail fast — sessizce bayi'ye düşmez).
   throw new Error(`Tool catalog yok: ${tenantKey as string}`);
@@ -130,14 +146,15 @@ export async function POST(req: NextRequest) {
   if (userMessage.length > 4000) {
     return NextResponse.json({ error: "Mesaj çok uzun (max 4000 karakter)." }, { status: 400 });
   }
-  // Faz 1C — rol bilgisi kabul edilir (UI rol seçici).
-  // Faz 3'te sistem prompt + tool gating + yetki ayrımı tam implement.
-  // Şimdilik UI röntgeni için sadece body'den okunur, davranış değişmez.
+  // Faz 1C: rol bilgisi kabul edilir. Faz 2: rol === 'kurucu' ise
+  // Kurucu sistem promptu + Kurucu tool seti aktif. Diğer rolller
+  // (yonetici, egitmen) Faz 3'te full implement; şimdilik yonetici
+  // mevcut BAYI_TOOLS default davranışına düşer, egitmen ise boş tool
+  // seti ile sadece anlatım yapar.
   const VALID_ROLES = new Set(["kurucu", "yonetici", "egitmen"]);
-  const agentRole = body.role && VALID_ROLES.has(body.role)
+  const agentRole: AgentRoleId = body.role && VALID_ROLES.has(body.role)
     ? body.role as "kurucu" | "yonetici" | "egitmen"
     : null;
-  void agentRole; // Faz 3'te kullanılacak — şimdilik no-op
 
   const auth = await resolvePanelAuth(req);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -234,7 +251,14 @@ export async function POST(req: NextRequest) {
   };
   const systemPrompt = tenantKey === "emlak"
     ? buildUpuEmlakSystemPrompt(promptInput)
-    : buildUpuSystemPrompt(promptInput);
+    : (agentRole === "kurucu"
+        ? buildKurucuSystemPrompt({
+            displayName: promptInput.displayName,
+            firmaUnvani: promptInput.firmaUnvani,
+            // status null — LLM ilk turda kurucu_status tool'u çağırarak alır
+            status: null,
+          })
+        : buildUpuSystemPrompt(promptInput));
 
   const ctx: ToolContext = {
     sb,
@@ -252,7 +276,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
 
-  const { list: TOOL_LIST, byName: TOOL_BY_NAME } = getToolsForTenant(tenantKey);
+  const { list: TOOL_LIST, byName: TOOL_BY_NAME } = getToolsForTenant(tenantKey, agentRole);
   const toolDefs = TOOL_LIST.map((t) => ({
     name: t.name,
     description: t.description,
