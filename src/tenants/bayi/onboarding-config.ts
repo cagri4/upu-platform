@@ -1,23 +1,38 @@
 /**
- * Bayi onboarding wizard config — engine'in tüketeceği adım listesi.
- * Diğer 5 SaaS (emlak/market/otel/restoran/site) aynı pattern ile
- * kendi <tenant>/onboarding-config.ts dosyalarını yazar.
+ * Bayi İlk Karşılama config — saf-pasif 6 slayt (Faz 1B, 2026-05-29).
+ *
+ * Tasarım: input YOK. Kullanıcı sadece "İleri / Geri / Atla" görür.
+ * Son slayt "Kurucu ile Başla" → onCompleted → layout Kurucu AI Eleman
+ * widget'ını otomatik açar (Faz 1C).
+ *
+ * ESKİ İNPUT ADIMLARI (Step2Profile, Step3InviteDealer, Step4Vitrine,
+ * Step5Complete) artık burada KULLANILMIYOR. Profil / davet / vitrin /
+ * tamamlama akışları Kurucu sohbet ekibine devredildi (Faz 2 — Kurucu).
+ * Component dosyaları kaldırılmadı (gelecekte tekrar kullanım potansiyeli
+ * + git diff temiz tutmak için).
+ *
+ * Diğer 5 SaaS (emlak/market/otel/restoran/site) aynı pattern ile kendi
+ * <tenant>/onboarding-config.ts dosyalarını yazar — engine ortak.
  */
 import type { OnboardingConfig } from "@/platform/onboarding/engine";
-import { Step1Welcome } from "@/components/onboarding/bayi/Step1Welcome";
-import { Step2Profile } from "@/components/onboarding/bayi/Step2Profile";
-import { Step3InviteDealer } from "@/components/onboarding/bayi/Step3InviteDealer";
-import { Step4Vitrine } from "@/components/onboarding/bayi/Step4Vitrine";
-import { Step5Complete } from "@/components/onboarding/bayi/Step5Complete";
+import {
+  SlideWelcome,
+  SlideDealerManagement,
+  SlideVitrineLead,
+  SlideAutomation,
+  SlideAITeam,
+  SlideStart,
+} from "@/components/onboarding/bayi/intro-slides";
 
 export const BAYI_ONBOARDING: OnboardingConfig = {
   tenantKey: "bayi",
-  totalSteps: 5,
+  totalSteps: 6,
   steps: [
-    { id: "welcome", title: "Hoşgeldin", component: Step1Welcome, skippable: false },
-    { id: "profile", title: "Profil", component: Step2Profile, skippable: true },
-    { id: "invite_dealer", title: "İlk bayi", component: Step3InviteDealer, skippable: true },
-    { id: "vitrine", title: "Vitrin", component: Step4Vitrine, skippable: true },
-    { id: "complete", title: "Tamamla", component: Step5Complete, skippable: false },
+    { id: "welcome",          title: "Hoşgeldin",     component: SlideWelcome,          skippable: true },
+    { id: "dealer_management", title: "Yönetim",      component: SlideDealerManagement, skippable: true },
+    { id: "vitrine_lead",     title: "Vitrin",        component: SlideVitrineLead,      skippable: true },
+    { id: "automation",       title: "Otomasyon",     component: SlideAutomation,       skippable: true },
+    { id: "ai_team",          title: "AI Eleman",     component: SlideAITeam,           skippable: true },
+    { id: "start",            title: "Başla",         component: SlideStart,            skippable: false },
   ],
 };
