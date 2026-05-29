@@ -1,21 +1,28 @@
 "use client";
 
 /**
- * UPU AI Eleman Widget — sağ alt floating button + chat slide-in panel.
+ * UPU AI Eleman Widget — sağ alt floating button + rol-seçici + chat panel.
  *
- * V1 MVP (non-streaming):
+ * V2 (Faz 1C, 2026-05-29) — rol-bazlı AI Eleman ekibi:
  *   - Floating button (sağ alt, fixed, z-50)
- *   - Tıklanınca slide-in panel açılır (desktop sağdan, mobile fullscreen)
- *   - Karşılama mesajı (history boşsa)
- *   - Mesajlaşma: textarea + send, hızlı komut chip'leri
- *   - Tool call'lar küçük kart olarak gösterilir
+ *   - Tıklanınca: önce ROL SEÇİCİ (3 kart: Kurucu / Asistan / Eğitmen);
+ *     rol seçilince chat panel açılır.
+ *   - Son seçilen rol localStorage'da persist; tekrar açılışta picker'ı
+ *     atlayıp direkt o role bağlanır.
+ *   - Global event API: window.dispatchEvent(new CustomEvent('upu:open-agent',
+ *     { detail: { role: 'kurucu' } })) — onboarding "Hadi başlayalım" sonu
+ *     veya başka tetikleyiciler Kurucu'yu programlı açabilir.
+ *   - Header rol etiketi + "Rolü değiştir" küçük link.
+ *   - Backend: /api/agent/chat?role=<id> query parametre eklenir (Faz 3'te
+ *     persona + tool gating tam implement; şu an placeholder).
  *
- * Streaming V2'de eklenecek — şu an non-streaming, loading dot animation.
+ * Eski özellikler korunur: history hydrate, quota rozeti, KATMAN A/B/C,
+ * quick prompts, tool kart rendering.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { X, Send, Loader2, Wrench, Trash2 } from "lucide-react";
+import { X, Send, Loader2, Wrench, Trash2, ChevronLeft } from "lucide-react";
 
 const AVATAR_SRC = "/icons/upu-avatar.jpg";
 
@@ -76,6 +83,67 @@ const TENANT_LABELS: Record<string, string> = {
   emlak: "Emlak asistanın",
 };
 
+// ─── Rol-bazlı AI Eleman ekibi (Faz 1C) ──────────────────────────────
+export type AgentRoleId = "kurucu" | "yonetici" | "egitmen";
+
+interface AgentRoleDef {
+  id: AgentRoleId;
+  label: string;
+  emoji: string;
+  desc: string;
+  accent: string;       // background renk (kart)
+  border: string;       // border renk
+  badgeBg: string;      // header etiketi
+  placeholder: string;  // input placeholder (rol context)
+  greeting: (name: string) => string;
+}
+
+const BAYI_AGENT_ROLES: AgentRoleDef[] = [
+  {
+    id: "kurucu",
+    label: "Kurucu",
+    emoji: "🛠️",
+    desc: "Sistemi seninle baştan kurar — bayi listesi, ürünler, ayarlar.",
+    accent: "bg-indigo-50 dark:bg-indigo-950/40",
+    border: "border-indigo-300 dark:border-indigo-700/60 hover:border-indigo-500",
+    badgeBg: "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300",
+    placeholder: "Kurucu'ya yaz… (örn: Excel'imi yükleyebilir miyim?)",
+    greeting: (name) =>
+      `Merhaba ${name || "Kullanıcı"}! 🛠️\nBen Kurucu — bayi listen, ürün katalogun ve ayarları sıfırdan birlikte kuralım. Hangi yöntemle başlayalım?`,
+  },
+  {
+    id: "yonetici",
+    label: "Yönetici Asistanı",
+    emoji: "📊",
+    desc: "Veriyi getirir, rapor hazırlar, sorularını yanıtlar.",
+    accent: "bg-emerald-50 dark:bg-emerald-950/40",
+    border: "border-emerald-300 dark:border-emerald-700/60 hover:border-emerald-500",
+    badgeBg: "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300",
+    placeholder: "Yönetici Asistanı'na yaz…",
+    greeting: (name) =>
+      `Merhaba ${name || "Kullanıcı"}! 📊\nBen Yönetici Asistanı — bayi performansı, sipariş, cari, çuruh riski, vade — ne istersen getiririm.`,
+  },
+  {
+    id: "egitmen",
+    label: "Panel Eğitmeni",
+    emoji: "🎓",
+    desc: "Paneli adım adım anlatır — hangi sayfa ne işe yarar.",
+    accent: "bg-amber-50 dark:bg-amber-950/40",
+    border: "border-amber-300 dark:border-amber-700/60 hover:border-amber-500",
+    badgeBg: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300",
+    placeholder: "Panel Eğitmeni'ne yaz…",
+    greeting: (name) =>
+      `Merhaba ${name || "Kullanıcı"}! 🎓\nBen Panel Eğitmeni — hangi özelliği keşfetmek istersin? "Otomatik kampanya nasıl çalışır?" gibi sor.`,
+  },
+];
+
+function getRoleById(id: AgentRoleId | null): AgentRoleDef | null {
+  if (!id) return null;
+  return BAYI_AGENT_ROLES.find(r => r.id === id) || null;
+}
+
+const ROLE_STORAGE_KEY = "upu-agent-role:bayi";
+
 interface UpuAgentWidgetProps {
   /** Tenant key — quick prompts + subtitle bu key'e göre seçilir.
    *  Default "bayi" (geriye uyum: prop geçilmemişse mevcut bayi davranışı). */
@@ -86,8 +154,9 @@ function genId() { return Math.random().toString(36).slice(2); }
 
 export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {}) {
   const QUICK_PROMPTS = tenantKey === "emlak" ? EMLAK_QUICK_PROMPTS : BAYI_QUICK_PROMPTS;
-  const subtitle = TENANT_LABELS[tenantKey] || "AI asistanın";
+  const tenantSubtitle = TENANT_LABELS[tenantKey] || "AI asistanın";
   const [open, setOpen] = useState(false);
+  const [role, setRole] = useState<AgentRoleId | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -97,6 +166,48 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
   const [quota, setQuota] = useState<QuotaState | null>(null);
   const [quotaExceeded, setQuotaExceeded] = useState<QuotaExceededInfo | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const activeRole = getRoleById(role);
+  const showPicker = open && !role;
+
+  // localStorage'dan son rolü oku (bayi tenant için)
+  useEffect(() => {
+    if (typeof window === "undefined" || tenantKey !== "bayi") return;
+    try {
+      const saved = window.localStorage.getItem(ROLE_STORAGE_KEY);
+      if (saved === "kurucu" || saved === "yonetici" || saved === "egitmen") {
+        setRole(saved as AgentRoleId);
+      }
+    } catch { /* private mode */ }
+  }, [tenantKey]);
+
+  // Global event API: window.dispatchEvent(new CustomEvent('upu:open-agent',
+  // { detail: { role: 'kurucu' } })) — onboarding "Hadi başlayalım" sonu
+  // ve diğer tetikleyiciler.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    function handler(e: Event) {
+      const detail = (e as CustomEvent).detail as { role?: AgentRoleId } | undefined;
+      if (detail?.role) {
+        setRole(detail.role);
+        try { window.localStorage.setItem(ROLE_STORAGE_KEY, detail.role); } catch { /* */ }
+      }
+      setOpen(true);
+    }
+    window.addEventListener("upu:open-agent", handler as EventListener);
+    return () => window.removeEventListener("upu:open-agent", handler as EventListener);
+  }, []);
+
+  const pickRole = useCallback((rid: AgentRoleId) => {
+    setRole(rid);
+    try { window.localStorage.setItem(ROLE_STORAGE_KEY, rid); } catch { /* */ }
+  }, []);
+
+  const switchRole = useCallback(() => {
+    setRole(null);
+    setMessages([]);  // farklı rol → temiz konuşma (history hydrate de boş gelecek; Faz 3'te per-role kanal)
+    setHydrated(false);
+  }, []);
 
   // Quota durumu çek — mount'ta + her chat sonrası
   const fetchQuota = async () => {
@@ -154,11 +265,11 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
     }]);
 
     try {
-      const r = await fetch("/api/agent/chat", {
+      const r = await fetch(`/api/agent/chat${role ? `?role=${encodeURIComponent(role)}` : ""}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, role: role || undefined }),
       });
       const d = await r.json();
       if (r.status === 429 && d?.error === "quota_exceeded") {
@@ -247,31 +358,81 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
       {open && (
         <div className="fixed inset-0 z-50 sm:bottom-4 sm:right-4 sm:top-auto sm:left-auto sm:inset-auto sm:max-w-md sm:w-[400px] sm:h-[600px] flex flex-col bg-white dark:bg-slate-900 sm:rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800">
           <header className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-2">
-              <Image
-                src={AVATAR_SRC}
-                alt="UPU"
-                width={32}
-                height={32}
-                className="w-8 h-8 rounded-full object-cover"
-              />
-              <div>
-                <p className="font-semibold text-sm text-slate-900 dark:text-white leading-tight">UPU</p>
-                <p className="text-[10px] text-slate-500 leading-tight">{subtitle}</p>
+            <div className="flex items-center gap-2 min-w-0">
+              {!showPicker && activeRole && tenantKey === "bayi" ? (
+                <button
+                  type="button"
+                  onClick={switchRole}
+                  className="w-7 h-7 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition flex-shrink-0"
+                  title="Rolü değiştir"
+                  aria-label="Rolü değiştir"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              ) : (
+                <Image
+                  src={AVATAR_SRC}
+                  alt="UPU"
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                />
+              )}
+              <div className="min-w-0">
+                <p className="font-semibold text-sm text-slate-900 dark:text-white leading-tight truncate">
+                  {showPicker ? "UPU AI Eleman" : (activeRole && tenantKey === "bayi" ? `${activeRole.emoji} ${activeRole.label}` : "UPU")}
+                </p>
+                <p className="text-[10px] text-slate-500 leading-tight truncate">
+                  {showPicker ? "Rolünü seç" : (activeRole && tenantKey === "bayi" ? activeRole.desc : tenantSubtitle)}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={clearAll} aria-label="Temizle" className="w-8 h-8 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center justify-center transition">
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {!showPicker && (
+                <button type="button" onClick={clearAll} aria-label="Temizle" className="w-8 h-8 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center justify-center transition">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
               <button type="button" onClick={() => setOpen(false)} aria-label="Kapat" className="w-8 h-8 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition">
                 <X className="w-5 h-5" />
               </button>
             </div>
           </header>
 
-          {/* KATMAN B — uyarı bar (%70+) — motivasyon tonu */}
-          {quota && quota.percent >= 70 && quota.status !== "exceeded" && (
+          {/* ROL SEÇİCİ — bayi tenant + rol seçilmediğinde */}
+          {showPicker && tenantKey === "bayi" && (
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center mb-1">
+                Hangi AI Eleman'la konuşmak istersin?
+              </p>
+              {BAYI_AGENT_ROLES.map(r => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => pickRole(r.id)}
+                  className={`w-full text-left p-4 rounded-xl border-2 ${r.accent} ${r.border} transition active:scale-[0.99]`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-3xl leading-none flex-shrink-0" aria-hidden>{r.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm text-slate-900 dark:text-white mb-0.5">
+                        {r.label}
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-snug">
+                        {r.desc}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center pt-2 leading-relaxed">
+                Yetkiler rol bazlı — Kurucu yazar, Asistan okur, Eğitmen veriye dokunmaz.
+              </p>
+            </div>
+          )}
+
+          {/* KATMAN B — uyarı bar (%70+) — motivasyon tonu (picker'da gizli) */}
+          {!showPicker && quota && quota.percent >= 70 && quota.status !== "exceeded" && (
             <div className={`border-b px-4 py-2 ${
               quota.status === "critical" ? "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800/50"
                 : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50"
@@ -293,6 +454,8 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
             </div>
           )}
 
+          {!showPicker && (
+          <>
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
             {!hydrated ? (
               <div className="text-center py-8">
@@ -310,10 +473,12 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
                 <p className="text-sm font-semibold text-slate-900 dark:text-white mb-1">
                   Merhaba {displayName || "Kullanıcı"}! 👋
                 </p>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  {tenantKey === "emlak"
-                    ? "Ben UPU — emlak portföyünde sana nasıl yardım edeyim?"
-                    : "Ben UPU — bayi yönetiminde sana nasıl yardım edeyim?"}
+                <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line">
+                  {activeRole && tenantKey === "bayi"
+                    ? activeRole.greeting(displayName || "")
+                    : tenantKey === "emlak"
+                      ? "Ben UPU — emlak portföyünde sana nasıl yardım edeyim?"
+                      : "Ben UPU — bayi yönetiminde sana nasıl yardım edeyim?"}
                 </p>
               </div>
             ) : (
@@ -397,7 +562,7 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="UPU'ya yaz…"
+              placeholder={activeRole && tenantKey === "bayi" ? activeRole.placeholder : "UPU'ya yaz…"}
               disabled={loading}
               className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:opacity-60"
             />
@@ -409,6 +574,8 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
               <Send className="w-4 h-4" />
             </button>
           </form>
+          </>
+          )}
         </div>
       )}
     </>

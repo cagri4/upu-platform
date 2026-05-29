@@ -174,7 +174,14 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
           initialStep={wizardStep}
           initialState={{ ...wizardInitialState, displayName, firmaUnvani }}
           onClose={() => setShowWizard(false)}
-          onCompleted={() => setShowWizard(false)}
+          onCompleted={() => {
+            setShowWizard(false);
+            // Faz 1C — "Hadi başlayalım" → Kurucu AI Eleman'ı otomatik aç.
+            // Picker'ı atla, direkt Kurucu rolüne bağlan.
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new CustomEvent("upu:open-agent", { detail: { role: "kurucu" } }));
+            }
+          }}
         />
       )}
     </AdminLayout>

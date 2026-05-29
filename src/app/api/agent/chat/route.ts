@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
   }
   const tenantKey: TenantKey = rawTenantKey;
 
-  let body: { message?: string };
+  let body: { message?: string; role?: string };
   try { body = await req.json(); } catch {
     return NextResponse.json({ error: "Geçersiz JSON." }, { status: 400 });
   }
@@ -130,6 +130,14 @@ export async function POST(req: NextRequest) {
   if (userMessage.length > 4000) {
     return NextResponse.json({ error: "Mesaj çok uzun (max 4000 karakter)." }, { status: 400 });
   }
+  // Faz 1C — rol bilgisi kabul edilir (UI rol seçici).
+  // Faz 3'te sistem prompt + tool gating + yetki ayrımı tam implement.
+  // Şimdilik UI röntgeni için sadece body'den okunur, davranış değişmez.
+  const VALID_ROLES = new Set(["kurucu", "yonetici", "egitmen"]);
+  const agentRole = body.role && VALID_ROLES.has(body.role)
+    ? body.role as "kurucu" | "yonetici" | "egitmen"
+    : null;
+  void agentRole; // Faz 3'te kullanılacak — şimdilik no-op
 
   const auth = await resolvePanelAuth(req);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
