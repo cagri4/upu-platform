@@ -23,8 +23,11 @@ import { getTenantByDomain } from "@/tenants/config";
 import { BAYI_TOOLS, BAYI_TOOLS_BY_NAME } from "@/platform/agent/tools/bayi";
 import { EMLAK_TOOLS, EMLAK_TOOLS_BY_NAME } from "@/platform/agent/tools/emlak";
 import { BAYI_KURUCU_TOOLS, BAYI_KURUCU_TOOLS_BY_NAME } from "@/platform/agent/tools/bayi-kurucu";
+import { BAYI_YONETICI_TOOLS, BAYI_YONETICI_TOOLS_BY_NAME } from "@/platform/agent/tools/bayi-yonetici";
 import { buildUpuSystemPrompt, buildUpuEmlakSystemPrompt } from "@/platform/agent/prompt";
 import { buildKurucuSystemPrompt } from "@/platform/agent/prompts/bayi-kurucu";
+import { buildYoneticiSystemPrompt } from "@/platform/agent/prompts/bayi-yonetici";
+import { buildEgitmenSystemPrompt } from "@/platform/agent/prompts/bayi-egitmen";
 import type { ToolContext, ToolDef, TenantKey } from "@/platform/agent/types";
 import { getOrCreateQuota, incrementQuota, logUsageEvent } from "@/platform/agent/quota";
 import { calculateCostUsd } from "@/platform/agent/cost";
@@ -65,12 +68,13 @@ function getToolsForTenant(
 ): { list: ToolDef[]; byName: Record<string, ToolDef> } {
   if (tenantKey === "emlak") return { list: EMLAK_TOOLS, byName: EMLAK_TOOLS_BY_NAME };
   if (tenantKey === "bayi") {
-    // Faz 2/3 — rol-bazlı tool seti:
-    //   kurucu  → KURUCU_TOOLS (yazma yetkili, kurulum odaklı)
-    //   yonetici → BAYI_TOOLS  (salt-okur ağırlıklı; Faz 3'te filter)
-    //   egitmen → boş set      (veriye dokunmaz; Faz 3'te route-only tool'lar)
-    //   null    → BAYI_TOOLS   (rol seçilmemiş eski davranış — backward compat)
+    // Faz 3 — rol-bazlı tool seti (KOD DÜZEYİNDE YETKİ SINIRI):
+    //   kurucu   → KURUCU_TOOLS    (8 yazma+okuma kurulum tool'u)
+    //   yonetici → YONETICI_TOOLS  (8 SALT-OKU; send_dealer_message YOK)
+    //   egitmen  → []              (HİÇ tool — sadece anlatım promptu)
+    //   null     → BAYI_TOOLS      (backward compat: pre-Faz1C clients)
     if (agentRole === "kurucu") return { list: BAYI_KURUCU_TOOLS, byName: BAYI_KURUCU_TOOLS_BY_NAME };
+    if (agentRole === "yonetici") return { list: BAYI_YONETICI_TOOLS, byName: BAYI_YONETICI_TOOLS_BY_NAME };
     if (agentRole === "egitmen") return { list: [], byName: {} };
     return { list: BAYI_TOOLS, byName: BAYI_TOOLS_BY_NAME };
   }
@@ -249,16 +253,28 @@ export async function POST(req: NextRequest) {
     firmaUnvani,
     role: lookup.profile.role,
   };
-  const systemPrompt = tenantKey === "emlak"
-    ? buildUpuEmlakSystemPrompt(promptInput)
-    : (agentRole === "kurucu"
-        ? buildKurucuSystemPrompt({
-            displayName: promptInput.displayName,
-            firmaUnvani: promptInput.firmaUnvani,
-            // status null — LLM ilk turda kurucu_status tool'u çağırarak alır
-            status: null,
-          })
-        : buildUpuSystemPrompt(promptInput));
+  // Faz 3F — rol-bazlı sistem promptu (kod düzeyinde tool gating ile
+  // simetrik). Her rol kendi karakter+yetki sınırını promptta okur.
+  let systemPrompt: string;
+  if (tenantKey === "emlak") {
+    systemPrompt = buildUpuEmlakSystemPrompt(promptInput);
+  } else if (agentRole === "kurucu") {
+    systemPrompt = buildKurucuSystemPrompt({
+      displayName: promptInput.displayName,
+      firmaUnvani: promptInput.firmaUnvani,
+      // status null — LLM ilk turda kurucu_status tool'u çağırarak alır
+      status: null,
+    });
+  } else if (agentRole === "yonetici") {
+    systemPrompt = buildYoneticiSystemPrompt(promptInput);
+  } else if (agentRole === "egitmen") {
+    systemPrompt = buildEgitmenSystemPrompt({
+      displayName: promptInput.displayName,
+      firmaUnvani: promptInput.firmaUnvani,
+    });
+  } else {
+    systemPrompt = buildUpuSystemPrompt(promptInput);  // backward compat
+  }
 
   const ctx: ToolContext = {
     sb,
@@ -296,34 +312,37 @@ export async function POST(req: NextRequest) {
   let totalCacheRead = 0;
   let totalCacheWrite = 0;
 
+  // Egitmen rolünde toolDefs boş → Anthropic API tools alanını omit
+  // etmek daha güvenli (boş array bazı SDK versiyonlarında validation
+  // hatası verebilir). Helper ile koşullu spread.
+  const baseCreateParams = (model: string, withCache: boolean) => {
+    const sys = withCache
+      ? [{ type: "text" as const, text: systemPrompt, cache_control: { type: "ephemeral" as const } }]
+      : systemPrompt;
+    const params: Record<string, unknown> = {
+      model,
+      max_tokens: 1024,
+      system: sys,
+      messages: conversation,
+    };
+    if (toolDefs.length > 0) params.tools = toolDefs;
+    if (withCache) params.metadata = { user_id: lookup.profile.id };
+    return params;
+  };
+
   try {
     while (turns < MAX_TOOL_TURNS) {
       turns++;
       let response;
       try {
-        response = await anthropic.messages.create({
-          model: usedModel,
-          max_tokens: 1024,
-          system: [{
-            type: "text",
-            text: systemPrompt,
-            cache_control: { type: "ephemeral" },
-          }],
-          tools: toolDefs,
-          messages: conversation,
-          metadata: { user_id: lookup.profile.id },
-        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        response = await anthropic.messages.create(baseCreateParams(usedModel, true) as any);
       } catch (err) {
         // Primary model not found → fallback
         if (usedModel === PRIMARY_MODEL) {
           usedModel = FALLBACK_MODEL;
-          response = await anthropic.messages.create({
-            model: usedModel,
-            max_tokens: 1024,
-            system: systemPrompt,
-            tools: toolDefs,
-            messages: conversation,
-          });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          response = await anthropic.messages.create(baseCreateParams(usedModel, false) as any);
         } else {
           throw err;
         }
