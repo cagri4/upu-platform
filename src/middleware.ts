@@ -46,6 +46,18 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Admin domain: signup yapacak yer DEĞİL — yalnızca mevcut admin login eder.
+  // /[locale]/uye-ol → /[locale]/giris'e yönlendir. (API tarafı için
+  // /api/auth/otp/verify ayrıca admin host + purpose=signup'ı reddeder.)
+  if (isAdmin) {
+    const seg = pathname.split("/").filter(Boolean);
+    if (seg[1] === "uye-ol") {
+      const url = req.nextUrl.clone();
+      url.pathname = `/${pathLocale}/giris`;
+      return NextResponse.redirect(url);
+    }
+  }
+
   // Tell next-intl which locale is active
   response.headers.set("x-next-intl-locale", pathLocale);
 

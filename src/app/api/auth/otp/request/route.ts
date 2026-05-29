@@ -17,7 +17,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { getTenantByKey } from "@/tenants/config";
+import { getTenantByKey, isAdminDomain } from "@/tenants/config";
 import {
   requestOtp,
   isOtpPurpose,
@@ -54,6 +54,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "purpose_not_supported" }, { status: 400 });
   }
   const purpose: OtpPurpose = body.purpose;
+
+  // Admin domain'den signup yok — verify ile birlikte iki katlı blok (UI: middleware).
+  if (purpose === "signup") {
+    const hostHeader = (await headers()).get("host") || "";
+    if (isAdminDomain(hostHeader)) {
+      return NextResponse.json({ error: "signup_not_allowed_on_admin" }, { status: 403 });
+    }
+  }
 
   if (!isWaLang(body.locale)) {
     return NextResponse.json({ error: "bad_locale" }, { status: 400 });

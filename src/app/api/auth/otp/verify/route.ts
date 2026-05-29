@@ -55,6 +55,17 @@ export async function POST(req: NextRequest) {
   }
   const purpose: OtpPurpose = body.purpose;
 
+  // Admin domain'den signup yapılamaz. Adminpanel mevcut admin'in girdiği yer;
+  // public signup yüzeyi tutmaz. Middleware UI tarafını kapatıyor; bu blok
+  // direkt API çağrılarına karşı son hat. (Telefon GLOBAL UNIQUE olduğu için
+  // izin verseydik admin tenant'a çöp profile + phone kilitlenmesi olurdu.)
+  if (purpose === "signup") {
+    const hostHeader = (await headers()).get("host") || "";
+    if (isAdminDomain(hostHeader)) {
+      return NextResponse.json({ error: "signup_not_allowed_on_admin" }, { status: 403 });
+    }
+  }
+
   // Locale opsiyonel — verify response redirect locale prefix'i için
   const locale = isWaLang(body.locale) ? body.locale : "tr";
 
