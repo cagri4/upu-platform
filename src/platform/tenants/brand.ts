@@ -4,6 +4,7 @@
  * kullanır (BAYI_BRAND_TITLE vb.); bu helper sade text sürümü.
  */
 const BRAND_MAP: Record<string, string> = {
+  admin: "UPU Yönetim",
   emlak: "UPU Emlak",
   bayi: "UPU Bayi",
   market: "UPU Market",

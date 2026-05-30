@@ -26,10 +26,11 @@ type Locale = "tr" | "en" | "nl";
 interface PhoneOtpFormProps {
   mode: Mode;
   locale: Locale;
-  /** Login mode'da "/<locale>/uye-ol" — no_account error'da CTA olarak gösterilir. */
-  alternateHref: string;
+  /** Login mode'da "/<locale>/uye-ol" — no_account error'da CTA olarak gösterilir.
+   *  Admin host'unda signup yüzeyi olmadığı için undefined'dır → CTA gizlenir. */
+  alternateHref?: string;
   /** Mevcut kullanıcı için karşıt sayfa label'i ("Üye ol" veya "Giriş yap"). */
-  alternateLabel: string;
+  alternateLabel?: string;
 }
 
 const RESEND_COOLDOWN_SEC = 30;
@@ -235,8 +236,8 @@ export function PhoneOtpForm({
 function mapError(
   error: string | null,
   mode: Mode,
-  alternateLabel: string,
-  alternateHref: string,
+  alternateLabel: string | undefined,
+  alternateHref: string | undefined,
 ): React.ReactNode {
   if (!error) return null;
   let text: React.ReactNode = "Bir hata oluştu. Tekrar dene.";
@@ -254,7 +255,7 @@ function mapError(
       text = "WhatsApp mesajı gönderilemedi. Tekrar dene.";
       break;
     case "no_account":
-      text = (
+      text = alternateHref && alternateLabel ? (
         <span>
           Bu numara kayıtlı değil.{" "}
           <a
@@ -264,10 +265,12 @@ function mapError(
             {alternateLabel}
           </a>
         </span>
+      ) : (
+        "Bu numara kayıtlı değil."
       );
       break;
     case "already_exists":
-      text = (
+      text = alternateHref && alternateLabel ? (
         <span>
           Bu numara zaten kayıtlı.{" "}
           <a
@@ -277,6 +280,8 @@ function mapError(
             {alternateLabel}
           </a>
         </span>
+      ) : (
+        "Bu numara zaten kayıtlı."
       );
       break;
     case "invalid_code":

@@ -32,16 +32,18 @@ export default async function GirisPage({
   const { locale } = await params;
   const h = await headers();
   const tenantKey = h.get("x-tenant-key");
+  const isAdminHost = h.get("x-is-admin") === "true";
   const flagOn = isTenantAwareIdentityEnabled();
-  const brandName = getTenantBrandShort(tenantKey);
+  const brandName = isAdminHost ? getTenantBrandShort("admin") : getTenantBrandShort(tenantKey);
   const waText = buildWaText(tenantKey, flagOn);
-  const panelPath = getTenantPanelPath(tenantKey);
+  const panelPath = isAdminHost ? `/${locale}/admin` : getTenantPanelPath(tenantKey);
   return (
     <GirisClient
       brandName={brandName}
       waText={waText}
       locale={locale}
       panelPath={panelPath}
+      isAdminHost={isAdminHost}
     />
   );
 }

@@ -33,9 +33,11 @@ interface GirisClientProps {
    * Tenant'ın panel ana URL'i — Google login sonrası dönülecek default path.
    */
   panelPath: string;
+  /** adminpanel.upudev.nl: signup linkleri saklı + Üye ol bloğu render edilmez. */
+  isAdminHost?: boolean;
 }
 
-function GirisInner({ brandName, waText, locale, panelPath }: GirisClientProps) {
+function GirisInner({ brandName, waText, locale, panelPath, isAdminHost = false }: GirisClientProps) {
   const params = useSearchParams();
   const error = params.get("error");
   const hint = params.get("hint");
@@ -94,8 +96,8 @@ function GirisInner({ brandName, waText, locale, panelPath }: GirisClientProps) 
           <PhoneOtpForm
             mode="login"
             locale={otpLocale}
-            alternateHref={`/${locale}/uye-ol`}
-            alternateLabel="Üye ol →"
+            alternateHref={isAdminHost ? undefined : `/${locale}/uye-ol`}
+            alternateLabel={isAdminHost ? undefined : "Üye ol →"}
           />
 
           <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500">
@@ -127,15 +129,17 @@ function GirisInner({ brandName, waText, locale, panelPath }: GirisClientProps) 
             Google ile gir
           </a>
 
-          <p className="text-xs text-center text-slate-400 dark:text-slate-500 px-4 leading-relaxed">
-            Yeni misin?{" "}
-            <a
-              href={`/${locale}/uye-ol`}
-              className="text-emerald-600 dark:text-emerald-400 hover:underline"
-            >
-              Üye ol
-            </a>
-          </p>
+          {!isAdminHost && (
+            <p className="text-xs text-center text-slate-400 dark:text-slate-500 px-4 leading-relaxed">
+              Yeni misin?{" "}
+              <a
+                href={`/${locale}/uye-ol`}
+                className="text-emerald-600 dark:text-emerald-400 hover:underline"
+              >
+                Üye ol
+              </a>
+            </p>
+          )}
         </div>
       </main>
     </div>
