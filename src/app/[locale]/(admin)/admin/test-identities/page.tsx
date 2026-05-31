@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, MessageSquare, Plus, Trash2, Loader2, X } from "lucide-react";
+import { ArrowLeft, MessageSquare, Plus, Trash2, Loader2, X, Copy, Check } from "lucide-react";
 
 interface Identity {
   id: string;
@@ -18,6 +18,25 @@ interface Identity {
   target_tenant: string | null;
   notes: string | null;
   created_at: string;
+  last_otp_code: string | null;
+  last_otp_at: string | null;
+}
+
+const OTP_FRESH_WINDOW_MS = 5 * 60 * 1000; // 5 dk — otp.ts MAX_VERIFY_ATTEMPTS window ile aynı
+
+function formatOtpAge(iso: string | null, now: number): string {
+  if (!iso) return "";
+  const ageMs = now - new Date(iso).getTime();
+  if (ageMs < 0) return "şimdi";
+  const sec = Math.floor(ageMs / 1000);
+  if (sec < 60) return `${sec} sn önce`;
+  const min = Math.floor(sec / 60);
+  return `${min} dk ${sec % 60} sn önce`;
+}
+
+function isOtpFresh(iso: string | null, now: number): boolean {
+  if (!iso) return false;
+  return now - new Date(iso).getTime() < OTP_FRESH_WINDOW_MS;
 }
 
 interface CapturedMessage {
@@ -60,25 +79,56 @@ export default function AdminTestIdentitiesPage() {
   const [simulating, setSimulating] = useState(false);
   const [simResult, setSimResult] = useState<SimulateResult | null>(null);
 
+  // Live tick for "x sn önce" + 5s polling
+  const [now, setNow] = useState(() => Date.now());
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
   useEffect(() => {
     void fetchList();
+    const poll = window.setInterval(() => {
+      void fetchList(true);
+      setNow(Date.now());
+    }, 5000);
+    const tick = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => {
+      window.clearInterval(poll);
+      window.clearInterval(tick);
+    };
   }, []);
 
-  async function fetchList() {
-    setLoading(true);
-    setError("");
+  async function copyOtp(id: string, code: string) {
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch {
+      // fallback: select via temporary input
+      const el = document.createElement("input");
+      el.value = code;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
+    setCopiedId(id);
+    window.setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1500);
+  }
+
+  async function fetchList(silent = false) {
+    if (!silent) {
+      setLoading(true);
+      setError("");
+    }
     try {
       const r = await fetch("/api/admin/test-identities/list", { credentials: "same-origin" });
       const d = await r.json();
       if (!r.ok) {
-        setError(d.error || "Liste alınamadı.");
+        if (!silent) setError(d.error || "Liste alınamadı.");
         return;
       }
       setIdentities(d.identities || []);
     } catch {
-      setError("Bağlantı hatası.");
+      if (!silent) setError("Bağlantı hatası.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
@@ -240,43 +290,86 @@ export default function AdminTestIdentitiesPage() {
             <p className="text-sm text-slate-500">Henüz test telefon yok. Üstten ekle.</p>
           ) : (
             <div className="space-y-2">
-              {identities.map((id) => (
+              {identities.map((id) => {
+                const fresh = isOtpFresh(id.last_otp_at, now);
+                return (
                 <div
                   key={id.id}
-                  className={`flex items-center justify-between gap-3 p-3 rounded-xl border transition ${
+                  className={`p-3 rounded-xl border transition ${
                     selected?.id === id.id
                       ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30"
                       : "border-slate-200 dark:border-slate-800 hover:border-slate-400"
                   }`}
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <code className="font-mono text-sm text-slate-900 dark:text-white">{id.virtual_phone}</code>
-                      {id.display_name && <span className="text-sm text-slate-600 dark:text-slate-300">— {id.display_name}</span>}
-                      {id.target_tenant && (
-                        <span className="text-xs bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">
-                          {id.target_tenant}
-                        </span>
-                      )}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <code className="font-mono text-sm text-slate-900 dark:text-white">{id.virtual_phone}</code>
+                        {id.display_name && <span className="text-sm text-slate-600 dark:text-slate-300">— {id.display_name}</span>}
+                        {id.target_tenant && (
+                          <span className="text-xs bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">
+                            {id.target_tenant}
+                          </span>
+                        )}
+                      </div>
+                      {id.notes && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">{id.notes}</p>}
                     </div>
-                    {id.notes && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">{id.notes}</p>}
+                    <button
+                      type="button"
+                      onClick={() => { setSelected(id); setSimResult(null); }}
+                      className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" /> Mesaj Gönder
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(id.id)}
+                      className="inline-flex items-center gap-1.5 text-rose-600 hover:text-rose-700 dark:text-rose-400 text-xs font-semibold px-2 py-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => { setSelected(id); setSimResult(null); }}
-                    className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
+
+                  {/* Son OTP — sanal telefonun yakaladığı kod */}
+                  <div
+                    className={`mt-2 flex items-center justify-between gap-3 px-3 py-2 rounded-lg border text-xs transition ${
+                      fresh
+                        ? "border-emerald-300 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/30"
+                        : "border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/30 opacity-60"
+                    }`}
                   >
-                    <MessageSquare className="w-3.5 h-3.5" /> Mesaj Gönder
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(id.id)}
-                    className="inline-flex items-center gap-1.5 text-rose-600 hover:text-rose-700 dark:text-rose-400 text-xs font-semibold px-2 py-1.5"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                    {fresh && id.last_otp_code ? (
+                      <>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-emerald-700 dark:text-emerald-300 font-semibold whitespace-nowrap">Son OTP:</span>
+                          <code className="font-mono text-base tracking-[0.3em] text-slate-900 dark:text-white">
+                            {id.last_otp_code}
+                          </code>
+                          <span className="text-slate-500 dark:text-slate-400 truncate">
+                            ({formatOtpAge(id.last_otp_at, now)})
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyOtp(id.id, id.last_otp_code as string)}
+                          className="inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 font-semibold px-2.5 py-1 rounded-md"
+                        >
+                          {copiedId === id.id ? (
+                            <><Check className="w-3.5 h-3.5" /> Kopyalandı</>
+                          ) : (
+                            <><Copy className="w-3.5 h-3.5" /> Kopyala</>
+                          )}
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-slate-400 dark:text-slate-500 italic">
+                        Kod yok — sanal telefonla giriş/üye ol akışını başlat, kod burada görünecek.
+                      </span>
+                    )}
+                  </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>

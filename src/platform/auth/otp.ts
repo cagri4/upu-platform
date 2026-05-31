@@ -121,6 +121,31 @@ export async function requestOtp(
     return { ok: false, error: "internal", status: 500 };
   }
 
+  // Test identity bypass — phone admin_test_identities'te ise WA'ya gönderme,
+  // sadece o satıra last_otp_code/at yaz. Admin paneli 5sn polling ile
+  // kodu okur, tek-tık kopyalar. Sanal telefon flow (905552221122 vb).
+  const { data: testIdentity } = await sb
+    .from("admin_test_identities")
+    .select("id")
+    .eq("virtual_phone", input.phone)
+    .limit(1)
+    .maybeSingle();
+
+  if (testIdentity) {
+    const { error: updErr } = await sb
+      .from("admin_test_identities")
+      .update({
+        last_otp_code: code,
+        last_otp_at: new Date().toISOString(),
+      })
+      .eq("id", testIdentity.id);
+    if (updErr) {
+      console.error("[otp:request] test-identity capture failed", updErr);
+      return { ok: false, error: "internal", status: 500 };
+    }
+    return { ok: true };
+  }
+
   const send = await sendOtpTemplate(input.phone, code, input.locale);
   if (!send.ok) {
     console.error("[otp:request] WA send failed", send.error);

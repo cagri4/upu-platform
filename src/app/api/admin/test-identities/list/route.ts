@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const sb = getServiceClient();
   const { data, error } = await sb
     .from("admin_test_identities")
-    .select("id, virtual_phone, display_name, target_tenant, notes, created_at")
+    .select("id, virtual_phone, display_name, target_tenant, notes, created_at, last_otp_code, last_otp_at")
     .eq("admin_user_id", auth.userId)
     .order("created_at", { ascending: false });
 
