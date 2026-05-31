@@ -15,6 +15,7 @@
  * Tenant key reverse lookup: profile.tenant_id → getAllTenants ile key bul
  * → getTenantPanelPath(key).
  */
+import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { getServiceClient } from "@/platform/auth/supabase";
@@ -142,9 +143,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "already_exists" }, { status: 409 });
   }
 
+  // profiles.id NOT NULL + DEFAULT yok (eski multi_tenant migration sonrası
+  // drop_profiles_id_fkey ile FK kalktı ama default eklenmedi). Server-side
+  // UUID üret — auth_user_id boş bırakıyoruz çünkü OTP-first kullanıcısının
+  // auth.users satırı yok.
+  const newProfileId = randomUUID();
   const { data: newProfile, error: insErr } = await sb
     .from("profiles")
     .insert({
+      id: newProfileId,
       whatsapp_phone: phone,
       tenant_id: tenant.tenantId,
     })
