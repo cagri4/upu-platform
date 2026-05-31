@@ -17,7 +17,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { getTenantByKey, isAdminDomain } from "@/tenants/config";
+import { getTenantByKey, getTenantByDomain, isAdminDomain } from "@/tenants/config";
 import {
   requestOtp,
   isOtpPurpose,
@@ -75,10 +75,14 @@ export async function POST(req: NextRequest) {
 
   const sb = getServiceClient();
 
-  // Tenant resolve (subdomain'den middleware tarafından set edilen header)
+  // Tenant resolve: middleware /api/ paths'i atlar, x-tenant-key normalde
+  // boş gelir → Host header'dan getTenantByDomain ile çöz (codebase pattern,
+  // bkz. api/bayi-payments/*).
   const h = await headers();
   const tenantKey = h.get("x-tenant-key");
-  const tenant = tenantKey ? getTenantByKey(tenantKey) : null;
+  const hostForTenant = h.get("host") ?? "";
+  const tenant =
+    (tenantKey ? getTenantByKey(tenantKey) : null) ?? getTenantByDomain(hostForTenant);
   const tenantId = tenant?.tenantId ?? null;
 
   // purpose-based pre-check (phone global unique → tek satır kontrolü)

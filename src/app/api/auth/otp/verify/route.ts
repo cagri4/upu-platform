@@ -20,7 +20,7 @@ import { headers } from "next/headers";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { attachSessionToResponse } from "@/platform/auth/session";
 import { getTenantPanelPath } from "@/platform/auth/qr";
-import { getAllTenants, getTenantByKey, isAdminDomain } from "@/tenants/config";
+import { getAllTenants, getTenantByKey, getTenantByDomain, isAdminDomain } from "@/tenants/config";
 import {
   verifyOtp,
   isOtpPurpose,
@@ -119,10 +119,14 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // signup
+  // signup — tenant resolve: middleware /api/ paths'i atlar, x-tenant-key
+  // boş gelir → Host header'dan getTenantByDomain fallback (codebase pattern,
+  // bkz. api/bayi-payments/*).
   const h = await headers();
   const tenantKey = h.get("x-tenant-key");
-  const tenant = tenantKey ? getTenantByKey(tenantKey) : null;
+  const signupHost = h.get("host") ?? "";
+  const tenant =
+    (tenantKey ? getTenantByKey(tenantKey) : null) ?? getTenantByDomain(signupHost);
   if (!tenant?.tenantId) {
     return NextResponse.json({ error: "tenant_missing" }, { status: 400 });
   }
