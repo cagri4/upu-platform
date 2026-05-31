@@ -15,7 +15,7 @@
  * Tenant key reverse lookup: profile.tenant_id → getAllTenants ile key bul
  * → getTenantPanelPath(key).
  */
-import { randomUUID } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { getServiceClient } from "@/platform/auth/supabase";
@@ -143,22 +143,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "already_exists" }, { status: 409 });
   }
 
-  // profiles.id NOT NULL + DEFAULT yok (eski multi_tenant migration sonrası
-  // drop_profiles_id_fkey ile FK kalktı ama default eklenmedi). Server-side
-  // UUID üret — auth_user_id boş bırakıyoruz çünkü OTP-first kullanıcısının
-  // auth.users satırı yok.
+  // profiles.auth_user_id NOT NULL → önce auth.user yaratılmalı (placeholder
+  // email pattern, organic-signup ile aynı). Profil minimum dolu yaratılır
+  // (display_name = telefon, role/capabilities boş; profil-kurulum sayfası
+  // tamamlatır).
+  const placeholderEmail = `otp_${tenant.key}_${Date.now()}_${randomBytes(4).toString("hex")}@placeholder.upudev.nl`;
+  const { data: authUser, error: authErr } = await sb.auth.admin.createUser({
+    email: placeholderEmail,
+    email_confirm: true,
+    user_metadata: { name: phone, phone, source: "otp-signup" },
+  });
+  if (authErr || !authUser?.user) {
+    console.error("[otp:verify:signup] auth.admin.createUser failed", authErr);
+    return NextResponse.json({ error: "internal" }, { status: 500 });
+  }
+  const authUserId = authUser.user.id;
+
   const newProfileId = randomUUID();
   const { data: newProfile, error: insErr } = await sb
     .from("profiles")
     .insert({
       id: newProfileId,
+      auth_user_id: authUserId,
       whatsapp_phone: phone,
       tenant_id: tenant.tenantId,
+      display_name: phone,
+      preferred_locale: locale,
     })
     .select("id")
     .single();
   if (insErr || !newProfile) {
     console.error("[otp:verify:signup] profile insert failed", insErr);
+    // Cleanup: auth.user dangling kalmasın
+    await sb.auth.admin.deleteUser(authUserId).catch(() => undefined);
     return NextResponse.json({ error: "internal" }, { status: 500 });
   }
 
