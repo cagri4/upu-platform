@@ -22,6 +22,7 @@ import { getServiceClient } from "@/platform/auth/supabase";
 import { attachSessionToResponse } from "@/platform/auth/session";
 import { getTenantPanelPath } from "@/platform/auth/qr";
 import { getAllTenants, getTenantByKey, getTenantByDomain, isAdminDomain } from "@/tenants/config";
+import { createTenantForSignup } from "@/platform/auth/tenant-provision";
 import {
   verifyOtp,
   isOtpPurpose,
@@ -143,6 +144,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "already_exists" }, { status: 409 });
   }
 
+  // Multi-tenant izolasyon: yeni signup için yeni tenants satırı yarat.
+  // Config'teki tenant.tenantId (DEMO) burada KULLANILMAZ; yalnız saas_type
+  // resolve etmek için tenant.key/saasType taşır.
+  const tenantInsert = await createTenantForSignup(sb, {
+    ownerName: phone, // profil-kurulum sonrası display_name ile rename edilebilir
+    tenantKey: tenant.key,
+  });
+  if (!tenantInsert.ok) {
+    console.error("[otp:verify:signup] tenant insert failed", tenantInsert.error);
+    return NextResponse.json({ error: "internal" }, { status: 500 });
+  }
+  const newTenantId = tenantInsert.tenantId;
+
   // profiles.auth_user_id NOT NULL → önce auth.user yaratılmalı (placeholder
   // email pattern, organic-signup ile aynı). Profil minimum dolu yaratılır
   // (display_name = telefon, role/capabilities boş; profil-kurulum sayfası
@@ -155,6 +169,8 @@ export async function POST(req: NextRequest) {
   });
   if (authErr || !authUser?.user) {
     console.error("[otp:verify:signup] auth.admin.createUser failed", authErr);
+    // Rollback orphan tenant
+    await sb.from("tenants").delete().eq("id", newTenantId);
     return NextResponse.json({ error: "internal" }, { status: 500 });
   }
   const authUserId = authUser.user.id;
@@ -166,7 +182,7 @@ export async function POST(req: NextRequest) {
       id: newProfileId,
       auth_user_id: authUserId,
       whatsapp_phone: phone,
-      tenant_id: tenant.tenantId,
+      tenant_id: newTenantId,
       display_name: phone,
       preferred_locale: locale,
     })
@@ -174,8 +190,9 @@ export async function POST(req: NextRequest) {
     .single();
   if (insErr || !newProfile) {
     console.error("[otp:verify:signup] profile insert failed", insErr);
-    // Cleanup: auth.user dangling kalmasın
+    // Cleanup: auth.user + tenant dangling kalmasın
     await sb.auth.admin.deleteUser(authUserId).catch(() => undefined);
+    await sb.from("tenants").delete().eq("id", newTenantId);
     return NextResponse.json({ error: "internal" }, { status: 500 });
   }
 
@@ -183,6 +200,6 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json({ ok: true, redirect });
   return await attachSessionToResponse(res, {
     uid: newProfile.id as string,
-    tenantId: tenant.tenantId,
+    tenantId: newTenantId,
   });
 }

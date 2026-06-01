@@ -24,6 +24,7 @@ import { extractTenantHintFromText, stripTenantPrefix } from "@/platform/auth/te
 import { sendText, sendUrlButton } from "./send";
 import type { WaContext } from "./types";
 import { getTenantByKey } from "@/tenants/config";
+import { createTenantForSignup } from "@/platform/auth/tenant-provision";
 
 /**
  * Bug 2 — Tenant-aware intro factory. Her tenant için 3 mesaj akışı:
@@ -273,6 +274,17 @@ export async function runTenantSignup(
     return false;
   }
 
+  // Multi-tenant izolasyon: her signup KENDİ tenants satırına bağlanır.
+  // Config'teki tenantId (Bayi Yönetimi/Emlak Ofisi/...) DEMO tenant olarak
+  // kalır; bu kullanıcı ona DEĞIL, yeni satıra bağlanır → dashboard boş açılır.
+  const tenantInsert = await createTenantForSignup(supabase, { ownerName: name, tenantKey });
+  if (!tenantInsert.ok) {
+    console.error("[organic-signup] tenant insert failed:", tenantInsert.error);
+    await sendText(phone, "❌ Kayıt başlatılamadı (tenant). info@upudev.nl ile iletişime geçin.");
+    return true;
+  }
+  const newTenantId = tenantInsert.tenantId;
+
   // Capabilities — bayi için OWNER_ALL preset; diğerleri şimdilik boş
   let capabilities: string[] = [];
   if (tenantKey === "bayi") {
@@ -291,7 +303,7 @@ export async function runTenantSignup(
   const { error: profileErr } = await supabase.from("profiles").insert({
     id: newProfileId,
     auth_user_id: authUserId,
-    tenant_id: tenantCfg.tenantId,
+    tenant_id: newTenantId,
     display_name: name,
     whatsapp_phone: phone,
     role: "admin",
@@ -305,6 +317,8 @@ export async function runTenantSignup(
   if (profileErr) {
     const code = (profileErr as { code?: string }).code;
     console.error("[organic-signup] profile insert error:", profileErr);
+    // Rollback: orphan tenant'ı temizle
+    await supabase.from("tenants").delete().eq("id", newTenantId);
     if (code === "23505") {
       await sendText(phone, "Bu hizmete zaten kayıtlısın 👋\n\n'panel' yazarak panele dön.");
       return true;
@@ -317,7 +331,7 @@ export async function runTenantSignup(
   await supabase
     .from("subscriptions")
     .insert({
-      tenant_id: tenantCfg.tenantId,
+      tenant_id: newTenantId,
       user_id: newProfileId,
       plan: "trial",
       status: "active",
@@ -339,7 +353,7 @@ export async function runTenantSignup(
     });
 
   // ── Part B: Multi-membership info — diğer tenant'lara üye mi? ──
-  await maybeSendMultiMembershipInfo(supabase, phone, authUserId, tenantCfg.tenantId);
+  await maybeSendMultiMembershipInfo(supabase, phone, authUserId, newTenantId);
 
   // ── Part A: Welcome + Panel CTA (tenant-aware factory) ──
   await sendTenantPanelWelcome(phone, name, authUserId, tenantKey);
