@@ -317,6 +317,8 @@ list, git log ve memory'de zaten var, hızla bayatlar.
 - [ ] `src/tenants/{name}/CLAUDE.md` template'ten kopyalandı, tüm
       `{{PLACEHOLDER}}` ifadeleri dolduruldu (veya bölüm silindi), dosya
       `git add` ile commit'lendi
+- [ ] **LAUNCH-CHECKLIST.md** tüm maddeleri yeşil — reklam yayını ÖNCESİ
+      bu liste geçilmeden production'a açılmaz. Bkz `.planning/LAUNCH-CHECKLIST.md`
 
 ## Sık Yapılan Hatalar
 
