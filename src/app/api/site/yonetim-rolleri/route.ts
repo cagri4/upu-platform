@@ -44,7 +44,7 @@ interface ProfileRow {
 
 async function resolveAdminBuilding(req: NextRequest): Promise<
   | { error: string; status: number }
-  | { userId: string; buildingId: string; buildingName: string }
+  | { userId: string; tenantId: string; buildingId: string; buildingName: string }
 > {
   const auth = await requireAuth(req);
   if ("error" in auth) return { error: "Oturum bulunamadı.", status: 401 };
@@ -69,7 +69,7 @@ async function resolveAdminBuilding(req: NextRequest): Promise<
     return { error: "Yönettiğiniz bir bina bulunamadı.", status: 403 };
   }
 
-  return { userId: lookup.profile.id, buildingId: building.id, buildingName: building.name || "Apartman" };
+  return { userId: lookup.profile.id, tenantId: lookup.tenantId, buildingId: building.id, buildingName: building.name || "Apartman" };
 }
 
 export async function GET(req: NextRequest) {
@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
       .from("profiles")
       .select("id, auth_user_id, role, display_name")
       .or(orClauses)
-      .eq("tenant_id", lookup.tenantId);
+      .eq("tenant_id", ctx.tenantId);
 
     for (const p of (profiles || []) as ProfileRow[]) {
       const key = p.auth_user_id || p.id;
@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
     .from("profiles")
     .select("id, auth_user_id, role")
     .eq("id", body.profile_id)
-    .eq("tenant_id", lookup.tenantId)
+    .eq("tenant_id", ctx.tenantId)
     .maybeSingle();
 
   if (!target) {

@@ -44,6 +44,7 @@ async function resolveAdminBuilding(req: NextRequest) {
   return {
     sb,
     userId: lookup.profile.id,
+    tenantId: lookup.tenantId,
     buildingId: building.id,
     buildingName: building.name || "Apartman",
     arsaPayiDenominator: building.arsa_payi_denominator as number | null,
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await ctx.sb
     .from("sy_meetings")
     .insert({
-      tenant_id: lookup.tenantId,
+      tenant_id: ctx.tenantId,
       building_id: ctx.buildingId,
       title,
       meeting_type,

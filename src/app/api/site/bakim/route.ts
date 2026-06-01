@@ -47,6 +47,7 @@ async function resolveAdminBuilding(req: NextRequest) {
   return {
     sb,
     userId: lookup.profile.id,
+    tenantId: lookup.tenantId,
     buildingId: building.id,
     buildingName: building.name || "Apartman",
   } as const;
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await ctx.sb
     .from("sy_maintenance_schedule")
     .insert({
-      tenant_id: lookup.tenantId,
+      tenant_id: ctx.tenantId,
       building_id: ctx.buildingId,
       title,
       category,

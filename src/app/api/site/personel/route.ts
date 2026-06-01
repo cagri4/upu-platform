@@ -40,7 +40,7 @@ async function resolveAdminBuilding(req: NextRequest) {
   if (!building?.id) {
     return { error: "Yönettiğiniz bir bina bulunamadı.", status: 403 } as const;
   }
-  return { sb, userId: lookup.profile.id, buildingId: building.id, buildingName: building.name || "Apartman" } as const;
+  return { sb, userId: lookup.profile.id, tenantId: lookup.tenantId, buildingId: building.id, buildingName: building.name || "Apartman" } as const;
 }
 
 export async function GET(req: NextRequest) {
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
   }
 
   const insertPayload = {
-    tenant_id: lookup.tenantId,
+    tenant_id: ctx.tenantId,
     building_id: ctx.buildingId,
     full_name,
     role,

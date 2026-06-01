@@ -46,7 +46,7 @@ async function resolveAdminBuilding(req: NextRequest) {
   if (!building?.id) {
     return { error: "Yönettiğiniz bir bina bulunamadı.", status: 403 } as const;
   }
-  return { sb, userId: lookup.profile.id, buildingId: building.id, buildingName: building.name || "Apartman" } as const;
+  return { sb, userId: lookup.profile.id, tenantId: lookup.tenantId, buildingId: building.id, buildingName: building.name || "Apartman" } as const;
 }
 
 interface IncomeRow {
