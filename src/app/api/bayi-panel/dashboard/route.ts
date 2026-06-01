@@ -18,7 +18,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { resolvePanelAuth } from "@/platform/auth/panel-auth";
-import { getTenantByDomain, getTenantByKey } from "@/tenants/config";
+import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
+import { getTenantByDomain } from "@/tenants/config";
 
 export const dynamic = "force-dynamic";
 
@@ -33,12 +34,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Bu endpoint yalnızca bayi subdomain'inde kullanılır." }, { status: 400 });
     }
 
-    const bayiTenantCfg = getTenantByKey("bayi");
-    if (!bayiTenantCfg) {
-      return NextResponse.json({ error: "Bayi tenant config bulunamadı." }, { status: 500 });
-    }
-    const bayiTenantId = bayiTenantCfg.tenantId;
-
     // 2) Cookie session (token fallback) → userId (profile.id)
     const auth = await resolvePanelAuth(req);
     if ("error" in auth) {
@@ -47,24 +42,20 @@ export async function GET(req: NextRequest) {
 
     const sb = getServiceClient();
 
-    // 3) profile.id → auth_user_id (multi-tenant anchor)
-    const { data: ownProfile } = await sb
-      .from("profiles")
-      .select("auth_user_id")
-      .eq("id", auth.userId)
-      .maybeSingle();
-    const authUserId = ownProfile?.auth_user_id || auth.userId;
-
-    // 4) Bayi profile composite lookup (auth_user_id + bayi tenant_id)
-    const { data: bayiProfile } = await sb
-      .from("profiles")
-      .select("id")
-      .eq("auth_user_id", authUserId)
-      .eq("tenant_id", bayiTenantId)
-      .maybeSingle();
-    if (!bayiProfile) {
-      return NextResponse.json({ error: "Bu hesap bayi'ye kayıtlı değil." }, { status: 403 });
+    // 3+4) Bayi profile lookup — multi-tenant safe (saas_type=bayi).
+    // Eski sürüm config.tenantId DEMO'sunu kullanıyordu; her yeni signup
+    // kendi tenant'ında olunca DEMO eşleşmiyor → 403. resolveTenantProfile
+    // saas_type altındaki tüm tenant'larda arar ve kullanıcının kendi
+    // tenant_id'sini döner. KPI query'leri o tenant_id ile filtreli olur.
+    const lookup = await resolveTenantProfile<{ id: string }>(sb, {
+      userId: auth.userId,
+      tenantKey: "bayi",
+      select: "id",
+    });
+    if ("error" in lookup) {
+      return NextResponse.json({ error: lookup.error }, { status: lookup.status });
     }
+    const bayiTenantId = lookup.tenantId;
 
     // 5) KPI queries — hepsi bayi tenant_id ile filtreli
     const { data: statuses } = await sb
