@@ -20,7 +20,6 @@ import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 
-const SITEYONETIM_TENANT_ID = "c12010c7-7b13-44d5-bdc7-fc7c2c1ac82e";
 const ALLOWED_ROLES = ["sakin", "yonetici", "denetci", "muhasebeci_site"] as const;
 type SiteRole = (typeof ALLOWED_ROLES)[number];
 
@@ -62,7 +61,7 @@ async function resolveAdminBuilding(req: NextRequest): Promise<
     .from("sy_buildings")
     .select("id, name")
     .eq("manager_id", lookup.profile.id)
-    .eq("tenant_id", SITEYONETIM_TENANT_ID)
+    .eq("tenant_id", lookup.tenantId)
     .limit(1)
     .maybeSingle();
 
@@ -101,7 +100,7 @@ export async function GET(req: NextRequest) {
       .from("profiles")
       .select("id, auth_user_id, role, display_name")
       .or(orClauses)
-      .eq("tenant_id", SITEYONETIM_TENANT_ID);
+      .eq("tenant_id", lookup.tenantId);
 
     for (const p of (profiles || []) as ProfileRow[]) {
       const key = p.auth_user_id || p.id;
@@ -176,7 +175,7 @@ export async function POST(req: NextRequest) {
     .from("profiles")
     .select("id, auth_user_id, role")
     .eq("id", body.profile_id)
-    .eq("tenant_id", SITEYONETIM_TENANT_ID)
+    .eq("tenant_id", lookup.tenantId)
     .maybeSingle();
 
   if (!target) {

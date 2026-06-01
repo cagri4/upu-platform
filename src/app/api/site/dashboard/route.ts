@@ -18,7 +18,6 @@ import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 
-const SITEYONETIM_TENANT_ID = "c12010c7-7b13-44d5-bdc7-fc7c2c1ac82e";
 
 interface DuesLedgerRow {
   unit_id: string | null;
@@ -45,7 +44,7 @@ export async function GET(req: NextRequest) {
     .from("sy_buildings")
     .select("id")
     .eq("manager_id", userId)
-    .eq("tenant_id", SITEYONETIM_TENANT_ID)
+    .eq("tenant_id", lookup.tenantId)
     .limit(1)
     .maybeSingle();
 

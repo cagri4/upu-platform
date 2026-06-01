@@ -18,7 +18,6 @@ import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 
-const SITEYONETIM_TENANT_ID = "c12010c7-7b13-44d5-bdc7-fc7c2c1ac82e";
 
 async function resolveAdminBuilding(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -36,7 +35,7 @@ async function resolveAdminBuilding(req: NextRequest) {
     .from("sy_buildings")
     .select("id, name")
     .eq("manager_id", lookup.profile.id)
-    .eq("tenant_id", SITEYONETIM_TENANT_ID)
+    .eq("tenant_id", lookup.tenantId)
     .limit(1)
     .maybeSingle();
 
@@ -185,7 +184,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await ctx.sb
     .from("sy_budget_categories")
     .insert({
-      tenant_id: SITEYONETIM_TENANT_ID,
+      tenant_id: lookup.tenantId,
       building_id: ctx.buildingId,
       category,
       year,

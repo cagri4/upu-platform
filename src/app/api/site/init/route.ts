@@ -20,7 +20,6 @@ import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 
 export const dynamic = "force-dynamic";
 
-const SITEYONETIM_TENANT_ID = "c12010c7-7b13-44d5-bdc7-fc7c2c1ac82e";
 
 export async function GET(req: NextRequest) {
   try {
@@ -53,14 +52,14 @@ export async function GET(req: NextRequest) {
       .from("sy_buildings")
       .select("name")
       .eq("manager_id", lookup.profile.id)
-      .eq("tenant_id", SITEYONETIM_TENANT_ID)
+      .eq("tenant_id", lookup.tenantId)
       .limit(1)
       .maybeSingle();
 
     return NextResponse.json({
       success: true,
       displayName: lookup.profile.display_name || null,
-      tenantId: lookup.profile.tenant_id || SITEYONETIM_TENANT_ID,
+      tenantId: lookup.profile.tenant_id || lookup.tenantId,
       buildingName: building?.name || null,
       botPhone: "31644967207",
     });
