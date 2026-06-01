@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useParams } from "next/navigation";
 
 const BOT_WA_NUMBER = "31644967207";
-type Status = "loading" | "form" | "saving" | "done" | "error";
+type Status = "loading" | "form" | "saving" | "done" | "error" | "no_auth";
 
 export default function ProfilKurulumPage() {
   const searchParams = useSearchParams();
+  const params = useParams();
+  const locale = (params?.locale as string) || "tr";
   const token = searchParams.get("t") || searchParams.get("token");
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState("");
@@ -24,7 +26,11 @@ export default function ProfilKurulumPage() {
     fetch(`/api/setup/init${tokenQs}`, { credentials: "same-origin" })
       .then(async r => {
         const d = await r.json();
-        if (!r.ok) { setStatus("error"); setError(d.error || "Link doğrulanamadı."); return; }
+        if (!r.ok) {
+          // 401 = no cookie + no token: yumuşak yönlendirme. Diğer hatalar generic.
+          if (r.status === 401) { setStatus("no_auth"); return; }
+          setStatus("error"); setError(d.error || "Link doğrulanamadı."); return;
+        }
         if (d.profile?.display_name) setDisplayName(d.profile.display_name);
         if (d.profile?.office_name) setOfficeName(d.profile.office_name);
         if (d.profile?.location) setLocation(d.profile.location);
@@ -63,6 +69,12 @@ export default function ProfilKurulumPage() {
   }
 
   if (status === "loading") return <Center><div className="text-4xl mb-3">⏳</div><p>Yükleniyor...</p></Center>;
+  if (status === "no_auth") return <Center>
+    <div className="text-4xl mb-3">🔒</div>
+    <h1 className="text-xl font-bold mb-2">Önce giriş yap</h1>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">Profil kurulumu için oturum gerekli.</p>
+    <a href={`/${locale}/giris`} className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-semibold">Giriş yap →</a>
+  </Center>;
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div><h1 className="text-xl font-bold mb-2">Hata</h1>
     <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
