@@ -322,7 +322,7 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
       {/* Floating button — UPU avatar (Meta WA profil görseli)
           KATMAN A: pasif quota rozeti (used/limit) — sadece görünür, dikkat çekmez */}
       {!open && (
-        <div className="fixed bottom-4 right-4 z-50">
+        <div className="fixed bottom-4 right-4 z-50" data-tour="ai-agent">
           <button
             type="button"
             onClick={() => setOpen(true)}

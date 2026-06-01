@@ -4,11 +4,26 @@
       "name": "Real Estate Office",
       "description": "AI-powered virtual office team for real estate agents",
       "employees": {
-        "portfoy": { "name": "Portfolio Manager", "description": "Property management" },
-        "satis": { "name": "Sales Support", "description": "Customer & matching" },
-        "medya": { "name": "Media Specialist", "description": "Photos & publishing" },
-        "pazar": { "name": "Market Analyst", "description": "Pricing & analysis" },
-        "sekreter": { "name": "Secretary", "description": "Briefing & tasks" }
+        "portfoy": {
+          "name": "Portfolio Manager",
+          "description": "Property management"
+        },
+        "satis": {
+          "name": "Sales Support",
+          "description": "Customer & matching"
+        },
+        "medya": {
+          "name": "Media Specialist",
+          "description": "Photos & publishing"
+        },
+        "pazar": {
+          "name": "Market Analyst",
+          "description": "Pricing & analysis"
+        },
+        "sekreter": {
+          "name": "Secretary",
+          "description": "Briefing & tasks"
+        }
       }
     },
     "bayi": {
@@ -39,48 +54,102 @@
       "name": "Accounting Assistant",
       "description": "AI-powered virtual team for accounting offices",
       "employees": {
-        "faturaUzmani": { "name": "Invoice Processing Specialist", "description": "e-Invoice upload, search & account code suggestions" },
-        "sekreter": { "name": "Secretary", "description": "Tax calendar, appointments & taxpayer management" },
-        "vergiUzmani": { "name": "Tax Specialist", "description": "VAT calculation, tax reports & declaration review" },
-        "tahsilatUzmani": { "name": "Collection Specialist", "description": "Receivables tracking, overdue payments & cash flow" }
+        "faturaUzmani": {
+          "name": "Invoice Processing Specialist",
+          "description": "e-Invoice upload, search & account code suggestions"
+        },
+        "sekreter": {
+          "name": "Secretary",
+          "description": "Tax calendar, appointments & taxpayer management"
+        },
+        "vergiUzmani": {
+          "name": "Tax Specialist",
+          "description": "VAT calculation, tax reports & declaration review"
+        },
+        "tahsilatUzmani": {
+          "name": "Collection Specialist",
+          "description": "Receivables tracking, overdue payments & cash flow"
+        }
       }
     },
     "otel": {
       "name": "Hotel Management",
       "description": "AI-powered virtual team for hotels",
       "employees": {
-        "resepsiyon": { "name": "Front Desk", "description": "Guest reception, messaging & escalation" },
-        "rezervasyon": { "name": "Reservation Specialist", "description": "Availability, pricing & check-in/out" },
-        "katHizmetleri": { "name": "Housekeeping", "description": "Room status, cleaning & task assignment" },
-        "misafirDeneyimi": { "name": "Guest Experience", "description": "Knowledge base, recommendations & review management" }
+        "resepsiyon": {
+          "name": "Front Desk",
+          "description": "Guest reception, messaging & escalation"
+        },
+        "rezervasyon": {
+          "name": "Reservation Specialist",
+          "description": "Availability, pricing & check-in/out"
+        },
+        "katHizmetleri": {
+          "name": "Housekeeping",
+          "description": "Room status, cleaning & task assignment"
+        },
+        "misafirDeneyimi": {
+          "name": "Guest Experience",
+          "description": "Knowledge base, recommendations & review management"
+        }
       }
     },
     "siteyonetim": {
       "name": "Property Management",
       "description": "AI-powered virtual team for residential management",
       "employees": {
-        "muhasebeci": { "name": "Accountant", "description": "Dues, debt status, income-expense & assessments" },
-        "sekreter": { "name": "Secretary", "description": "Announcements, meeting calls & resident communications" },
-        "teknisyen": { "name": "Technician", "description": "Fault reporting, maintenance & repair tracking" },
-        "hukukMusaviri": { "name": "Legal Counsel", "description": "Property law regulations, rights & obligations" }
+        "muhasebeci": {
+          "name": "Accountant",
+          "description": "Dues, debt status, income-expense & assessments"
+        },
+        "sekreter": {
+          "name": "Secretary",
+          "description": "Announcements, meeting calls & resident communications"
+        },
+        "teknisyen": {
+          "name": "Technician",
+          "description": "Fault reporting, maintenance & repair tracking"
+        },
+        "hukukMusaviri": {
+          "name": "Legal Counsel",
+          "description": "Property law regulations, rights & obligations"
+        }
       }
     },
     "market": {
       "name": "Market Management",
       "description": "AI-powered stock & sales management for markets",
       "employees": {
-        "stokSorumlusu": { "name": "Stock Manager", "description": "Products, inventory, expiry dates & category management" },
-        "siparisYoneticisi": { "name": "Order Manager", "description": "Supplier, order & delivery management" },
-        "finansAnalisti": { "name": "Financial Analyst", "description": "Pricing, promotions, sales & register reports" }
+        "stokSorumlusu": {
+          "name": "Stock Manager",
+          "description": "Products, inventory, expiry dates & category management"
+        },
+        "siparisYoneticisi": {
+          "name": "Order Manager",
+          "description": "Supplier, order & delivery management"
+        },
+        "finansAnalisti": {
+          "name": "Financial Analyst",
+          "description": "Pricing, promotions, sales & register reports"
+        }
       }
     },
     "restoran": {
       "name": "Restaurant Assistant",
       "description": "AI-powered order, table, reservation and inventory management for restaurants and cafés",
       "employees": {
-        "asistan": { "name": "Assistant", "description": "Daily briefing, end-of-day summary and reminders" },
-        "servis": { "name": "Service", "description": "Order, table and reservation management" },
-        "mutfakStok": { "name": "Kitchen / Inventory", "description": "Stock tracking, menu and supplier management" }
+        "asistan": {
+          "name": "Assistant",
+          "description": "Daily briefing, end-of-day summary and reminders"
+        },
+        "servis": {
+          "name": "Service",
+          "description": "Order, table and reservation management"
+        },
+        "mutfakStok": {
+          "name": "Kitchen / Inventory",
+          "description": "Stock tracking, menu and supplier management"
+        }
       }
     }
   },
@@ -166,7 +235,6 @@
     "privacy_security_h": "Security",
     "privacy_security_b": "Data stored encrypted within the EU on Supabase. All connections TLS 1.2+. WhatsApp messages via Meta's end-to-end encryption.",
     "privacy_contact": "Questions? info@upudev.nl",
-
     "terms_title": "Terms of Service",
     "terms_intro": "By using upu Dealer Management (operated by upudev) you agree to the following terms.",
     "terms_service_h": "Service scope",
@@ -216,5 +284,25 @@
     "tos_consent_text": " — I have read and accept them.",
     "already_member": "Already a member?",
     "login_link": "Sign in"
+  },
+  "bayiTour": {
+    "welcome_greet_named": "Hi {name}! 👋",
+    "welcome_greet": "Hi! 👋",
+    "welcome_desc": "Welcome to the UPU Dealer panel. Let me show you around in 30 seconds — you can 'Skip' anytime.",
+    "quick_title": "Quick actions",
+    "quick_desc": "Invite a dealer, add a user, record an order or collect a payment from here.",
+    "kpi_title": "Business at a glance",
+    "kpi_desc": "Active dealers, open orders, overdue collections — your KPIs in one view.",
+    "ai_title": "AI Assistant",
+    "ai_desc": "Open the AI assistant from the bottom-right button — ask questions, build campaigns, generate reports.",
+    "bell_title": "Notifications",
+    "bell_desc": "New orders, upcoming dues, campaign replies — critical events appear here.",
+    "edit_title": "Edit",
+    "edit_desc": "Customize your panel: hide cards you don't use, add the ones you need.",
+    "done_title": "You're set! 🎉",
+    "done_desc": "Re-run this tour anytime from the left sidebar 'Intro tour' link.",
+    "next": "Next →",
+    "prev": "← Back",
+    "done": "Done ✓"
   }
 }

@@ -4,11 +4,26 @@
       "name": "Makelaarskantoor",
       "description": "AI-aangedreven virtueel kantoortteam voor makelaars",
       "employees": {
-        "portfoy": { "name": "Portefeuillebeheerder", "description": "Vastgoedbeheer" },
-        "satis": { "name": "Verkoopondersteuning", "description": "Klant & matching" },
-        "medya": { "name": "Media Specialist", "description": "Foto's & publicatie" },
-        "pazar": { "name": "Marktanalist", "description": "Prijzen & analyse" },
-        "sekreter": { "name": "Secretaresse", "description": "Briefing & taken" }
+        "portfoy": {
+          "name": "Portefeuillebeheerder",
+          "description": "Vastgoedbeheer"
+        },
+        "satis": {
+          "name": "Verkoopondersteuning",
+          "description": "Klant & matching"
+        },
+        "medya": {
+          "name": "Media Specialist",
+          "description": "Foto's & publicatie"
+        },
+        "pazar": {
+          "name": "Marktanalist",
+          "description": "Prijzen & analyse"
+        },
+        "sekreter": {
+          "name": "Secretaresse",
+          "description": "Briefing & taken"
+        }
       }
     },
     "bayi": {
@@ -39,48 +54,102 @@
       "name": "Boekhoudassistent",
       "description": "AI-aangedreven virtueel team voor boekhoudkantoren",
       "employees": {
-        "faturaUzmani": { "name": "Factuurspecialist", "description": "e-Factuur upload, zoeken & rekeningcodevoorstellen" },
-        "sekreter": { "name": "Secretaresse", "description": "Belastingkalender, afspraken & belastingplichtingenbeheer" },
-        "vergiUzmani": { "name": "Belastingspecialist", "description": "BTW-berekening, belastingrapporten & aangiftecontrole" },
-        "tahsilatUzmani": { "name": "Incassospecialist", "description": "Debiteurenbeheer, achterstallige betalingen & cashflow" }
+        "faturaUzmani": {
+          "name": "Factuurspecialist",
+          "description": "e-Factuur upload, zoeken & rekeningcodevoorstellen"
+        },
+        "sekreter": {
+          "name": "Secretaresse",
+          "description": "Belastingkalender, afspraken & belastingplichtingenbeheer"
+        },
+        "vergiUzmani": {
+          "name": "Belastingspecialist",
+          "description": "BTW-berekening, belastingrapporten & aangiftecontrole"
+        },
+        "tahsilatUzmani": {
+          "name": "Incassospecialist",
+          "description": "Debiteurenbeheer, achterstallige betalingen & cashflow"
+        }
       }
     },
     "otel": {
       "name": "Hotelbeheer",
       "description": "AI-aangedreven virtueel team voor hotels",
       "employees": {
-        "resepsiyon": { "name": "Receptie", "description": "Gastontvangst, berichtenbeheer & escalatie" },
-        "rezervasyon": { "name": "Reserveringsspecialist", "description": "Beschikbaarheid, prijzen & in-/uitchecken" },
-        "katHizmetleri": { "name": "Huishouding", "description": "Kamerstatus, schoonmaak & taakverdeling" },
-        "misafirDeneyimi": { "name": "Gastbeleving", "description": "Kennisbank, aanbevelingen & beoordelingenbeheer" }
+        "resepsiyon": {
+          "name": "Receptie",
+          "description": "Gastontvangst, berichtenbeheer & escalatie"
+        },
+        "rezervasyon": {
+          "name": "Reserveringsspecialist",
+          "description": "Beschikbaarheid, prijzen & in-/uitchecken"
+        },
+        "katHizmetleri": {
+          "name": "Huishouding",
+          "description": "Kamerstatus, schoonmaak & taakverdeling"
+        },
+        "misafirDeneyimi": {
+          "name": "Gastbeleving",
+          "description": "Kennisbank, aanbevelingen & beoordelingenbeheer"
+        }
       }
     },
     "siteyonetim": {
       "name": "Vastgoedbeheer",
       "description": "AI-aangedreven virtueel team voor woningbeheer",
       "employees": {
-        "muhasebeci": { "name": "Boekhouder", "description": "Servicekosten, schuldstatus, inkomsten-uitgaven & aanslagen" },
-        "sekreter": { "name": "Secretaresse", "description": "Aankondigingen, vergaderoproepen & bewonercommunicatie" },
-        "teknisyen": { "name": "Technicus", "description": "Storingsmelding, onderhoud & reparatiebeheer" },
-        "hukukMusaviri": { "name": "Juridisch Adviseur", "description": "Vastgoedwetgeving, rechten & verplichtingen" }
+        "muhasebeci": {
+          "name": "Boekhouder",
+          "description": "Servicekosten, schuldstatus, inkomsten-uitgaven & aanslagen"
+        },
+        "sekreter": {
+          "name": "Secretaresse",
+          "description": "Aankondigingen, vergaderoproepen & bewonercommunicatie"
+        },
+        "teknisyen": {
+          "name": "Technicus",
+          "description": "Storingsmelding, onderhoud & reparatiebeheer"
+        },
+        "hukukMusaviri": {
+          "name": "Juridisch Adviseur",
+          "description": "Vastgoedwetgeving, rechten & verplichtingen"
+        }
       }
     },
     "market": {
       "name": "Marktbeheer",
       "description": "AI-aangedreven voorraad- & verkoopbeheer voor supermarkten",
       "employees": {
-        "stokSorumlusu": { "name": "Voorraadbeheerder", "description": "Producten, voorraad, houdbaarheidsdatums & categoriebeheer" },
-        "siparisYoneticisi": { "name": "Bestelbeheerder", "description": "Leveranciers, bestellingen & leveringsbeheer" },
-        "finansAnalisti": { "name": "Financieel Analist", "description": "Prijzen, acties, verkoop & kassarapporten" }
+        "stokSorumlusu": {
+          "name": "Voorraadbeheerder",
+          "description": "Producten, voorraad, houdbaarheidsdatums & categoriebeheer"
+        },
+        "siparisYoneticisi": {
+          "name": "Bestelbeheerder",
+          "description": "Leveranciers, bestellingen & leveringsbeheer"
+        },
+        "finansAnalisti": {
+          "name": "Financieel Analist",
+          "description": "Prijzen, acties, verkoop & kassarapporten"
+        }
       }
     },
     "restoran": {
       "name": "Restaurantassistent",
       "description": "AI-gestuurd bestellings-, tafel-, reserverings- en voorraadbeheer voor restaurants en cafés",
       "employees": {
-        "asistan": { "name": "Assistent", "description": "Dagelijkse briefing, dagafsluiting en herinneringen" },
-        "servis": { "name": "Bediening", "description": "Bestellingen, tafels en reserveringen" },
-        "mutfakStok": { "name": "Keuken / Voorraad", "description": "Voorraadbeheer, menu en leveranciers" }
+        "asistan": {
+          "name": "Assistent",
+          "description": "Dagelijkse briefing, dagafsluiting en herinneringen"
+        },
+        "servis": {
+          "name": "Bediening",
+          "description": "Bestellingen, tafels en reserveringen"
+        },
+        "mutfakStok": {
+          "name": "Keuken / Voorraad",
+          "description": "Voorraadbeheer, menu en leveranciers"
+        }
       }
     }
   },
@@ -166,7 +235,6 @@
     "privacy_security_h": "Beveiliging",
     "privacy_security_b": "Gegevens worden binnen de EU op Supabase versleuteld opgeslagen. Alle verbindingen TLS 1.2+. WhatsApp-berichten via Meta's end-to-end versleuteling.",
     "privacy_contact": "Vragen? info@upudev.nl",
-
     "terms_title": "Algemene Voorwaarden",
     "terms_intro": "Door upu Dealerbeheer (geëxploiteerd door upudev) te gebruiken gaat u akkoord met de volgende voorwaarden.",
     "terms_service_h": "Dienstomvang",
@@ -216,5 +284,25 @@
     "tos_consent_text": " — Ik heb deze gelezen en accepteer ze.",
     "already_member": "Al lid?",
     "login_link": "Inloggen"
+  },
+  "bayiTour": {
+    "welcome_greet_named": "Hallo {name}! 👋",
+    "welcome_greet": "Hallo! 👋",
+    "welcome_desc": "Welkom in het UPU Dealer-paneel. Ik laat je het in 30 seconden zien — sla over wanneer je wilt.",
+    "quick_title": "Snelle acties",
+    "quick_desc": "Nodig een dealer uit, voeg een gebruiker toe, boek een order of incasseer een betaling.",
+    "kpi_title": "Bedrijfsoverzicht",
+    "kpi_desc": "Actieve dealers, openstaande orders, achterstallige betalingen — KPI's in één oogopslag.",
+    "ai_title": "AI-medewerker",
+    "ai_desc": "Open de AI-assistent rechtsonder — stel vragen, maak campagnes, genereer rapporten.",
+    "bell_title": "Meldingen",
+    "bell_desc": "Nieuwe orders, naderende vervaldagen, campagnereacties — alles wat dringend is.",
+    "edit_title": "Aanpassen",
+    "edit_desc": "Pas je paneel aan: verberg ongebruikte kaarten, voeg de gewenste toe.",
+    "done_title": "Je bent klaar! 🎉",
+    "done_desc": "Herstart de rondleiding wanneer je wilt via 'Introductietour' in het zijmenu.",
+    "next": "Volgende →",
+    "prev": "← Terug",
+    "done": "Klaar ✓"
   }
 }

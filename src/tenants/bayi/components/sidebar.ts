@@ -68,6 +68,7 @@ export const BAYI_SIDEBAR: SidebarItem[] = [
   { id: "billing",       label: "Faturalama",      icon: "💳", href: q("/tr/bayi-billing"),         matchPath: "/tr/bayi-billing",       requiredRoles: ADMIN_ONLY },
   { id: "gizlilik",      label: "Gizlilik",        icon: "🔒", href: q("/tr/bayi-gizlilik"),        matchPath: "/tr/bayi-gizlilik", separatorBefore: true },
   { id: "sistem-turu",   label: "📘 Sistem Turu",  icon: "📘", href: (t: string) => t ? `/tr/bayi-panel?t=${encodeURIComponent(t)}&onboarding=1` : "/tr/bayi-panel?onboarding=1", matchPath: "/tr/bayi-sistem-turu", separatorBefore: true },
+  { id: "tanitim-turu",  label: "🎯 Tanıtım Turu", icon: "🎯", href: (t: string) => t ? `/tr/bayi-panel?t=${encodeURIComponent(t)}&tour=1` : "/tr/bayi-panel?tour=1", matchPath: "/tr/bayi-tanitim-turu" },
   { id: "sss",           label: "Sık Sorulan Sorular", icon: "❓", href: q("/tr/bayi-sss"),         matchPath: "/tr/bayi-sss" },
   { id: "wa-destek",     label: "WhatsApp Destek", icon: "💬", href: () => "https://wa.me/31644967207", matchPath: "/wa-destek" },
   { id: "hakkinda",      label: "UPUDev Hakkında", icon: "ℹ️",  href: q("/tr/bayi-hakkinda"),        matchPath: "/tr/bayi-hakkinda", separatorBefore: true },

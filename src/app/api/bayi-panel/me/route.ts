@@ -45,6 +45,11 @@ export async function GET(_req: NextRequest) {
       (meta.company_name as string) ||
       null;
 
+    // Tour state — yalnız tour_seen_at bilgisini expose et, diğer metadata
+    // bilgilerini hassas tut.
+    const tourSeenAt =
+      (meta.tour_seen_at as Record<string, string> | undefined) ?? {};
+
     const response = NextResponse.json({
       success: true,
       displayName: lookup.profile.display_name || null,
@@ -53,6 +58,7 @@ export async function GET(_req: NextRequest) {
       role: lookup.profile.role || "user",
       tenantId: lookup.tenantId,
       botPhone: "31644967207",
+      metadata: { tour_seen_at: tourSeenAt },
     });
     return await attachSessionToResponse(response, {
       uid: session.uid,

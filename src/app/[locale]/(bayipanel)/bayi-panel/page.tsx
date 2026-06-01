@@ -45,6 +45,7 @@ import {
 import { ItemAddModal } from "@/components/panel-edit/item-add-modal";
 import { ChurnRiskBanner } from "@/components/bayi/ChurnRiskBanner";
 import { RecommendationCard } from "@/components/recommendations/RecommendationCard";
+import { BayiPanelTour } from "@/components/tour/BayiPanelTour";
 
 interface KPIs {
   dealer_count: number;
@@ -71,6 +72,11 @@ export default function BayiPanelimPage() {
   const [kpisLoading, setKpisLoading] = useState(true);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [showKvkkModal, setShowKvkkModal] = useState(false);
+
+  // Tour state — profile metadata.tour_seen_at["bayi_panel"]'i okur.
+  const [tourSeenAt, setTourSeenAt] = useState<string | null>(null);
+  const [tourReady, setTourReady] = useState(false);
+  const [tourDisplayName, setTourDisplayName] = useState<string | null>(null);
 
   // Layout edit state — null = henüz fetch edilmedi (default'a fallback)
   const [quickActions, setQuickActions] = useState<BayiQuickActionKey[] | null>(null);
@@ -115,6 +121,20 @@ export default function BayiPanelimPage() {
         if (Array.isArray(d?.kpi_cards)) setKpiCards(d.kpi_cards);
       })
       .catch(() => { /* default kalır */ });
+  }, []);
+
+  // Tour seen-status fetch — bayi-panel/me display_name + metadata.tour_seen_at
+  useEffect(() => {
+    fetch("/api/bayi-panel/me", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d?.success) { setTourReady(true); return; }
+        const seen = (d?.metadata?.tour_seen_at ?? {}) as Record<string, string>;
+        setTourSeenAt(seen?.bayi_panel ?? null);
+        setTourDisplayName(d?.displayName ?? null);
+        setTourReady(true);
+      })
+      .catch(() => setTourReady(true));
   }, []);
 
   // KVKK
@@ -226,6 +246,7 @@ export default function BayiPanelimPage() {
       <div className="flex justify-end">
         <button
           type="button"
+          data-tour="edit-toggle"
           onClick={() => setEditMode((v) => !v)}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
             editMode
@@ -261,13 +282,13 @@ export default function BayiPanelimPage() {
 
       {/* KPI grid */}
       {kpisLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3" data-tour="kpi-grid">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} height="h-28" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3" data-tour="kpi-grid">
           {kpiItems.map((item) => (
             <EditableTile
               key={item.key}
@@ -341,6 +362,14 @@ export default function BayiPanelimPage() {
       />
       {/* kpiValueRaw kullanılan satırlar yoksa lint hatası vermesin diye sahip ol */}
       {false && <span>{kpiValueRaw("dealer_count")}</span>}
+
+      {/* Intro tour — driver.js (Adım 105 pilot). tour_seen_at NULL ise ilk
+          girişte otomatik; sidebar "Tanıtım Turu" ?tour=1 ile manuel. */}
+      <BayiPanelTour
+        displayName={tourDisplayName}
+        autoStartEnabled={tourReady}
+        tourSeenAt={tourSeenAt}
+      />
     </div>
   );
 }
@@ -419,7 +448,7 @@ function QuickActionsRow({ items, editMode, token, onHide, canAdd, onAddClick }:
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4">
+    <div data-tour="quick-actions" className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4">
       <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3 px-1">
         Hızlı işlem
       </div>

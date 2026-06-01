@@ -4,11 +4,26 @@
       "name": "Emlak Ofisi",
       "description": "Emlak danışmanları için AI destekli sanal ofis ekibi",
       "employees": {
-        "portfoy": { "name": "Portföy Sorumlusu", "description": "Mülk yönetimi" },
-        "satis": { "name": "Satış Destek Uzmanı", "description": "Müşteri ve eşleştirme" },
-        "medya": { "name": "Medya Uzmanı", "description": "Fotoğraf ve yayın" },
-        "pazar": { "name": "Pazar Analisti", "description": "Fiyat ve analiz" },
-        "sekreter": { "name": "Sekreter", "description": "Brifing ve görevler" }
+        "portfoy": {
+          "name": "Portföy Sorumlusu",
+          "description": "Mülk yönetimi"
+        },
+        "satis": {
+          "name": "Satış Destek Uzmanı",
+          "description": "Müşteri ve eşleştirme"
+        },
+        "medya": {
+          "name": "Medya Uzmanı",
+          "description": "Fotoğraf ve yayın"
+        },
+        "pazar": {
+          "name": "Pazar Analisti",
+          "description": "Fiyat ve analiz"
+        },
+        "sekreter": {
+          "name": "Sekreter",
+          "description": "Brifing ve görevler"
+        }
       }
     },
     "bayi": {
@@ -39,48 +54,102 @@
       "name": "Muhasebe Asistanı",
       "description": "Muhasebe büroları için AI destekli sanal ekip",
       "employees": {
-        "faturaUzmani": { "name": "Fatura İşleme Uzmanı", "description": "e-Fatura yükleme, arama ve hesap kodu önerisi" },
-        "sekreter": { "name": "Sekreter", "description": "Beyanname takvimi, randevu ve mükellef yönetimi" },
-        "vergiUzmani": { "name": "Vergi Uzmanı", "description": "KDV hesaplama, vergi raporu ve beyanname kontrol" },
-        "tahsilatUzmani": { "name": "Tahsilat Uzmanı", "description": "Alacak takibi, geciken ödemeler ve nakit akış" }
+        "faturaUzmani": {
+          "name": "Fatura İşleme Uzmanı",
+          "description": "e-Fatura yükleme, arama ve hesap kodu önerisi"
+        },
+        "sekreter": {
+          "name": "Sekreter",
+          "description": "Beyanname takvimi, randevu ve mükellef yönetimi"
+        },
+        "vergiUzmani": {
+          "name": "Vergi Uzmanı",
+          "description": "KDV hesaplama, vergi raporu ve beyanname kontrol"
+        },
+        "tahsilatUzmani": {
+          "name": "Tahsilat Uzmanı",
+          "description": "Alacak takibi, geciken ödemeler ve nakit akış"
+        }
       }
     },
     "otel": {
       "name": "Otel Yönetimi",
       "description": "Oteller için AI destekli sanal ekip",
       "employees": {
-        "resepsiyon": { "name": "Resepsiyon", "description": "Misafir karşılama, mesaj yönetimi ve eskalasyon" },
-        "rezervasyon": { "name": "Rezervasyon Uzmanı", "description": "Müsaitlik, fiyat sorgulama ve check-in/out" },
-        "katHizmetleri": { "name": "Kat Hizmetleri", "description": "Oda durumu, temizlik ve görev atama" },
-        "misafirDeneyimi": { "name": "Misafir Deneyimi", "description": "Bilgi bankası, tavsiye ve yorum yönetimi" }
+        "resepsiyon": {
+          "name": "Resepsiyon",
+          "description": "Misafir karşılama, mesaj yönetimi ve eskalasyon"
+        },
+        "rezervasyon": {
+          "name": "Rezervasyon Uzmanı",
+          "description": "Müsaitlik, fiyat sorgulama ve check-in/out"
+        },
+        "katHizmetleri": {
+          "name": "Kat Hizmetleri",
+          "description": "Oda durumu, temizlik ve görev atama"
+        },
+        "misafirDeneyimi": {
+          "name": "Misafir Deneyimi",
+          "description": "Bilgi bankası, tavsiye ve yorum yönetimi"
+        }
       }
     },
     "siteyonetim": {
       "name": "Site Yönetimi",
       "description": "Konut ve site yönetimi için AI destekli sanal ekip",
       "employees": {
-        "muhasebeci": { "name": "Muhasebeci", "description": "Aidat, borç durumu, gelir-gider ve tahakkuk" },
-        "sekreter": { "name": "Sekreter", "description": "Duyuru, toplantı çağrısı ve sakin iletişimi" },
-        "teknisyen": { "name": "Teknisyen", "description": "Arıza bildirimi, bakım ve onarım takibi" },
-        "hukukMusaviri": { "name": "Hukuk Müşaviri", "description": "KMK mevzuatı, hak ve yükümlülükler" }
+        "muhasebeci": {
+          "name": "Muhasebeci",
+          "description": "Aidat, borç durumu, gelir-gider ve tahakkuk"
+        },
+        "sekreter": {
+          "name": "Sekreter",
+          "description": "Duyuru, toplantı çağrısı ve sakin iletişimi"
+        },
+        "teknisyen": {
+          "name": "Teknisyen",
+          "description": "Arıza bildirimi, bakım ve onarım takibi"
+        },
+        "hukukMusaviri": {
+          "name": "Hukuk Müşaviri",
+          "description": "KMK mevzuatı, hak ve yükümlülükler"
+        }
       }
     },
     "market": {
       "name": "Market Yönetimi",
       "description": "Marketler için AI destekli stok ve satış yönetimi",
       "employees": {
-        "stokSorumlusu": { "name": "Stok Sorumlusu", "description": "Ürün, stok, SKT ve kategori yönetimi" },
-        "siparisYoneticisi": { "name": "Sipariş Yöneticisi", "description": "Tedarikçi, sipariş ve teslimat yönetimi" },
-        "finansAnalisti": { "name": "Finans Analisti", "description": "Fiyat, kampanya, satış ve kasa raporları" }
+        "stokSorumlusu": {
+          "name": "Stok Sorumlusu",
+          "description": "Ürün, stok, SKT ve kategori yönetimi"
+        },
+        "siparisYoneticisi": {
+          "name": "Sipariş Yöneticisi",
+          "description": "Tedarikçi, sipariş ve teslimat yönetimi"
+        },
+        "finansAnalisti": {
+          "name": "Finans Analisti",
+          "description": "Fiyat, kampanya, satış ve kasa raporları"
+        }
       }
     },
     "restoran": {
       "name": "Restoran Asistanı",
       "description": "Restoran ve cafe işletmecileri için AI destekli sipariş, masa, rezervasyon ve stok yönetimi",
       "employees": {
-        "asistan": { "name": "Asistan", "description": "Günlük brifing, gün sonu özeti ve hatırlatmalar" },
-        "servis": { "name": "Servis", "description": "Sipariş, masa ve rezervasyon yönetimi" },
-        "mutfakStok": { "name": "Mutfak / Stok", "description": "Stok takibi, menü ve tedarikçi yönetimi" }
+        "asistan": {
+          "name": "Asistan",
+          "description": "Günlük brifing, gün sonu özeti ve hatırlatmalar"
+        },
+        "servis": {
+          "name": "Servis",
+          "description": "Sipariş, masa ve rezervasyon yönetimi"
+        },
+        "mutfakStok": {
+          "name": "Mutfak / Stok",
+          "description": "Stok takibi, menü ve tedarikçi yönetimi"
+        }
       }
     }
   },
@@ -166,7 +235,6 @@
     "privacy_security_h": "Güvenlik",
     "privacy_security_b": "Veriler EU içinde Supabase üzerinde şifreli saklanır. Tüm bağlantılar TLS 1.2+. WhatsApp mesajları Meta'nın end-to-end şifrelemesiyle iletilir.",
     "privacy_contact": "Sorularınız için: info@upudev.nl",
-
     "terms_title": "Kullanım Koşulları",
     "terms_intro": "upu Bayi Yönetim Sistemi'ni (upudev tarafından işletilir) kullanarak aşağıdaki koşulları kabul etmiş olursunuz.",
     "terms_service_h": "Hizmet kapsamı",
@@ -216,5 +284,25 @@
     "tos_consent_text": "'nı okudum ve kabul ediyorum.",
     "already_member": "Zaten üye misin?",
     "login_link": "Giriş yap"
+  },
+  "bayiTour": {
+    "welcome_greet_named": "Merhaba {name}! 👋",
+    "welcome_greet": "Merhaba! 👋",
+    "welcome_desc": "UPU Bayi paneline hoş geldin. Sana 30 saniyede paneli tanıtayım — istersen 'Atla' ile geçebilirsin.",
+    "quick_title": "Hızlı İşlem",
+    "quick_desc": "Buradan bayi davet et, kullanıcı ekle, sipariş kaydet ve tahsilat yap. En çok kullandıklarını üstte tutabilirsin.",
+    "kpi_title": "İş Durumu",
+    "kpi_desc": "Toplam bayi, aktif sipariş, vadesi geçen tahsilatlar — iş durumunu tek bakışta gör.",
+    "ai_title": "AI Eleman",
+    "ai_desc": "Sağ alttaki bu butondan yapay zekâ asistanını çağırırsın — soru sor, kampanya hazırlat, rapor iste.",
+    "bell_title": "Bildirimler",
+    "bell_desc": "Yeni sipariş, vadesi yaklaşan tahsilat, kampanya yanıtı — kritik olayları buradan görürsün.",
+    "edit_title": "Düzenle",
+    "edit_desc": "Panel düzenini değiştir: kullanmadığın kartları kaldır, sık kullandıklarını ekle.",
+    "done_title": "Hazırsın! 🎉",
+    "done_desc": "Turu istediğin zaman sol menüdeki 'Tanıtım Turu' linkinden yeniden başlatabilirsin.",
+    "next": "İleri →",
+    "prev": "← Geri",
+    "done": "Bitir ✓"
   }
 }

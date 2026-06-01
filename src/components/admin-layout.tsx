@@ -351,7 +351,9 @@ export function AdminLayout({
             <div className="flex-1" />
             <div className="flex items-center gap-2 text-slate-500">
               <ThemeToggle />
-              <NotificationBell token={searchParamsToken} historyHref={notificationHistoryHref} />
+              <span data-tour="notification-bell">
+                <NotificationBell token={searchParamsToken} historyHref={notificationHistoryHref} />
+              </span>
               <a
                 href={`https://wa.me/${botPhone}`}
                 target="_blank" rel="noopener noreferrer"
