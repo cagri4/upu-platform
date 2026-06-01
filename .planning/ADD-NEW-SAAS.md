@@ -278,6 +278,26 @@ panel sayfası. Çoğu tenant için minimum: stats grid + son işlemler tablosu.
 Yeni kullanıcı oluştur (admin invite ile), tenant_id'yi `dental` olarak set et,
 WA'dan davet kodu mesajı gönder, onboarding adımlarını yürü, ilk komutu test et.
 
+### 14) `src/tenants/{name}/CLAUDE.md` oluştur (zorunlu)
+
+Template'ten kopyala ve doldur:
+
+```bash
+cp src/tenants/_template/CLAUDE.md src/tenants/dental/CLAUDE.md
+# Editör aç, tüm {{PLACEHOLDER}} ifadelerini doldur:
+#   {{SAAS_NAME}}, {{SAAS_KEY}}, {{SUBDOMAIN}}, {{ROUTE_GROUP}},
+#   "Ne yapar", iyi/kötü pattern'ler, .planning pointer'ları.
+# Doldurmadığın bölümleri SİL (boş başlık bırakma).
+```
+
+Worker `src/tenants/dental/` içinde iş yaparken bu dosyayı OTOMATİK okur —
+sen brief'inde tekrar açıklama yapmazsın. Pattern + sınır + yasaklar bir kez
+buraya yazılır, sonra her worker turunda dahil olur.
+
+**İçerik kuralı:** SADECE statik bilgi yaz (mimari, kalıcı karar, anti-pattern
+dersleri). Açık iş listesi / son commit hash / sayısal durum YAZMA — bunlar task
+list, git log ve memory'de zaten var, hızla bayatlar.
+
 ## Kontrol Listesi (PR / Deploy Öncesi)
 
 - [ ] `tenants/{name}/onboarding-flow.ts` yazıldı, register edildi
@@ -294,6 +314,9 @@ WA'dan davet kodu mesajı gönder, onboarding adımlarını yürü, ilk komutu t
 - [ ] tsc + build geçti
 - [ ] Vercel ready
 - [ ] Test kullanıcısı ile end-to-end deneme yapıldı
+- [ ] `src/tenants/{name}/CLAUDE.md` template'ten kopyalandı, tüm
+      `{{PLACEHOLDER}}` ifadeleri dolduruldu (veya bölüm silindi), dosya
+      `git add` ile commit'lendi
 
 ## Sık Yapılan Hatalar
 
