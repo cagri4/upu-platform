@@ -1,13 +1,12 @@
 /**
  * (admin) route group — auth gate.
  *
- * /admin ve alt sayfaları yalnızca giriş yapmış + role='admin' kullanıcıya
- * açıktır. Aksi halde /<locale>/giris'e yönlendirilir (eski davranış: boş
- * panel render ediliyordu).
+ * Platform admin (UPU Dev sahibi) = role='admin' AND tenant_id IS NULL.
+ * Tenant sahipleri de role='admin' ama tenant_id'leri set; onlar bu
+ * route group'a giremez. Aksi halde /<locale>/giris'e yönlendirilir.
  *
  * Cookie session öncelikli (panel navigasyonunda token URL'de olmaz).
- * requireAdminUser ile aynı mantık (eq id + role==admin) ama server
- * layout'ta redirect() ile çalışır.
+ * requireAdminUser ile aynı mantık ama server layout'ta redirect().
  *
  * Redirect loop yok: /giris bu route group'ta değil.
  */
@@ -33,11 +32,13 @@ export default async function AdminGroupLayout({
   const sb = getServiceClient();
   const { data: profile } = await sb
     .from("profiles")
-    .select("role")
+    .select("role, tenant_id")
     .eq("id", session.uid)
     .maybeSingle();
 
-  if (profile?.role !== "admin") {
+  // Platform admin = role admin VE tenant'sız. Tenant sahibi de role='admin'
+  // ama tenant_id set; bu gate ona kapalı.
+  if (profile?.role !== "admin" || profile?.tenant_id !== null) {
     redirect(`/${locale}/giris`);
   }
 
