@@ -10,6 +10,7 @@ import { resolvePanelAuth } from "@/platform/auth/panel-auth";
 import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { getTenantByDomain } from "@/tenants/config";
 import { transitionOrderStatus } from "@/platform/bayi-orders/notify";
+import { consumeReservationsForOrder } from "@/platform/bayi-orders/stock-side-effects";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     changedByUserId: lookup.profile.id,
   });
   if (!ok) return NextResponse.json({ error: "Güncellenemedi." }, { status: 500 });
+
+  // Onaylanmış sipariş → rezervasyonları consume et: stok decrement +
+  // movements log. Hata olursa kullanıcıya 200 dönülür ama log düşer.
+  await consumeReservationsForOrder(sb, id, lookup.profile.id);
 
   return NextResponse.json({ ok: true, status: "confirmed" });
 }

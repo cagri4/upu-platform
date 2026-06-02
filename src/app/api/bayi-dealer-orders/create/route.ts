@@ -104,45 +104,68 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data: order, error: insertErr } = await sb
-    .from("bayi_dealer_orders")
-    .insert({
-      tenant_id: lookup.tenantId,
-      dealer_user_id: lookup.profile.id,
-      status: "pending",
-      total_amount: total,
-      notes: body.notes?.trim() || null,
-    })
-    .select("id")
-    .single();
+  // Atomik: order + items + reservations tek transaction (RPC). FOR UPDATE
+  // row lock ile aynı ürün için eşzamanlı 2 sipariş yarışı önlenir —
+  // ikincisi `insufficient_stock` ile reddedilir (409).
+  const { data: rpcResult, error: rpcErr } = await sb.rpc("bayi_create_dealer_order_v2", {
+    p_tenant_id: lookup.tenantId,
+    p_dealer_user_id: lookup.profile.id,
+    p_items: cleanItems,
+    p_notes: body.notes?.trim() || null,
+    p_total: total,
+  });
 
-  if (insertErr || !order) {
-    console.error("[bayi-dealer-orders/create]", insertErr);
+  if (rpcErr) {
+    console.error("[bayi-dealer-orders/create] rpc err:", rpcErr);
     return NextResponse.json({ error: "Sipariş oluşturulamadı." }, { status: 500 });
   }
 
-  const { error: itemsErr } = await sb
-    .from("bayi_dealer_order_items")
-    .insert(cleanItems.map((it) => ({ ...it, order_id: order.id })));
-  if (itemsErr) {
-    console.error("[bayi-dealer-orders/create] items err:", itemsErr);
-    // Items başarısız → order'ı sil (atomic değil ama RDB'de cascade DELETE)
-    await sb.from("bayi_dealer_orders").delete().eq("id", order.id);
-    return NextResponse.json({ error: "Sipariş ürünleri kaydedilemedi." }, { status: 500 });
-  }
+  const result = rpcResult as
+    | { ok: true; order_id: string; total: number }
+    | {
+        ok: false;
+        error: "insufficient_stock";
+        product_id: string;
+        product_name: string;
+        available: number;
+        requested: number;
+        stock_quantity: number;
+        reserved_total: number;
+      }
+    | { ok: false; error: "product_not_found"; product_id: string; product_name: string };
 
-  await sb.from("bayi_dealer_order_status_history").insert({
-    order_id: order.id,
-    old_status: null,
-    new_status: "pending",
-    changed_by_user_id: lookup.profile.id,
-  });
+  if (!result.ok) {
+    if (result.error === "insufficient_stock") {
+      return NextResponse.json(
+        {
+          error: "insufficient_stock",
+          message: `${result.product_name} için yeterli stok yok. Talep: ${result.requested}, kullanılabilir: ${result.available} (stok ${result.stock_quantity}, rezerve ${result.reserved_total}).`,
+          product_id: result.product_id,
+          product_name: result.product_name,
+          available: result.available,
+          requested: result.requested,
+        },
+        { status: 409 },
+      );
+    }
+    if (result.error === "product_not_found") {
+      return NextResponse.json(
+        {
+          error: "product_not_found",
+          message: `Ürün bulunamadı: ${result.product_name}`,
+          product_id: result.product_id,
+        },
+        { status: 400 },
+      );
+    }
+    return NextResponse.json({ error: "Sipariş oluşturulamadı." }, { status: 500 });
+  }
 
   // Admin'lere bildirim (best-effort)
   const meta = (lookup.profile.metadata as Record<string, unknown>) || {};
   const firma = (meta.firma_profili as { ticari_unvan?: string } | null) || null;
   const dealerName = firma?.ticari_unvan || lookup.profile.display_name || "Bayi";
-  void notifyAdminsNewOrder(sb, lookup.tenantId, order.id, dealerName, total);
+  void notifyAdminsNewOrder(sb, lookup.tenantId, result.order_id, dealerName, total);
 
-  return NextResponse.json({ ok: true, order_id: order.id, total });
+  return NextResponse.json({ ok: true, order_id: result.order_id, total });
 }

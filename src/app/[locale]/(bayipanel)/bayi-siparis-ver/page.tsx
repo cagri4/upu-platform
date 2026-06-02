@@ -53,6 +53,12 @@ export default function BayiSiparisVerPage() {
     creditLimit: number;
     exceededBy: number;
   } | null>(null);
+  const [stockBlock, setStockBlock] = useState<{
+    productId: string;
+    productName: string;
+    available: number;
+    requested: number;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/urunler/list?pageSize=100", { credentials: "same-origin" })
@@ -117,6 +123,7 @@ export default function BayiSiparisVerPage() {
     setSubmitting(true);
     setError("");
     setCreditBlock(null);
+    setStockBlock(null);
     try {
       const r = await fetch("/api/bayi-dealer-orders/create", {
         method: "POST",
@@ -142,6 +149,14 @@ export default function BayiSiparisVerPage() {
             exceededBy: Number(d.exceeded_by) || 0,
           });
           setError(d.message || "Kredi limiti aşıldı.");
+        } else if (r.status === 409 && d.error === "insufficient_stock") {
+          setStockBlock({
+            productId: String(d.product_id || ""),
+            productName: String(d.product_name || ""),
+            available: Number(d.available) || 0,
+            requested: Number(d.requested) || 0,
+          });
+          setError(d.message || "Yeterli stok yok.");
         } else {
           setError(d.error || "Sipariş oluşturulamadı.");
         }
@@ -209,7 +224,26 @@ export default function BayiSiparisVerPage() {
         </div>
       )}
 
-      {error && !creditBlock && (
+      {stockBlock && (
+        <div
+          data-testid="stock-warning"
+          className="bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 rounded-2xl p-4 text-sm text-amber-800 dark:text-amber-200 space-y-2"
+        >
+          <div className="flex items-center gap-2 font-semibold">📦 Yeterli stok yok</div>
+          <div className="text-xs">
+            <strong>{stockBlock.productName}</strong> için talep ettiğiniz {stockBlock.requested} adet mevcut değil.
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+            <span className="text-amber-700 dark:text-amber-300">Talep:</span>
+            <span className="font-semibold tabular-nums">{stockBlock.requested} adet</span>
+            <span className="text-amber-700 dark:text-amber-300">Kullanılabilir:</span>
+            <span className="font-bold tabular-nums">{stockBlock.available} adet</span>
+          </div>
+          <p className="text-xs">Miktarı {stockBlock.available} veya altına düşürün; başka biri rezerve etmiş olabilir.</p>
+        </div>
+      )}
+
+      {error && !creditBlock && !stockBlock && (
         <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-2xl p-3 text-sm text-rose-700 dark:text-rose-300">
           ⚠️ {error}
         </div>

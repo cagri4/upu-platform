@@ -14,6 +14,7 @@ import { resolvePanelAuth } from "@/platform/auth/panel-auth";
 import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { getTenantByDomain } from "@/tenants/config";
 import { transitionOrderStatus } from "@/platform/bayi-orders/notify";
+import { releaseReservationsForOrder } from "@/platform/bayi-orders/stock-side-effects";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     reason,
   });
   if (!ok) return NextResponse.json({ error: "Güncellenemedi." }, { status: 500 });
+
+  // İptal sonrası rezervasyonları serbest bırak — stok numerik olarak
+  // değişmez (consumed değildi), sadece active → released işaretlenir.
+  await releaseReservationsForOrder(sb, id);
 
   return NextResponse.json({ ok: true, status: "cancelled" });
 }
