@@ -47,6 +47,12 @@ export default function BayiSiparisVerPage() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<{ orderId: string; total: number } | null>(null);
+  const [creditBlock, setCreditBlock] = useState<{
+    currentBalance: number;
+    attemptedTotal: number;
+    creditLimit: number;
+    exceededBy: number;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/urunler/list?pageSize=100", { credentials: "same-origin" })
@@ -110,6 +116,7 @@ export default function BayiSiparisVerPage() {
     }
     setSubmitting(true);
     setError("");
+    setCreditBlock(null);
     try {
       const r = await fetch("/api/bayi-dealer-orders/create", {
         method: "POST",
@@ -127,7 +134,17 @@ export default function BayiSiparisVerPage() {
       });
       const d = await r.json();
       if (!r.ok) {
-        setError(d.error || "Sipariş oluşturulamadı.");
+        if (r.status === 409 && d.error === "credit_limit_exceeded") {
+          setCreditBlock({
+            currentBalance: Number(d.current_balance) || 0,
+            attemptedTotal: Number(d.attempted_total) || 0,
+            creditLimit: Number(d.credit_limit) || 0,
+            exceededBy: Number(d.exceeded_by) || 0,
+          });
+          setError(d.message || "Kredi limiti aşıldı.");
+        } else {
+          setError(d.error || "Sipariş oluşturulamadı.");
+        }
         return;
       }
       setSubmitted({ orderId: d.order_id, total: d.total });
@@ -170,7 +187,29 @@ export default function BayiSiparisVerPage() {
     <div className="space-y-5 sm:space-y-6">
       <HeroBanner Icon={ShoppingCart} title="Yeni Sipariş" subtitle="Kataloğdan ürün seç, sepete ekle, sipariş ver." />
 
-      {error && (
+      {creditBlock && (
+        <div
+          data-testid="credit-limit-warning"
+          className="bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-700 rounded-2xl p-4 text-sm text-rose-800 dark:text-rose-200 space-y-2"
+        >
+          <div className="flex items-center gap-2 font-semibold">⛔ Kredi limitiniz aşıldı</div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+            <span className="text-rose-600 dark:text-rose-300">Mevcut bakiye:</span>
+            <span className="font-semibold tabular-nums">{fmtTRY(creditBlock.currentBalance)}</span>
+            <span className="text-rose-600 dark:text-rose-300">Sipariş tutarı:</span>
+            <span className="font-semibold tabular-nums">{fmtTRY(creditBlock.attemptedTotal)}</span>
+            <span className="text-rose-600 dark:text-rose-300">Kredi limiti:</span>
+            <span className="font-semibold tabular-nums">{fmtTRY(creditBlock.creditLimit)}</span>
+            <span className="text-rose-700 dark:text-rose-200 font-semibold">Aşım:</span>
+            <span className="font-bold tabular-nums">{fmtTRY(creditBlock.exceededBy)}</span>
+          </div>
+          <p className="text-xs">
+            Sipariş tutarını <strong>{fmtTRY(creditBlock.exceededBy)}</strong> düşürün veya yöneticinizden limit artışı isteyin.
+          </p>
+        </div>
+      )}
+
+      {error && !creditBlock && (
         <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-2xl p-3 text-sm text-rose-700 dark:text-rose-300">
           ⚠️ {error}
         </div>

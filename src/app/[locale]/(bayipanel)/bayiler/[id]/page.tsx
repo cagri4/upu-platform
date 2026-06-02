@@ -107,7 +107,7 @@ interface DetailResp {
   }>;
 }
 
-type ModalKey = null | "wa" | "vade" | "not" | "kampanya" | "duzenle" | "durum" | "sil";
+type ModalKey = null | "wa" | "vade" | "not" | "kampanya" | "duzenle" | "durum" | "sil" | "kredi";
 
 function formatTry(n: number): string {
   return new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(n);
@@ -319,20 +319,36 @@ export default function BayiDetayPage() {
               </div>
             </div>
 
-            {finance.creditLimit > 0 && (
-              <div className="mt-3">
-                <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-                  <span>Kredi limiti</span>
-                  <span>{formatTry(Math.max(0, finance.balance))} / {formatTry(finance.creditLimit)}</span>
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <span>Kredi limiti</span>
+                <div className="flex items-center gap-2">
+                  <span>
+                    {finance.creditLimit > 0
+                      ? `${formatTry(Math.max(0, finance.balance))} / ${formatTry(finance.creditLimit)}`
+                      : "Limitsiz"}
+                  </span>
+                  <button
+                    type="button"
+                    data-testid="kredi-limit-edit-btn"
+                    onClick={() => setActiveModal("kredi")}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100"
+                  >
+                    Ayarla
+                  </button>
                 </div>
+              </div>
+              {finance.creditLimit > 0 ? (
                 <div className="h-2 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden">
                   <div
                     className={`h-full ${finance.balance / finance.creditLimit > 0.8 ? "bg-rose-500" : finance.balance / finance.creditLimit > 0.5 ? "bg-amber-500" : "bg-emerald-500"}`}
                     style={{ width: `${Math.min(100, Math.max(0, finance.balance / finance.creditLimit) * 100)}%` }}
                   />
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="text-[10px] text-slate-400 italic">Sipariş tutarı kontrolü yapılmaz</div>
+              )}
+            </div>
 
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
               {finance.paymentTermDays !== null && (
@@ -612,6 +628,7 @@ function ActionModal({ modalKey, dealer, finance, onClose, onSuccess }: ActionMo
         {modalKey === "duzenle" && <DuzenleForm dealer={dealer} finance={finance} onClose={onClose} onSuccess={onSuccess} />}
         {modalKey === "durum" && <DurumForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
         {modalKey === "sil" && <SilForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
+        {modalKey === "kredi" && <KrediLimitForm dealer={dealer} finance={finance} onClose={onClose} onSuccess={onSuccess} />}
       </div>
     </div>
   );
@@ -1113,6 +1130,151 @@ function SilForm({ dealer, onClose, onSuccess }: { dealer: Dealer; onClose: () =
           className="px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-lg hover:bg-rose-700 disabled:opacity-50"
         >
           {deleting ? "Siliniyor…" : "Sil (geri alınabilir)"}
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+// ── Kredi Limiti Ayarla ──────────────────────────────────────────────
+function KrediLimitForm({
+  dealer, finance, onClose, onSuccess,
+}: {
+  dealer: Dealer;
+  finance: Finance;
+  onClose: () => void;
+  onSuccess: ActionModalProps["onSuccess"];
+}) {
+  const currentLimit = finance.creditLimit > 0 ? finance.creditLimit : null;
+  const [unlimited, setUnlimited] = useState(currentLimit === null);
+  const [limitInput, setLimitInput] = useState(currentLimit !== null ? String(currentLimit) : "");
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function handleSave() {
+    setErr("");
+    let payload: { new_limit: number | null; reason?: string };
+    if (unlimited) {
+      payload = { new_limit: null };
+    } else {
+      const n = Number(limitInput);
+      if (!Number.isFinite(n) || n < 0) {
+        setErr("Geçerli bir tutar girin (≥ 0).");
+        return;
+      }
+      payload = { new_limit: n };
+    }
+    if (reason.trim()) payload.reason = reason.trim();
+
+    setSaving(true);
+    try {
+      const r = await fetch(`/api/admin/bayi-dealers/${dealer.id}/credit-limit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(payload),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        setErr(d.error || "Limit güncellenemedi.");
+        return;
+      }
+      onSuccess({
+        type: "note",
+        icon: "💳",
+        title: "Kredi limiti güncellendi",
+        detail:
+          payload.new_limit === null
+            ? "Limitsiz olarak ayarlandı"
+            : `Yeni limit: ${formatTry(payload.new_limit)}`,
+        timestamp: new Date().toISOString(),
+      }, "✅ Kredi limiti güncellendi");
+    } catch {
+      setErr("Bağlantı hatası.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <ModalShell title="💳 Kredi Limiti Ayarla" onClose={onClose}>
+      <p className="text-xs text-slate-500 mb-3">
+        Bayi: <strong>{dealer.name}</strong>
+      </p>
+
+      <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/50 rounded-lg p-3 mb-3 text-xs space-y-1">
+        <div className="flex justify-between">
+          <span className="text-slate-500">Mevcut bakiye:</span>
+          <span className="font-semibold tabular-nums">{formatTry(finance.balance)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-500">Mevcut limit:</span>
+          <span className="font-semibold tabular-nums">
+            {currentLimit !== null ? formatTry(currentLimit) : "Limitsiz"}
+          </span>
+        </div>
+      </div>
+
+      <label className="flex items-center gap-2 text-sm mb-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={unlimited}
+          onChange={e => setUnlimited(e.target.checked)}
+          className="accent-indigo-600"
+        />
+        Limitsiz (kontrol bypass)
+      </label>
+
+      {!unlimited && (
+        <div className="mb-3">
+          <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">
+            Yeni limit (₺)
+          </label>
+          <input
+            type="number"
+            inputMode="decimal"
+            min="0"
+            step="100"
+            value={limitInput}
+            onChange={e => setLimitInput(e.target.value)}
+            placeholder="örn: 50000"
+            className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm tabular-nums"
+            data-testid="kredi-limit-input"
+          />
+          <p className="text-[11px] text-slate-500 mt-1">
+            Bayi yeni sipariş verirken bakiye + sipariş tutarı bu değeri aşamaz.
+          </p>
+        </div>
+      )}
+
+      <div className="mb-3">
+        <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">
+          Sebep (opsiyonel — audit log)
+        </label>
+        <input
+          value={reason}
+          onChange={e => setReason(e.target.value)}
+          placeholder="örn: 3 aylık ödeme disiplini iyi"
+          className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm"
+        />
+      </div>
+
+      {err && (
+        <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-lg p-2 text-xs text-rose-700 mb-3">
+          {err}
+        </div>
+      )}
+
+      <div className="flex gap-2 justify-end">
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-800/50 rounded-lg hover:bg-slate-50">İptal</button>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          data-testid="kredi-limit-save-btn"
+          className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {saving ? "Kaydediliyor…" : "Kaydet"}
         </button>
       </div>
     </ModalShell>

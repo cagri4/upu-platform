@@ -15,6 +15,7 @@ import { resolvePanelAuth } from "@/platform/auth/panel-auth";
 import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { getTenantByDomain } from "@/tenants/config";
 import { notifyAdminsNewOrder } from "@/platform/bayi-orders/notify";
+import { checkCreditLimit } from "@/platform/bayi-finansal/credit-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -39,10 +40,12 @@ export async function POST(req: NextRequest) {
   const lookup = await resolveTenantProfile<{
     display_name: string | null;
     metadata: Record<string, unknown> | null;
+    whatsapp_phone: string | null;
+    email: string | null;
   }>(sb, {
     userId: auth.userId,
     tenantKey: "bayi",
-    select: "id, display_name, metadata",
+    select: "id, display_name, metadata, whatsapp_phone, email",
   });
   if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
 
@@ -77,6 +80,29 @@ export async function POST(req: NextRequest) {
   }
 
   const total = cleanItems.reduce((s, it) => s + it.line_total, 0);
+
+  const credit = await checkCreditLimit(sb, {
+    tenantId: lookup.tenantId,
+    profileId: lookup.profile.id,
+    profile: {
+      whatsapp_phone: lookup.profile.whatsapp_phone,
+      email: lookup.profile.email,
+    },
+    attemptedTotal: total,
+  });
+  if (credit.status === "exceeded") {
+    return NextResponse.json(
+      {
+        error: "credit_limit_exceeded",
+        message: `Kredi limitiniz aşıldı. Mevcut bakiye ${credit.currentBalance.toLocaleString("tr-TR")} ₺, sipariş tutarı ${total.toLocaleString("tr-TR")} ₺, limit ${(credit.creditLimit ?? 0).toLocaleString("tr-TR")} ₺. ${credit.exceededBy.toLocaleString("tr-TR")} ₺ aşım var — sipariş tutarını düşürün veya yöneticinize başvurun.`,
+        current_balance: credit.currentBalance,
+        attempted_total: credit.attemptedTotal,
+        credit_limit: credit.creditLimit,
+        exceeded_by: credit.exceededBy,
+      },
+      { status: 409 },
+    );
+  }
 
   const { data: order, error: insertErr } = await sb
     .from("bayi_dealer_orders")
