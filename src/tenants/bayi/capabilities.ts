@@ -60,6 +60,7 @@ export const BAYI_CAPABILITIES = {
   DELIVERIES_VIEW: "deliveries:view",
   DELIVERIES_ASSIGN: "deliveries:assign",
   DELIVERIES_CONFIRM: "deliveries:confirm",        // Sürücü/teslimat görevlisi: teslim onayı
+  DEALER_SHIPMENT_UPDATE: "dealer-shipment:update", // B2B iç sevkiyat (hazirlandi/yola_cikti/teslim_edildi/iade)
 
   // ── Ürün / Katalog ────────────────────────────────────────────────────
   PRODUCTS_VIEW: "products:view",
@@ -108,6 +109,7 @@ export const SALES_MANAGER_PRESET: BayiCapability[] = [
   BAYI_CAPABILITIES.PRODUCTS_VIEW,
   BAYI_CAPABILITIES.REPORTS_VIEW,
   BAYI_CAPABILITIES.REPORTS_EXPORT,
+  BAYI_CAPABILITIES.DEALER_SHIPMENT_UPDATE,
 ];
 
 export const SALES_REP_PRESET: BayiCapability[] = [
@@ -141,6 +143,7 @@ export const WAREHOUSE_PRESET: BayiCapability[] = [
   BAYI_CAPABILITIES.STOCK_EDIT,
   BAYI_CAPABILITIES.PRODUCTS_VIEW,
   BAYI_CAPABILITIES.DELIVERIES_VIEW,
+  BAYI_CAPABILITIES.DEALER_SHIPMENT_UPDATE,
 ];
 
 export const LOGISTICS_PRESET: BayiCapability[] = [
@@ -148,6 +151,7 @@ export const LOGISTICS_PRESET: BayiCapability[] = [
   BAYI_CAPABILITIES.DELIVERIES_ASSIGN,
   BAYI_CAPABILITIES.DELIVERIES_CONFIRM,
   BAYI_CAPABILITIES.ORDERS_VIEW,
+  BAYI_CAPABILITIES.DEALER_SHIPMENT_UPDATE,
 ];
 
 export const PRODUCT_MANAGER_PRESET: BayiCapability[] = [
@@ -225,6 +229,7 @@ export const CAPABILITY_LABELS: Record<BayiCapability, { label: string; group: s
   [BAYI_CAPABILITIES.DELIVERIES_VIEW]:        { label: "Teslimatları gör",         group: "Lojistik" },
   [BAYI_CAPABILITIES.DELIVERIES_ASSIGN]:      { label: "Teslimat ata",             group: "Lojistik" },
   [BAYI_CAPABILITIES.DELIVERIES_CONFIRM]:     { label: "Teslim onayı",             group: "Lojistik" },
+  [BAYI_CAPABILITIES.DEALER_SHIPMENT_UPDATE]: { label: "Bayi sevkiyat güncelle",   group: "Lojistik" },
 
   // Ürün
   [BAYI_CAPABILITIES.PRODUCTS_VIEW]:          { label: "Ürünleri gör",             group: "Ürün" },

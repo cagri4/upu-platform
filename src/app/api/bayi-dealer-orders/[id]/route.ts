@@ -23,16 +23,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const sb = getServiceClient();
-  const lookup = await resolveTenantProfile<{ role: string | null }>(sb, {
+  const lookup = await resolveTenantProfile<{ role: string | null; capabilities: string[] | null }>(sb, {
     userId: auth.userId,
     tenantKey: "bayi",
-    select: "id, role",
+    select: "id, role, capabilities",
   });
   if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
 
   const { data: order } = await sb
     .from("bayi_dealer_orders")
-    .select("id, tenant_id, dealer_user_id, status, total_amount, currency, notes, rejection_reason, created_at, confirmed_at, shipped_at, delivered_at, cancelled_at")
+    .select("id, tenant_id, dealer_user_id, status, total_amount, currency, notes, rejection_reason, created_at, confirmed_at, shipped_at, delivered_at, cancelled_at, shipment_status, tracking_number, driver_name, vehicle_plate, delivered_photo_url")
     .eq("id", id)
     .eq("tenant_id", lookup.tenantId)
     .maybeSingle();
@@ -77,6 +77,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       line_total: Number(it.line_total),
     })),
     history: history || [],
-    permissions: { canConfirm: isAdminOrSales && order.status === "pending", canReject: isAdminOrSales && order.status === "pending", canAdvance: isAdminOrSales, canCancel: order.status === "pending" && (isOwner || isAdminOrSales) },
+    permissions: {
+      canConfirm: isAdminOrSales && order.status === "pending",
+      canReject: isAdminOrSales && order.status === "pending",
+      canAdvance: isAdminOrSales,
+      canCancel: order.status === "pending" && (isOwner || isAdminOrSales),
+      canUpdateShipment: (() => {
+        const caps = lookup.profile.capabilities || [];
+        const role = lookup.profile.role || "";
+        const ok = ["admin", "satis", "depocu"].includes(role)
+          || caps.includes("*") || caps.includes("dealer-shipment:update");
+        return ok && !["pending", "cancelled", "rejected"].includes(order.status);
+      })(),
+    },
   });
 }

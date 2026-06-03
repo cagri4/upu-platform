@@ -9,9 +9,18 @@
  * Sadece admin + satis görür (BAYI_ROLE_REQUIREMENTS guard layout'ta).
  */
 
-import { useEffect, useState, useCallback } from "react";
-import { Inbox, Loader2, CheckCircle2, XCircle, Package, Truck, MapPin, Clock, X } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { Inbox, Loader2, CheckCircle2, XCircle, Package, Truck, MapPin, Clock, X, Camera } from "lucide-react";
 import { HeroBanner, Skeleton } from "@/components/banking";
+
+type ShipmentStatus = "hazirlandi" | "yola_cikti" | "teslim_edildi" | "iade";
+
+const SHIPMENT_OPTIONS: Array<{ value: ShipmentStatus; label: string }> = [
+  { value: "hazirlandi",    label: "📦 Hazırlandı" },
+  { value: "yola_cikti",    label: "🚚 Yola Çıktı" },
+  { value: "teslim_edildi", label: "📍 Teslim Edildi" },
+  { value: "iade",          label: "↩️ İade" },
+];
 
 type Status = "pending" | "confirmed" | "preparing" | "shipped" | "delivered" | "cancelled" | "rejected";
 
@@ -43,10 +52,18 @@ interface OrderHistory {
 }
 
 interface OrderDetail {
-  order: OrderRow & { notes: string | null; dealer_user_id: string };
+  order: OrderRow & {
+    notes: string | null;
+    dealer_user_id: string;
+    shipment_status: ShipmentStatus | null;
+    tracking_number: string | null;
+    driver_name: string | null;
+    vehicle_plate: string | null;
+    delivered_photo_url: string | null;
+  };
   items: OrderItem[];
   history: OrderHistory[];
-  permissions: { canConfirm: boolean; canReject: boolean; canAdvance: boolean; canCancel: boolean };
+  permissions: { canConfirm: boolean; canReject: boolean; canAdvance: boolean; canCancel: boolean; canUpdateShipment: boolean };
 }
 
 const TABS: Array<{ key: Status | "all"; label: string }> = [
@@ -183,6 +200,192 @@ export default function BayilikSiparisleriPage() {
   );
 }
 
+function ShipmentPanel({
+  orderId,
+  initial,
+  onSaved,
+}: {
+  orderId: string;
+  initial: {
+    shipment_status: ShipmentStatus | null;
+    tracking_number: string | null;
+    driver_name: string | null;
+    vehicle_plate: string | null;
+    delivered_photo_url: string | null;
+  };
+  onSaved: () => void;
+}) {
+  const [shipment, setShipment] = useState<ShipmentStatus | "">(initial.shipment_status || "");
+  const [tracking, setTracking] = useState(initial.tracking_number || "");
+  const [driver, setDriver]     = useState(initial.driver_name || "");
+  const [plate, setPlate]       = useState(initial.vehicle_plate || "");
+  const [photoUrl, setPhotoUrl] = useState(initial.delivered_photo_url || "");
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+  const [toast, setToast] = useState("");
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  async function uploadPhoto(file: File) {
+    setPhotoUploading(true);
+    setErr("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await fetch(`/api/bayi-dealer-orders/${orderId}/upload-delivery-photo`, {
+        method: "POST",
+        body: fd,
+        credentials: "same-origin",
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        setErr(d.error || "Yükleme başarısız.");
+        return;
+      }
+      setPhotoUrl(d.url || "");
+      setToast("Foto yüklendi ✓");
+    } catch {
+      setErr("Foto yükleme bağlantı hatası.");
+    } finally {
+      setPhotoUploading(false);
+    }
+  }
+
+  async function save() {
+    if (!shipment) {
+      setErr("Sevkiyat durumu seç.");
+      return;
+    }
+    setSaving(true);
+    setErr("");
+    setToast("");
+    try {
+      const r = await fetch(`/api/bayi-dealer-orders/${orderId}/update-shipment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          shipment_status: shipment,
+          tracking_number: tracking || null,
+          driver_name: driver || null,
+          vehicle_plate: plate || null,
+          delivered_photo_url: photoUrl || null,
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        setErr(d.error || "Kaydedilemedi.");
+        return;
+      }
+      setToast(d.wa_notified ? "Kaydedildi + bayiye WA bildirim gönderildi ✓" : "Kaydedildi ✓");
+      onSaved();
+    } catch {
+      setErr("Bağlantı hatası.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800/40 rounded-xl p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <Truck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+        <p className="text-xs font-semibold text-indigo-800 dark:text-indigo-300 uppercase tracking-wide">Sevkiyat</p>
+      </div>
+
+      <div>
+        <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Durum</label>
+        <select
+          value={shipment}
+          onChange={(e) => setShipment(e.target.value as ShipmentStatus | "")}
+          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800"
+        >
+          <option value="">— seç —</option>
+          {SHIPMENT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Takip No</label>
+          <input
+            type="text"
+            value={tracking}
+            onChange={(e) => setTracking(e.target.value)}
+            placeholder="opsiyonel"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Plaka</label>
+          <input
+            type="text"
+            value={plate}
+            onChange={(e) => setPlate(e.target.value)}
+            placeholder="34ABC123"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Sürücü</label>
+        <input
+          type="text"
+          value={driver}
+          onChange={(e) => setDriver(e.target.value)}
+          placeholder="opsiyonel"
+          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800"
+        />
+      </div>
+
+      {shipment === "teslim_edildi" && (
+        <div>
+          <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Teslim Fotoğrafı (opsiyonel)</label>
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) uploadPhoto(f);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={photoUploading}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-indigo-300 disabled:opacity-60"
+            >
+              {photoUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+              {photoUrl ? "Değiştir" : "Foto Yükle"}
+            </button>
+            {photoUrl && (
+              <a href={photoUrl} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 dark:text-indigo-400 underline truncate">
+                görüntüle
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
+      {err && <div className="text-xs text-rose-600">{err}</div>}
+      {toast && <div className="text-xs text-emerald-600">{toast}</div>}
+
+      <button
+        type="button"
+        onClick={save}
+        disabled={saving || !shipment}
+        className="w-full py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-60"
+      >
+        {saving ? "Kaydediliyor..." : "Sevkiyatı Güncelle"}
+      </button>
+    </div>
+  );
+}
+
 function OrderDetailModal({ orderId, onClose, onChanged }: { orderId: string; onClose: () => void; onChanged: () => void }) {
   const [data, setData] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -295,6 +498,20 @@ function OrderDetailModal({ orderId, onClose, onChanged }: { orderId: string; on
             </div>
 
             {error && <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 text-sm text-rose-700">⚠️ {error}</div>}
+
+            {data.permissions.canUpdateShipment && (
+              <ShipmentPanel
+                orderId={data.order.id}
+                initial={{
+                  shipment_status: data.order.shipment_status,
+                  tracking_number: data.order.tracking_number,
+                  driver_name: data.order.driver_name,
+                  vehicle_plate: data.order.vehicle_plate,
+                  delivered_photo_url: data.order.delivered_photo_url,
+                }}
+                onSaved={() => { onChanged(); load(); }}
+              />
+            )}
 
             {rejectMode ? (
               <div className="space-y-2">
