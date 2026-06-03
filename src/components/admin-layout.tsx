@@ -49,6 +49,21 @@ export interface SidebarItem {
    * gerekli). Örnek: ['admin', 'muhasebe'] → sadece bu iki role görür.
    */
   requiredRoles?: string[];
+  /**
+   * "(?) Bu sayfa ne işe yarar" yardım modal'ı için içerik. Set edilirse
+   * sidebar item label'ının yanında küçük (?) ikon render edilir; click →
+   * modal açılır (title + paragraph + opsiyonel firstStep CTA + Kurucu link).
+   *
+   * Bayi onboarding ince işçiliği: kullanıcı menüde kaybolmasın diye her ana
+   * item'in "ne yapar / nereden başlarım" cevabı tek tıkta erişilebilir.
+   */
+  help?: {
+    title: string;
+    paragraph: string;
+    firstStep?: { label: string; href: string };
+    /** Context string — "Daha fazla" butonu Kurucu agent'a iletir. */
+    agentContext?: string;
+  };
 }
 
 /**
@@ -163,6 +178,7 @@ export function AdminLayout({
 }: AdminLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [qrScannerOpen, setQrScannerOpen] = useState(false);
+  const [helpItemId, setHelpItemId] = useState<string | null>(null);
   const isMobileDevice = useIsMobileDevice();
   const firstName = (displayName || "").split(/\s+/)[0] || "";
   const pathname = usePathname() || "";
@@ -279,25 +295,42 @@ export function AdminLayout({
                 {item.separatorBefore && (
                   <hr className="my-2 border-slate-800" aria-hidden="true" />
                 )}
-                <a
-                  href={href}
-                  onClick={() => setDrawerOpen(false)}
-                  title={item.label}
-                  aria-current={isActive ? "page" : undefined}
-                  className={`flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm transition focus:outline-none focus:ring-2 ${accent.focusRing} ${
-                    isActive
-                      ? `${accent.active} text-white font-semibold lg:border-l-4 ${accent.border} lg:-ml-1 lg:pl-4`
-                      : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                  }`}
-                >
-                  {item.iconSrc ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.iconSrc} alt="" className="w-5 h-5 flex-shrink-0" />
-                  ) : (
-                    <span className="text-base">{item.icon}</span>
+                <div className="relative group">
+                  <a
+                    href={href}
+                    onClick={() => setDrawerOpen(false)}
+                    title={item.label}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`flex items-center gap-3 md:gap-0 lg:gap-3 px-3 md:px-2 lg:px-3 py-2.5 md:justify-center lg:justify-start rounded-lg text-sm transition focus:outline-none focus:ring-2 ${accent.focusRing} ${
+                      isActive
+                        ? `${accent.active} text-white font-semibold lg:border-l-4 ${accent.border} lg:-ml-1 lg:pl-4`
+                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                    } ${item.help ? "lg:pr-9" : ""}`}
+                  >
+                    {item.iconSrc ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.iconSrc} alt="" className="w-5 h-5 flex-shrink-0" />
+                    ) : (
+                      <span className="text-base">{item.icon}</span>
+                    )}
+                    <span className="md:hidden lg:inline">{item.label}</span>
+                  </a>
+                  {item.help && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setHelpItemId(item.id);
+                      }}
+                      title={`${item.label} nedir?`}
+                      aria-label={`${item.label} hakkında yardım`}
+                      className="hidden lg:flex absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 items-center justify-center rounded-full text-[10px] font-bold bg-slate-700 text-slate-300 hover:bg-indigo-600 hover:text-white transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      ?
+                    </button>
                   )}
-                  <span className="md:hidden lg:inline">{item.label}</span>
-                </a>
+                </div>
               </div>
             );
           })}
@@ -404,7 +437,84 @@ export function AdminLayout({
         tenantKey={tenantKey}
         onClose={() => setQrScannerOpen(false)}
       />
+
+      <SidebarHelpModal
+        item={items.find((it) => it.id === helpItemId) || null}
+        onClose={() => setHelpItemId(null)}
+      />
     </div>
     </PanelChromeContext.Provider>
+  );
+}
+
+function SidebarHelpModal({ item, onClose }: { item: SidebarItem | null; onClose: () => void }) {
+  useEffect(() => {
+    if (!item) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [item, onClose]);
+
+  if (!item?.help) return null;
+  const help = item.help;
+  const openAgent = () => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent("upu:open-agent", {
+      detail: { role: "kurucu", context: help.agentContext || `help:${item.id}` },
+    }));
+    onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sidebar-help-title"
+    >
+      <div
+        className="bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-5 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">{item.icon}</span>
+            <h2 id="sidebar-help-title" className="text-base font-bold text-slate-900 dark:text-white">
+              {help.title}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Kapat"
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xl leading-none"
+          >
+            ×
+          </button>
+        </header>
+        <div className="p-5 space-y-4">
+          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            {help.paragraph}
+          </p>
+          {help.firstStep && (
+            <a
+              href={help.firstStep.href}
+              onClick={onClose}
+              className="block w-full text-center py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              {help.firstStep.label}
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={openAgent}
+            className="block w-full text-center py-2 rounded-xl text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+          >
+            💬 Daha fazla — Kurucu'dan yardım iste
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

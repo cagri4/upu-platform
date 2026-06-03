@@ -13,6 +13,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ClipboardList, ShoppingCart, X, Clock, Loader2 } from "lucide-react";
 import { HeroBanner, Skeleton } from "@/components/banking";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { KurucuHelpLink } from "@/components/empty-state-kurucu-link";
 
 type Status = "pending" | "confirmed" | "preparing" | "shipped" | "delivered" | "cancelled" | "rejected";
 
@@ -135,15 +136,16 @@ export default function SiparislerimPage() {
       ) : loading ? (
         <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height="h-16" />)}</div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl pb-4">
           <EmptyState
             icon={ShoppingCart}
             title="Henüz sipariş yok"
             description="Bayilerinin sipariş vermesi için onları sisteme davet et — ya da kendi adına sipariş gir."
             cta={{ label: "+ Yeni Sipariş", href: "/tr/bayi-siparis-ver" }}
-            secondary={{ label: "Bayi davet et →", href: "/tr/bayi-davet" }}
+            secondary={{ label: "Bayi davet et →", href: "/tr/bayi-davet-et" }}
             accent="emerald"
           />
+          <div className="text-center"><KurucuHelpLink context="empty-state:bayi-siparislerim" /></div>
         </div>
       ) : (
         <div className="space-y-2">

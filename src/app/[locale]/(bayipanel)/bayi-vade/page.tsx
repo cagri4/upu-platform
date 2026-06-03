@@ -14,6 +14,8 @@
 import { useEffect, useState } from "react";
 import { Calendar, Download } from "lucide-react";
 import { HeroBanner, Skeleton } from "@/components/banking";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { kurucuSecondary } from "@/components/empty-state-kurucu-link";
 
 interface InvoiceRow {
   id: string;
@@ -96,8 +98,15 @@ export default function BayiVadePage() {
       ) : loading ? (
         <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height="h-16" />)}</div>
       ) : rows.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center text-sm text-slate-500">
-          Bekleyen fatura yok.
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+          <EmptyState
+            icon={Calendar}
+            title="Bekleyen fatura yok"
+            description="Vadesi yaklaşan veya geçmiş açık fatura olmadığında burada görünecek. Kapatılan faturalar 'Faturalar' sekmesinde."
+            cta={{ label: "Faturalara Git →", href: "/tr/bayi-faturalarim" }}
+            secondary={kurucuSecondary("empty-state:bayi-vade")}
+            accent="emerald"
+          />
         </div>
       ) : (
         <div className="space-y-2">

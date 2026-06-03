@@ -18,6 +18,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { Package, Box, History } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { kurucuSecondary } from "@/components/empty-state-kurucu-link";
 
 interface Product {
   id: string;
@@ -153,11 +156,27 @@ export default function BayiStokPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-10 text-center">
-          <div className="text-4xl mb-2">📭</div>
-          <p className="text-sm text-slate-500">
-            {filter === "critical" ? "Kritik seviyede ürün yok 🎉" : filter === "out" ? "Tükenmiş ürün yok 🎉" : "Filtre veya aramayla eşleşen ürün yok."}
-          </p>
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl">
+          <EmptyState
+            icon={filter === "all" ? Package : Box}
+            title={
+              filter === "critical" ? "Kritik seviyede ürün yok 🎉"
+              : filter === "out" ? "Tükenmiş ürün yok 🎉"
+              : filter === "ok" ? "OK seviyesinde ürün yok"
+              : data.products.length === 0 ? "Henüz ürün yok"
+              : "Aramayla eşleşen ürün yok"
+            }
+            description={
+              data.products.length === 0
+                ? "Önce 'Ürünlerim'e ürün ekle (Excel toplu yükleme veya tek tek). Sonra stok burada takip edilebilir."
+                : filter === "critical" || filter === "out"
+                ? "Stok eşiği altına düşen ürünler burada listelenir. Kritik eşik 'Ürünlerim' sayfasından her ürün için ayarlanır."
+                : "Filtre ya da arama kriterini değiştir."
+            }
+            cta={data.products.length === 0 ? { label: "+ Ürün Ekle", href: "/tr/bayi-urun-ekle" } : undefined}
+            secondary={kurucuSecondary(`empty-state:bayi-stok:${filter}`)}
+            accent={filter === "critical" || filter === "out" ? "emerald" : "indigo"}
+          />
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl overflow-hidden">
@@ -235,7 +254,12 @@ export default function BayiStokPage() {
         <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">📜 Son Hareketler ({data.recentMovements.length})</h2>
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl divide-y divide-slate-100 dark:divide-slate-800/50">
           {data.recentMovements.length === 0 ? (
-            <div className="p-6 text-center text-sm text-slate-500">Henüz hareket kaydı yok.</div>
+            <EmptyState
+              icon={History}
+              title="Henüz hareket yok"
+              description="Stok giriş/çıkış/düzeltme kayıtları burada görünecek. Ürün listesinde 'Hareket' butonundan manuel kayıt geçebilirsin."
+              accent="slate"
+            />
           ) : data.recentMovements.slice(0, 20).map(m => {
             const product = data.products.find(p => p.id === m.productId);
             const meta = TYPE_META[m.type];

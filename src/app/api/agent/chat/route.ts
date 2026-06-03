@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
   }
   const tenantKey: TenantKey = rawTenantKey;
 
-  let body: { message?: string; role?: string };
+  let body: { message?: string; role?: string; context?: string };
   try { body = await req.json(); } catch {
     return NextResponse.json({ error: "Geçersiz JSON." }, { status: 400 });
   }
@@ -150,6 +150,12 @@ export async function POST(req: NextRequest) {
   if (userMessage.length > 4000) {
     return NextResponse.json({ error: "Mesaj çok uzun (max 4000 karakter)." }, { status: 400 });
   }
+  // Empty-state / sidebar-help'ten gelen tek-seferlik bağlam (örn.
+  // "empty-state:bayi-stok:critical"). Kurucu prompt'unun sonuna
+  // HALİHAZIR DURUM satırı yapıştırılır. Sanitize: max 240 char + linefeed
+  // kaldır, prompt enjeksiyonu (system override) riski olmasın.
+  const ctxRaw = typeof body.context === "string" ? body.context.slice(0, 240) : "";
+  const promptContext = ctxRaw.replace(/[\r\n]+/g, " ").trim();
   // Faz 1C: rol bilgisi kabul edilir. Faz 2: rol === 'kurucu' ise
   // Kurucu sistem promptu + Kurucu tool seti aktif. Diğer rolller
   // (yonetici, egitmen) Faz 3'te full implement; şimdilik yonetici
@@ -264,6 +270,7 @@ export async function POST(req: NextRequest) {
       firmaUnvani: promptInput.firmaUnvani,
       // status null — LLM ilk turda kurucu_status tool'u çağırarak alır
       status: null,
+      callerContext: promptContext || null,
     });
   } else if (agentRole === "yonetici") {
     systemPrompt = buildYoneticiSystemPrompt(promptInput);

@@ -165,6 +165,7 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
   const [hydrated, setHydrated] = useState(false);
   const [quota, setQuota] = useState<QuotaState | null>(null);
   const [quotaExceeded, setQuotaExceeded] = useState<QuotaExceededInfo | null>(null);
+  const [pendingContext, setPendingContext] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const activeRole = getRoleById(role);
@@ -182,15 +183,22 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
   }, [tenantKey]);
 
   // Global event API: window.dispatchEvent(new CustomEvent('upu:open-agent',
-  // { detail: { role: 'kurucu' } })) — onboarding "Hadi başlayalım" sonu
-  // ve diğer tetikleyiciler.
+  // { detail: { role: 'kurucu', context: 'empty-state:bayiler' } }))
+  // - role: aktif AI Eleman'ı set eder (localStorage'a persist)
+  // - context: agent route'a tek seferlik iletilir, Kurucu prompt'unun
+  //   sonuna "HALİHAZIR DURUM: …" satırı yapıştırır. İlk send()'de
+  //   tüketilir + clear.
   useEffect(() => {
     if (typeof window === "undefined") return;
     function handler(e: Event) {
-      const detail = (e as CustomEvent).detail as { role?: AgentRoleId } | undefined;
+      const detail = (e as CustomEvent).detail as { role?: AgentRoleId; context?: string } | undefined;
       if (detail?.role) {
         setRole(detail.role);
         try { window.localStorage.setItem(ROLE_STORAGE_KEY, detail.role); } catch { /* */ }
+      }
+      if (detail?.context && typeof detail.context === "string") {
+        // Uzun string trim (prompt şişmesin)
+        setPendingContext(detail.context.slice(0, 240));
       }
       setOpen(true);
     }
@@ -265,11 +273,13 @@ export function UpuAgentWidget({ tenantKey = "bayi" }: UpuAgentWidgetProps = {})
     }]);
 
     try {
+      const ctxForRequest = pendingContext;
+      if (pendingContext) setPendingContext(null); // tek seferlik tüket
       const r = await fetch(`/api/agent/chat${role ? `?role=${encodeURIComponent(role)}` : ""}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ message: text, role: role || undefined }),
+        body: JSON.stringify({ message: text, role: role || undefined, context: ctxForRequest || undefined }),
       });
       const d = await r.json();
       if (r.status === 429 && d?.error === "quota_exceeded") {

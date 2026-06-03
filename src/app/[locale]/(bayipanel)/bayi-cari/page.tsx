@@ -13,6 +13,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Wallet, Download } from "lucide-react";
 import { HeroBanner, Skeleton } from "@/components/banking";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { KurucuHelpLink } from "@/components/empty-state-kurucu-link";
 
 interface StatementRow {
   entry_type: string;
@@ -160,14 +161,15 @@ export default function BayiCariPage() {
           </div>
 
           {data.rows.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl pb-4">
               <EmptyState
                 icon={Wallet}
                 title="Cari ekstre boş"
                 description="Bayilerin sipariş + ödeme yaptıkça hareketler burada birikir."
-                cta={{ label: "Bayi davet et", href: "/tr/bayi-davet" }}
+                cta={{ label: "Bayi davet et", href: "/tr/bayi-davet-et" }}
                 accent="indigo"
               />
+              <div className="text-center"><KurucuHelpLink context="empty-state:bayi-cari" /></div>
             </div>
           ) : (
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">

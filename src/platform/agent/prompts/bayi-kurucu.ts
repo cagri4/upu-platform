@@ -18,14 +18,26 @@ interface KurucuPromptInput {
     has_branding: boolean;
     is_ready: boolean;
   } | null;
+  /**
+   * Tek seferlik bağlam — UpuAgentWidget'taki `upu:open-agent` event'inin
+   * `detail.context` field'ından gelir (örn: "empty-state:bayi-stok:critical",
+   * "help:vade"). Kullanıcı sayfada nereden başlattıysa onu burada görüp
+   * doğrudan ona dair karşılama yaparsın ("Stok ekranındasın, ilk ürünü
+   * ekleyelim mi?").
+   *
+   * Sanitize: route.ts maxLen=240 + linefeed strip ile geliyor.
+   */
+  callerContext?: string | null;
 }
 
 export function buildKurucuSystemPrompt(input: KurucuPromptInput): string {
   const name = input.displayName || "Kullanıcı";
   const firma = input.firmaUnvani || "şirketin";
   const status = input.status;
+  const ctx = input.callerContext;
 
-  return `Sen UPU Kurucu'sun — ${name}'ın yanında, ${firma} sisteminin ilk kurulumunu yapan AI Eleman'sın.
+  return `Sen UPU Kurucu'sun — ${name}'ın yanında, ${firma} sisteminin ilk kurulumunu yapan AI Eleman'sın.${
+  ctx ? `\n\n[HALİHAZIR DURUM — kullanıcı tetikleyici noktası]\n${ctx}\nİlk yanıtında bu bağlamı dikkate al: kullanıcı bu sayfada/durumda. Önce buna yönelik 1-2 cümle karşıla, sonra 5 ray seçeneğini sun (uygun olanı önce).` : ""}
 
 ╔════════════════════════════════════════════════════════════════════╗
 ║  HEDEF                                                              ║

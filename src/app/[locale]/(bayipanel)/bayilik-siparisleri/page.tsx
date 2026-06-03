@@ -12,6 +12,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Inbox, Loader2, CheckCircle2, XCircle, Package, Truck, MapPin, Clock, X, Camera } from "lucide-react";
 import { HeroBanner, Skeleton } from "@/components/banking";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { kurucuSecondary } from "@/components/empty-state-kurucu-link";
 
 type ShipmentStatus = "hazirlandi" | "yola_cikti" | "teslim_edildi" | "iade";
 
@@ -155,8 +157,18 @@ export default function BayilikSiparisleriPage() {
       ) : loading ? (
         <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height="h-20" />)}</div>
       ) : rows.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center text-sm text-slate-500 dark:text-slate-400">
-          Bu sekmede sipariş yok.
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+          <EmptyState
+            icon={Inbox}
+            title={tab === "all" ? "Henüz gelen sipariş yok" : "Bu sekmede sipariş yok"}
+            description={tab === "all"
+              ? "Bayilerinden sipariş geldiğinde burada listelenir. Önce bayi davet et — bayilerin WA üzerinden veya panelden sipariş geçebilir."
+              : "Filtreyi 'Tümü'ne çevirip aktif siparişleri görebilirsin."
+            }
+            cta={tab === "all" ? { label: "+ Bayi Davet Et", href: "/tr/bayi-davet-et" } : undefined}
+            secondary={kurucuSecondary(`empty-state:bayilik-siparisleri:${tab}`)}
+            accent="indigo"
+          />
         </div>
       ) : (
         <div className="space-y-2">

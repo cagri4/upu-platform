@@ -12,6 +12,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { ShieldCheck, AlertTriangle, Eye } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { kurucuSecondary } from "@/components/empty-state-kurucu-link";
 
 interface Risk {
   dealerId: string;
@@ -99,11 +102,23 @@ export default function BayiRiskPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl p-10 text-center">
-          <div className="text-4xl mb-2">{LEVEL_META[tab].icon}</div>
-          <p className="text-sm text-slate-500">
-            {tab === "risk" ? "Risk altında bayi yok 🎉" : tab === "watch" ? "Watch listesinde bayi yok." : "Liste boş."}
-          </p>
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800/50 rounded-xl">
+          <EmptyState
+            icon={tab === "risk" ? ShieldCheck : tab === "watch" ? Eye : AlertTriangle}
+            title={
+              tab === "risk" ? "Risk altında bayi yok 🎉"
+              : tab === "watch" ? "Watch listesinde bayi yok"
+              : "Sağlıklı bayi henüz yok"
+            }
+            description={
+              tab === "risk" ? "Tüm bayilerin sağlıklı. Risk eşikleri (60g sipariş yok / 30g vade) tetiklenince burada görünecek."
+              : tab === "watch" ? "Watch eşiği (30g sipariş yok / 7g vade / hacim düşüşü) tetiklendiğinde bayiler burada listelenir."
+              : "Önce bayi listesine ekle ve sipariş geçmişi oluşsun."
+            }
+            cta={{ label: "+ Bayi Davet Et", href: "/tr/bayi-davet-et" }}
+            secondary={kurucuSecondary(`empty-state:bayi-risk:${tab}`)}
+            accent={tab === "risk" ? "emerald" : tab === "watch" ? "amber" : "slate"}
+          />
         </div>
       ) : (
         <div className="space-y-2">

@@ -13,6 +13,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { Wallet, Plus, Download, CheckCircle2, XCircle, Loader2, X } from "lucide-react";
 import { HeroBanner, Skeleton } from "@/components/banking";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { kurucuSecondary } from "@/components/empty-state-kurucu-link";
 
 interface Payment {
   id: string;
@@ -142,8 +144,17 @@ export default function TahsilatlarimPage() {
       {loading ? (
         <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height="h-20" />)}</div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center text-sm text-slate-500">
-          Bu filtrede ödeme yok.
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+          <EmptyState
+            icon={Wallet}
+            title={filter === "all" ? "Henüz tahsilat yok" : `${filter === "pending" ? "Bekleyen" : filter === "approved" ? "Onaylanmış" : "Reddedilmiş"} tahsilat yok`}
+            description={filter === "all"
+              ? "İlk ödemeni 'Yeni Ödeme Kaydet' ile gir — dekont fotoğrafıyla birlikte. Admin onayından sonra cari ekstreye işlenir."
+              : "Bu sekmede şu an kayıt yok. Filtreyi 'Tümü'ne çevirip kontrol edebilirsin."
+            }
+            secondary={kurucuSecondary("empty-state:bayi-tahsilatlarim")}
+            accent="emerald"
+          />
         </div>
       ) : (
         <div className="space-y-2">

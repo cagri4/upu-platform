@@ -18,6 +18,7 @@ import { useSearchParams } from "next/navigation";
 import { Package, PlusCircle, Search } from "lucide-react";
 import { HeroBanner, Skeleton } from "@/components/banking";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { KurucuHelpLink } from "@/components/empty-state-kurucu-link";
 
 interface ProductRow {
   id: string;
@@ -181,7 +182,7 @@ export default function UrunlerimPage() {
           ))}
         </div>
       ) : rows.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl pb-4">
           <EmptyState
             icon={Package}
             title={q || activeStock !== "tum" ? "Bu filtre/aramayla eşleşen ürün yok" : "Henüz ürün yok"}
@@ -194,6 +195,7 @@ export default function UrunlerimPage() {
               : undefined}
             accent="emerald"
           />
+          <div className="text-center"><KurucuHelpLink context="empty-state:bayi-urunlerim" /></div>
         </div>
       ) : (
         <div className="space-y-2">

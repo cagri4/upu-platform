@@ -46,6 +46,22 @@ import { ItemAddModal } from "@/components/panel-edit/item-add-modal";
 import { ChurnRiskBanner } from "@/components/bayi/ChurnRiskBanner";
 import { RecommendationCard } from "@/components/recommendations/RecommendationCard";
 import { BayiPanelTour } from "@/components/tour/BayiPanelTour";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { kurucuSecondary } from "@/components/empty-state-kurucu-link";
+import { Rocket } from "lucide-react";
+
+function BayiPanelEmptyHero() {
+  return (
+    <EmptyState
+      icon={Rocket}
+      title="Panelin hazır — ilk bayini ekleyerek başla"
+      description="Bayilerin sisteme katıldıkça KPI'ların burada canlanacak. Davet linki WhatsApp'tan bayiye gider, kabul edince hesabı açılır."
+      cta={{ label: "+ Bayi Davet Et", href: "/tr/bayi-davet-et" }}
+      secondary={kurucuSecondary("empty-state:bayi-panel")}
+      accent="indigo"
+    />
+  );
+}
 
 interface KPIs {
   dealer_count: number;
@@ -240,6 +256,12 @@ export default function BayiPanelimPage() {
           rightLabel="Doldur"
           href={q("/tr/bayi-profil")}
         />
+      )}
+
+      {!kpisLoading && kpis && kpis.dealer_count === 0 && !profileIncomplete && (
+        <div className="bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800/40 rounded-2xl">
+          <BayiPanelEmptyHero />
+        </div>
       )}
 
       {/* Düzenle / Bitti toggle */}
