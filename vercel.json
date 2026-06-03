@@ -67,6 +67,10 @@
     {
       "path": "/api/cron/bayi-referral-award",
       "schedule": "30 2 * * *"
+    },
+    {
+      "path": "/api/cron/bayi-vade-reminder",
+      "schedule": "0 9 * * *"
     }
   ]
 }
