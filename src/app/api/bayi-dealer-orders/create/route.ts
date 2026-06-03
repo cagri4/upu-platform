@@ -16,6 +16,10 @@ import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { getTenantByDomain } from "@/tenants/config";
 import { notifyAdminsNewOrder } from "@/platform/bayi-orders/notify";
 import { checkCreditLimit } from "@/platform/bayi-finansal/credit-limit";
+import {
+  getHiddenProductIdsForDealer,
+  resolveDealerIdForProfile,
+} from "@/platform/bayi-products/visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +84,36 @@ export async function POST(req: NextRequest) {
   }
 
   const total = cleanItems.reduce((s, it) => s + it.line_total, 0);
+
+  // Görünürlük guard: dealer'a gizlenmiş bir ürünü URL ile bypass etmesin.
+  // List endpoint zaten filtreleniyor ama API doğrudan çağrılırsa
+  // korunmalı.
+  const productIds = cleanItems
+    .map((it) => it.product_id)
+    .filter((id): id is string => !!id);
+  if (productIds.length > 0) {
+    const dealerId = await resolveDealerIdForProfile(sb, lookup.tenantId, lookup.profile.id, {
+      whatsapp_phone: lookup.profile.whatsapp_phone,
+      email: lookup.profile.email,
+    });
+    const hiddenIds = await getHiddenProductIdsForDealer(sb, dealerId);
+    if (hiddenIds.size > 0) {
+      const blockedItem = cleanItems.find(
+        (it) => it.product_id && hiddenIds.has(it.product_id),
+      );
+      if (blockedItem) {
+        return NextResponse.json(
+          {
+            error: "product_not_available",
+            message: `${blockedItem.product_name} bu hesap için kataloga kapalı. Bayi yöneticinizle iletişime geçin.`,
+            product_id: blockedItem.product_id,
+            product_name: blockedItem.product_name,
+          },
+          { status: 403 },
+        );
+      }
+    }
+  }
 
   const credit = await checkCreditLimit(sb, {
     tenantId: lookup.tenantId,

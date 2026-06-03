@@ -107,7 +107,7 @@ interface DetailResp {
   }>;
 }
 
-type ModalKey = null | "wa" | "vade" | "not" | "kampanya" | "duzenle" | "durum" | "sil" | "kredi";
+type ModalKey = null | "wa" | "vade" | "not" | "kampanya" | "duzenle" | "durum" | "sil" | "kredi" | "urunler";
 
 function formatTry(n: number): string {
   return new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(n);
@@ -510,6 +510,7 @@ export default function BayiDetayPage() {
             { key: "vade" as ModalKey, icon: "💰", label: "Vade Hatırlatma", primary: finance.isCritical },
             { key: "not" as ModalKey, icon: "📝", label: "Not" },
             { key: "kampanya" as ModalKey, icon: "🎁", label: "Kampanya" },
+            { key: "urunler" as ModalKey, icon: "📦", label: "Ürün Görünürlüğü" },
             { key: "duzenle" as ModalKey, icon: "✏️", label: "Düzenle" },
             { key: "durum" as ModalKey, icon: "⏸", label: "Durum" },
             { key: "sil" as ModalKey, icon: "🗑", label: "Sil" },
@@ -629,6 +630,7 @@ function ActionModal({ modalKey, dealer, finance, onClose, onSuccess }: ActionMo
         {modalKey === "durum" && <DurumForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
         {modalKey === "sil" && <SilForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
         {modalKey === "kredi" && <KrediLimitForm dealer={dealer} finance={finance} onClose={onClose} onSuccess={onSuccess} />}
+        {modalKey === "urunler" && <UrunGorunurlukForm dealer={dealer} onClose={onClose} onSuccess={onSuccess} />}
       </div>
     </div>
   );
@@ -1279,4 +1281,193 @@ function KrediLimitForm({
       </div>
     </ModalShell>
   );
+}
+
+// ── Ürün Görünürlüğü ─────────────────────────────────────────────────
+// Bayi başına SKU ON/OFF. Default opt-out (kapatılmadıkça görünür).
+interface VisibilityRow {
+  id: string;
+  code: string;
+  name: string;
+  brand: string | null;
+  category: string | null;
+  unitPrice: number;
+  stockQuantity: number;
+  visible: boolean;
+  hiddenReason: string | null;
+  hiddenAt: string | null;
+}
+
+function UrunGorunurlukForm({
+  dealer, onClose, onSuccess,
+}: {
+  dealer: Dealer;
+  onClose: () => void;
+  onSuccess: ActionModalProps["onSuccess"];
+}) {
+  const [rows, setRows] = useState<VisibilityRow[]>([]);
+  const [search, setSearch] = useState("");
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+  const [originalVisible, setOriginalVisible] = useState<Map<string, boolean>>(new Map());
+
+  useEffect(() => {
+    fetch(`/api/admin/bayi-dealers/${dealer.id}/product-visibility`, { credentials: "same-origin" })
+      .then(async r => {
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Liste alınamadı");
+        const list = (d.rows || []) as VisibilityRow[];
+        setRows(list);
+        setOriginalVisible(new Map(list.map(r => [r.id, r.visible])));
+      })
+      .catch(e => setErr(e.message || "Bağlantı hatası"))
+      .finally(() => setLoading(false));
+  }, [dealer.id]);
+
+  const filtered = useMemo(() => {
+    if (!search) return rows;
+    const q = search.toLocaleLowerCase("tr");
+    return rows.filter(r =>
+      r.name.toLocaleLowerCase("tr").includes(q) ||
+      (r.code || "").toLocaleLowerCase("tr").includes(q) ||
+      (r.brand || "").toLocaleLowerCase("tr").includes(q),
+    );
+  }, [rows, search]);
+
+  function toggle(productId: string) {
+    setRows(prev => prev.map(r => r.id === productId ? { ...r, visible: !r.visible } : r));
+  }
+
+  const changes = useMemo(() => {
+    return rows
+      .filter(r => originalVisible.get(r.id) !== r.visible)
+      .map(r => ({ product_id: r.id, visible: r.visible }));
+  }, [rows, originalVisible]);
+
+  const hiddenCount = rows.filter(r => !r.visible).length;
+
+  async function handleSave() {
+    if (changes.length === 0) {
+      setErr("Değişiklik yapılmadı.");
+      return;
+    }
+    setErr("");
+    setSaving(true);
+    try {
+      const r = await fetch(`/api/admin/bayi-dealers/${dealer.id}/product-visibility`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ changes, reason: reason.trim() || null }),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        setErr(d.error || "Kaydedilemedi.");
+        return;
+      }
+      const hidden = changes.filter(c => c.visible === false).length;
+      const shown = changes.filter(c => c.visible === true).length;
+      onSuccess({
+        type: "note",
+        icon: "📦",
+        title: "Ürün görünürlüğü güncellendi",
+        detail: `${hidden} gizlendi · ${shown} açıldı`,
+        timestamp: new Date().toISOString(),
+      }, "✅ Görünürlük güncellendi");
+    } catch {
+      setErr("Bağlantı hatası.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <ModalShell title="📦 Ürün Görünürlüğü" onClose={onClose}>
+      <p className="text-xs text-slate-500 mb-3">
+        Bayi: <strong>{dealer.name}</strong> · <span className="text-rose-600">{hiddenCount} gizli</span> · {changes.length} bekleyen değişiklik
+      </p>
+
+      <div className="mb-3">
+        <input
+          type="search"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Ürün ara…"
+          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800/50 rounded-lg text-sm"
+        />
+      </div>
+
+      {loading ? (
+        <div className="text-sm text-slate-500 py-4 text-center">Yükleniyor…</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-sm text-slate-500 py-4 text-center">Ürün bulunamadı.</div>
+      ) : (
+        <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1" data-testid="visibility-product-list">
+          {filtered.map(r => (
+            <label
+              key={r.id}
+              className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-xs ${
+                r.visible
+                  ? "border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/50 dark:bg-emerald-950/20"
+                  : "border-rose-200 dark:border-rose-800/50 bg-rose-50/50 dark:bg-rose-950/20"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={r.visible}
+                onChange={() => toggle(r.id)}
+                className="accent-emerald-600 flex-shrink-0"
+                data-testid={`visibility-toggle-${r.id}`}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-slate-800 dark:text-slate-200 truncate">{r.name}</div>
+                <div className="text-[10px] text-slate-500 truncate">
+                  {r.code}{r.brand ? ` · ${r.brand}` : ""} · {fmtTRYNumber(r.unitPrice)} · stok {r.stockQuantity}
+                </div>
+              </div>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded ${r.visible ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+                {r.visible ? "Görünür" : "Gizli"}
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-3">
+        <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">
+          Sebep (opsiyonel — audit log)
+        </label>
+        <input
+          value={reason}
+          onChange={e => setReason(e.target.value)}
+          placeholder="örn: sözleşmede yer almıyor"
+          className="w-full border border-slate-200 dark:border-slate-800/50 rounded-lg px-3 py-2 text-sm"
+        />
+      </div>
+
+      {err && (
+        <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-lg p-2 text-xs text-rose-700 mt-3">
+          {err}
+        </div>
+      )}
+
+      <div className="flex gap-2 mt-4 justify-end">
+        <button onClick={onClose} className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-800/50 rounded-lg hover:bg-slate-50">İptal</button>
+        <button
+          onClick={handleSave}
+          disabled={saving || changes.length === 0}
+          data-testid="visibility-save-btn"
+          className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {saving ? "Kaydediliyor…" : `Kaydet (${changes.length})`}
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+function fmtTRYNumber(n: number): string {
+  return new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(n);
 }

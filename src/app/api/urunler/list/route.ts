@@ -21,6 +21,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { resolvePanelAuth } from "@/platform/auth/panel-auth";
 import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
+import {
+  getHiddenProductIdsForDealer,
+  resolveDealerIdForProfile,
+} from "@/platform/bayi-products/visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -38,13 +42,32 @@ export async function GET(req: NextRequest) {
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const supabase = getServiceClient();
-  const lookup = await resolveTenantProfile<{ tenant_id: string }>(supabase, {
+  const lookup = await resolveTenantProfile<{
+    tenant_id: string;
+    role: string | null;
+    whatsapp_phone: string | null;
+    email: string | null;
+  }>(supabase, {
     userId: auth.userId,
     tenantKey: "bayi",
-    select: "id, tenant_id",
+    select: "id, tenant_id, role, whatsapp_phone, email",
   });
   if ("error" in lookup) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
   const tenantId = lookup.tenantId;
+
+  // Dealer-spesifik görünürlük filtresi: admin/satis/depocu/muhasebe
+  // (iç çalışanlar) tüm ürünleri görür. Dealer rolü ('user') ise
+  // bayi_product_visibility tablosundan gizli SKU'lar çıkarılır.
+  const INTERNAL_ROLES = new Set(["admin", "satis", "depocu", "muhasebe", "employee"]);
+  const isInternal = INTERNAL_ROLES.has(lookup.profile.role || "");
+  let hiddenIds = new Set<string>();
+  if (!isInternal) {
+    const dealerId = await resolveDealerIdForProfile(supabase, tenantId, lookup.profile.id, {
+      whatsapp_phone: lookup.profile.whatsapp_phone,
+      email: lookup.profile.email,
+    });
+    hiddenIds = await getHiddenProductIdsForDealer(supabase, dealerId);
+  }
   const page = clampInt(sp.get("page"), 1, 10000, 1);
   const pageSize = clampInt(sp.get("pageSize"), 6, 100, 24);
   const q = (sp.get("q") || "").trim().slice(0, 100);
@@ -58,6 +81,11 @@ export async function GET(req: NextRequest) {
     .eq("is_active", true);
 
   if (category) query = query.eq("category", category);
+
+  // Server-side görünürlük filtresi — page/count tutarlı kalsın.
+  if (hiddenIds.size > 0) {
+    query = query.not("id", "in", `(${Array.from(hiddenIds).join(",")})`);
+  }
 
   // Aramasız + filtresiz durumda server-side range
   if (!q) {
