@@ -1,0 +1,84 @@
+[
+  {
+    "template": "upu_panel_link",
+    "lang": "tr",
+    "response": {
+      "error": {
+        "message": "Invalid parameter",
+        "type": "OAuthException",
+        "code": 100,
+        "error_subcode": 2388293,
+        "is_transient": false,
+        "error_user_title": "Parametreler Sözcük Oranı Sınırı Aştı",
+        "error_user_msg": "Bu şablon, uzunluğuna göre çok fazla değişken içeriyor. Değişken sayısını azaltın veya mesaj uzunluğunu artırın.",
+        "fbtrace_id": "AGEkiO8qrPbvqpt2HjpW_bD"
+      }
+    }
+  },
+  {
+    "template": "upu_panel_link",
+    "lang": "en",
+    "response": {
+      "error": {
+        "message": "Invalid parameter",
+        "type": "OAuthException",
+        "code": 100,
+        "error_subcode": 2388293,
+        "is_transient": false,
+        "error_user_title": "Parametreler Sözcük Oranı Sınırı Aştı",
+        "error_user_msg": "Bu şablon, uzunluğuna göre çok fazla değişken içeriyor. Değişken sayısını azaltın veya mesaj uzunluğunu artırın.",
+        "fbtrace_id": "Allti_WtCPwE2wZP-zeNyXq"
+      }
+    }
+  },
+  {
+    "template": "upu_panel_link",
+    "lang": "nl",
+    "response": {
+      "error": {
+        "message": "Invalid parameter",
+        "type": "OAuthException",
+        "code": 100,
+        "error_subcode": 2388293,
+        "is_transient": false,
+        "error_user_title": "Parametreler Sözcük Oranı Sınırı Aştı",
+        "error_user_msg": "Bu şablon, uzunluğuna göre çok fazla değişken içeriyor. Değişken sayısını azaltın veya mesaj uzunluğunu artırın.",
+        "fbtrace_id": "Afnsmx7fF3sfxAPnBdPy1gA"
+      }
+    }
+  },
+  {
+    "template": "upu_otp_giris",
+    "lang": "tr",
+    "response": {
+      "id": "1787977125508133",
+      "status": "APPROVED",
+      "category": "AUTHENTICATION"
+    }
+  },
+  {
+    "template": "upu_otp_giris",
+    "lang": "en",
+    "response": {
+      "id": "1815607886079780",
+      "status": "APPROVED",
+      "category": "AUTHENTICATION"
+    }
+  },
+  {
+    "template": "upu_otp_giris",
+    "lang": "nl",
+    "response": {
+      "error": {
+        "message": "Invalid parameter",
+        "type": "OAuthException",
+        "code": 100,
+        "error_subcode": 2388060,
+        "is_transient": false,
+        "error_user_title": "Düğme Formatı Yanlış",
+        "error_user_msg": "Düğmelerde değişkenler, yeni satırlar, ifade simgeleri veya biçimlendirme karakterleri bulunamaz.",
+        "fbtrace_id": "Aw-CanhdZ_1QfxXzrpcrvDQ"
+      }
+    }
+  }
+]

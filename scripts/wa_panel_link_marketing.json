@@ -1,0 +1,50 @@
+[
+  {
+    "lang": "tr",
+    "submit": {
+      "id": "4401939906753169",
+      "status": "REJECTED",
+      "category": "MARKETING"
+    },
+    "final": {
+      "id": "4401939906753169",
+      "name": "upu_panel_link",
+      "language": "tr",
+      "status": "REJECTED",
+      "category": "MARKETING",
+      "rejected_reason": "INCORRECT_CATEGORY"
+    }
+  },
+  {
+    "lang": "en",
+    "submit": {
+      "id": "1025626826468990",
+      "status": "REJECTED",
+      "category": "MARKETING"
+    },
+    "final": {
+      "id": "1025626826468990",
+      "name": "upu_panel_link",
+      "language": "en",
+      "status": "REJECTED",
+      "category": "MARKETING",
+      "rejected_reason": "INCORRECT_CATEGORY"
+    }
+  },
+  {
+    "lang": "nl",
+    "submit": {
+      "id": "2455887591541944",
+      "status": "REJECTED",
+      "category": "MARKETING"
+    },
+    "final": {
+      "id": "2455887591541944",
+      "name": "upu_panel_link",
+      "language": "nl",
+      "status": "REJECTED",
+      "category": "MARKETING",
+      "rejected_reason": "INCORRECT_CATEGORY"
+    }
+  }
+]

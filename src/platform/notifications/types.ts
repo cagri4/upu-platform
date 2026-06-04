@@ -117,3 +117,111 @@ export const PRESETS: Record<Exclude<PresetName, "ozel">, string[]> = {
 export function getDefaultPreferences(): { type: string; enabled: boolean }[] {
   return NOTIFICATION_TYPES.map(t => ({ type: t.type, enabled: t.tier === "free" }));
 }
+
+// ─── Notification type → WA template mapping (24h penceresi dışı fallback) ──
+//
+// Window kapalı kullanıcılara `send-notification.ts` template path'ine düşer;
+// burada her notification_type için hangi APPROVED template'in kullanılacağı
+// ve parametre dolumu tanımlıdır. Map dışı türler "silent" — sadece DB log.
+//
+// `name` runtime'da `templates.ts:APPROVED_NOTIFICATION_TEMPLATES` set'inde
+// olmalı; yoksa send-notification 'wa-pending' channel ile DB'ye flag düşer.
+//
+// `buildParams` template BODY'sindeki {{1}}, {{2}}, ... pozisyonel sırayla
+// karşılık gelir. Meta limit: parametre değerleri max ~1024 char, "\n" yasak
+// (template'in kendi text'inde \n var, parametre içinde olmamalı).
+
+export interface TemplateBuildInput {
+  /** Tenant kısa adı (örn "Bayi", "Emlak"). */
+  tenantName: string;
+  /** Tam URL (örn "https://retailai.upudev.nl/tr/bayi-fatura"). */
+  panelUrl: string;
+  /** sendNotification input.title — emoji/uzunluk için sanitize gerekirse caller'da. */
+  title: string;
+  /** sendNotification input.body. */
+  body: string;
+  /** sendNotification input.payload — invoice_no, amount, due_date vb. */
+  payload: Record<string, unknown>;
+}
+
+export interface NotificationTemplateMapping {
+  name: string;
+  buildParams: (input: TemplateBuildInput) => string[];
+}
+
+/**
+ * Param sanitize — Meta kuralı: \n + sekans new-line yasak, max ~1024 char.
+ */
+function s(value: unknown, max = 200): string {
+  return String(value ?? "").replace(/[\r\n]+/g, " ").trim().slice(0, max);
+}
+
+export const NOTIFICATION_TYPE_TEMPLATES: Record<string, NotificationTemplateMapping> = {
+  // Vade hatırlatma — bayi-vade-reminder cron'undan tetiklenir.
+  // upu_bekleyen_islem: {{1}}=tenant, {{2}}=özet, {{3}}=panel url
+  faturalama: {
+    name: "upu_bekleyen_islem",
+    buildParams: (i) => {
+      const p = i.payload as { invoice_no?: string; due_date?: string; days_bucket?: number };
+      const bucket = p.days_bucket;
+      const due = bucket === 0 ? "bugün vadeli" : bucket === 1 ? "yarın vadeli" : `${bucket} gün sonra vadeli`;
+      const summary = p.invoice_no
+        ? `Fatura ${p.invoice_no} (${due})`
+        : s(i.title, 120);
+      return [s(i.tenantName, 40), s(summary, 200), s(i.panelUrl, 200)];
+    },
+  },
+
+  // Yeni müşteri / yeni eşleşme — upu_yeni_kayit
+  // {{1}}=tenant, {{2}}=kategori ("talep"/"müşteri"), {{3}}=detay, {{4}}=panel url
+  yeni_musteri_kayit: {
+    name: "upu_yeni_kayit",
+    buildParams: (i) => [
+      s(i.tenantName, 40),
+      "müşteri",
+      s(i.body || i.title, 150),
+      s(i.panelUrl, 200),
+    ],
+  },
+  yeni_eslesme_mulk_musteri: {
+    name: "upu_yeni_kayit",
+    buildParams: (i) => [
+      s(i.tenantName, 40),
+      "eşleşme",
+      s(i.body || i.title, 150),
+      s(i.panelUrl, 200),
+    ],
+  },
+
+  // Durum değişimi — upu_durum_guncelleme
+  // {{1}}=tenant, {{2}}=kayıt adı, {{3}}=yeni durum
+  mulk_durum_degisti: {
+    name: "upu_durum_guncelleme",
+    buildParams: (i) => {
+      const p = i.payload as { entity_label?: string; new_status?: string };
+      return [s(i.tenantName, 40), s(p.entity_label || i.title, 100), s(p.new_status || i.body, 80)];
+    },
+  },
+  mulk_fiyat_degisti: {
+    name: "upu_durum_guncelleme",
+    buildParams: (i) => {
+      const p = i.payload as { entity_label?: string };
+      return [s(i.tenantName, 40), s(p.entity_label || i.title, 100), "fiyat güncellendi"];
+    },
+  },
+  sozlesme_imzali: {
+    name: "upu_durum_guncelleme",
+    buildParams: (i) => [s(i.tenantName, 40), s(i.title, 100), "imzalandı"],
+  },
+
+  // Günlük özet — upu_gunluk_ozet
+  // {{1}}=tenant, {{2}}=özet, {{3}}=panel url
+  sabah_brif: {
+    name: "upu_gunluk_ozet",
+    buildParams: (i) => [s(i.tenantName, 40), s(i.body || i.title, 250), s(i.panelUrl, 200)],
+  },
+  takvim_yarinki_ozet: {
+    name: "upu_gunluk_ozet",
+    buildParams: (i) => [s(i.tenantName, 40), s(i.body || i.title, 250), s(i.panelUrl, 200)],
+  },
+};

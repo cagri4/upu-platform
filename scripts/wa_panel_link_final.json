@@ -1,0 +1,47 @@
+[
+  {
+    "lang": "tr",
+    "result": {
+      "error": {
+        "message": "Invalid parameter",
+        "type": "OAuthException",
+        "code": 100,
+        "error_subcode": 2388023,
+        "is_transient": false,
+        "error_user_title": "Mesaj şablonu dili siliniyor",
+        "error_user_msg": "Mevcut Turkish içerikler silinirken yeni Turkish içerikler eklenemez. less than 1 minute içinde tekrar deneyin veya yeni bir mesaj şablonu oluşturmaya çalışın.",
+        "fbtrace_id": "A8K5urTuOE9Ahe0BANb5WEl"
+      }
+    }
+  },
+  {
+    "lang": "en",
+    "result": {
+      "error": {
+        "message": "Invalid parameter",
+        "type": "OAuthException",
+        "code": 100,
+        "error_subcode": 2388023,
+        "is_transient": false,
+        "error_user_title": "Mesaj şablonu dili siliniyor",
+        "error_user_msg": "Mevcut English içerikler silinirken yeni English içerikler eklenemez. less than 1 minute içinde tekrar deneyin veya yeni bir mesaj şablonu oluşturmaya çalışın.",
+        "fbtrace_id": "Ai8AsZfcXjILDCmz9bMUa14"
+      }
+    }
+  },
+  {
+    "lang": "nl",
+    "result": {
+      "error": {
+        "message": "Invalid parameter",
+        "type": "OAuthException",
+        "code": 100,
+        "error_subcode": 2388023,
+        "is_transient": false,
+        "error_user_title": "Mesaj şablonu dili siliniyor",
+        "error_user_msg": "Mevcut Dutch içerikler silinirken yeni Dutch içerikler eklenemez. less than 1 minute içinde tekrar deneyin veya yeni bir mesaj şablonu oluşturmaya çalışın.",
+        "fbtrace_id": "AhiCz9YVMUOjCn4MBpasALP"
+      }
+    }
+  }
+]

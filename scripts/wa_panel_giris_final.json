@@ -1,0 +1,29 @@
+[
+  {
+    "lang": "tr",
+    "result": {
+      "status": "REJECTED",
+      "category": "MARKETING",
+      "rejected_reason": "INCORRECT_CATEGORY",
+      "id": "973752042036440"
+    }
+  },
+  {
+    "lang": "en",
+    "result": {
+      "status": "REJECTED",
+      "category": "MARKETING",
+      "rejected_reason": "INCORRECT_CATEGORY",
+      "id": "974972761950125"
+    }
+  },
+  {
+    "lang": "nl",
+    "result": {
+      "status": "REJECTED",
+      "category": "MARKETING",
+      "rejected_reason": "INCORRECT_CATEGORY",
+      "id": "1688534785680301"
+    }
+  }
+]

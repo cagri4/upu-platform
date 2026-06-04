@@ -1,0 +1,47 @@
+[
+  {
+    "lang": "tr",
+    "submit": {
+      "error": {
+        "message": "Invalid parameter",
+        "type": "OAuthException",
+        "code": 100,
+        "error_subcode": 2388025,
+        "is_transient": false,
+        "error_user_title": "Mesaj şablonu kategorisi geçersiz",
+        "error_user_msg": "Mevcut Dutch içerik silinirken bu mesaj şablonunun kategorisini değiştiremezsin. less than 1 minute sonra tekrar dene veya kategori olarak MARKETING kullan.",
+        "fbtrace_id": "A2WOQhJu2BDcAAuftf7ebeV"
+      }
+    }
+  },
+  {
+    "lang": "en",
+    "submit": {
+      "error": {
+        "message": "Invalid parameter",
+        "type": "OAuthException",
+        "code": 100,
+        "error_subcode": 2388025,
+        "is_transient": false,
+        "error_user_title": "Mesaj şablonu kategorisi geçersiz",
+        "error_user_msg": "Mevcut Dutch içerik silinirken bu mesaj şablonunun kategorisini değiştiremezsin. less than 1 minute sonra tekrar dene veya kategori olarak MARKETING kullan.",
+        "fbtrace_id": "AJgStC7VxT61tiGMDmy8Erv"
+      }
+    }
+  },
+  {
+    "lang": "nl",
+    "submit": {
+      "error": {
+        "message": "Invalid parameter",
+        "type": "OAuthException",
+        "code": 100,
+        "error_subcode": 2388025,
+        "is_transient": false,
+        "error_user_title": "Mesaj şablonu kategorisi geçersiz",
+        "error_user_msg": "Mevcut Dutch içerik silinirken bu mesaj şablonunun kategorisini değiştiremezsin. less than 1 minute sonra tekrar dene veya kategori olarak MARKETING kullan.",
+        "fbtrace_id": "A-UqTsSclvebSR1V7_SAYcJ"
+      }
+    }
+  }
+]

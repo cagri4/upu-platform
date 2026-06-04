@@ -1,0 +1,122 @@
+[
+  {
+    "template": "upu_yeni_kayit",
+    "lang": "tr",
+    "ok": true,
+    "response": {
+      "id": "27500076002933833",
+      "status": "PENDING",
+      "category": "UTILITY"
+    }
+  },
+  {
+    "template": "upu_yeni_kayit",
+    "lang": "en",
+    "ok": true,
+    "response": {
+      "id": "981514888251595",
+      "status": "PENDING",
+      "category": "UTILITY"
+    }
+  },
+  {
+    "template": "upu_yeni_kayit",
+    "lang": "nl",
+    "ok": true,
+    "response": {
+      "id": "1552412123114221",
+      "status": "PENDING",
+      "category": "UTILITY"
+    }
+  },
+  {
+    "template": "upu_bekleyen_islem",
+    "lang": "tr",
+    "ok": true,
+    "response": {
+      "id": "992862323717695",
+      "status": "PENDING",
+      "category": "UTILITY"
+    }
+  },
+  {
+    "template": "upu_bekleyen_islem",
+    "lang": "en",
+    "ok": true,
+    "response": {
+      "id": "2792793727751318",
+      "status": "PENDING",
+      "category": "UTILITY"
+    }
+  },
+  {
+    "template": "upu_bekleyen_islem",
+    "lang": "nl",
+    "ok": true,
+    "response": {
+      "id": "847222737981083",
+      "status": "PENDING",
+      "category": "UTILITY"
+    }
+  },
+  {
+    "template": "upu_durum_guncelleme",
+    "lang": "tr",
+    "ok": true,
+    "response": {
+      "id": "2402336510193850",
+      "status": "PENDING",
+      "category": "UTILITY"
+    }
+  },
+  {
+    "template": "upu_durum_guncelleme",
+    "lang": "en",
+    "ok": true,
+    "response": {
+      "id": "4510308259212086",
+      "status": "PENDING",
+      "category": "UTILITY"
+    }
+  },
+  {
+    "template": "upu_durum_guncelleme",
+    "lang": "nl",
+    "ok": true,
+    "response": {
+      "id": "1272596354649947",
+      "status": "PENDING",
+      "category": "UTILITY"
+    }
+  },
+  {
+    "template": "upu_gunluk_ozet",
+    "lang": "tr",
+    "ok": true,
+    "response": {
+      "id": "858603613375456",
+      "status": "PENDING",
+      "category": "UTILITY"
+    }
+  },
+  {
+    "template": "upu_gunluk_ozet",
+    "lang": "en",
+    "ok": true,
+    "response": {
+      "id": "1664849528170246",
+      "status": "PENDING",
+      "category": "UTILITY"
+    }
+  },
+  {
+    "template": "upu_gunluk_ozet",
+    "lang": "nl",
+    "ok": true,
+    "response": {
+      "id": "1260090659260005",
+      "status": "PENDING",
+      "category": "UTILITY"
+    }
+  }
+]
