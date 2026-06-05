@@ -23,6 +23,7 @@ import { attachSessionToResponse } from "@/platform/auth/session";
 import { getTenantPanelPath } from "@/platform/auth/qr";
 import { getAllTenants, getTenantByKey, getTenantByDomain, isAdminDomain } from "@/tenants/config";
 import { createTenantForSignup } from "@/platform/auth/tenant-provision";
+import { profilKurulumRedirectFor } from "@/platform/auth/profil-kurulum-redirect";
 import {
   verifyOtp,
   isOtpPurpose,
@@ -196,7 +197,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "internal" }, { status: 500 });
   }
 
-  const redirect = `/${locale}/profil-kurulum`;
+  const redirect = profilKurulumRedirectFor(tenant.key, locale);
   const res = NextResponse.json({ ok: true, redirect });
   return await attachSessionToResponse(res, {
     uid: newProfile.id as string,
