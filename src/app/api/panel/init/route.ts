@@ -1,11 +1,20 @@
 /**
- * /api/panel/init — yönetim paneli giriş doğrulama.
+ * /api/panel/init — emlak yönetim paneli giriş doğrulama.
+ *
  * Cookie session öncelik (sliding refresh), legacy magic-link token fallback.
+ *
+ * Multi-tenant guard (C5 federated audit F2): profile tenant_id emlak
+ * saas_type'a ait olmalı; .upudev.nl cookie tüm subdomain'lere gittiği
+ * için bayi/otel/restoran kullanıcısı estateai panel'e ulaşabilirdi.
+ * Composite OR lookup runtime tenant profillerini de bulur.
+ *
  * Display_name + tenant_id + bot_phone döndürür ve session cookie'yi yeniler.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { attachSessionToResponse, getSessionFromCookies } from "@/platform/auth/session";
+import { getTenantByKey } from "@/tenants/config";
+import { getAllTenantIdsForSaas } from "@/platform/auth/multi-tenant";
 
 export const dynamic = "force-dynamic";
 
@@ -33,22 +42,44 @@ export async function GET(req: NextRequest) {
     }
     if (!userId) return NextResponse.json({ error: "Oturum bulunamadı." }, { status: 401 });
 
+    const emlakCfg = getTenantByKey("emlak");
+    if (!emlakCfg?.saasType) {
+      return NextResponse.json({ error: "Emlak tenant config bulunamadı." }, { status: 500 });
+    }
+
+    const tenantIds = await getAllTenantIdsForSaas(supabase, emlakCfg.saasType);
+    if (tenantIds.length === 0) {
+      return NextResponse.json(
+        { error: "Emlak tenant'ı sistemde bulunmuyor." },
+        { status: 500 },
+      );
+    }
+
     const { data: profile } = await supabase
       .from("profiles")
-      .select("display_name, tenant_id, metadata")
-      .eq("id", userId)
-      .single();
+      .select("id, display_name, tenant_id, metadata, auth_user_id")
+      .or(`id.eq.${userId},auth_user_id.eq.${userId}`)
+      .in("tenant_id", tenantIds)
+      .limit(1)
+      .maybeSingle();
+
+    if (!profile) {
+      return NextResponse.json(
+        { error: "Bu oturum emlak tenant'ına ait değil veya profil yok." },
+        { status: 403 },
+      );
+    }
 
     const response = NextResponse.json({
       success: true,
-      displayName: profile?.display_name || null,
-      tenantId: profile?.tenant_id || null,
-      officeName: (profile?.metadata as { office_name?: string } | null)?.office_name || null,
+      displayName: profile.display_name || null,
+      tenantId: profile.tenant_id || null,
+      officeName: (profile.metadata as { office_name?: string } | null)?.office_name || null,
       botPhone: "31644967207",
     });
     return await attachSessionToResponse(response, {
-      uid: userId,
-      tenantId: profile?.tenant_id ?? null,
+      uid: profile.auth_user_id || profile.id,
+      tenantId: profile.tenant_id ?? null,
     });
   } catch (err) {
     console.error("[panel:init]", err);
