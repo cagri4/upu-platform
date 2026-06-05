@@ -176,25 +176,32 @@ function Bullets({ items }: { items: Array<{ i: string; t: string }> }) {
 
 function NavRow({ ctx, primary }: { ctx: OnboardingStepContext; primary: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 mt-2">
+    <div className="space-y-3 mt-2">
+      <div className="flex items-center justify-between gap-3">
+        <button
+          onClick={() => ctx.back()}
+          disabled={ctx.index === 0}
+          className="text-sm text-slate-500 dark:text-slate-400 disabled:opacity-30 px-2 py-2"
+        >
+          ← Geri
+        </button>
+        <button
+          onClick={() => void ctx.next()}
+          className="flex-1 sm:flex-none rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 text-sm font-semibold"
+        >
+          {primary}
+        </button>
+      </div>
+      {/* "Atla" — eski sürümde footer'daki text-xs ufak link'ti, kullanıcılar
+          görmüyordu (Çağrı 2026-06-05 test raporu). Görünür secondary buton
+          olarak ayrıldı; tıklayınca tüm wizard complete işaretlenir
+          (onCompleted), tekrar açılmaz. */}
       <button
-        onClick={() => ctx.back()}
-        disabled={ctx.index === 0}
-        className="text-sm text-slate-500 dark:text-slate-400 disabled:opacity-30 px-2 py-2"
+        onClick={() => void ctx.complete()}
+        data-testid="onboarding-skip-all"
+        className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-4 py-2.5 text-xs font-medium"
       >
-        ← Geri
-      </button>
-      <button
-        onClick={() => void ctx.next()}
-        className="flex-1 sm:flex-none rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 text-sm font-semibold"
-      >
-        {primary}
-      </button>
-      <button
-        onClick={() => ctx.dismiss()}
-        className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline-offset-2 hover:underline"
-      >
-        Atla
+        Tanıtımı atla, panele git
       </button>
     </div>
   );
