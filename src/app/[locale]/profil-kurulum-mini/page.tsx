@@ -9,16 +9,30 @@
  * (ad soyad + e-posta + brifing tercihi) sağlar.
  *
  * /api/profil/save backend guard sektör alanlarını yoksayar — defense-
- * in-depth. Kullanıcı kaydedince WA'ya dönüp kendi panelinden tenant-
- * spesifik detayları düzenler.
+ * in-depth. Save sonrası 2sn auto-redirect kullanıcının kendi paneline
+ * (saas_type → panel path eşlemesi).
  */
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
-const BOT_WA_NUMBER = "31644967207";
-
 type Status = "loading" | "form" | "saving" | "done" | "error" | "no_auth";
+
+// saas_type → panel path eşlemesi (qr.ts TENANT_PANEL ile aynı).
+const PANEL_PATH_BY_SAAS: Record<string, string> = {
+  emlak: "/tr/panel",
+  bayi: "/tr/bayi-panel",
+  market: "/tr/market-panelim",
+  otel: "/tr/otel-panel",
+  restoran: "/tr/restoran-panel",
+  siteyonetim: "/tr/site",
+  muhasebe: "/tr/panel",
+};
+
+function panelPathFor(saasType: string | null): string {
+  if (!saasType) return "/tr/panel";
+  return PANEL_PATH_BY_SAAS[saasType] || "/tr/panel";
+}
 
 export default function ProfilKurulumMiniPage() {
   const params = useParams();
@@ -29,6 +43,16 @@ export default function ProfilKurulumMiniPage() {
   const [email, setEmail] = useState("");
   const [briefingEnabled, setBriefingEnabled] = useState(true);
   const [saasType, setSaasType] = useState<string | null>(null);
+
+  // Save success → 2sn sonra tenant'ın panel'ine otomatik redirect.
+  useEffect(() => {
+    if (status !== "done") return;
+    const dest = panelPathFor(saasType);
+    const handle = setTimeout(() => {
+      window.location.replace(dest);
+    }, 2000);
+    return () => clearTimeout(handle);
+  }, [status, saasType]);
 
   // Profil mevcut bilgilerini yükle (display_name = telefon olarak başlamış olabilir).
   useEffect(() => {
@@ -105,14 +129,18 @@ export default function ProfilKurulumMiniPage() {
       <main className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950">
         <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 text-center">
           <p className="text-sm text-slate-700 dark:text-slate-300">
-            Oturum bulunamadı. WhatsApp üzerinden yeniden giriş yap.
+            Oturum bulunamadı. Giriş sayfasından tekrar dene.
           </p>
+          <a href={`/${locale}/giris`} className="mt-3 inline-block px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg">
+            Giriş Sayfası
+          </a>
         </div>
       </main>
     );
   }
 
   if (status === "done") {
+    const dest = panelPathFor(saasType);
     return (
       <main className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950">
         <div
@@ -121,13 +149,14 @@ export default function ProfilKurulumMiniPage() {
         >
           <h1 className="text-lg font-semibold text-emerald-700">✅ Profil tamamlandı</h1>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            WhatsApp&apos;a dönüp panelinden devam edebilirsin.
+            Paneliniz yükleniyor…
           </p>
           <a
-            href={`https://wa.me/${BOT_WA_NUMBER}`}
+            href={dest}
+            data-testid="panele-git"
             className="inline-block px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg"
           >
-            WhatsApp&apos;a Dön
+            Panele Git
           </a>
         </div>
       </main>
@@ -199,7 +228,7 @@ export default function ProfilKurulumMiniPage() {
             onClick={handleSave}
             className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white py-3 rounded-xl text-sm font-semibold"
           >
-            {status === "saving" ? "Kaydediliyor…" : "Kaydet ve WhatsApp'a Dön"}
+            {status === "saving" ? "Kaydediliyor…" : "Kaydet ve Panele Git"}
           </button>
 
           <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center pt-1">

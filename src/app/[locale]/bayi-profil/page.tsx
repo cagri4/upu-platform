@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-const BOT_WA_NUMBER = "31644967207";
+const PANEL_PATH = "/tr/bayi-panel";
 
 type Status = "loading" | "ready" | "saving" | "done" | "error";
 type Country = "NL" | "TR" | "BE" | "DE";
@@ -137,6 +137,16 @@ export default function BayiProfilPage() {
   const [firma, setFirma] = useState<Firma>(empty);
   const [showOptional, setShowOptional] = useState(false);
 
+  // Save success → 2sn sonra bayi paneline otomatik redirect.
+  useEffect(() => {
+    if (status !== "done") return;
+    const handle = setTimeout(() => {
+      const dest = token ? `${PANEL_PATH}?t=${encodeURIComponent(token)}` : PANEL_PATH;
+      window.location.replace(dest);
+    }, 2000);
+    return () => clearTimeout(handle);
+  }, [status, token]);
+
   useEffect(() => {
     const qs = token ? `?t=${encodeURIComponent(token)}` : "";
     fetch(`/api/bayi-profil/init${qs}`, { credentials: "same-origin" })
@@ -208,14 +218,14 @@ export default function BayiProfilPage() {
     <div className="text-4xl mb-3">⚠️</div>
     <h1 className="text-xl font-bold mb-2">Hata</h1>
     <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
-    <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
+    <a href={PANEL_PATH} className="inline-block bg-emerald-600 text-white px-6 py-3 rounded-lg">Bayi paneline dön</a>
   </Center>;
 
   if (status === "done") return <Center>
     <div className="text-4xl mb-3">✅</div>
     <h1 className="text-xl font-bold mb-2">Profiliniz hazır!</h1>
-    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">Sıradaki adım WhatsApp&apos;a düştü.</p>
-    <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp&apos;a dön</a>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">Bayi paneliniz yükleniyor…</p>
+    <a href={PANEL_PATH} data-testid="panele-git" className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-semibold">Bayi Paneline Git</a>
   </Center>;
 
   const inputCls = "w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm";
@@ -409,7 +419,7 @@ export default function BayiProfilPage() {
             {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet"}
           </button>
           <a
-            href={token ? `/tr/bayi-panel?t=${encodeURIComponent(token)}` : `https://wa.me/${BOT_WA_NUMBER}`}
+            href={token ? `${PANEL_PATH}?t=${encodeURIComponent(token)}` : PANEL_PATH}
             className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-semibold text-center active:scale-95 hover:bg-slate-50 flex items-center justify-center"
           >
             🏠 Panele Dön

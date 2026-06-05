@@ -1,15 +1,15 @@
 "use client";
 
 /**
- * /setup — mobile-first onboarding form reached via magic link from WhatsApp.
- * Flow: WA intro → link → this page → submit → WA "welcome" message.
+ * /setup — mobile-first onboarding form (legacy magic-link era).
+ * Save sonrası emlak paneline yönlendirir (eski WA-back akışı kaldırıldı).
  */
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { LoadingState } from "@/components/banking";
 
-const BOT_WA_NUMBER = "31644967207"; // UPU bot's business WhatsApp number
+const PANEL_PATH = "/tr/panel";
 
 const PROPERTY_TYPES = [
   { id: "hepsi", label: "Hepsi" },
@@ -33,6 +33,16 @@ export default function SetupPage() {
   const token = searchParams.get("t") || searchParams.get("token");
 
   const [status, setStatus] = useState<Status>("loading");
+
+  // Save success → 2sn sonra panele otomatik redirect.
+  useEffect(() => {
+    if (status !== "done") return;
+    const handle = setTimeout(() => {
+      const dest = token ? `${PANEL_PATH}?t=${encodeURIComponent(token)}` : PANEL_PATH;
+      window.location.replace(dest);
+    }, 2000);
+    return () => clearTimeout(handle);
+  }, [status, token]);
   const [error, setError] = useState("");
 
   // Search criteria
@@ -123,26 +133,28 @@ export default function SetupPage() {
           <div className="text-4xl mb-3">⚠️</div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Hata</h1>
           <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
-          <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-medium">WhatsApp'a dön</a>
+          <a href={PANEL_PATH} className="inline-block bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium">Panele dön</a>
         </div>
       </div>
     );
   }
 
   if (status === "done") {
+    const dest = token ? `${PANEL_PATH}?t=${encodeURIComponent(token)}` : PANEL_PATH;
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full text-center shadow">
           <div className="text-5xl mb-3">🎉</div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Hazırsın!</h1>
-          <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">Profilin kaydedildi. Şimdi WhatsApp'a dönüp devam edelim.</p>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">Profiliniz kaydedildi. Emlak paneliniz yükleniyor…</p>
           <a
-            href={`https://wa.me/${BOT_WA_NUMBER}?text=${encodeURIComponent("başladım")}`}
-            className="block bg-green-600 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-lg active:scale-95 transition"
+            href={dest}
+            data-testid="panele-git"
+            className="block bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-lg active:scale-95 transition"
           >
-            💬 WhatsApp'a Dön
+            🏠 Panele Git
           </a>
-          <p className="text-slate-400 text-xs mt-4">WhatsApp otomatik açılmazsa yukarıdaki butona tıkla.</p>
+          <p className="text-slate-400 text-xs mt-4">Otomatik yönlendirilmezsen butona tıkla.</p>
         </div>
       </div>
     );
@@ -154,7 +166,7 @@ export default function SetupPage() {
         <div className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-2xl p-5 mb-5">
           <div className="text-3xl mb-1">👋</div>
           <h1 className="text-xl font-bold">Hoşgeldin!</h1>
-          <p className="text-blue-100 text-sm mt-1">1-2 dakikada kurulumu bitirip WhatsApp'a dönüyoruz.</p>
+          <p className="text-blue-100 text-sm mt-1">1-2 dakikada kurulumu bitirip panele geçiyoruz.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -249,7 +261,7 @@ export default function SetupPage() {
 
           <button type="submit" disabled={status === "saving"}
             className="w-full bg-green-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95 transition">
-            {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet ve WhatsApp'a Dön"}
+            {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet ve Panele Git"}
           </button>
         </form>
       </div>

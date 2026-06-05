@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { LoadingState } from "@/tenants/restoran/components/banking";
 
-const BOT_WA_NUMBER = "31644967207";
+const PANEL_PATH = "/tr/restoran-panel";
 
 type Status = "loading" | "ready" | "saving" | "done" | "error";
 
@@ -60,6 +60,16 @@ export default function RestoranProfilPage() {
     accounting: "",
     brifing_enabled: "evet",
   });
+
+  // Save success → 2sn sonra restoran paneline otomatik redirect.
+  useEffect(() => {
+    if (status !== "done") return;
+    const handle = setTimeout(() => {
+      const dest = token ? `${PANEL_PATH}?t=${encodeURIComponent(token)}` : PANEL_PATH;
+      window.location.replace(dest);
+    }, 2000);
+    return () => clearTimeout(handle);
+  }, [status, token]);
 
   useEffect(() => {
     if (!token) {
@@ -154,7 +164,7 @@ export default function RestoranProfilPage() {
   }
 
   if (status === "done") {
-    const waUrl = `https://wa.me/${BOT_WA_NUMBER}?text=brifing`;
+    const dest = token ? `${PANEL_PATH}?t=${encodeURIComponent(token)}` : PANEL_PATH;
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-8">
         <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/70 dark:border-slate-800 p-8 text-center">
@@ -167,19 +177,15 @@ export default function RestoranProfilPage() {
             8 masa, 30 menü kalemi, 8 müdavim, bugün 4 rezervasyon.
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
-            WhatsApp&apos;a dönün ve şu komutları sırayla deneyin:
-            <br />
-            <code className="text-amber-600 dark:text-amber-400">brifing</code> ·{" "}
-            <code className="text-amber-600 dark:text-amber-400">rezervasyon</code> ·{" "}
-            <code className="text-amber-600 dark:text-amber-400">sadakat</code> ·{" "}
-            <code className="text-amber-600 dark:text-amber-400">menukalemleri</code>
+            Restoran paneliniz yükleniyor…
           </p>
           <a
-            href={waUrl}
+            href={dest}
+            data-testid="panele-git"
             className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 py-3 rounded-xl transition active:scale-95"
           >
             <MessageCircle className="w-5 h-5" strokeWidth={2.2} />
-            WhatsApp&apos;a Dön
+            Restoran Paneline Git
           </a>
         </div>
       </div>

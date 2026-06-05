@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useParams } from "next/navigation";
 
-const BOT_WA_NUMBER = "31644967207";
+const PANEL_PATH = "/tr/panel";
 type Status = "loading" | "form" | "saving" | "done" | "error" | "no_auth";
 
 export default function ProfilKurulumPage() {
@@ -27,7 +27,6 @@ export default function ProfilKurulumPage() {
       .then(async r => {
         const d = await r.json();
         if (!r.ok) {
-          // 401 = no cookie + no token: yumuşak yönlendirme. Diğer hatalar generic.
           if (r.status === 401) { setStatus("no_auth"); return; }
           setStatus("error"); setError(d.error || "Link doğrulanamadı."); return;
         }
@@ -40,6 +39,16 @@ export default function ProfilKurulumPage() {
       })
       .catch(() => { setStatus("error"); setError("Bağlantı hatası."); });
   }, [token]);
+
+  // Save success → 2sn sonra emlak paneline otomatik redirect.
+  useEffect(() => {
+    if (status !== "done") return;
+    const handle = setTimeout(() => {
+      const dest = token ? `${PANEL_PATH}?t=${encodeURIComponent(token)}` : PANEL_PATH;
+      window.location.replace(dest);
+    }, 2000);
+    return () => clearTimeout(handle);
+  }, [status, token]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -78,14 +87,15 @@ export default function ProfilKurulumPage() {
   if (status === "error") return <Center>
     <div className="text-4xl mb-3">⚠️</div><h1 className="text-xl font-bold mb-2">Hata</h1>
     <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{error}</p>
-    <a href={`https://wa.me/${BOT_WA_NUMBER}`} className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg">WhatsApp'a dön</a>
+    <a href={PANEL_PATH} className="inline-block bg-emerald-600 text-white px-6 py-3 rounded-lg">Panele dön</a>
   </Center>;
   if (status === "done") return <Center>
     <div className="text-5xl mb-3">🎉</div>
     <h1 className="text-xl font-bold mb-2">Hazırsın!</h1>
-    <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">Profilin kaydedildi. WhatsApp'a dönüp devam edelim.</p>
-    <a href={`https://wa.me/${BOT_WA_NUMBER}?text=${encodeURIComponent("başladım")}`}
-      className="block bg-green-600 text-white px-6 py-4 rounded-xl font-semibold text-lg">💬 WhatsApp'a Dön</a>
+    <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">Profiliniz kaydedildi. Emlak paneliniz yükleniyor…</p>
+    <a href={token ? `${PANEL_PATH}?t=${encodeURIComponent(token)}` : PANEL_PATH}
+      data-testid="panele-git"
+      className="block bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-xl font-semibold text-lg">🏠 Panele Git</a>
   </Center>;
 
   const inputCls = "w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-3 mb-4 text-base text-slate-900 dark:text-slate-100 placeholder:text-slate-500";
@@ -116,8 +126,8 @@ export default function ProfilKurulumPage() {
           </section>
           {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-700 px-4 py-3 rounded-lg text-sm">⚠️ {error}</div>}
           <button type="submit" disabled={status === "saving"}
-            className="w-full bg-green-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95">
-            {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet ve WhatsApp'a Dön"}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-semibold text-lg shadow-lg disabled:opacity-60 active:scale-95">
+            {status === "saving" ? "Kaydediliyor..." : "✅ Kaydet ve Panele Git"}
           </button>
         </form>
       </div>
