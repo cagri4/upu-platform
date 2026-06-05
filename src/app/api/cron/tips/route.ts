@@ -19,15 +19,18 @@ export async function GET(req: NextRequest) {
 
   const sb = getServiceClient();
 
-  // Find emlak tenant id
-  const { data: tenant } = await sb.from("tenants").select("id").eq("saas_type", "emlak").maybeSingle();
-  if (!tenant) return NextResponse.json({ sent: 0, reason: "no_emlak_tenant" });
+  // Find ALL emlak tenant id'leri (multi-tenant: DEMO + signup'lar).
+  // maybeSingle() ile tek satır beklerken multi-row durumunda null dönüyordu
+  // → tips kimseye gitmiyordu (audit bulgu #3).
+  const { data: tenants } = await sb.from("tenants").select("id").eq("saas_type", "emlak");
+  const tenantIds = (tenants || []).map((t) => t.id as string);
+  if (tenantIds.length === 0) return NextResponse.json({ sent: 0, reason: "no_emlak_tenant" });
 
-  // Active users = profiles in emlak tenant with onboarding completed
+  // Active users = profiles in any emlak tenant with onboarding completed
   const { data: users } = await sb
     .from("profiles")
     .select("id, whatsapp_phone, role, metadata")
-    .eq("tenant_id", tenant.id)
+    .in("tenant_id", tenantIds)
     .neq("role", "system");
 
   const candidates = (users || []).filter((u) => {
