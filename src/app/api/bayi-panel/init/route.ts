@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { attachSessionToResponse } from "@/platform/auth/session";
 import { getTenantByKey } from "@/tenants/config";
+import { getAllTenantIdsForSaas } from "@/platform/auth/multi-tenant";
 
 export const dynamic = "force-dynamic";
 
@@ -35,17 +36,29 @@ export async function GET(req: NextRequest) {
     }
 
     const bayiCfg = getTenantByKey("bayi");
-    if (!bayiCfg?.tenantId) {
+    if (!bayiCfg?.saasType) {
       return NextResponse.json({ error: "Bayi tenant config bulunamadı." }, { status: 500 });
     }
 
+    // Multi-tenant fix (2026-06-05): cfg.tenantId DEMO sabiti; signup runtime
+    // tenants satırı yaratıyor → cfg.tenantId filter yeni bayi kullanıcısını
+    // 403'le reddediyordu. saas_type'a ait tüm tenant id'leri ile guard.
+    const tenantIds = await getAllTenantIdsForSaas(supabase, bayiCfg.saasType);
+    if (tenantIds.length === 0) {
+      return NextResponse.json(
+        { error: "Bayi tenant'ı sistemde bulunmuyor." },
+        { status: 500 },
+      );
+    }
+
     // Profile composite lookup — id (legacy emlak profile.id == auth.users.id)
-    // veya auth_user_id (multi-tenant). Bayi tenant guard sonunda.
+    // veya auth_user_id (multi-tenant). Bayi tenant guard saas_type üzerinden.
     const { data: profile } = await supabase
       .from("profiles")
       .select("id, display_name, tenant_id, metadata, auth_user_id")
       .or(`id.eq.${magicToken.user_id},auth_user_id.eq.${magicToken.user_id}`)
-      .eq("tenant_id", bayiCfg.tenantId)
+      .in("tenant_id", tenantIds)
+      .limit(1)
       .maybeSingle();
 
     if (!profile) {
