@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   try {
     // 1) Subdomain tenant guard — middleware /api/ path'lerini skip ediyor
     //    (PUBLIC_PATHS), x-tenant-key header endpoint'e gelmez. Host'tan
-    //    doğrudan resolve et (manifest.json endpoint ile aynı pattern).
+    //    doğrudan resolve et.
     const host = req.headers.get("host") || "";
     const hostTenant = getTenantByDomain(host);
     if (hostTenant?.key !== "bayi") {

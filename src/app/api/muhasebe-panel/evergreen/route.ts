@@ -5,13 +5,13 @@
  * "Süresi dolmaz" muhasebe panel link'i. WA mesajlarındaki "🖥 Paneli Aç"
  * CTA'ları bu URL'e iner; tıklandığında server fresh magic_link_token
  * mint edip /tr/panel'e (muhasebe henüz dedicated panel route'a sahip
- * değil; manifest.json/PANEL_START_URL ile aynı /tr/panel'e düşer) 302'ler.
+ * değil; PANEL_START_URL ile aynı /tr/panel'e düşer) 302'ler.
  *
  * Pattern: bayi-panel/evergreen ile aynı; muhasebe tenant guard +
  * accountai.upudev.nl default.
  *
  * NOT: muhasebe için dedicated /tr/muhasebe-panel route'u eklendiğinde
- * burada da güncellenmeli (qr.ts + manifest.json + bu dosya senkron).
+ * burada da güncellenmeli (qr.ts + bu dosya senkron).
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";

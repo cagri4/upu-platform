@@ -25,7 +25,7 @@ Bayi (B2B distribütör portalı) — marka/distribütör ile bayi (perakendeci)
 - **role='admin' = TENANT SAHİBİ**, platform admin değil. Platform admin koşulu: `role='admin' AND tenant_id IS NULL` (commit 8d13558 sonrası).
 - **Cookie domain `.upudev.nl`** — tüm subdomain'ler paylaşımlı (retailai/estateai/qr...). Bir SaaS'ta cookie set edilirse diğerlerinde de aktif. Auth gate'i daima profile+tenant kontrolüyle yap.
 - **Multi-tenant route group zorunlu** — generic panel sayfası yapma (memory: feedback-multi-tenant-route-groups).
-- **PWA YOK** — UPU normal web cookie session kullanıyor. "Beni hatırla / PWA / offline" özellikleri önerme.
+- **PWA YOK** — UPU normal web cookie session kullanıyor. PWA install banner / service worker / offline cache YOK (2026-06-05'te tamamen kaldırıldı). Native iOS/Android app olarak yapılacak. "PWA install / offline / manifest" önerme.
 
 ## YASAKLI pattern'ler (geçmiş bug dersleri)
 

@@ -4,8 +4,8 @@
  * useIsMobileDevice — UA tabanlı mobile cihaz tespiti (telefon + tablet).
  *
  * "Bilgisayardan Aç" QR butonu sadece mobile'da anlamlı (telefondan masaüstü
- * tarayıcısına geçiş). Desktop browser veya desktop PWA içinde butona basınca
- * kamera açılması saçma → bu hook ile gizlenir.
+ * tarayıcısına geçiş). Desktop'ta butona basınca kamera açılması saçma →
+ * bu hook ile gizlenir.
  *
  * Hydration güvenli — ilk render `null` döner (SSR), mount sonrası boolean
  * set edilir. Caller `if (!isMobile) return null` ile gate eder; mount

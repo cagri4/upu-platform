@@ -195,8 +195,9 @@ export function AdminLayout({
   });
   const accent = ACCENT_CLASSES[accentColor];
 
-  // (Multi-tenant SaaS switcher kaldırıldı — her tenant artık ayrı PWA.
-  // estateai.upudev.nl → UPU Emlak app, retailai.upudev.nl → UPU Bayi app.)
+  // (Multi-tenant SaaS switcher kaldırıldı — her tenant artık ayrı subdomain
+  // ve native app yol haritasında. estateai.upudev.nl → UPU Emlak,
+  // retailai.upudev.nl → UPU Bayi.)
 
   // Aktif item: explicit prop > pathname match > "dashboard" default
   const autoActive =

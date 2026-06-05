@@ -7,10 +7,10 @@
  *   - tryOrganicSignupForExistingUser(...) — mevcut user (emlak gibi)
  *     yeni tenant'a kayıt isterse — router.ts Faz 9.2 intent'ten çağrılır.
  *
- * Modern pattern (memory: "WA = uzaktan kumanda, PWA = kokpit"): WA'da
- * uzun chat onboarding YOK. Profile yaratılır → kısa welcome (3 mesaj)
- * → "Paneli Aç" buton → kullanıcı PWA'da hero/görevler kartından profile
- * tamamlama formuna gider.
+ * Modern pattern: "WA = uzaktan kumanda, panel = kokpit". WA'da uzun chat
+ * onboarding YOK. Profile yaratılır → kısa welcome (3 mesaj) → "Paneli Aç"
+ * buton → kullanıcı web panel'de hero/görevler kartından profil tamamlama
+ * formuna gider.
  *
  * Schema invariant (Deep Foundation):
  *   - auth.users: 1 phone = 1 row (Supabase constraint, korunur)

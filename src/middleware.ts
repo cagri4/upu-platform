@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTenantByDomain, isAdminDomain } from "@/tenants/config";
 
-const PUBLIC_PATHS = ["/api/", "/_next/", "/favicon.ico", "/icons/", "/manifest.json", "/d/", "/u/"];
+const PUBLIC_PATHS = ["/api/", "/_next/", "/favicon.ico", "/icons/", "/d/", "/u/"];
 const LOCALES = ["tr", "en", "nl"];
 const DEFAULT_LOCALE = "tr";
 
@@ -65,5 +65,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icons/|manifest.json).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icons/).*)"],
 };
