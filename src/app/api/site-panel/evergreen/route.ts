@@ -19,6 +19,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getTenantByKey } from "@/tenants/config";
+import { getAllTenantIdsForSaas } from "@/platform/auth/multi-tenant";
 import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -34,11 +35,13 @@ export async function GET(req: NextRequest) {
   }
 
   const siteCfg = getTenantByKey("siteyonetim");
-  if (!siteCfg?.tenantId) {
+  if (!siteCfg?.saasType) {
     return NextResponse.redirect(`${APP_URL}/tr`);
   }
 
   const sb = getServiceClient();
+  const tenantIds = await getAllTenantIdsForSaas(sb, siteCfg.saasType);
+  if (tenantIds.length === 0) return NextResponse.redirect(`${APP_URL}/tr`);
   let userId: string | null = null;
 
   if (uid) {
@@ -49,7 +52,7 @@ export async function GET(req: NextRequest) {
       .from("profiles")
       .select("id")
       .or(`id.eq.${uid},auth_user_id.eq.${uid}`)
-      .eq("tenant_id", siteCfg.tenantId)
+      .in("tenant_id", tenantIds)
       .maybeSingle();
     if (data) userId = data.id;
   }
@@ -61,7 +64,7 @@ export async function GET(req: NextRequest) {
       .from("profiles")
       .select("id")
       .eq("whatsapp_phone", phone)
-      .eq("tenant_id", siteCfg.tenantId)
+      .in("tenant_id", tenantIds)
       .limit(1);
     if (data && data.length > 0) {
       userId = data[0].id;

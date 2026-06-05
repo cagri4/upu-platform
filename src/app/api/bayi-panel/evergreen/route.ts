@@ -17,6 +17,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { getTenantByKey } from "@/tenants/config";
+import { getAllTenantIdsForSaas } from "@/platform/auth/multi-tenant";
 import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -32,34 +33,37 @@ export async function GET(req: NextRequest) {
   }
 
   const bayiCfg = getTenantByKey("bayi");
-  if (!bayiCfg?.tenantId) {
+  if (!bayiCfg?.saasType) {
     return NextResponse.redirect(`${APP_URL}/tr`);
   }
 
   const sb = getServiceClient();
+  // Multi-tenant fix (2026-06-05): cfg.tenantId DEMO sabiti; runtime
+  // signup'lar yeni tenants satırı yaratır. saas_type üzerinden tüm
+  // tenant id'lerini topla.
+  const tenantIds = await getAllTenantIdsForSaas(sb, bayiCfg.saasType);
+  if (tenantIds.length === 0) {
+    return NextResponse.redirect(`${APP_URL}/tr`);
+  }
   let userId: string | null = null;
 
   if (uid) {
-    // Multi-tenant: uid genelde auth.users.id taşır. Legacy emlak profile'da
-    // id == auth.users.id, multi-tenant bayi profile'da id = randomUUID +
-    // auth_user_id = auth.users.id. Composite lookup + bayi tenant guard.
     const { data } = await sb
       .from("profiles")
       .select("id")
       .or(`id.eq.${uid},auth_user_id.eq.${uid}`)
-      .eq("tenant_id", bayiCfg.tenantId)
+      .in("tenant_id", tenantIds)
+      .limit(1)
       .maybeSingle();
     if (data) userId = data.id;
   }
 
   if (!userId && phone) {
-    // Phone fallback — bayi tenant'a scope edilir (aynı phone emlak'ta da
-    // olabilir; doğru profile'ı seçelim).
     const { data } = await sb
       .from("profiles")
       .select("id")
       .eq("whatsapp_phone", phone)
-      .eq("tenant_id", bayiCfg.tenantId)
+      .in("tenant_id", tenantIds)
       .limit(1);
     if (data && data.length > 0) {
       userId = data[0].id;
