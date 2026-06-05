@@ -43,12 +43,28 @@ export async function signSession(payload: PanelSession): Promise<string> {
 export async function verifySession(token: string): Promise<PanelSession | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret());
-    if (typeof payload.uid !== "string") return null;
+    if (typeof payload.uid !== "string") {
+      // GEÇİCİ DEBUG (2026-06-05 Bug 2/3 teşhis) — KALDIRILACAK
+      console.warn("[verifySession] payload.uid not string", { keys: Object.keys(payload) });
+      return null;
+    }
     return {
       uid: payload.uid,
       tenantId: typeof payload.tenantId === "string" ? payload.tenantId : null,
     };
-  } catch {
+  } catch (err) {
+    // GEÇİCİ DEBUG (2026-06-05 Bug 2/3 teşhis) — "Oturum bulunamadı" / admin
+    // çoklu giriş kök sebebini Vercel log'undan görmek için. Kök sebep
+    // belirlenince bu log silinecek (issue: jose error code'lar:
+    // ERR_JWT_EXPIRED, ERR_JWS_INVALID, ERR_JWS_SIGNATURE_VERIFICATION_FAILED).
+    const code = (err as { code?: string } | null)?.code;
+    const message = (err as Error | null)?.message;
+    console.warn("[verifySession] jwt verify failed", {
+      code,
+      message,
+      tokenHead: token.slice(0, 12),
+      tokenLen: token.length,
+    });
     return null;
   }
 }

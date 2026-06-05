@@ -11,7 +11,6 @@
  *   1. Primary — WA ile giriş (tenant prefix'li mesaj, bot otomatik akışa
  *      sokar — router'da "giriş yap" intent zaten mevcut)
  *   2. Secondary — /{locale}/giris login sayfası (tek buton hızlı yol)
- *   3. PWA tip — stale cookie'de PWA'yı silip yeniden yüklemek temiz başlatır
  */
 
 import { useLocale } from "next-intl";
@@ -58,9 +57,6 @@ export function PanelAuthFail({ tenantKey, message }: PanelAuthFailProps) {
           </a>
         </div>
 
-        <p className="text-slate-500 dark:text-slate-400 text-xs mt-5 leading-relaxed">
-          💡 PWA&apos;da takıldıysanız: uygulamayı silip yeniden yükleyerek temiz başlatabilirsiniz.
-        </p>
       </div>
     </div>
   );
