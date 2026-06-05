@@ -21,7 +21,7 @@ import { headers } from "next/headers";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { attachSessionToResponse } from "@/platform/auth/session";
 import { getTenantPanelPath } from "@/platform/auth/qr";
-import { getAllTenants, getTenantByKey, getTenantByDomain, isAdminDomain } from "@/tenants/config";
+import { getTenantByKey, getTenantByDomain, isAdminDomain } from "@/tenants/config";
 import { createTenantForSignup } from "@/platform/auth/tenant-provision";
 import { profilKurulumRedirectFor } from "@/platform/auth/profil-kurulum-redirect";
 import {
@@ -41,11 +41,10 @@ interface RequestBody {
   locale?: string;
 }
 
-function resolveTenantKeyByTenantId(tenantId: string | null): string | null {
-  if (!tenantId) return null;
-  const match = getAllTenants().find((t) => t.tenantId === tenantId);
-  return match?.key ?? null;
-}
+// 2026-06-05 kök fix: bu helper kaldırıldı. Config sadece DEMO tenant id'lerini
+// tutuyor; runtime'da signup yeni tenants satırı yaratıyor (UUID) → config
+// lookup null döner, kullanıcı yanlış panele (emlak default) yönlenirdi.
+// Yerine login branch'i DB'den tenants.saas_type'ı join ile çekiyor.
 
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as RequestBody;
@@ -90,9 +89,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (purpose === "login") {
+    // 2026-06-05 KÖK FIX: tenant.saas_type'ı DB'den join ile çek (config DEMO
+    // id'lerine takılma). Signup runtime'da yeni tenants satırı yaratıyor;
+    // config lookup null dönüyor, kullanıcı yanlış panele (emlak default)
+    // yönleniyor → "Oturum bulunamadı".
     const { data: profile } = await sb
       .from("profiles")
-      .select("id, tenant_id, role")
+      .select("id, tenant_id, role, tenants(saas_type)")
       .eq("whatsapp_phone", phone)
       .limit(1)
       .maybeSingle();
@@ -102,24 +105,40 @@ export async function POST(req: NextRequest) {
     }
 
     // Admin domaininden (adminpanel.upudev.nl) giren admin → admin paneli.
-    // Diğer tüm durumlar (normal tenant kullanıcısı VEYA admin'in bir tenant
-    // subdomain'inden girişi) değişmeden eski davranışta: tenant panel path.
+    // Diğer tüm durumlar tenant panel path'ine, saas_type'a göre.
     const h = await headers();
     const host = h.get("host") || "";
     let redirect: string;
     if (profile.role === "admin" && isAdminDomain(host)) {
       redirect = `/${locale}/admin`;
     } else {
-      const tenantKey = resolveTenantKeyByTenantId(profile.tenant_id as string | null);
-      const panelPath = getTenantPanelPath(tenantKey);
+      const saasType = ((profile as { tenants?: { saas_type?: string } | null }).tenants?.saas_type) ?? null;
+      const panelPath = getTenantPanelPath(saasType);
       redirect = `/${locale}${panelPath.replace(/^\/[a-z]{2}/, "")}`;
+      if (!saasType) {
+        console.warn("[otp:verify:login] profile.tenant_id has no joined saas_type — falling back to default panel", {
+          uid: profile.id,
+          tenantId: profile.tenant_id,
+        });
+      }
     }
 
     const res = NextResponse.json({ ok: true, redirect });
-    return await attachSessionToResponse(res, {
+    const finalRes = await attachSessionToResponse(res, {
       uid: profile.id as string,
       tenantId: (profile.tenant_id as string | null) ?? null,
     });
+    // Login flow guard — Set-Cookie header'ı yazıldı mı doğrula. Yazılmadıysa
+    // browser cookie almayacak ve user "Oturum bulunamadı" ile dönecek; net
+    // 500 hatası dönerek retry'a şans tanı.
+    const setCookieHdr = finalRes.headers.get("set-cookie");
+    if (!setCookieHdr || !setCookieHdr.includes("upu_session")) {
+      console.error("[otp:verify:login] Set-Cookie header missing after attach", {
+        uid: profile.id,
+      });
+      return NextResponse.json({ error: "session_attach_failed" }, { status: 500 });
+    }
+    return finalRes;
   }
 
   // signup — tenant resolve: middleware /api/ paths'i atlar, x-tenant-key

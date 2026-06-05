@@ -40,12 +40,18 @@ export async function signSession(payload: PanelSession): Promise<string> {
     .sign(getSecret());
 }
 
+/**
+ * JWT verify — başarısız durumda kalıcı observability log atar.
+ * Token full şekilde sızdırılmaz; sadece ilk 12 karakter + uzunluk.
+ * Üretim ortamında Vercel function log'ları bu satırları yakalar.
+ */
 export async function verifySession(token: string): Promise<PanelSession | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret());
     if (typeof payload.uid !== "string") {
-      // GEÇİCİ DEBUG (2026-06-05 Bug 2/3 teşhis) — KALDIRILACAK
-      console.warn("[verifySession] payload.uid not string", { keys: Object.keys(payload) });
+      console.warn("[verifySession] invalid payload — uid not string", {
+        payloadKeys: Object.keys(payload),
+      });
       return null;
     }
     return {
@@ -53,10 +59,10 @@ export async function verifySession(token: string): Promise<PanelSession | null>
       tenantId: typeof payload.tenantId === "string" ? payload.tenantId : null,
     };
   } catch (err) {
-    // GEÇİCİ DEBUG (2026-06-05 Bug 2/3 teşhis) — "Oturum bulunamadı" / admin
-    // çoklu giriş kök sebebini Vercel log'undan görmek için. Kök sebep
-    // belirlenince bu log silinecek (issue: jose error code'lar:
-    // ERR_JWT_EXPIRED, ERR_JWS_INVALID, ERR_JWS_SIGNATURE_VERIFICATION_FAILED).
+    // Observability — JWT verify failure'ları sessizce yutmak Bug 2/3 (2026-06-05)
+    // ile maliyetli oldu. jose error code'ları (ERR_JWT_EXPIRED, ERR_JWS_INVALID,
+    // ERR_JWS_SIGNATURE_VERIFICATION_FAILED, ...) prod log'larında okunabilir
+    // kalır. Token sızıntısı yok — sadece head/length.
     const code = (err as { code?: string } | null)?.code;
     const message = (err as Error | null)?.message;
     console.warn("[verifySession] jwt verify failed", {

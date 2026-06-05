@@ -25,6 +25,7 @@ import {
   normalizePhoneE164,
   type OtpPurpose,
 } from "@/platform/auth/otp";
+import { attachClearToResponse } from "@/platform/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -123,5 +124,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
-  return NextResponse.json({ ok: true });
+  // Stale cookie temizleme (defense-in-depth): OTP isteyen kullanıcı yeni
+  // session kuracak; eski/geçersiz `upu_session` cookie'si verify edilemiyor
+  // ve "Oturum bulunamadı" tipi karışıklık yaratıyordu. Buradan Max-Age=0 ile
+  // clear set ediyoruz; verify endpoint'i ardından yeni cookie yazar.
+  const res = NextResponse.json({ ok: true });
+  return attachClearToResponse(res);
 }
