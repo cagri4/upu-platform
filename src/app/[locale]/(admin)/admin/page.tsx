@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { UserPlus, ExternalLink, Copy, Check, Users, Layers, Activity, Trash2, BarChart3, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Users, Layers, Activity, Trash2, BarChart3, TrendingUp, TrendingDown, Minus, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import { getAllTenants } from '@/tenants/config';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -57,9 +59,6 @@ export default function AdminPage() {
   const [insight, setInsight] = useState<InsightData | null>(null);
   const [loading, setLoading] = useState(true);
   const [insightLoading, setInsightLoading] = useState(false);
-  const [inviteLinks, setInviteLinks] = useState<Record<string, { code: string; usedCount: number; maxUses: number | null }>>({});
-  const [linkLoading, setLinkLoading] = useState<string | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => { fetchStats(); }, []);
 
@@ -90,28 +89,6 @@ export default function AdminPage() {
       const res = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
       if (res.ok) fetchStats();
     } catch (err) { console.error(err); }
-  }
-
-  async function getOrCreateLink(tenantId: string) {
-    setLinkLoading(tenantId);
-    try {
-      const res = await fetch('/api/admin/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenantId, type: 'link' }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setInviteLinks(prev => ({ ...prev, [tenantId]: { code: data.code, usedCount: data.usedCount, maxUses: data.maxUses } }));
-      }
-    } catch (err) { console.error(err); }
-    finally { setLinkLoading(null); }
-  }
-
-  function copyToClipboard(text: string, key: string) {
-    navigator.clipboard.writeText(text);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 2000);
   }
 
   if (loading) {
@@ -177,9 +154,7 @@ export default function AdminPage() {
       </div>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {tab === 'genel' && <GenelTab stats={stats} inviteLinks={inviteLinks}
-          linkLoading={linkLoading} getOrCreateLink={getOrCreateLink}
-          copied={copied} copyToClipboard={copyToClipboard} deleteUser={deleteUser} />}
+        {tab === 'genel' && <GenelTab stats={stats} deleteUser={deleteUser} />}
         {tab === 'insight' && <InsightTab data={insight} loading={insightLoading} onRefresh={fetchInsight} />}
       </main>
     </div>
@@ -188,104 +163,114 @@ export default function AdminPage() {
 
 // ── Genel Tab ──────────────────────────────────────────────────────
 
-function GenelTab({ stats, inviteLinks, linkLoading, getOrCreateLink, copied, copyToClipboard, deleteUser }: {
+function GenelTab({ stats, deleteUser }: {
   stats: Stats | null;
-  inviteLinks: Record<string, { code: string; usedCount: number; maxUses: number | null }>;
-  linkLoading: string | null;
-  getOrCreateLink: (tenantId: string) => void;
-  copied: string | null;
-  copyToClipboard: (text: string, key: string) => void;
   deleteUser: (userId: string, name: string) => void;
 }) {
+  // SaaS kategori grid — 7 sabit (config). Her birinin altındaki tenant
+  // (müşteri) sayısı DB'den groupby saas_type ile.
+  const saasCategories = useMemo(() => {
+    const all = getAllTenants();
+    const tenants = stats?.tenants || [];
+    return all.map((cfg) => {
+      const matched = tenants.filter((t) => t.saas_type === cfg.saasType);
+      return {
+        key: cfg.key,
+        name: cfg.name,
+        slug: cfg.slug,
+        icon: cfg.icon,
+        color: cfg.color,
+        description: cfg.description,
+        tenantCount: matched.length,
+        activeCount: matched.filter((t) => t.is_active).length,
+      };
+    });
+  }, [stats]);
+
+  const totalMusteri = stats?.tenants.length || 0;
+  const aktifMusteri = stats?.tenants.filter((t) => t.is_active).length || 0;
+
   return (
     <>
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <div className="flex items-center gap-3 mb-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
+          <div className="flex items-center gap-2 mb-2">
             <Layers className="w-5 h-5 text-indigo-400" />
-            <p className="text-sm text-slate-400">Toplam SaaS</p>
+            <p className="text-xs text-slate-400">SaaS Kategorisi</p>
           </div>
-          <p className="text-3xl font-bold">{stats?.tenants.length || 0}</p>
+          <p className="text-3xl font-bold">{saasCategories.length}</p>
+          <p className="text-[10px] text-slate-500 mt-1">sabit (config)</p>
         </div>
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <div className="flex items-center gap-3 mb-2">
+        <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
+          <div className="flex items-center gap-2 mb-2">
+            <Layers className="w-5 h-5 text-cyan-400" />
+            <p className="text-xs text-slate-400">Toplam Müşteri</p>
+          </div>
+          <p className="text-3xl font-bold">{totalMusteri}</p>
+          <p className="text-[10px] text-slate-500 mt-1">tenants tablosu</p>
+        </div>
+        <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
+          <div className="flex items-center gap-2 mb-2">
+            <Activity className="w-5 h-5 text-amber-400" />
+            <p className="text-xs text-slate-400">Aktif Müşteri</p>
+          </div>
+          <p className="text-3xl font-bold">{aktifMusteri}</p>
+          <p className="text-[10px] text-slate-500 mt-1">is_active=true</p>
+        </div>
+        <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
+          <div className="flex items-center gap-2 mb-2">
             <Users className="w-5 h-5 text-green-400" />
-            <p className="text-sm text-slate-400">Toplam Kullanici</p>
+            <p className="text-xs text-slate-400">Toplam Kullanıcı</p>
           </div>
           <p className="text-3xl font-bold">{stats?.totalUsers || 0}</p>
-        </div>
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <div className="flex items-center gap-3 mb-2">
-            <Activity className="w-5 h-5 text-amber-400" />
-            <p className="text-sm text-slate-400">Aktif SaaS</p>
-          </div>
-          <p className="text-3xl font-bold">{stats?.tenants.filter(t => t.is_active).length || 0}</p>
+          <p className="text-[10px] text-slate-500 mt-1">profiles tablosu</p>
         </div>
       </div>
 
-      {/* Tenant Cards */}
-      <h2 className="text-lg font-semibold mb-4">SaaS Projeleri</h2>
+      {/* SaaS Kategori Grid */}
+      <h2 className="text-lg font-semibold mb-1">SaaS Kategorileri</h2>
+      <p className="text-xs text-slate-500 mb-4">
+        7 sabit ürün kategorisi. Her kategorinin altındaki müşteri (tenant) sayısı DB&apos;den okunur.
+        Yeni signup mevcut bir SaaS&apos;ın altına eklenir — yeni kategori oluşmaz.
+      </p>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {stats?.tenants.map((tenant) => (
-          <div key={tenant.id} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+        {saasCategories.map((s) => (
+          <Link
+            key={s.key}
+            href={`/admin/saas/${s.key}`}
+            data-testid={`saas-card-${s.key}`}
+            className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:border-slate-500 transition group"
+          >
             <div className="p-5">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold">{tenant.name}</h3>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${tenant.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                  {tenant.is_active ? 'Aktif' : 'Pasif'}
-                </span>
-              </div>
-              <p className="text-sm text-slate-400 mb-3">{tenant.slug}.upudev.nl</p>
-              <div className="flex items-center justify-between text-sm mb-3">
-                <span className="text-slate-500">Kullanici: {stats.userCounts[tenant.id] || 0}</span>
-                <a href={`https://${tenant.slug}.upudev.nl`} target="_blank" className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
-                  <ExternalLink className="w-3.5 h-3.5" /> Ac
-                </a>
-              </div>
-              {!inviteLinks[tenant.id] ? (
-                <button
-                  onClick={() => getOrCreateLink(tenant.id)}
-                  disabled={linkLoading === tenant.id}
-                  className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 transition text-sm disabled:opacity-50"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  {linkLoading === tenant.id ? 'Olusturuluyor...' : 'Davet Linki Olustur'}
-                </button>
-              ) : (
-                <div className="space-y-2">
-                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-400">Davet Kodu:</span>
-                      <span className="font-mono text-sm font-bold text-green-300">{inviteLinks[tenant.id].code}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-slate-500">
-                      <span>Kullanim: {inviteLinks[tenant.id].usedCount}{inviteLinks[tenant.id].maxUses ? `/${inviteLinks[tenant.id].maxUses}` : ' (sinirsiz)'}</span>
-                    </div>
-                    <div className="flex gap-2 mt-1">
-                      <button
-                        onClick={() => {
-                          const waLink = `https://wa.me/${tenant.whatsapp_phone}?text=${encodeURIComponent(`Merhaba! Sisteme kayıt olmak istiyorum. Davet kodum: ${inviteLinks[tenant.id].code}`)}`;
-                          copyToClipboard(waLink, `wa-${tenant.id}`);
-                        }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition text-xs"
-                      >
-                        {copied === `wa-${tenant.id}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        {copied === `wa-${tenant.id}` ? 'Kopyalandi!' : 'wa.me Linki Kopyala'}
-                      </button>
-                      <button
-                        onClick={() => copyToClipboard(inviteLinks[tenant.id].code, `code-${tenant.id}`)}
-                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition text-xs"
-                      >
-                        {copied === `code-${tenant.id}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        Kod
-                      </button>
-                    </div>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-2xl">{s.icon}</span>
+                  <div>
+                    <h3 className="font-semibold leading-tight">{s.name}</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">{s.slug}.upudev.nl</p>
                   </div>
                 </div>
-              )}
+                <span
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  style={{ background: s.color }}
+                  aria-hidden
+                />
+              </div>
+              <p className="text-xs text-slate-500 mb-4 line-clamp-2">{s.description}</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold">{s.tenantCount}</div>
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wide">
+                    {s.tenantCount === 1 ? 'müşteri' : 'müşteri'} ({s.activeCount} aktif)
+                  </div>
+                </div>
+                <span className="text-indigo-400 group-hover:text-indigo-300 text-sm font-medium flex items-center gap-1">
+                  Detay <ChevronRight className="w-4 h-4" />
+                </span>
+              </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 
@@ -299,7 +284,7 @@ function GenelTab({ stats, inviteLinks, linkLoading, getOrCreateLink, copied, co
                 <th className="text-left px-4 py-3 font-medium text-slate-400">Ad</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-400">E-posta</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-400">WhatsApp</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-400">SaaS</th>
+                <th className="text-left px-4 py-3 font-medium text-slate-400">Müşteri (Tenant)</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-400">Kayit</th>
                 <th className="text-right px-4 py-3 font-medium text-slate-400">Islem</th>
               </tr>
