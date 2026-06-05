@@ -1,42 +1,50 @@
 /**
  * GET /api/restoran-panel/init?t=<token>
  *
- * Restoran panel layout giriş doğrulama. Token used_at SET ETMEZ — panel
- * kapanıp tekrar açılabilir (re-openable, magic link 7-gün TTL).
+ * Cookie session öncelikli + token fallback (task #41/#51 pattern,
+ * 2026-06-05 audit #5 — 4 SaaS init'e yayıldı).
  *
  * Dönüş: displayName, restaurantName, tenantId, botPhone.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { getSessionFromCookies } from "@/platform/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
     const token = req.nextUrl.searchParams.get("t") || req.nextUrl.searchParams.get("token");
-    if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+    const cookieSession = await getSessionFromCookies();
+    if (!token && !cookieSession?.uid) {
+      return NextResponse.json({ error: "Oturum bulunamadı." }, { status: 401 });
+    }
 
     const supabase = getServiceClient();
-    const { data: magicToken } = await supabase
-      .from("magic_link_tokens")
-      .select("user_id, expires_at")
-      .eq("token", token)
-      .maybeSingle();
-
-    if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-    if (new Date(magicToken.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
+    let resolvedUserId: string | null = cookieSession?.uid ?? null;
+    if (!resolvedUserId && token) {
+      const { data: magicToken } = await supabase
+        .from("magic_link_tokens")
+        .select("user_id, expires_at")
+        .eq("token", token)
+        .maybeSingle();
+      if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
+      if (new Date(magicToken.expires_at) < new Date()) {
+        return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
+      }
+      resolvedUserId = magicToken.user_id as string;
     }
+    if (!resolvedUserId) return NextResponse.json({ error: "Oturum bulunamadı." }, { status: 401 });
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("display_name, tenant_id, metadata")
-      .eq("id", magicToken.user_id)
-      .single();
+      .or(`id.eq.${resolvedUserId},auth_user_id.eq.${resolvedUserId}`)
+      .limit(1)
+      .maybeSingle();
 
     const meta = (profile?.metadata || {}) as { restaurant_name?: string; location?: string };
 
-    // rst_restaurants public kart varsa id + slug döndür — panel realtime + public link için
     let restaurantId: string | null = null;
     let restaurantSlug: string | null = null;
     if (profile?.tenant_id) {

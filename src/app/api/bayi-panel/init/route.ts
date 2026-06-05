@@ -12,7 +12,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { attachSessionToResponse } from "@/platform/auth/session";
+import { attachSessionToResponse, getSessionFromCookies } from "@/platform/auth/session";
 import { getTenantByKey } from "@/tenants/config";
 import { getAllTenantIdsForSaas } from "@/platform/auth/multi-tenant";
 
@@ -20,19 +20,31 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
+    // Cookie session öncelik (audit #5: task #41/#51 fix'i sadece emlak'a
+    // uygulanmıştı). Token yoksa cookie ile devam; cookie de yoksa 401.
     const token = req.nextUrl.searchParams.get("t") || req.nextUrl.searchParams.get("token");
-    if (!token) return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+    const cookieSession = await getSessionFromCookies();
+    if (!token && !cookieSession?.uid) {
+      return NextResponse.json({ error: "Oturum bulunamadı." }, { status: 401 });
+    }
 
     const supabase = getServiceClient();
-    const { data: magicToken } = await supabase
-      .from("magic_link_tokens")
-      .select("user_id, expires_at")
-      .eq("token", token)
-      .maybeSingle();
+    let resolvedUserId: string | null = cookieSession?.uid ?? null;
+    if (!resolvedUserId && token) {
+      const { data: magicToken } = await supabase
+        .from("magic_link_tokens")
+        .select("user_id, expires_at")
+        .eq("token", token)
+        .maybeSingle();
 
-    if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
-    if (new Date(magicToken.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
+      if (!magicToken) return NextResponse.json({ error: "Geçersiz link." }, { status: 404 });
+      if (new Date(magicToken.expires_at) < new Date()) {
+        return NextResponse.json({ error: "Linkin süresi dolmuş." }, { status: 400 });
+      }
+      resolvedUserId = magicToken.user_id as string;
+    }
+    if (!resolvedUserId) {
+      return NextResponse.json({ error: "Oturum bulunamadı." }, { status: 401 });
     }
 
     const bayiCfg = getTenantByKey("bayi");
@@ -56,7 +68,7 @@ export async function GET(req: NextRequest) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("id, display_name, tenant_id, metadata, auth_user_id")
-      .or(`id.eq.${magicToken.user_id},auth_user_id.eq.${magicToken.user_id}`)
+      .or(`id.eq.${resolvedUserId},auth_user_id.eq.${resolvedUserId}`)
       .in("tenant_id", tenantIds)
       .limit(1)
       .maybeSingle();
