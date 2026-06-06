@@ -21,8 +21,6 @@ import { useSearchParams, usePathname, useParams } from "next/navigation";
 import { AdminLayout } from "@/components/admin-layout";
 import { PanelAuthFail } from "@/components/panel-auth-fail";
 import { Forbidden } from "@/components/banking";
-import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
-import { BAYI_ONBOARDING } from "@/tenants/bayi/onboarding-config";
 import { HelpCenter } from "@/components/help/HelpCenter";
 import { getBayiHelpDoc } from "@/content/help/bayi";
 import {
@@ -48,9 +46,6 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [firmaUnvani, setFirmaUnvani] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [showWizard, setShowWizard] = useState(false);
-  const [wizardStep, setWizardStep] = useState(0);
-  const [wizardInitialState, setWizardInitialState] = useState<Record<string, unknown>>({});
   // Spinner flash önleme: 250ms'den hızlı fetch'lerde göstermez.
   const [showSpinner, setShowSpinner] = useState(false);
   useEffect(() => {
@@ -97,39 +92,6 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
     return () => { cancelled = true; };
   }, [token]);
 
-  // Onboarding state — auth ready olduktan + admin/owner rolündeyse
-  useEffect(() => {
-    if (state !== "ready") return;
-    if (userRole && userRole !== "admin" && userRole !== "user") return;
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const r = await fetch("/api/bayi-onboarding/state", { credentials: "same-origin" });
-        if (!r.ok) return;
-        const d = await r.json();
-        if (cancelled) return;
-        if (!d?.completed) {
-          setWizardStep(Math.max(0, Math.min(BAYI_ONBOARDING.totalSteps - 1, d.step || 0)));
-          setWizardInitialState(d.initial_state || {});
-          setShowWizard(true);
-        }
-      } catch {
-        // ignore
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [state, userRole]);
-
-  // Sidebar "Sistem Turu" linki query ile tetikler: ?onboarding=1
-  useEffect(() => {
-    if (state !== "ready") return;
-    if (searchParams.get("onboarding") === "1") {
-      setWizardStep(0);
-      setShowWizard(true);
-    }
-  }, [state, searchParams]);
-
   if (state === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
@@ -172,22 +134,6 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
         children
       )}
       <HelpCenter saasKey="bayi" content={helpDoc} />
-      {showWizard && (
-        <OnboardingWizard
-          config={BAYI_ONBOARDING}
-          initialStep={wizardStep}
-          initialState={{ ...wizardInitialState, displayName, firmaUnvani }}
-          onClose={() => setShowWizard(false)}
-          onCompleted={() => {
-            setShowWizard(false);
-            // Faz 1C — "Hadi başlayalım" → Kurucu AI Eleman'ı otomatik aç.
-            // Picker'ı atla, direkt Kurucu rolüne bağlan.
-            if (typeof window !== "undefined") {
-              window.dispatchEvent(new CustomEvent("upu:open-agent", { detail: { role: "kurucu" } }));
-            }
-          }}
-        />
-      )}
     </AdminLayout>
   );
 }
