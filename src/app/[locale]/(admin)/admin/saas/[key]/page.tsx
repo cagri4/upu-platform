@@ -22,6 +22,7 @@ interface TenantRow {
   is_active: boolean;
   created_at: string;
   userCount: number;
+  is_demo: boolean;
 }
 
 interface Resp {
@@ -154,15 +155,25 @@ export default function SaasDetailPage() {
                 className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden"
               >
                 <div className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold truncate">{t.name}</h3>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-                        t.is_active ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
-                      }`}
-                    >
-                      {t.is_active ? "Aktif" : "Pasif"}
-                    </span>
+                  <div className="flex items-center justify-between mb-3 gap-2">
+                    <h3 className="font-semibold truncate flex-1">{t.name}</h3>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {t.is_demo && (
+                        <span
+                          className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono uppercase tracking-wide"
+                          title="Config DEMO tenant'ı — silinmez"
+                        >
+                          🏷 DEMO
+                        </span>
+                      )}
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          t.is_active ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
+                        }`}
+                      >
+                        {t.is_active ? "Aktif" : "Pasif"}
+                      </span>
+                    </div>
                   </div>
                   <p className="text-xs text-slate-500 mb-3 font-mono">{t.slug}</p>
                   <div className="flex items-center justify-between text-xs mb-3">

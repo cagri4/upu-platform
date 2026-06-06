@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Users, Layers, Activity, Trash2, BarChart3, TrendingUp, TrendingDown, Minus, ChevronRight } from 'lucide-react';
+import { Users, Layers, Activity, Trash2, BarChart3, TrendingUp, TrendingDown, Minus, ChevronRight, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { getAllTenants } from '@/tenants/config';
 
@@ -202,8 +202,8 @@ function GenelTab({ stats, deleteUser }: {
 
   return (
     <>
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      {/* Summary Cards (5) */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
           <div className="flex items-center gap-2 mb-2">
             <Layers className="w-5 h-5 text-indigo-400" />
@@ -215,10 +215,10 @@ function GenelTab({ stats, deleteUser }: {
         <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
           <div className="flex items-center gap-2 mb-2">
             <Layers className="w-5 h-5 text-cyan-400" />
-            <p className="text-xs text-slate-400">Gerçek Müşteri</p>
+            <p className="text-xs text-slate-400">Toplam Müşteri</p>
           </div>
-          <p className="text-3xl font-bold">{realMusteri}</p>
-          <p className="text-[10px] text-slate-500 mt-1">+ {demoMusteri} demo tenant</p>
+          <p className="text-3xl font-bold">{realMusteri + demoMusteri}</p>
+          <p className="text-[10px] text-slate-500 mt-1">{realMusteri} gerçek + {demoMusteri} demo</p>
         </div>
         <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
           <div className="flex items-center gap-2 mb-2">
@@ -234,12 +234,15 @@ function GenelTab({ stats, deleteUser }: {
             <p className="text-xs text-slate-400">Toplam Kullanıcı</p>
           </div>
           <p className="text-3xl font-bold">{stats?.totalUsers || 0}</p>
-          <p className="text-[10px] text-slate-500 mt-1">
-            sistem hariç
-            {orphanAdmins > 0 && (
-              <> · <span className="text-amber-400">{orphanAdmins} atanmamış admin</span></>
-            )}
-          </p>
+          <p className="text-[10px] text-slate-500 mt-1">sistem hariç</p>
+        </div>
+        <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="w-5 h-5 text-amber-400" />
+            <p className="text-xs text-slate-400">Sistem Adminleri</p>
+          </div>
+          <p className="text-3xl font-bold">{orphanAdmins}</p>
+          <p className="text-[10px] text-slate-500 mt-1">tabloda gizli, silinme koruması</p>
         </div>
       </div>
 

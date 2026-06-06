@@ -69,6 +69,7 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
       is_active: t.is_active as boolean,
       created_at: t.created_at as string,
       userCount: userCounts[t.id as string] || 0,
+      is_demo: t.id === cfg.tenantId,
     })),
   });
 }
