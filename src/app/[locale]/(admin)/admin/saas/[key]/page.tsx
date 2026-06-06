@@ -234,7 +234,7 @@ export default function SaasDetailPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        <h2 className="text-lg font-semibold mb-4">Müşteri Tenant&apos;ları</h2>
+        <h2 className="text-lg font-semibold mb-4">Müşteri Firmaları</h2>
 
         {tenants.length === 0 ? (
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center">
@@ -460,7 +460,7 @@ function TenantDeleteModal({
             <ul className="text-xs space-y-1">
               <li>• <strong className="text-rose-300">{state.users.length}</strong> kullanıcı (auth+profile)</li>
               <li>• <strong className="text-rose-300">{state.dataTotal}</strong> satır bağımlı veri</li>
-              <li>• Tenant kaydı</li>
+              <li>• Firma kaydı</li>
             </ul>
             {state.users.length > 0 && (
               <details className="mt-2">
