@@ -40,15 +40,33 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
   }
 
   const tenantIds = (tenants || []).map((t) => t.id as string);
+  const usersByTenant = new Map<string, Array<{
+    id: string;
+    display_name: string | null;
+    role: string | null;
+    whatsapp_phone: string | null;
+    email: string | null;
+  }>>();
   let userCounts: Record<string, number> = {};
   if (tenantIds.length > 0) {
     const { data: profiles } = await sb
       .from("profiles")
-      .select("tenant_id")
-      .in("tenant_id", tenantIds);
+      .select("id, tenant_id, display_name, role, whatsapp_phone, email")
+      .in("tenant_id", tenantIds)
+      .order("created_at", { ascending: true });
     for (const p of profiles || []) {
       const tid = p.tenant_id as string | null;
-      if (tid) userCounts[tid] = (userCounts[tid] || 0) + 1;
+      if (!tid) continue;
+      userCounts[tid] = (userCounts[tid] || 0) + 1;
+      const list = usersByTenant.get(tid) ?? [];
+      list.push({
+        id: p.id as string,
+        display_name: (p.display_name as string | null) ?? null,
+        role: (p.role as string | null) ?? null,
+        whatsapp_phone: (p.whatsapp_phone as string | null) ?? null,
+        email: (p.email as string | null) ?? null,
+      });
+      usersByTenant.set(tid, list);
     }
   }
 
@@ -70,6 +88,7 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
       created_at: t.created_at as string,
       userCount: userCounts[t.id as string] || 0,
       is_demo: t.id === cfg.tenantId,
+      users: usersByTenant.get(t.id as string) ?? [],
     })),
   });
 }

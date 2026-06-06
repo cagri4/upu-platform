@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink, Users, UserPlus, Copy, Check } from "lucide-react";
+import { ArrowLeft, ExternalLink, Users, UserPlus, Copy, Check, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 
 interface Category {
   key: string;
@@ -15,6 +15,14 @@ interface Category {
   whatsappPhone: string;
 }
 
+interface TenantUser {
+  id: string;
+  display_name: string | null;
+  role: string | null;
+  whatsapp_phone: string | null;
+  email: string | null;
+}
+
 interface TenantRow {
   id: string;
   name: string;
@@ -23,6 +31,7 @@ interface TenantRow {
   created_at: string;
   userCount: number;
   is_demo: boolean;
+  users: TenantUser[];
 }
 
 interface Resp {
@@ -39,6 +48,8 @@ export default function SaasDetailPage() {
   const [inviteLinks, setInviteLinks] = useState<Record<string, { code: string; usedCount: number; maxUses: number | null }>>({});
   const [linkLoading, setLinkLoading] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const toggleCollapsed = (id: string) => setCollapsed((p) => ({ ...p, [id]: !p[id] }));
 
   useEffect(() => {
     fetch(`/api/admin/saas/${key}/tenants`, { credentials: "same-origin" })
@@ -192,6 +203,59 @@ export default function SaasDetailPage() {
                   >
                     <ExternalLink className="w-3 h-3" /> Panel aç
                   </a>
+
+                  {(() => {
+                    const isCollapsed = collapsed[t.id] ?? (t.users.length > 4);
+                    return (
+                      <div className="mb-3 border border-slate-700 rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => toggleCollapsed(t.id)}
+                          className="w-full flex items-center justify-between px-3 py-1.5 bg-slate-900/40 hover:bg-slate-900/60 text-xs text-slate-300"
+                        >
+                          <span className="inline-flex items-center gap-1.5">
+                            {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            Kullanıcılar ({t.users.length})
+                          </span>
+                          {t.users.length === 0 && (
+                            <span className="text-[10px] text-rose-400/80">boş</span>
+                          )}
+                        </button>
+                        {!isCollapsed && (
+                          <div className="divide-y divide-slate-700/60">
+                            {t.users.length === 0 ? (
+                              <div className="px-3 py-2 text-[11px] text-slate-500 italic">
+                                Bu firmada henüz kullanıcı yok.
+                              </div>
+                            ) : (
+                              t.users.map((u) => (
+                                <div key={u.id} className="px-3 py-1.5 flex items-center gap-2 text-xs">
+                                  <span aria-hidden>👤</span>
+                                  <span className="text-slate-200 truncate flex-1">
+                                    {u.display_name || "—"}
+                                  </span>
+                                  {u.role && (
+                                    <span className="text-[10px] text-slate-500 font-mono uppercase">{u.role}</span>
+                                  )}
+                                  {u.whatsapp_phone && (
+                                    <span className="text-[10px] text-emerald-400/80 font-mono whitespace-nowrap">
+                                      {u.whatsapp_phone}
+                                    </span>
+                                  )}
+                                  <button
+                                    className="text-rose-400/70 hover:text-rose-300 p-0.5"
+                                    title="Sil (yakında)"
+                                    disabled
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {!inviteLinks[t.id] ? (
                     <button
