@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Users, Layers, Activity, Trash2, BarChart3, TrendingUp, TrendingDown, Minus, ChevronRight, AlertTriangle, X } from 'lucide-react';
+import { Users, Layers, Activity, Trash2, BarChart3, TrendingUp, TrendingDown, Minus, ChevronRight, AlertTriangle, X, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { getAllTenants } from '@/tenants/config';
 
@@ -33,6 +33,11 @@ interface Stats {
   tenants: Tenant[];
   userCounts: Record<string, number>;
   totalUsers: number;
+  saasUserCount?: number;
+  saasUserCounts?: Record<string, number>;
+  systemAdmins?: number;
+  systemBots?: number;
+  currentUserId?: string | null;
   demoTenantIds?: string[];
   users: UserProfile[];
 }
@@ -50,7 +55,7 @@ function classifyUser(u: UserProfile, demoIds: Set<string>): UserBadge {
   if (u.role === 'system') {
     return {
       key: 'system-bot',
-      label: 'SISTEM BOT',
+      label: 'Otomatik Hesap',
       icon: '🤖',
       className: 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
       riskNote: 'Scraping durur',
@@ -59,7 +64,7 @@ function classifyUser(u: UserProfile, demoIds: Set<string>): UserBadge {
   if (!u.tenant_id && (u.role === 'admin' || u.role === 'super_admin')) {
     return {
       key: 'system-admin',
-      label: 'SISTEM ADMIN',
+      label: 'Platform Yöneticisi',
       icon: '🔐',
       className: 'bg-red-500/20 text-red-300 border border-red-500/30',
       riskNote: 'Sistemden çıkarsın',
@@ -68,14 +73,14 @@ function classifyUser(u: UserProfile, demoIds: Set<string>): UserBadge {
   if (u.tenant_id && demoIds.has(u.tenant_id)) {
     return {
       key: 'demo-seed',
-      label: 'DEMO SEED',
+      label: 'Demo Veri',
       icon: '🏷',
       className: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
     };
   }
   return {
     key: 'user',
-    label: 'KULLANICI',
+    label: 'Kullanıcı',
     icon: '👤',
     className: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
   };
@@ -95,7 +100,7 @@ interface InsightData {
   dailyActivity: { date: string; commands: number; errors: number }[];
 }
 
-type Tab = 'genel' | 'insight';
+type Tab = 'genel' | 'sistem' | 'insight';
 
 // ── Main Component ─────────────────────────────────────────────────
 
@@ -199,6 +204,17 @@ export default function AdminPage() {
             Genel
           </button>
           <button
+            onClick={() => setTab('sistem')}
+            className={`px-4 py-3 text-sm font-medium border-b-2 transition ${
+              tab === 'sistem'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-slate-400 hover:text-slate-300'
+            }`}
+          >
+            <Lock className="w-4 h-4 inline mr-1.5" />
+            Sistem
+          </button>
+          <button
             onClick={() => setTab('insight')}
             className={`px-4 py-3 text-sm font-medium border-b-2 transition ${
               tab === 'insight'
@@ -213,7 +229,8 @@ export default function AdminPage() {
       </div>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {tab === 'genel' && <GenelTab stats={stats} requestDelete={requestDelete} />}
+        {tab === 'genel' && <GenelTab stats={stats} />}
+        {tab === 'sistem' && <SistemTab stats={stats} requestDelete={requestDelete} />}
         {tab === 'insight' && <InsightTab data={insight} loading={insightLoading} onRefresh={fetchInsight} />}
       </main>
 
@@ -303,11 +320,7 @@ function RiskDeleteModal({
 
 // ── Genel Tab ──────────────────────────────────────────────────────
 
-function GenelTab({ stats, requestDelete }: {
-  stats: Stats | null;
-  requestDelete: (userId: string, name: string, badge: UserBadge) => void;
-}) {
-  const demoIds = useMemo(() => new Set(stats?.demoTenantIds || []), [stats?.demoTenantIds]);
+function GenelTab({ stats }: { stats: Stats | null }) {
   // SaaS kategori grid — 7 sabit (config). Her birinin altındaki tenant
   // (müşteri) sayısı DB'den groupby saas_type ile, DEMO ayrı sayılır
   // (KATMAN C2 2026-06-06).
@@ -368,10 +381,10 @@ function GenelTab({ stats, requestDelete }: {
         <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
           <div className="flex items-center gap-2 mb-2">
             <Users className="w-5 h-5 text-green-400" />
-            <p className="text-xs text-slate-400">Toplam Kullanıcı</p>
+            <p className="text-xs text-slate-400">Kullanıcı (kişi)</p>
           </div>
-          <p className="text-3xl font-bold">{stats?.totalUsers || 0}</p>
-          <p className="text-[10px] text-slate-500 mt-1">tüm profile (sistem+admin dahil)</p>
+          <p className="text-3xl font-bold">{stats?.saasUserCount ?? 0}</p>
+          <p className="text-[10px] text-slate-500 mt-1">SaaS&apos;a bağlı, sistem hesapları hariç</p>
         </div>
       </div>
 
@@ -421,11 +434,74 @@ function GenelTab({ stats, requestDelete }: {
         ))}
       </div>
 
-      {/* All Users Table — şeffaflık + risk-aware (KATMAN D 2026-06-06) */}
-      <h2 className="text-lg font-semibold mt-10 mb-1">Tum Kullanicilar ({stats?.totalUsers ?? 0})</h2>
-      <p className="text-xs text-slate-500 mb-4">
-        Tüm profile&apos;lar görünür. Sistem/demo satırları rol badge ile işaretlidir; silme akışı badge&apos;e göre risk-aware.
+    </>
+  );
+}
+
+// ── Sistem Tab ─────────────────────────────────────────────────────
+
+function SistemTab({ stats, requestDelete }: {
+  stats: Stats | null;
+  requestDelete: (userId: string, name: string, badge: UserBadge) => void;
+}) {
+  const demoIds = useMemo(() => new Set(stats?.demoTenantIds || []), [stats?.demoTenantIds]);
+  const platformAdmins = (stats?.users || []).filter(
+    (u) => !u.tenant_id && (u.role === 'admin' || u.role === 'super_admin'),
+  );
+  const autoAccounts = (stats?.users || []).filter((u) => u.role === 'system');
+  const currentUserId = stats?.currentUserId ?? null;
+
+  return (
+    <>
+      <p className="text-sm text-slate-400 mb-6">
+        Platform-seviye hesaplar. SaaS müşterilerine ait kullanıcılar burada gözükmez — onlar SaaS detayında.
       </p>
+
+      <SistemTable
+        icon="🔐"
+        title="Platform Yöneticileri"
+        emptyMsg="Henüz platform yöneticisi yok."
+        rows={platformAdmins}
+        demoIds={demoIds}
+        currentUserId={currentUserId}
+        requestDelete={requestDelete}
+      />
+
+      <div className="mt-8">
+        <SistemTable
+          icon="🤖"
+          title="Otomatik Hesaplar"
+          emptyMsg="Henüz otomatik hesap yok."
+          rows={autoAccounts}
+          demoIds={demoIds}
+          currentUserId={currentUserId}
+          requestDelete={requestDelete}
+        />
+      </div>
+    </>
+  );
+}
+
+function SistemTable({
+  icon,
+  title,
+  emptyMsg,
+  rows,
+  demoIds,
+  currentUserId,
+  requestDelete,
+}: {
+  icon: string;
+  title: string;
+  emptyMsg: string;
+  rows: UserProfile[];
+  demoIds: Set<string>;
+  currentUserId: string | null;
+  requestDelete: (userId: string, name: string, badge: UserBadge) => void;
+}) {
+  return (
+    <>
+      <h2 className="text-lg font-semibold mb-3">{icon} {title} ({rows.length})</h2>
       <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -435,20 +511,17 @@ function GenelTab({ stats, requestDelete }: {
                 <th className="text-left px-4 py-3 font-medium text-slate-400">Rol</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-400">E-posta</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-400">WhatsApp</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-400">Müşteri (Tenant)</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-400">Kayit</th>
                 <th className="text-right px-4 py-3 font-medium text-slate-400">Islem</th>
               </tr>
             </thead>
             <tbody>
-              {(!stats?.users || stats.users.length === 0) ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-500">Henuz kullanici yok</td></tr>
+              {rows.length === 0 ? (
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">{emptyMsg}</td></tr>
               ) : (
-                stats.users.map((u) => {
-                  const tenantName = u.tenant_id
-                    ? (stats.tenants.find(t => t.id === u.tenant_id)?.name || '-')
-                    : <span className="text-rose-400">— atanmamış</span>;
+                rows.map((u) => {
                   const badge = classifyUser(u, demoIds);
+                  const isSelf = currentUserId !== null && u.id === currentUserId;
                   return (
                     <tr key={u.id} className="border-b border-slate-700 hover:bg-slate-750">
                       <td className="px-4 py-3 font-medium text-white">{u.display_name || '-'}</td>
@@ -463,13 +536,13 @@ function GenelTab({ stats, requestDelete }: {
                           <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">{u.whatsapp_phone}</span>
                         ) : <span className="text-slate-600">-</span>}
                       </td>
-                      <td className="px-4 py-3 text-slate-400">{tenantName}</td>
                       <td className="px-4 py-3 text-slate-500">{new Date(u.created_at).toLocaleDateString('tr-TR')}</td>
                       <td className="px-4 py-3 text-right">
                         <button
-                          onClick={() => requestDelete(u.id, u.display_name || 'Kullanici', badge)}
-                          className="text-red-400 hover:text-red-300 p-1"
-                          title={badge.riskNote ? `Sil — ${badge.riskNote}` : 'Sil'}
+                          onClick={() => !isSelf && requestDelete(u.id, u.display_name || 'Kullanici', badge)}
+                          disabled={isSelf}
+                          className={`p-1 ${isSelf ? 'text-slate-600 cursor-not-allowed' : 'text-red-400 hover:text-red-300'}`}
+                          title={isSelf ? 'Kendinizi silemezsiniz' : (badge.riskNote ? `Sil — ${badge.riskNote}` : 'Sil')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

@@ -17,23 +17,40 @@ export async function GET(req: NextRequest) {
       .select('*')
       .order('name');
 
-    // KATMAN D (2026-06-06): Şeffaflık + risk uyarısı yaklaşımı. Önceki
-    // sürüm role=system + tenant_id=NULL satırlarını gizliyordu; tablo ile
-    // header sayı tutarlılığı sağlanıyordu ama "gizli kullanıcılar"
-    // operatöre güven vermiyordu. Şimdi her satır görünüyor, badge'le
-    // risk seviyesi belli, silme akışı badge'e göre risk-aware.
     const { data: profilesRaw } = await supabase
       .from('profiles')
-      .select('tenant_id, role');
+      .select('id, tenant_id, role');
+
+    // KATMAN E (2026-06-06): yapısal redesign için stat segmentasyonu.
+    // saasUserCount: SaaS'a bağlı kişiler (DEMO tenant kullanıcıları dahil)
+    // saasUserCounts: tenants.saas_type başına kullanıcı sayısı (kart için)
+    // systemAdmins / systemBots: platform-seviye hesaplar (Sistem sekmesi)
+    const tenantSaasMap = new Map<string, string | null>();
+    for (const t of tenants ?? []) {
+      tenantSaasMap.set(t.id as string, (t.saas_type as string | null) ?? null);
+    }
 
     const counts: Record<string, number> = {};
+    const saasUserCounts: Record<string, number> = {};
     let total = 0;
+    let saasUserCount = 0;
+    let systemAdmins = 0;
+    let systemBots = 0;
     if (profilesRaw) {
       for (const u of profilesRaw) {
         total++;
-        if (u.tenant_id) {
-          counts[u.tenant_id] = (counts[u.tenant_id] || 0) + 1;
+        if (u.role === 'system') {
+          systemBots++;
+          continue;
         }
+        if (!u.tenant_id) {
+          if (u.role === 'admin' || u.role === 'super_admin') systemAdmins++;
+          continue;
+        }
+        counts[u.tenant_id] = (counts[u.tenant_id] || 0) + 1;
+        saasUserCount++;
+        const saasType = tenantSaasMap.get(u.tenant_id);
+        if (saasType) saasUserCounts[saasType] = (saasUserCounts[saasType] || 0) + 1;
       }
     }
 
@@ -60,11 +77,26 @@ export async function GET(req: NextRequest) {
       tenants: enrichedTenants,
       userCounts: counts,
       totalUsers: total,
+      saasUserCount,
+      saasUserCounts,
+      systemAdmins,
+      systemBots,
+      currentUserId: auth.userId,
       demoTenantIds,
       users: users || [],
     });
   } catch (err) {
     console.error('[admin/stats] Error:', err);
-    return NextResponse.json({ tenants: [], userCounts: {}, totalUsers: 0, demoTenantIds: [] });
+    return NextResponse.json({
+      tenants: [],
+      userCounts: {},
+      totalUsers: 0,
+      saasUserCount: 0,
+      saasUserCounts: {},
+      systemAdmins: 0,
+      systemBots: 0,
+      currentUserId: null,
+      demoTenantIds: [],
+    });
   }
 }
