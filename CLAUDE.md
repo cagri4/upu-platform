@@ -144,6 +144,39 @@ export async function POST(req: NextRequest) {
 - Path alias: `@/*` → `src/*`
 - Deployed on Vercel with auto-deploy from GitHub
 
+## Vercel Deploy Verification (KRİTİK)
+
+**Push ≠ Live.** Vercel auto-deploy `vercel.json` config ihlalinde sessizce fail eder ve `vercel ls` listesinde ASLA görünmez. GitHub push'u temiz görünür ama production aynı yerde takılır. **Tarihte iki kez yaşandı** (2026-04-13 ve 2026-06-06, ikincisi 7 saat / 7 commit boyunca sessiz fail). Bir daha yaşanmaması için:
+
+### Pre-commit hook (otomatik bariyer)
+
+`vercel.json` her commit'inde `scripts/validate-vercel-cron.mjs` çalışır ve Hobby plan'ı ihlal eden cron pattern'leri commit anında bloklar. **Worker'lar dahil**. Husky `.husky/pre-commit` üzerinden çalışır, `npm install` ile otomatik kurulur.
+
+**Yasak cron pattern'leri (Hobby = günde 1 cron/entry):**
+- `*/N * * * *` — her N dakika
+- `0 * * * *` — saatlik
+- `0 */N * * *` — her N saat
+- Saat alanında virgül veya aralık (`0 8,12,18 * * *`, `0 8-18 * * *`)
+
+**İzinli pattern'ler:** `MM HH * * *` (günlük), `MM HH * * D` (haftalık), `MM HH D * *` (aylık).
+
+Bypass acil durumda: `git commit --no-verify` (sonradan açıklama gerekir).
+
+### Push sonrası doğrulama (zorunlu)
+
+Her `git push origin main` sonrası (kendin veya başka worker push'lasa bile) **`/vercel-verify`** skill'i çalıştır. Bu skill `vercel ls --prod` çekip Age + hash karşılaştırır, sapma varsa Telegram'a alarm yollar. Kullanıcıya "deploy edildi" demeden önce verdict ✅ olmalı.
+
+Manuel komut: `vercel ls --prod 2>&1 | head -5` — en üst satır "Ready" ve Age < dakikalar olmalı.
+
+Build sessizce fail ediyorsa: `vercel --prod --yes` ile manuel tetikle, çıktıyı oku, kök sebebi fix et.
+
+### Referanslar
+
+- Pre-commit hook: `.husky/pre-commit` + `scripts/validate-vercel-cron.mjs`
+- Skill: `~/.claude/skills/vercel-verify/SKILL.md`
+- Memory: `feedback_verify_vercel_deploy.md`
+- Vercel docs: https://vercel.com/docs/cron-jobs/usage-and-pricing
+
 ## Rules
 
 - **Never guess commands**: Don't make up CLI flags or options. Check docs or say "bilmiyorum".
