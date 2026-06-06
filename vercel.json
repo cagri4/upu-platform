@@ -74,7 +74,7 @@
     },
     {
       "path": "/api/cron/cleanup-orphan-tenants",
-      "schedule": "0 * * * *"
+      "schedule": "0 5 * * *"
     }
   ]
 }
