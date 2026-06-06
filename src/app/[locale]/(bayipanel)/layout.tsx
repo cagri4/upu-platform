@@ -16,14 +16,16 @@
  * group DIŞINDA kalır — WA WebView'da full-screen pattern korunur.
  */
 
-import { useEffect, useState, type ReactNode } from "react";
-import { useSearchParams, usePathname } from "next/navigation";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useSearchParams, usePathname, useParams } from "next/navigation";
 import { AdminLayout } from "@/components/admin-layout";
 import { PanelAuthFail } from "@/components/panel-auth-fail";
 import { Forbidden } from "@/components/banking";
 import { UpuAgentWidget } from "@/components/agent/UpuAgentWidget";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { BAYI_ONBOARDING } from "@/tenants/bayi/onboarding-config";
+import { HelpCenter } from "@/components/help/HelpCenter";
+import { getBayiHelpDoc } from "@/content/help/bayi";
 import {
   BAYI_SIDEBAR,
   BAYI_BRAND_TITLE,
@@ -38,6 +40,9 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token");
   const pathname = usePathname() || "";
+  const params = useParams();
+  const locale = typeof params?.locale === "string" ? params.locale : "tr";
+  const helpDoc = useMemo(() => getBayiHelpDoc(locale), [locale]);
 
   const [state, setState] = useState<InitState>("loading");
   const [error, setError] = useState("");
@@ -168,6 +173,7 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
         children
       )}
       <UpuAgentWidget />
+      <HelpCenter saasKey="bayi" content={helpDoc} />
       {showWizard && (
         <OnboardingWizard
           config={BAYI_ONBOARDING}
