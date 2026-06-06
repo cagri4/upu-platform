@@ -3,14 +3,13 @@
 /**
  * Bayi Panel — intro tooltip tour (driver.js).
  *
- * 7 adım:
+ * 6 adım (2026-06-06: AI Eleman adımı kaldırıldı, yerine HelpCenter):
  *   1) Welcome (popover only)         — Merhaba {ad}, Bayi paneline hoş geldin
  *   2) HIZLI İŞLEM                    — data-tour="quick-actions"
  *   3) KPI grid                       — data-tour="kpi-grid"
- *   4) AI Eleman                      — data-tour="ai-agent"
- *   5) Bildirim çanı (topbar)         — data-tour="notification-bell"
- *   6) Düzenle butonu                 — data-tour="edit-toggle"
- *   7) Kapanış (popover only)         — Hazırsın!
+ *   4) Bildirim çanı (topbar)         — data-tour="notification-bell"
+ *   5) Düzenle butonu                 — data-tour="edit-toggle"
+ *   6) Kapanış (popover only)         — Hazırsın!
  *
  * Trigger:
  *   - İlk açılışta (profile.metadata.tour_seen_at NULL) otomatik
@@ -84,15 +83,6 @@ export function BayiPanelTour({ displayName, autoStartEnabled, tourSeenAt }: Bay
         description: t("kpi_desc"),
         side: "top" as const,
         align: "center" as const,
-      },
-    },
-    {
-      element: '[data-tour="ai-agent"]',
-      popover: {
-        title: t("ai_title"),
-        description: t("ai_desc"),
-        side: "left" as const,
-        align: "end" as const,
       },
     },
     {

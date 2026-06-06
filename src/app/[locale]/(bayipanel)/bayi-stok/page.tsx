@@ -20,7 +20,6 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Package, Box, History } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { kurucuSecondary } from "@/components/empty-state-kurucu-link";
 
 interface Product {
   id: string;
@@ -174,7 +173,6 @@ export default function BayiStokPage() {
                 : "Filtre ya da arama kriterini değiştir."
             }
             cta={data.products.length === 0 ? { label: "+ Ürün Ekle", href: "/tr/bayi-urun-ekle" } : undefined}
-            secondary={kurucuSecondary(`empty-state:bayi-stok:${filter}`)}
             accent={filter === "critical" || filter === "out" ? "emerald" : "indigo"}
           />
         </div>

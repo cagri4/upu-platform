@@ -14,7 +14,6 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { ShieldCheck, AlertTriangle, Eye } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { kurucuSecondary } from "@/components/empty-state-kurucu-link";
 
 interface Risk {
   dealerId: string;
@@ -116,7 +115,6 @@ export default function BayiRiskPage() {
               : "Önce bayi listesine ekle ve sipariş geçmişi oluşsun."
             }
             cta={{ label: "+ Bayi Davet Et", href: "/tr/bayi-davet-et" }}
-            secondary={kurucuSecondary(`empty-state:bayi-risk:${tab}`)}
             accent={tab === "risk" ? "emerald" : tab === "watch" ? "amber" : "slate"}
           />
         </div>

@@ -14,7 +14,6 @@ import { useEffect, useState, useCallback } from "react";
 import { Wallet, Plus, Download, CheckCircle2, XCircle, Loader2, X } from "lucide-react";
 import { HeroBanner, Skeleton } from "@/components/banking";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { kurucuSecondary } from "@/components/empty-state-kurucu-link";
 
 interface Payment {
   id: string;
@@ -152,7 +151,6 @@ export default function TahsilatlarimPage() {
               ? "İlk ödemeni 'Yeni Ödeme Kaydet' ile gir — dekont fotoğrafıyla birlikte. Admin onayından sonra cari ekstreye işlenir."
               : "Bu sekmede şu an kayıt yok. Filtreyi 'Tümü'ne çevirip kontrol edebilirsin."
             }
-            secondary={kurucuSecondary("empty-state:bayi-tahsilatlarim")}
             accent="emerald"
           />
         </div>

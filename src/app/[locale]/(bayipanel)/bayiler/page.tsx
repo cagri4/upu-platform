@@ -21,7 +21,6 @@ import Link from "next/link";
 import { Users } from "lucide-react";
 import { DealerScoreBadge } from "@/components/bayi/DealerScoreBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { KurucuHelpLink } from "@/components/empty-state-kurucu-link";
 
 interface DealerScore {
   score: number;
@@ -293,7 +292,6 @@ export default function BayilerPage() {
                 : { label: "Bayi Davet Et", href: `/tr/bayi-davet${token ? `?t=${encodeURIComponent(token)}` : ""}` }}
               accent="indigo"
             />
-            <div className="text-center"><KurucuHelpLink context="empty-state:bayiler" /></div>
           </div>
         ) : (
           <div className="space-y-2">

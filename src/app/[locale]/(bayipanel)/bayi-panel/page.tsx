@@ -47,7 +47,6 @@ import { ChurnRiskBanner } from "@/components/bayi/ChurnRiskBanner";
 import { RecommendationCard } from "@/components/recommendations/RecommendationCard";
 import { BayiPanelTour } from "@/components/tour/BayiPanelTour";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { kurucuSecondary } from "@/components/empty-state-kurucu-link";
 import { Rocket } from "lucide-react";
 
 function BayiPanelEmptyHero() {
@@ -57,7 +56,6 @@ function BayiPanelEmptyHero() {
       title="Panelin hazır — ilk bayini ekleyerek başla"
       description="Bayilerin sisteme katıldıkça KPI'ların burada canlanacak. Davet linki WhatsApp'tan bayiye gider, kabul edince hesabı açılır."
       cta={{ label: "+ Bayi Davet Et", href: "/tr/bayi-davet-et" }}
-      secondary={kurucuSecondary("empty-state:bayi-panel")}
       accent="indigo"
     />
   );

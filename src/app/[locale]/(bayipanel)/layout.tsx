@@ -21,7 +21,6 @@ import { useSearchParams, usePathname, useParams } from "next/navigation";
 import { AdminLayout } from "@/components/admin-layout";
 import { PanelAuthFail } from "@/components/panel-auth-fail";
 import { Forbidden } from "@/components/banking";
-import { UpuAgentWidget } from "@/components/agent/UpuAgentWidget";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { BAYI_ONBOARDING } from "@/tenants/bayi/onboarding-config";
 import { HelpCenter } from "@/components/help/HelpCenter";
@@ -172,7 +171,6 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
       ) : (
         children
       )}
-      <UpuAgentWidget />
       <HelpCenter saasKey="bayi" content={helpDoc} />
       {showWizard && (
         <OnboardingWizard

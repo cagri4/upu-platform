@@ -13,7 +13,6 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { Inbox, Loader2, CheckCircle2, XCircle, Package, Truck, MapPin, Clock, X, Camera } from "lucide-react";
 import { HeroBanner, Skeleton } from "@/components/banking";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { kurucuSecondary } from "@/components/empty-state-kurucu-link";
 
 type ShipmentStatus = "hazirlandi" | "yola_cikti" | "teslim_edildi" | "iade";
 
@@ -166,7 +165,6 @@ export default function BayilikSiparisleriPage() {
               : "Filtreyi 'Tümü'ne çevirip aktif siparişleri görebilirsin."
             }
             cta={tab === "all" ? { label: "+ Bayi Davet Et", href: "/tr/bayi-davet-et" } : undefined}
-            secondary={kurucuSecondary(`empty-state:bayilik-siparisleri:${tab}`)}
             accent="indigo"
           />
         </div>
