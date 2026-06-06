@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+# pre-commit — UPU Platform
+#
+# Bu hook commit anında çalışır. Eğer vercel.json sahnede ise (staged),
+# scripts/validate-vercel-cron.mjs ile Vercel Hobby plan cron limitlerine
+# karşı doğrular. İhlal varsa commit bloklar.
+#
+# Bypass: git commit --no-verify (acil durum, sonradan açıklama gerekir).
+
+# vercel.json staged mı?
+if git diff --cached --name-only | grep -q '^vercel\.json$'; then
+  echo "[pre-commit] vercel.json değişti → cron validate"
+  if ! node scripts/validate-vercel-cron.mjs; then
+    echo ""
+    echo "❌ Commit bloklandı. vercel.json'daki cron schedule Hobby planı ihlal ediyor."
+    echo "   Düzelt ve tekrar dene, ya da acil durumda: git commit --no-verify"
+    exit 1
+  fi
+fi
