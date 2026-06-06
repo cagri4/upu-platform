@@ -71,6 +71,10 @@
     {
       "path": "/api/cron/bayi-vade-reminder",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-orphan-tenants",
+      "schedule": "0 * * * *"
     }
   ]
 }
