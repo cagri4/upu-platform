@@ -322,11 +322,12 @@ function RiskDeleteModal({
 
 function GenelTab({ stats }: { stats: Stats | null }) {
   // SaaS kategori grid — 7 sabit (config). Her birinin altındaki tenant
-  // (müşteri) sayısı DB'den groupby saas_type ile, DEMO ayrı sayılır
-  // (KATMAN C2 2026-06-06).
+  // sayısı DB'den groupby saas_type ile, DEMO ayrı sayılır. Kullanıcı sayısı
+  // stats.saasUserCounts (Redesign A) — kart başında müşteri+kullanıcı çifti.
   const saasCategories = useMemo(() => {
     const all = getAllTenants();
     const tenants = stats?.tenants || [];
+    const userCounts = stats?.saasUserCounts || {};
     return all.map((cfg) => {
       const matched = tenants.filter((t) => t.saas_type === cfg.saasType);
       const demoCount = matched.filter((t) => t.is_demo).length;
@@ -341,6 +342,7 @@ function GenelTab({ stats }: { stats: Stats | null }) {
         tenantCount: matched.length,
         realCount,
         demoCount,
+        userCount: userCounts[cfg.saasType] || 0,
       };
     });
   }, [stats]);
@@ -419,13 +421,19 @@ function GenelTab({ stats }: { stats: Stats | null }) {
               </div>
               <p className="text-xs text-slate-500 mb-4 line-clamp-2">{s.description}</p>
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold">{s.tenantCount}</div>
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wide">
-                    müşteri ({s.realCount} gerçek + {s.demoCount} demo)
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-3 flex-wrap">
+                    <span className="text-2xl font-bold">{s.tenantCount}</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wide">müşteri</span>
+                    <span className="text-slate-600">•</span>
+                    <span className="text-2xl font-bold text-green-300">{s.userCount}</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wide">kullanıcı</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-1">
+                    {s.realCount} gerçek + {s.demoCount} demo müşteri
                   </div>
                 </div>
-                <span className="text-indigo-400 group-hover:text-indigo-300 text-sm font-medium flex items-center gap-1">
+                <span className="text-indigo-400 group-hover:text-indigo-300 text-sm font-medium flex items-center gap-1 flex-shrink-0">
                   Detay <ChevronRight className="w-4 h-4" />
                 </span>
               </div>
