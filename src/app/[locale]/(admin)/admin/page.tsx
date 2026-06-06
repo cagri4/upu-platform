@@ -15,6 +15,7 @@ interface Tenant {
   is_active: boolean;
   created_at: string;
   whatsapp_phone: string;
+  is_demo?: boolean;
 }
 
 interface UserProfile {
@@ -32,6 +33,8 @@ interface Stats {
   tenants: Tenant[];
   userCounts: Record<string, number>;
   totalUsers: number;
+  orphanAdmins?: number;
+  demoTenantIds?: string[];
   users: UserProfile[];
 }
 
@@ -168,12 +171,15 @@ function GenelTab({ stats, deleteUser }: {
   deleteUser: (userId: string, name: string) => void;
 }) {
   // SaaS kategori grid — 7 sabit (config). Her birinin altındaki tenant
-  // (müşteri) sayısı DB'den groupby saas_type ile.
+  // (müşteri) sayısı DB'den groupby saas_type ile, DEMO ayrı sayılır
+  // (KATMAN C2 2026-06-06).
   const saasCategories = useMemo(() => {
     const all = getAllTenants();
     const tenants = stats?.tenants || [];
     return all.map((cfg) => {
       const matched = tenants.filter((t) => t.saas_type === cfg.saasType);
+      const demoCount = matched.filter((t) => t.is_demo).length;
+      const realCount = matched.length - demoCount;
       return {
         key: cfg.key,
         name: cfg.name,
@@ -182,13 +188,17 @@ function GenelTab({ stats, deleteUser }: {
         color: cfg.color,
         description: cfg.description,
         tenantCount: matched.length,
-        activeCount: matched.filter((t) => t.is_active).length,
+        realCount,
+        demoCount,
       };
     });
   }, [stats]);
 
-  const totalMusteri = stats?.tenants.length || 0;
-  const aktifMusteri = stats?.tenants.filter((t) => t.is_active).length || 0;
+  const tenantsAll = stats?.tenants || [];
+  const realMusteri = tenantsAll.filter((t) => !t.is_demo).length;
+  const demoMusteri = tenantsAll.filter((t) => t.is_demo).length;
+  const aktifReal = tenantsAll.filter((t) => !t.is_demo && t.is_active).length;
+  const orphanAdmins = stats?.orphanAdmins ?? 0;
 
   return (
     <>
@@ -205,18 +215,18 @@ function GenelTab({ stats, deleteUser }: {
         <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
           <div className="flex items-center gap-2 mb-2">
             <Layers className="w-5 h-5 text-cyan-400" />
-            <p className="text-xs text-slate-400">Toplam Müşteri</p>
+            <p className="text-xs text-slate-400">Gerçek Müşteri</p>
           </div>
-          <p className="text-3xl font-bold">{totalMusteri}</p>
-          <p className="text-[10px] text-slate-500 mt-1">tenants tablosu</p>
+          <p className="text-3xl font-bold">{realMusteri}</p>
+          <p className="text-[10px] text-slate-500 mt-1">+ {demoMusteri} demo tenant</p>
         </div>
         <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
           <div className="flex items-center gap-2 mb-2">
             <Activity className="w-5 h-5 text-amber-400" />
             <p className="text-xs text-slate-400">Aktif Müşteri</p>
           </div>
-          <p className="text-3xl font-bold">{aktifMusteri}</p>
-          <p className="text-[10px] text-slate-500 mt-1">is_active=true</p>
+          <p className="text-3xl font-bold">{aktifReal}</p>
+          <p className="text-[10px] text-slate-500 mt-1">gerçek + is_active=true</p>
         </div>
         <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
           <div className="flex items-center gap-2 mb-2">
@@ -224,7 +234,12 @@ function GenelTab({ stats, deleteUser }: {
             <p className="text-xs text-slate-400">Toplam Kullanıcı</p>
           </div>
           <p className="text-3xl font-bold">{stats?.totalUsers || 0}</p>
-          <p className="text-[10px] text-slate-500 mt-1">profiles tablosu</p>
+          <p className="text-[10px] text-slate-500 mt-1">
+            sistem hariç
+            {orphanAdmins > 0 && (
+              <> · <span className="text-amber-400">{orphanAdmins} atanmamış admin</span></>
+            )}
+          </p>
         </div>
       </div>
 
@@ -262,7 +277,7 @@ function GenelTab({ stats, deleteUser }: {
                 <div>
                   <div className="text-2xl font-bold">{s.tenantCount}</div>
                   <div className="text-[10px] text-slate-500 uppercase tracking-wide">
-                    {s.tenantCount === 1 ? 'müşteri' : 'müşteri'} ({s.activeCount} aktif)
+                    müşteri ({s.realCount} gerçek + {s.demoCount} demo)
                   </div>
                 </div>
                 <span className="text-indigo-400 group-hover:text-indigo-300 text-sm font-medium flex items-center gap-1">
@@ -274,8 +289,8 @@ function GenelTab({ stats, deleteUser }: {
         ))}
       </div>
 
-      {/* All Users Table */}
-      <h2 className="text-lg font-semibold mt-10 mb-4">Tum Kullanicilar ({stats?.users?.filter(u => u.role !== 'system' && u.tenant_id !== null).length || 0})</h2>
+      {/* All Users Table — backend totalUsers ile birebir filter (KATMAN C3) */}
+      <h2 className="text-lg font-semibold mt-10 mb-4">Tum Kullanicilar ({stats?.totalUsers ?? 0})</h2>
       <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
