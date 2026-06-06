@@ -164,62 +164,77 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "already_exists" }, { status: 409 });
   }
 
-  // Multi-tenant izolasyon: yeni signup için yeni tenants satırı yarat.
-  // Config'teki tenant.tenantId (DEMO) burada KULLANILMAZ; yalnız saas_type
-  // resolve etmek için tenant.key/saasType taşır.
-  const tenantInsert = await createTenantForSignup(sb, {
-    ownerName: phone, // profil-kurulum sonrası display_name ile rename edilebilir
-    tenantKey: tenant.key,
-  });
-  if (!tenantInsert.ok) {
-    console.error("[otp:verify:signup] tenant insert failed", tenantInsert.error);
+  // KATMAN B (2026-06-06): outer try/catch ile rollback hardening.
+  // Önceki kod her adımda inline error check yapıyordu ama throw'lar (network,
+  // PostgREST runtime) try'a yakalanmıyor, sonraki rollback satırına ulaşılmıyordu.
+  // 2026-06-05'te 3 bayi orphan'ın bu yüzden DB'de kaldığı tespit edildi
+  // (.planning/TENANT-AUDIT-2026-06-06.md). Şimdi tüm yan etkiler track edilip
+  // throw veya error response'unda toparlanıyor.
+  let createdTenantId: string | null = null;
+  let createdAuthUserId: string | null = null;
+  try {
+    const tenantInsert = await createTenantForSignup(sb, {
+      ownerName: phone,
+      tenantKey: tenant.key,
+    });
+    if (!tenantInsert.ok) {
+      console.error("[otp:verify:signup] tenant insert failed", tenantInsert.error);
+      return NextResponse.json({ error: "internal" }, { status: 500 });
+    }
+    createdTenantId = tenantInsert.tenantId;
+
+    const placeholderEmail = `otp_${tenant.key}_${Date.now()}_${randomBytes(4).toString("hex")}@placeholder.upudev.nl`;
+    const { data: authUser, error: authErr } = await sb.auth.admin.createUser({
+      email: placeholderEmail,
+      email_confirm: true,
+      user_metadata: { name: phone, phone, source: "otp-signup" },
+    });
+    if (authErr || !authUser?.user) {
+      console.error("[otp:verify:signup] auth.admin.createUser failed", authErr);
+      throw new Error("auth_create_failed");
+    }
+    createdAuthUserId = authUser.user.id;
+
+    const newProfileId = randomUUID();
+    const { data: newProfile, error: insErr } = await sb
+      .from("profiles")
+      .insert({
+        id: newProfileId,
+        auth_user_id: createdAuthUserId,
+        whatsapp_phone: phone,
+        tenant_id: createdTenantId,
+        display_name: phone,
+        preferred_locale: locale,
+      })
+      .select("id")
+      .single();
+    if (insErr || !newProfile) {
+      console.error("[otp:verify:signup] profile insert failed", insErr);
+      throw new Error("profile_insert_failed");
+    }
+
+    const redirect = profilKurulumRedirectFor(tenant.key, locale);
+    const res = NextResponse.json({ ok: true, redirect });
+    return await attachSessionToResponse(res, {
+      uid: newProfile.id as string,
+      tenantId: createdTenantId,
+    });
+  } catch (err) {
+    console.error("[otp:verify:signup] flow failed, rolling back side effects", {
+      err: (err as Error)?.message,
+      createdTenantId,
+      createdAuthUserId,
+    });
+    if (createdAuthUserId) {
+      await sb.auth.admin.deleteUser(createdAuthUserId).catch((e) =>
+        console.error("[otp:verify:signup] rollback deleteUser failed", e),
+      );
+    }
+    if (createdTenantId) {
+      await sb.from("tenants").delete().eq("id", createdTenantId).then(({ error }) => {
+        if (error) console.error("[otp:verify:signup] rollback tenants.delete failed", error);
+      });
+    }
     return NextResponse.json({ error: "internal" }, { status: 500 });
   }
-  const newTenantId = tenantInsert.tenantId;
-
-  // profiles.auth_user_id NOT NULL → önce auth.user yaratılmalı (placeholder
-  // email pattern, organic-signup ile aynı). Profil minimum dolu yaratılır
-  // (display_name = telefon, role/capabilities boş; profil-kurulum sayfası
-  // tamamlatır).
-  const placeholderEmail = `otp_${tenant.key}_${Date.now()}_${randomBytes(4).toString("hex")}@placeholder.upudev.nl`;
-  const { data: authUser, error: authErr } = await sb.auth.admin.createUser({
-    email: placeholderEmail,
-    email_confirm: true,
-    user_metadata: { name: phone, phone, source: "otp-signup" },
-  });
-  if (authErr || !authUser?.user) {
-    console.error("[otp:verify:signup] auth.admin.createUser failed", authErr);
-    // Rollback orphan tenant
-    await sb.from("tenants").delete().eq("id", newTenantId);
-    return NextResponse.json({ error: "internal" }, { status: 500 });
-  }
-  const authUserId = authUser.user.id;
-
-  const newProfileId = randomUUID();
-  const { data: newProfile, error: insErr } = await sb
-    .from("profiles")
-    .insert({
-      id: newProfileId,
-      auth_user_id: authUserId,
-      whatsapp_phone: phone,
-      tenant_id: newTenantId,
-      display_name: phone,
-      preferred_locale: locale,
-    })
-    .select("id")
-    .single();
-  if (insErr || !newProfile) {
-    console.error("[otp:verify:signup] profile insert failed", insErr);
-    // Cleanup: auth.user + tenant dangling kalmasın
-    await sb.auth.admin.deleteUser(authUserId).catch(() => undefined);
-    await sb.from("tenants").delete().eq("id", newTenantId);
-    return NextResponse.json({ error: "internal" }, { status: 500 });
-  }
-
-  const redirect = profilKurulumRedirectFor(tenant.key, locale);
-  const res = NextResponse.json({ ok: true, redirect });
-  return await attachSessionToResponse(res, {
-    uid: newProfile.id as string,
-    tenantId: newTenantId,
-  });
 }
