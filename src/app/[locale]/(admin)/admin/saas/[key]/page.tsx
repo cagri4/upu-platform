@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink, Users, UserPlus, Copy, Check, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Users, UserPlus, Copy, Check, ChevronDown, ChevronRight, Trash2, AlertTriangle, X } from "lucide-react";
 
 interface Category {
   key: string;
@@ -34,6 +34,14 @@ interface TenantRow {
   users: TenantUser[];
 }
 
+interface DeletePendingState {
+  tenant: TenantRow;
+  users: Array<{ id: string; display_name: string | null; role: string | null }>;
+  dataCounts: Record<string, number>;
+  dataTotal: number;
+  isDemo: boolean;
+}
+
 interface Resp {
   category: Category;
   tenants: TenantRow[];
@@ -50,6 +58,83 @@ export default function SaasDetailPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const toggleCollapsed = (id: string) => setCollapsed((p) => ({ ...p, [id]: !p[id] }));
+  const [deletePending, setDeletePending] = useState<DeletePendingState | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const refresh = useMemo(() => () => {
+    setLoading(true);
+    fetch(`/api/admin/saas/${key}/tenants`, { credentials: "same-origin" })
+      .then(async (r) => {
+        const d = await r.json();
+        if (r.ok) setData(d);
+      })
+      .finally(() => setLoading(false));
+  }, [key]);
+
+  async function requestTenantDelete(t: TenantRow) {
+    // Boş + non-DEMO durumu native confirm; backend force=0 → 200 OR 409.
+    if (t.users.length === 0 && !t.is_demo) {
+      if (!confirm(`"${t.name}" silinsin mi? (Boş firma)`)) return;
+      setDeleting(true);
+      try {
+        const res = await fetch(`/api/admin/saas/${key}/tenants/${t.id}?force=1`, { method: "DELETE" });
+        const d = await res.json();
+        if (res.ok) {
+          setToast(`✓ "${t.name}" silindi`);
+          refresh();
+        } else {
+          alert(`Silme başarısız: ${d.error || res.status}`);
+        }
+      } finally { setDeleting(false); }
+      return;
+    }
+    // Dolu veya DEMO → probe with force=0, modal aç
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/saas/${key}/tenants/${t.id}?force=0`, { method: "DELETE" });
+      const d = await res.json();
+      if (res.status === 200) {
+        setToast(`✓ "${t.name}" silindi`);
+        refresh();
+        return;
+      }
+      if (res.status === 409 && d.confirmation_required) {
+        setDeletePending({
+          tenant: t,
+          users: d.users || [],
+          dataCounts: d.dataCounts || {},
+          dataTotal: d.dataTotal || 0,
+          isDemo: !!d.is_demo,
+        });
+        return;
+      }
+      alert(`Silme başarısız: ${d.error || res.status}`);
+    } finally { setDeleting(false); }
+  }
+
+  async function confirmTenantDelete() {
+    if (!deletePending) return;
+    const t = deletePending.tenant;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/saas/${key}/tenants/${t.id}?force=1`, { method: "DELETE" });
+      const d = await res.json();
+      if (res.ok) {
+        setToast(`✓ "${t.name}" silindi (${d.deleted?.users || 0} kullanıcı + ${d.deleted?.data || 0} satır)`);
+        setDeletePending(null);
+        refresh();
+      } else {
+        alert(`Silme başarısız: ${d.error || res.status}`);
+      }
+    } finally { setDeleting(false); }
+  }
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   useEffect(() => {
     fetch(`/api/admin/saas/${key}/tenants`, { credentials: "same-origin" })
@@ -257,6 +342,15 @@ export default function SaasDetailPage() {
                     );
                   })()}
 
+                  <button
+                    onClick={() => requestTenantDelete(t)}
+                    disabled={deleting}
+                    className="w-full mb-2 flex items-center justify-center gap-2 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 transition text-xs disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    {t.is_demo ? "🏷 Firmayı Sil (DEMO uyarısı)" : "Firmayı Sil"}
+                  </button>
+
                   {!inviteLinks[t.id] ? (
                     <button
                       onClick={() => getOrCreateLink(t.id)}
@@ -303,6 +397,135 @@ export default function SaasDetailPage() {
           </div>
         )}
       </main>
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-800 border border-emerald-500/40 text-emerald-200 text-sm px-4 py-2 rounded-lg shadow-lg">
+          {toast}
+        </div>
+      )}
+
+      {deletePending && (
+        <TenantDeleteModal
+          state={deletePending}
+          deleting={deleting}
+          onCancel={() => setDeletePending(null)}
+          onConfirm={confirmTenantDelete}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Tenant Delete Modal ───────────────────────────────────────────
+
+function TenantDeleteModal({
+  state,
+  deleting,
+  onCancel,
+  onConfirm,
+}: {
+  state: DeletePendingState;
+  deleting: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const [armed, setArmed] = useState(false);
+  const totalSteps = state.isDemo ? 3 : 2;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="max-w-lg w-full bg-slate-800 rounded-xl border border-red-500/50 overflow-hidden">
+        <div className="px-5 py-4 bg-red-500/10 border-b border-red-500/30 flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-red-400" />
+          <h3 className="text-base font-semibold text-red-300">
+            Firmayı Sil — {totalSteps} adımlı onay
+          </h3>
+          <button onClick={onCancel} className="ml-auto text-slate-400 hover:text-slate-200">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="px-5 py-4 space-y-3 text-sm text-slate-300">
+          <p>
+            <strong className="text-white">{state.tenant.name}</strong>
+            <span className="text-slate-500 ml-2 font-mono text-xs">{state.tenant.slug}</span>
+          </p>
+          {state.isDemo && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-amber-200 text-xs">
+              <strong className="block mb-1">🏷 Demo Veri uyarısı</strong>
+              Bu firma config DEMO tenant&apos;ı. Silersen ilgili SaaS&apos;ın demo akışı bozulabilir
+              (preview, sunum, ilk müşteri deneyimi).
+            </div>
+          )}
+          <div className="bg-slate-900/40 border border-slate-700 rounded-lg p-3">
+            <div className="text-xs text-slate-400 mb-2 font-semibold">Silinecek:</div>
+            <ul className="text-xs space-y-1">
+              <li>• <strong className="text-rose-300">{state.users.length}</strong> kullanıcı (auth+profile)</li>
+              <li>• <strong className="text-rose-300">{state.dataTotal}</strong> satır bağımlı veri</li>
+              <li>• Tenant kaydı</li>
+            </ul>
+            {state.users.length > 0 && (
+              <details className="mt-2">
+                <summary className="cursor-pointer text-[11px] text-slate-500 hover:text-slate-300">
+                  Kullanıcı listesi ({state.users.length})
+                </summary>
+                <div className="mt-1 space-y-0.5 text-[11px] text-slate-400">
+                  {state.users.map((u) => (
+                    <div key={u.id}>👤 {u.display_name || "—"} <span className="text-slate-500 font-mono">{u.role || "?"}</span></div>
+                  ))}
+                </div>
+              </details>
+            )}
+            {Object.keys(state.dataCounts).length > 0 && (
+              <details className="mt-1">
+                <summary className="cursor-pointer text-[11px] text-slate-500 hover:text-slate-300">
+                  Veri tabloları ({Object.keys(state.dataCounts).length})
+                </summary>
+                <div className="mt-1 space-y-0.5 text-[11px] text-slate-400 font-mono">
+                  {Object.entries(state.dataCounts).map(([tbl, n]) => (
+                    <div key={tbl}>{tbl}: {n}</div>
+                  ))}
+                </div>
+              </details>
+            )}
+          </div>
+          <p className="text-xs text-rose-300">
+            Bu işlem <strong>geri alınamaz</strong>.
+          </p>
+          {!armed ? (
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={onCancel}
+                disabled={deleting}
+                className="px-3 py-1.5 text-sm rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200"
+              >
+                İptal
+              </button>
+              <button
+                onClick={() => setArmed(true)}
+                className="px-3 py-1.5 text-sm rounded-lg bg-red-500/30 hover:bg-red-500/40 text-red-200 font-medium"
+              >
+                Anladım, devam et
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={onCancel}
+                disabled={deleting}
+                className="px-3 py-1.5 text-sm rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200"
+              >
+                İptal
+              </button>
+              <button
+                onClick={onConfirm}
+                disabled={deleting}
+                className="px-3 py-1.5 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold disabled:opacity-60"
+              >
+                {deleting ? "Siliniyor…" : "GERÇEKTEN SİL"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
