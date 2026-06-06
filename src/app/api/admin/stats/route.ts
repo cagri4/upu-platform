@@ -5,8 +5,6 @@ import { getTenantByKey, getAllTenants } from '@/tenants/config';
 
 export const dynamic = 'force-dynamic';
 
-const ADMIN_ROLES = new Set(['admin', 'super_admin']);
-
 export async function GET(req: NextRequest) {
   const auth = await requireAdminUser(req);
   if ("error" in auth) return auth.error;
@@ -19,25 +17,23 @@ export async function GET(req: NextRequest) {
       .select('*')
       .order('name');
 
+    // KATMAN D (2026-06-06): Şeffaflık + risk uyarısı yaklaşımı. Önceki
+    // sürüm role=system + tenant_id=NULL satırlarını gizliyordu; tablo ile
+    // header sayı tutarlılığı sağlanıyordu ama "gizli kullanıcılar"
+    // operatöre güven vermiyordu. Şimdi her satır görünüyor, badge'le
+    // risk seviyesi belli, silme akışı badge'e göre risk-aware.
     const { data: profilesRaw } = await supabase
       .from('profiles')
       .select('tenant_id, role');
 
-    // KATMAN C3 (2026-06-06): UI tablo başlığı ile aynı filter — role!=system
-    // VE tenant_id NOT NULL. Önceki sadece tenant_id check'i header'da System
-    // Scraper'ı sayıp tabloda atlanmasına neden oluyordu ("4 vs 3" mismatch).
     const counts: Record<string, number> = {};
     let total = 0;
-    let orphanAdmins = 0;
     if (profilesRaw) {
       for (const u of profilesRaw) {
-        if (!u.tenant_id) {
-          if (ADMIN_ROLES.has(u.role)) orphanAdmins++;
-          continue;
-        }
-        if (u.role === 'system') continue;
-        counts[u.tenant_id] = (counts[u.tenant_id] || 0) + 1;
         total++;
+        if (u.tenant_id) {
+          counts[u.tenant_id] = (counts[u.tenant_id] || 0) + 1;
+        }
       }
     }
 
@@ -46,7 +42,6 @@ export async function GET(req: NextRequest) {
       .select('id, display_name, email, phone, whatsapp_phone, tenant_id, role, created_at')
       .order('created_at', { ascending: false });
 
-    // KATMAN C3: DEMO 7 UUID config'ten + is_demo enrich.
     const demoTenantIds = getAllTenants()
       .map((t) => t.tenantId)
       .filter((id): id is string => Boolean(id));
@@ -65,12 +60,11 @@ export async function GET(req: NextRequest) {
       tenants: enrichedTenants,
       userCounts: counts,
       totalUsers: total,
-      orphanAdmins,
       demoTenantIds,
       users: users || [],
     });
   } catch (err) {
     console.error('[admin/stats] Error:', err);
-    return NextResponse.json({ tenants: [], userCounts: {}, totalUsers: 0, orphanAdmins: 0, demoTenantIds: [] });
+    return NextResponse.json({ tenants: [], userCounts: {}, totalUsers: 0, demoTenantIds: [] });
   }
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Users, Layers, Activity, Trash2, BarChart3, TrendingUp, TrendingDown, Minus, ChevronRight, Shield } from 'lucide-react';
+import { Users, Layers, Activity, Trash2, BarChart3, TrendingUp, TrendingDown, Minus, ChevronRight, AlertTriangle, X } from 'lucide-react';
 import Link from 'next/link';
 import { getAllTenants } from '@/tenants/config';
 
@@ -33,9 +33,52 @@ interface Stats {
   tenants: Tenant[];
   userCounts: Record<string, number>;
   totalUsers: number;
-  orphanAdmins?: number;
   demoTenantIds?: string[];
   users: UserProfile[];
+}
+
+type BadgeKey = 'system-admin' | 'system-bot' | 'demo-seed' | 'user';
+interface UserBadge {
+  key: BadgeKey;
+  label: string;
+  icon: string;
+  className: string;
+  riskNote?: string;
+}
+
+function classifyUser(u: UserProfile, demoIds: Set<string>): UserBadge {
+  if (u.role === 'system') {
+    return {
+      key: 'system-bot',
+      label: 'SISTEM BOT',
+      icon: '🤖',
+      className: 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
+      riskNote: 'Scraping durur',
+    };
+  }
+  if (!u.tenant_id && (u.role === 'admin' || u.role === 'super_admin')) {
+    return {
+      key: 'system-admin',
+      label: 'SISTEM ADMIN',
+      icon: '🔐',
+      className: 'bg-red-500/20 text-red-300 border border-red-500/30',
+      riskNote: 'Sistemden çıkarsın',
+    };
+  }
+  if (u.tenant_id && demoIds.has(u.tenant_id)) {
+    return {
+      key: 'demo-seed',
+      label: 'DEMO SEED',
+      icon: '🏷',
+      className: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+    };
+  }
+  return {
+    key: 'user',
+    label: 'KULLANICI',
+    icon: '👤',
+    className: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+  };
 }
 
 interface InsightData {
@@ -86,12 +129,25 @@ export default function AdminPage() {
     finally { setInsightLoading(false); }
   }
 
-  async function deleteUser(userId: string, name: string) {
-    if (!confirm(`"${name}" silinecek. Emin misiniz?`)) return;
+  const [riskPending, setRiskPending] = useState<{ userId: string; name: string; badge: UserBadge } | null>(null);
+
+  async function performDelete(userId: string) {
     try {
       const res = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
       if (res.ok) fetchStats();
     } catch (err) { console.error(err); }
+  }
+
+  function requestDelete(userId: string, name: string, badge: UserBadge) {
+    if (badge.key === 'system-admin' || badge.key === 'system-bot') {
+      setRiskPending({ userId, name, badge });
+      return;
+    }
+    const msg = badge.key === 'demo-seed'
+      ? `Demo seed verisi silinecek, emin misin?\n\n"${name}"`
+      : `Silmek istedigine emin misin?\n\n"${name}"`;
+    if (!confirm(msg)) return;
+    void performDelete(userId);
   }
 
   if (loading) {
@@ -157,19 +213,101 @@ export default function AdminPage() {
       </div>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {tab === 'genel' && <GenelTab stats={stats} deleteUser={deleteUser} />}
+        {tab === 'genel' && <GenelTab stats={stats} requestDelete={requestDelete} />}
         {tab === 'insight' && <InsightTab data={insight} loading={insightLoading} onRefresh={fetchInsight} />}
       </main>
+
+      {riskPending && (
+        <RiskDeleteModal
+          pending={riskPending}
+          onCancel={() => setRiskPending(null)}
+          onConfirm={async () => {
+            const id = riskPending.userId;
+            setRiskPending(null);
+            await performDelete(id);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Risk-Aware Delete Modal ────────────────────────────────────────
+
+function RiskDeleteModal({
+  pending,
+  onCancel,
+  onConfirm,
+}: {
+  pending: { userId: string; name: string; badge: UserBadge };
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const [armed, setArmed] = useState(false);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="max-w-md w-full bg-slate-800 rounded-xl border border-red-500/50 overflow-hidden">
+        <div className="px-5 py-4 bg-red-500/10 border-b border-red-500/30 flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-red-400" />
+          <h3 className="text-base font-semibold text-red-300">Yüksek Riskli Silme</h3>
+          <button onClick={onCancel} className="ml-auto text-slate-400 hover:text-slate-200">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="px-5 py-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className={`text-[10px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full ${pending.badge.className}`}>
+              {pending.badge.icon} {pending.badge.label}
+            </span>
+            <span className="text-sm text-slate-300 font-medium truncate">{pending.name}</span>
+          </div>
+          <p className="text-sm text-slate-300">
+            <strong className="text-red-300">{pending.badge.riskNote}.</strong> Devam et?
+          </p>
+          {!armed ? (
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={onCancel}
+                className="px-3 py-1.5 text-sm rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200"
+              >
+                İptal
+              </button>
+              <button
+                onClick={() => setArmed(true)}
+                className="px-3 py-1.5 text-sm rounded-lg bg-red-500/30 hover:bg-red-500/40 text-red-200 font-medium"
+              >
+                Anladım, devam et
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={onCancel}
+                className="px-3 py-1.5 text-sm rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200"
+              >
+                İptal
+              </button>
+              <button
+                onClick={onConfirm}
+                className="px-3 py-1.5 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold"
+              >
+                GERÇEKTEN SİL
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
 // ── Genel Tab ──────────────────────────────────────────────────────
 
-function GenelTab({ stats, deleteUser }: {
+function GenelTab({ stats, requestDelete }: {
   stats: Stats | null;
-  deleteUser: (userId: string, name: string) => void;
+  requestDelete: (userId: string, name: string, badge: UserBadge) => void;
 }) {
+  const demoIds = useMemo(() => new Set(stats?.demoTenantIds || []), [stats?.demoTenantIds]);
   // SaaS kategori grid — 7 sabit (config). Her birinin altındaki tenant
   // (müşteri) sayısı DB'den groupby saas_type ile, DEMO ayrı sayılır
   // (KATMAN C2 2026-06-06).
@@ -198,12 +336,11 @@ function GenelTab({ stats, deleteUser }: {
   const realMusteri = tenantsAll.filter((t) => !t.is_demo).length;
   const demoMusteri = tenantsAll.filter((t) => t.is_demo).length;
   const aktifReal = tenantsAll.filter((t) => !t.is_demo && t.is_active).length;
-  const orphanAdmins = stats?.orphanAdmins ?? 0;
 
   return (
     <>
-      {/* Summary Cards (5) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+      {/* Summary Cards (4) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
           <div className="flex items-center gap-2 mb-2">
             <Layers className="w-5 h-5 text-indigo-400" />
@@ -234,15 +371,7 @@ function GenelTab({ stats, deleteUser }: {
             <p className="text-xs text-slate-400">Toplam Kullanıcı</p>
           </div>
           <p className="text-3xl font-bold">{stats?.totalUsers || 0}</p>
-          <p className="text-[10px] text-slate-500 mt-1">sistem hariç</p>
-        </div>
-        <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
-          <div className="flex items-center gap-2 mb-2">
-            <Shield className="w-5 h-5 text-amber-400" />
-            <p className="text-xs text-slate-400">Sistem Adminleri</p>
-          </div>
-          <p className="text-3xl font-bold">{orphanAdmins}</p>
-          <p className="text-[10px] text-slate-500 mt-1">tabloda gizli, silinme koruması</p>
+          <p className="text-[10px] text-slate-500 mt-1">tüm profile (sistem+admin dahil)</p>
         </div>
       </div>
 
@@ -292,14 +421,18 @@ function GenelTab({ stats, deleteUser }: {
         ))}
       </div>
 
-      {/* All Users Table — backend totalUsers ile birebir filter (KATMAN C3) */}
-      <h2 className="text-lg font-semibold mt-10 mb-4">Tum Kullanicilar ({stats?.totalUsers ?? 0})</h2>
+      {/* All Users Table — şeffaflık + risk-aware (KATMAN D 2026-06-06) */}
+      <h2 className="text-lg font-semibold mt-10 mb-1">Tum Kullanicilar ({stats?.totalUsers ?? 0})</h2>
+      <p className="text-xs text-slate-500 mb-4">
+        Tüm profile&apos;lar görünür. Sistem/demo satırları rol badge ile işaretlidir; silme akışı badge&apos;e göre risk-aware.
+      </p>
       <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-750 border-b border-slate-700">
               <tr>
                 <th className="text-left px-4 py-3 font-medium text-slate-400">Ad</th>
+                <th className="text-left px-4 py-3 font-medium text-slate-400">Rol</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-400">E-posta</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-400">WhatsApp</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-400">Müşteri (Tenant)</th>
@@ -309,26 +442,34 @@ function GenelTab({ stats, deleteUser }: {
             </thead>
             <tbody>
               {(!stats?.users || stats.users.length === 0) ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">Henuz kullanici yok</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-500">Henuz kullanici yok</td></tr>
               ) : (
-                stats.users.filter((u) => u.role !== 'system' && u.tenant_id !== null).map((u) => {
-                  const tenantName = stats.tenants.find(t => t.id === u.tenant_id)?.name || '-';
+                stats.users.map((u) => {
+                  const tenantName = u.tenant_id
+                    ? (stats.tenants.find(t => t.id === u.tenant_id)?.name || '-')
+                    : <span className="text-rose-400">— atanmamış</span>;
+                  const badge = classifyUser(u, demoIds);
                   return (
                     <tr key={u.id} className="border-b border-slate-700 hover:bg-slate-750">
                       <td className="px-4 py-3 font-medium text-white">{u.display_name || '-'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-[10px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full whitespace-nowrap ${badge.className}`}>
+                          {badge.icon} {badge.label}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-slate-400">{u.email || '-'}</td>
                       <td className="px-4 py-3">
                         {u.whatsapp_phone ? (
                           <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">{u.whatsapp_phone}</span>
-                        ) : <span className="text-slate-600 dark:text-slate-400">-</span>}
+                        ) : <span className="text-slate-600">-</span>}
                       </td>
                       <td className="px-4 py-3 text-slate-400">{tenantName}</td>
                       <td className="px-4 py-3 text-slate-500">{new Date(u.created_at).toLocaleDateString('tr-TR')}</td>
                       <td className="px-4 py-3 text-right">
                         <button
-                          onClick={() => deleteUser(u.id, u.display_name || 'Kullanici')}
+                          onClick={() => requestDelete(u.id, u.display_name || 'Kullanici', badge)}
                           className="text-red-400 hover:text-red-300 p-1"
-                          title="Sil"
+                          title={badge.riskNote ? `Sil — ${badge.riskNote}` : 'Sil'}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
