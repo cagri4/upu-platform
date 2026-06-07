@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/platform/auth/supabase';
 import { requireAdminUser } from '@/platform/admin/auth';
-import { getTenantByKey, getAllTenants } from '@/tenants/config';
+import { getTenantByKey } from '@/tenants/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,17 +59,19 @@ export async function GET(req: NextRequest) {
       .select('id, display_name, email, phone, whatsapp_phone, tenant_id, role, created_at')
       .order('created_at', { ascending: false });
 
-    const demoTenantIds = getAllTenants()
-      .map((t) => t.tenantId)
-      .filter((id): id is string => Boolean(id));
-    const demoSet = new Set(demoTenantIds);
+    // 2026-06-07: tenants.is_demo DB kolonu kanonik kaynak; eski config
+    // karşılaştırması (demoSet) artık fallback'tir (geriye dönük uyum).
+    const demoTenantIds = (tenants || [])
+      .filter((t: { is_demo?: boolean }) => t.is_demo === true)
+      .map((t: { id?: string }) => t.id as string)
+      .filter(Boolean);
 
-    const enrichedTenants = (tenants || []).map((t: { id?: string; saas_type?: string; [key: string]: unknown }) => {
+    const enrichedTenants = (tenants || []).map((t: { id?: string; saas_type?: string; is_demo?: boolean; [key: string]: unknown }) => {
       const cfg = t.saas_type ? getTenantByKey(t.saas_type) : null;
       return {
         ...t,
         whatsapp_phone: cfg?.whatsappPhone || "31644967207",
-        is_demo: t.id ? demoSet.has(t.id as string) : false,
+        is_demo: t.is_demo === true,
       };
     });
 
