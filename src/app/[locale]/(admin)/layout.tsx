@@ -12,7 +12,7 @@
  */
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { getSessionFromCookies } from "@/platform/auth/session";
+import { getAdminSessionFromCookies } from "@/platform/auth/session";
 import { getServiceClient } from "@/platform/auth/supabase";
 
 export default async function AdminGroupLayout({
@@ -24,7 +24,7 @@ export default async function AdminGroupLayout({
 }) {
   const { locale } = await params;
 
-  const session = await getSessionFromCookies();
+  const session = await getAdminSessionFromCookies();
   if (!session?.uid) {
     redirect(`/${locale}/giris`);
   }

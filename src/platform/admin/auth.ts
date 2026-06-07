@@ -9,23 +9,25 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { resolvePanelAuth } from "@/platform/auth/panel-auth";
+import { getAdminSessionFromCookies } from "@/platform/auth/session";
 
 export type AdminAuthResult =
   | { userId: string }
   | { error: NextResponse };
 
-export async function requireAdminUser(req: NextRequest): Promise<AdminAuthResult> {
-  const auth = await resolvePanelAuth(req);
-  if ("error" in auth) {
-    return { error: NextResponse.json({ error: auth.error }, { status: auth.status }) };
+export async function requireAdminUser(_req: NextRequest): Promise<AdminAuthResult> {
+  // Admin cookie ayrı namespace'te (`upu_admin_session`); SaaS panel signup
+  // tarafından ezilmiyor. Bkz. session.ts ADMIN_COOKIE_NAME (2026-06-07 fix).
+  const session = await getAdminSessionFromCookies();
+  if (!session?.uid) {
+    return { error: NextResponse.json({ error: "Oturum bulunamadı." }, { status: 401 }) };
   }
 
   const sb = getServiceClient();
   const { data: profile } = await sb
     .from("profiles")
     .select("role, tenant_id")
-    .eq("id", auth.userId)
+    .eq("id", session.uid)
     .maybeSingle();
 
   // Platform admin = role admin VE tenant'sız. Tenant sahipleri de role='admin'
@@ -34,5 +36,5 @@ export async function requireAdminUser(req: NextRequest): Promise<AdminAuthResul
     return { error: NextResponse.json({ error: "Forbidden — admin required." }, { status: 403 }) };
   }
 
-  return { userId: auth.userId };
+  return { userId: session.uid };
 }

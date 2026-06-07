@@ -19,7 +19,7 @@ import { randomBytes, randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { getServiceClient } from "@/platform/auth/supabase";
-import { attachSessionToResponse } from "@/platform/auth/session";
+import { attachSessionToResponse, attachAdminSessionToResponse } from "@/platform/auth/session";
 import { getTenantPanelPath } from "@/platform/auth/qr";
 import { getTenantByKey, getTenantByDomain, isAdminDomain } from "@/tenants/config";
 import { createTenantForSignup } from "@/platform/auth/tenant-provision";
@@ -124,17 +124,28 @@ export async function POST(req: NextRequest) {
     }
 
     const res = NextResponse.json({ ok: true, redirect });
-    const finalRes = await attachSessionToResponse(res, {
-      uid: profile.id as string,
-      tenantId: (profile.tenant_id as string | null) ?? null,
-    });
+    // 2026-06-07 cookie namespace ayrımı: admin login adminpanel host'tan
+    // geldiyse `upu_admin_session`; SaaS panel login normal `upu_session`.
+    // Sebep: aynı tarayıcıda SaaS signup admin cookie'sini eziyordu.
+    const isAdminLogin = profile.role === "admin" && isAdminDomain(host);
+    const finalRes = isAdminLogin
+      ? await attachAdminSessionToResponse(res, {
+          uid: profile.id as string,
+          tenantId: (profile.tenant_id as string | null) ?? null,
+        })
+      : await attachSessionToResponse(res, {
+          uid: profile.id as string,
+          tenantId: (profile.tenant_id as string | null) ?? null,
+        });
     // Login flow guard — Set-Cookie header'ı yazıldı mı doğrula. Yazılmadıysa
     // browser cookie almayacak ve user "Oturum bulunamadı" ile dönecek; net
     // 500 hatası dönerek retry'a şans tanı.
+    const expectedCookieName = isAdminLogin ? "upu_admin_session" : "upu_session";
     const setCookieHdr = finalRes.headers.get("set-cookie");
-    if (!setCookieHdr || !setCookieHdr.includes("upu_session")) {
+    if (!setCookieHdr || !setCookieHdr.includes(expectedCookieName)) {
       console.error("[otp:verify:login] Set-Cookie header missing after attach", {
         uid: profile.id,
+        expected: expectedCookieName,
       });
       return NextResponse.json({ error: "session_attach_failed" }, { status: 500 });
     }
