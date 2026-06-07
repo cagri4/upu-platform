@@ -18,9 +18,11 @@ import { getTenantByKey } from "@/tenants/config";
 
 export const dynamic = "force-dynamic";
 
-// tenant_id FK taşıyan tablolar — tenant silinmeden önce bu tabloların ilgili
-// satırları temizlenir (foreign key constraint memnun olsun diye).
-// Liste 2026-06-06 service-role probe ile DB'den çıkarıldı.
+// tenant_id FK taşıyan tablolar — probe response'unda "kaç satır silinecek?"
+// sayımı için kullanılır. 2026-06-07 migration'ı sonrası DB CASCADE'i
+// otomatik temizliyor; bu liste yalnız UI'da "Silinecek: X satır" bilgisini
+// göstermek için tutulur. Liste 2026-06-06 service-role probe çıktısı.
+// TODO: pg_constraint sorgusu ile dinamik üret, hardcoded liste mimari borç.
 const DEPENDENT_TABLES = [
   "agent_quotas", "command_sessions", "invite_codes", "magic_links", "audit_log",
   "bayi_dealers", "bayi_orders", "bayi_order_items", "bayi_products", "bayi_invoices",
@@ -118,29 +120,46 @@ export async function DELETE(req: NextRequest, ctx: RouteCtx) {
     );
   }
 
-  // force=1 (veya boş + non-DEMO) → cascade silme
-  // 1) auth.users + profiles
+  // force=1 (veya boş + non-DEMO) → cascade silme.
+  //
+  // 2026-06-07 migration (20260607181526_cascade_fk_standardization.sql)
+  // sonrası tüm `tenant_id` FK'ları ON DELETE CASCADE, tüm `profile_id`/
+  // `user_id` FK'ları SET NULL (NULLABLE) veya CASCADE (NOT NULL).
+  //
+  // Eski DEPENDENT_TABLES manuel liste artık gereksiz: tenant DELETE'i
+  // DB seviyesinde tüm bağımlı satırları otomatik temizler.
+  //
+  // 1) Önce auth.users — `profiles` DB'den CASCADE ile gidecek ama
+  //    auth.users (auth schema) FK kapsamında değil. Tek tek sil.
   for (const p of profileList) {
     if (p.auth_user_id) {
-      await sb.auth.admin.deleteUser(p.auth_user_id as string).catch((err) =>
-        console.error("[admin/saas/tenants:DELETE] auth.deleteUser failed", p.auth_user_id, err),
+      const { error: authErr } = await sb.auth.admin.deleteUser(
+        p.auth_user_id as string,
       );
+      if (authErr) {
+        console.error(
+          "[admin/saas/tenants:DELETE] auth.deleteUser failed",
+          p.auth_user_id,
+          authErr,
+        );
+        return NextResponse.json(
+          {
+            error:
+              "auth.users silinemedi (cascade etmedi); tenant silmeden durdu: " +
+              authErr.message,
+          },
+          { status: 500 },
+        );
+      }
     }
-    await sb.from("profiles").delete().eq("id", p.id as string);
   }
-  // 2) dependent tables
-  for (const tbl of DEPENDENT_TABLES) {
-    const { error } = await sb.from(tbl).delete().eq("tenant_id", tenantId);
-    if (error) {
-      // tablo yoksa veya tenant_id column'u yoksa sessizce atla
-    }
-  }
-  // 3) tenant
+
+  // 2) tenant — DB CASCADE FK'ları tüm bağımlı satırları temizler.
   const { error: tDelErr } = await sb.from("tenants").delete().eq("id", tenantId);
   if (tDelErr) {
     console.error("[admin/saas/tenants:DELETE] tenant delete failed", tDelErr);
     return NextResponse.json(
-      { error: "Tenant silinemedi, bağlı veri kaldı: " + tDelErr.message },
+      { error: "Tenant silinemedi: " + tDelErr.message },
       { status: 500 },
     );
   }
