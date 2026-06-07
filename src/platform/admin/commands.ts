@@ -22,17 +22,17 @@ export async function isAdmin(ctx: WaContext): Promise<boolean> {
   // Check hardcoded phone list
   if (ADMIN_PHONES.includes(ctx.phone)) return true;
 
-  // Check profile metadata
+  // 2026-06-07: profiles.is_platform_admin BOOLEAN kolonu kanonik kaynak.
+  // Eski profile.metadata.is_platform_admin JSON key okuma deprecated.
   try {
     const supabase = getServiceClient();
     const { data: profile } = await supabase
       .from("profiles")
-      .select("metadata")
+      .select("is_platform_admin")
       .eq("id", ctx.userId)
       .single();
 
-    const meta = (profile?.metadata || {}) as Record<string, unknown>;
-    if (meta.is_platform_admin === true) return true;
+    if (profile?.is_platform_admin === true) return true;
   } catch { /* ignore */ }
 
   return false;
@@ -720,16 +720,17 @@ export async function sendAdminAlert(message: string): Promise<void> {
   const supabase = getServiceClient();
 
   // Find all admin users
+  // 2026-06-07: is_platform_admin BOOLEAN kolonu kanonik kaynak; eski
+  // metadata.is_platform_admin JSON key okuma deprecated.
   const { data: admins } = await supabase
     .from("profiles")
-    .select("whatsapp_phone, metadata")
+    .select("whatsapp_phone, is_platform_admin")
     .not("whatsapp_phone", "is", null);
 
   const { sendNavFooter } = await import("@/platform/whatsapp/send");
 
   for (const admin of admins || []) {
-    const meta = (admin.metadata || {}) as Record<string, unknown>;
-    const isAdm = meta.is_platform_admin === true || ADMIN_PHONES.includes(admin.whatsapp_phone);
+    const isAdm = admin.is_platform_admin === true || ADMIN_PHONES.includes(admin.whatsapp_phone);
     if (!isAdm) continue;
 
     await sendText(admin.whatsapp_phone, message);

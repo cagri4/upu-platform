@@ -26,6 +26,7 @@ interface UserProfile {
   whatsapp_phone: string;
   tenant_id: string;
   role: string;
+  is_platform_admin: boolean;
   created_at: string;
 }
 
@@ -61,7 +62,7 @@ function classifyUser(u: UserProfile, demoIds: Set<string>): UserBadge {
       riskNote: 'Scraping durur',
     };
   }
-  if (!u.tenant_id && (u.role === 'admin' || u.role === 'super_admin')) {
+  if (u.is_platform_admin === true) {
     return {
       key: 'system-admin',
       label: 'Platform Yöneticisi',
@@ -454,7 +455,7 @@ function SistemTab({ stats, requestDelete }: {
 }) {
   const demoIds = useMemo(() => new Set(stats?.demoTenantIds || []), [stats?.demoTenantIds]);
   const platformAdmins = (stats?.users || []).filter(
-    (u) => !u.tenant_id && (u.role === 'admin' || u.role === 'super_admin'),
+    (u) => u.is_platform_admin === true,
   );
   const autoAccounts = (stats?.users || []).filter((u) => u.role === 'system');
   const currentUserId = stats?.currentUserId ?? null;

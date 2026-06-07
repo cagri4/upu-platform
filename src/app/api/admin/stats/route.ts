@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
 
     const { data: users } = await supabase
       .from('profiles')
-      .select('id, display_name, email, phone, whatsapp_phone, tenant_id, role, created_at')
+      .select('id, display_name, email, phone, whatsapp_phone, tenant_id, role, is_platform_admin, created_at')
       .order('created_at', { ascending: false });
 
     // 2026-06-07: tenants.is_demo DB kolonu kanonik kaynak; eski config
