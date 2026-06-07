@@ -83,7 +83,6 @@ export default function BayiPanelimPage() {
 
   const [kpis, setKpis] = useState<KPIs | null>(null);
   const [kpisLoading, setKpisLoading] = useState(true);
-  const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [showKvkkModal, setShowKvkkModal] = useState(false);
 
 
@@ -105,20 +104,8 @@ export default function BayiPanelimPage() {
       .finally(() => setKpisLoading(false));
   }, [token]);
 
-  // Profile completeness
-  useEffect(() => {
-    const qs = token ? `?t=${encodeURIComponent(token)}` : "";
-    fetch(`/api/bayi-panel/profile${qs}`, { credentials: "same-origin" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!d) return;
-        const unvan = d?.firma?.ticari_unvan;
-        if (!unvan || String(unvan).trim().length === 0) {
-          setProfileIncomplete(true);
-        }
-      })
-      .catch(() => { /* sessiz */ });
-  }, [token]);
+  // Profile completeness fetch kaldırıldı — Test Fix C (2026-06-07):
+  // "Profilinizi Tamamlayın" hero kartı bayi panelden çıkarıldı.
 
   // Layout fetch — single source of truth
   useEffect(() => {
@@ -227,17 +214,7 @@ export default function BayiPanelimPage() {
       <RecommendationCard token={token} />
       <ChurnRiskBanner token={token} />
 
-      {profileIncomplete && (
-        <ListCard
-          Icon={ClipboardCheck}
-          title="Profilinizi Tamamlayın"
-          subtitle="Firma adı, vergi no, IBAN, brifing tercihi — ~5 dakika"
-          rightLabel="Doldur"
-          href={q("/tr/bayi-profil")}
-        />
-      )}
-
-      {!kpisLoading && kpis && kpis.dealer_count === 0 && !profileIncomplete && (
+      {!kpisLoading && kpis && kpis.dealer_count === 0 && (
         <div className="bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800/40 rounded-2xl">
           <BayiPanelEmptyHero />
         </div>
