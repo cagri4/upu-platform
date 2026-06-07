@@ -45,7 +45,6 @@ import {
 import { ItemAddModal } from "@/components/panel-edit/item-add-modal";
 import { ChurnRiskBanner } from "@/components/bayi/ChurnRiskBanner";
 import { RecommendationCard } from "@/components/recommendations/RecommendationCard";
-import { BayiPanelTour } from "@/components/tour/BayiPanelTour";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Rocket } from "lucide-react";
 
@@ -87,10 +86,6 @@ export default function BayiPanelimPage() {
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [showKvkkModal, setShowKvkkModal] = useState(false);
 
-  // Tour state — profile metadata.tour_seen_at["bayi_panel"]'i okur.
-  const [tourSeenAt, setTourSeenAt] = useState<string | null>(null);
-  const [tourReady, setTourReady] = useState(false);
-  const [tourDisplayName, setTourDisplayName] = useState<string | null>(null);
 
   // Layout edit state — null = henüz fetch edilmedi (default'a fallback)
   const [quickActions, setQuickActions] = useState<BayiQuickActionKey[] | null>(null);
@@ -135,20 +130,6 @@ export default function BayiPanelimPage() {
         if (Array.isArray(d?.kpi_cards)) setKpiCards(d.kpi_cards);
       })
       .catch(() => { /* default kalır */ });
-  }, []);
-
-  // Tour seen-status fetch — bayi-panel/me display_name + metadata.tour_seen_at
-  useEffect(() => {
-    fetch("/api/bayi-panel/me", { credentials: "same-origin" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!d?.success) { setTourReady(true); return; }
-        const seen = (d?.metadata?.tour_seen_at ?? {}) as Record<string, string>;
-        setTourSeenAt(seen?.bayi_panel ?? null);
-        setTourDisplayName(d?.displayName ?? null);
-        setTourReady(true);
-      })
-      .catch(() => setTourReady(true));
   }, []);
 
   // KVKK
@@ -383,13 +364,6 @@ export default function BayiPanelimPage() {
       {/* kpiValueRaw kullanılan satırlar yoksa lint hatası vermesin diye sahip ol */}
       {false && <span>{kpiValueRaw("dealer_count")}</span>}
 
-      {/* Intro tour — driver.js (Adım 105 pilot). tour_seen_at NULL ise ilk
-          girişte otomatik; sidebar "Tanıtım Turu" ?tour=1 ile manuel. */}
-      <BayiPanelTour
-        displayName={tourDisplayName}
-        autoStartEnabled={tourReady}
-        tourSeenAt={tourSeenAt}
-      />
     </div>
   );
 }
