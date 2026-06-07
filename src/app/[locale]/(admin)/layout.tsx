@@ -32,13 +32,13 @@ export default async function AdminGroupLayout({
   const sb = getServiceClient();
   const { data: profile } = await sb
     .from("profiles")
-    .select("role, tenant_id")
+    .select("is_platform_admin")
     .eq("id", session.uid)
     .maybeSingle();
 
-  // Platform admin = role admin VE tenant'sız. Tenant sahibi de role='admin'
-  // ama tenant_id set; bu gate ona kapalı.
-  if (profile?.role !== "admin" || profile?.tenant_id !== null) {
+  // 2026-06-07 mimari: is_platform_admin bayrak migration ile eklendi.
+  // Trigger gerçek değeri role+tenant_id'den türetiyor.
+  if (!profile?.is_platform_admin) {
     redirect(`/${locale}/giris`);
   }
 

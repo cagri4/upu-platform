@@ -31,14 +31,14 @@ export async function POST(req: NextRequest, ctx: RouteCtx) {
   // Aktör profili — platform admin mi yoksa tenant sahibi mi?
   const { data: actor } = await sb
     .from("profiles")
-    .select("id, role, tenant_id, auth_user_id")
+    .select("id, role, is_platform_admin, tenant_id, auth_user_id")
     .or(`id.eq.${auth.userId},auth_user_id.eq.${auth.userId}`)
     .maybeSingle();
   if (!actor) {
     return NextResponse.json({ error: "Profil bulunamadı." }, { status: 403 });
   }
 
-  const isPlatformAdmin = actor.role === "admin" && actor.tenant_id === null;
+  const isPlatformAdmin = actor.is_platform_admin === true;
 
   // Hedef bayi — hangi tenant'a ait?
   const { data: dealer } = await sb

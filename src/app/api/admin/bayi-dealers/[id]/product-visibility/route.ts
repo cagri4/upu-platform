@@ -33,7 +33,7 @@ async function resolveActor(req: NextRequest, dealerId: string) {
 
   const { data: actor } = await sb
     .from("profiles")
-    .select("id, role, tenant_id")
+    .select("id, role, tenant_id, is_platform_admin")
     .or(`id.eq.${auth.userId},auth_user_id.eq.${auth.userId}`)
     .maybeSingle();
   if (!actor) {
@@ -49,7 +49,7 @@ async function resolveActor(req: NextRequest, dealerId: string) {
     return { error: NextResponse.json({ error: "Bayi bulunamadı." }, { status: 404 }) };
   }
 
-  const isPlatformAdmin = actor.role === "admin" && actor.tenant_id === null;
+  const isPlatformAdmin = actor.is_platform_admin === true;
   const isTenantAdmin =
     TENANT_ADMIN_ROLES.has(actor.role || "") && actor.tenant_id === dealer.tenant_id;
   if (!isPlatformAdmin && !isTenantAdmin) {

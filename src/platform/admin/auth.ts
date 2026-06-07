@@ -26,13 +26,14 @@ export async function requireAdminUser(_req: NextRequest): Promise<AdminAuthResu
   const sb = getServiceClient();
   const { data: profile } = await sb
     .from("profiles")
-    .select("role, tenant_id")
+    .select("is_platform_admin")
     .eq("id", session.uid)
     .maybeSingle();
 
-  // Platform admin = role admin VE tenant'sız. Tenant sahipleri de role='admin'
-  // ama tenant_id set → onları reddet.
-  if (profile?.role !== "admin" || profile?.tenant_id !== null) {
+  // 2026-06-07 mimari: is_platform_admin bayrak migration ile eklendi.
+  // Trigger gerçek değeri role+tenant_id'den türetiyor; check tek koşula
+  // indi. Tenant sahipleri (role='admin' + tenant_id set) için bayrak false.
+  if (!profile?.is_platform_admin) {
     return { error: NextResponse.json({ error: "Forbidden — admin required." }, { status: 403 }) };
   }
 
