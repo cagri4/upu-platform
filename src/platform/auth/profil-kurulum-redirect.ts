@@ -31,10 +31,15 @@ function pathSegmentForTenantKey(tenantKey: string): string {
     case "emlak":
       // /[locale]/profil-kurulum — (emlak) route group içinde, URL aynı
       return "profil-kurulum";
-    case "bayi":
-      return "bayi-profil";
     case "restoran":
       return "restoran-profil";
+    case "bayi":
+      // Test Fix B (2026-06-07): bayi-profil 457-satır firma profili formu
+      // (ticari unvan / vergi / IBAN / banka / sektör). Signup sonrası
+      // burada tutmak kullanıcıyı yoruyor. MINI'ye düşürdük — 2 alan +
+      // "Atla" → panele git pattern'i. Detay profil panel içinde "Profilim
+      // → Düzenle" sayfasından doldurulur.
+      return MINI;
     case "market":
     case "otel":
     case "siteyonetim":

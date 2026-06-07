@@ -116,6 +116,31 @@ export default function ProfilKurulumMiniPage() {
     }
   }
 
+  // Test Fix B (2026-06-07): "Şimdi atla" — minimal bilgi vermeden panele
+  // git. Backend SaaS-aware default display_name + onboarding_skipped_at set.
+  async function handleSkip() {
+    setError("");
+    setStatus("saving");
+    try {
+      const r = await fetch("/api/profil/save?skip=1", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({}),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        setStatus("error");
+        setError(d.error || "Atlanamadı.");
+        return;
+      }
+      setStatus("done");
+    } catch {
+      setStatus("error");
+      setError("Bağlantı hatası.");
+    }
+  }
+
   if (status === "loading") {
     return (
       <main className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-sm text-slate-500">
@@ -231,8 +256,18 @@ export default function ProfilKurulumMiniPage() {
             {status === "saving" ? "Kaydediliyor…" : "Kaydet ve Panele Git"}
           </button>
 
+          <button
+            data-testid="mini-skip"
+            type="button"
+            disabled={status === "saving"}
+            onClick={handleSkip}
+            className="w-full bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-60 text-slate-500 dark:text-slate-400 py-2 text-xs font-medium underline-offset-4 hover:underline"
+          >
+            Şimdi atla, sonra dolduracağım →
+          </button>
+
           <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center pt-1">
-            Locale: <span className="font-mono">{locale}</span>
+            Atlarsan profilini panel içinden istediğin zaman tamamlayabilirsin.
           </p>
         </div>
       </div>

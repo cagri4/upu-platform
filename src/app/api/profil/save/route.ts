@@ -21,6 +21,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const token = body.token as string | undefined;
+    // Test Fix B (2026-06-07): mini sayfada "Atla" butonu için query param.
+    // ?skip=1 → display_name boşsa SaaS-aware default; onboarding_skipped_at set;
+    // diğer alanlar görmezden gelinir. Kullanıcı panele yönlendirilir.
+    const url = new URL(req.url);
+    const skip = url.searchParams.get("skip") === "1";
 
     // Cookie session öncelik, legacy magic-link token fallback.
     // Onboarding linki için used_at one-time semantik token path'inde korunur.
@@ -43,7 +48,8 @@ export async function POST(req: NextRequest) {
     }
     if (!userId) return NextResponse.json({ error: "Oturum bulunamadı." }, { status: 401 });
 
-    if (!body.display_name?.trim() || body.display_name.length < 2) {
+    // Skip flow display_name'i atlar; normal flow zorunlu kılar.
+    if (!skip && (!body.display_name?.trim() || body.display_name.length < 2)) {
       return NextResponse.json({ error: "Ad soyad gerekli." }, { status: 400 });
     }
 
@@ -72,16 +78,19 @@ export async function POST(req: NextRequest) {
     const newMetadata: Record<string, unknown> = {
       ...baseMetadata,
       email: body.email?.trim() || baseMetadata.email || null,
-      briefing_enabled: !!body.briefing_enabled,
+      briefing_enabled: skip ? !!baseMetadata.briefing_enabled : !!body.briefing_enabled,
       onboarding_completed: true,
       discovery_step: 0,
     };
-    if (isEmlak) {
+    if (skip) {
+      newMetadata.onboarding_skipped_at = new Date().toISOString();
+    }
+    if (isEmlak && !skip) {
       newMetadata.office_name = body.office_name?.trim() || null;
       newMetadata.location = body.location?.trim() || null;
       newMetadata.experience_years = body.experience_years?.trim() || null;
     } else if (
-      body.office_name || body.location || body.experience_years
+      !skip && (body.office_name || body.location || body.experience_years)
     ) {
       console.warn(
         `[profil:save] non-emlak (${saasType}) tenant'tan emlak-spesifik field geldi, yoksayıldı`,
@@ -89,8 +98,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Skip flow: display_name yoksa SaaS-aware default. Mevcut isim varsa
+    // bozma (kullanıcı belki ana sayfada yazıp atladı).
+    const SAAS_DEFAULT_NAME: Record<string, string> = {
+      bayi: "Bayi Sahibi",
+      emlak: "Emlak Sahibi",
+      market: "Market Sahibi",
+      otel: "Otel Sahibi",
+      restoran: "Restoran Sahibi",
+      siteyonetim: "Site Yöneticisi",
+      muhasebe: "Muhasebeci",
+    };
+    const finalDisplayName = body.display_name?.trim()
+      || (skip ? (SAAS_DEFAULT_NAME[saasType ?? ""] ?? "Kullanıcı") : "");
+
     await supabase.from("profiles").update({
-      display_name: body.display_name.trim(),
+      display_name: finalDisplayName,
       metadata: newMetadata,
     }).eq("id", userId);
 
@@ -98,13 +121,14 @@ export async function POST(req: NextRequest) {
     const onboardingTenantKey = saasType ?? "emlak";
     const businessInfo: Record<string, unknown> = {
       email: body.email || null,
-      briefing_enabled: body.briefing_enabled,
+      briefing_enabled: skip ? null : body.briefing_enabled,
     };
-    if (isEmlak) {
+    if (isEmlak && !skip) {
       businessInfo.office_name = body.office_name;
       businessInfo.location = body.location;
       businessInfo.experience_years = body.experience_years;
     }
+    if (skip) businessInfo.skipped = true;
     await supabase.from("onboarding_state").upsert({
       user_id: userId,
       tenant_key: onboardingTenantKey,
@@ -117,9 +141,9 @@ export async function POST(req: NextRequest) {
       await supabase.from("magic_link_tokens").update({ used_at: new Date().toISOString() }).eq("id", magicTokenId);
     }
 
-    // Emlak menu yalnızca emlak için gönderilir; diğer SaaS'lar mini sayfa
-    // sonrası kendi panel'lerine yönlenir.
-    if (isEmlak) {
+    // Emlak menu yalnızca emlak için (skip değilse) gönderilir; diğer
+    // SaaS'lar mini sayfa sonrası kendi panel'lerine yönlenir.
+    if (isEmlak && !skip) {
       try {
         const { sendEmlakMenu } = await import("@/tenants/emlak/menu");
         await sendEmlakMenu(
@@ -131,7 +155,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, saas_type: saasType });
+    return NextResponse.json({ success: true, saas_type: saasType, skipped: skip });
   } catch (err) {
     console.error("[profil:save]", err);
     return NextResponse.json({ error: "Bir hata oluştu." }, { status: 500 });
