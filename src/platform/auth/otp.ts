@@ -107,7 +107,22 @@ export async function requestOtp(
     }
   }
 
-  const code = generateOtpCode();
+  // Test identity bypass — phone admin_test_identities'te ise WA'ya gönderme,
+  // sadece o satıra last_otp_code/at yaz. Admin paneli 5sn polling ile
+  // kodu okur, tek-tık kopyalar. Sanal telefon flow (905552221122 vb).
+  //
+  // 2026-06-08 (#114): test identity bulunursa code generation'ı bypass et,
+  // sabit "112233" kullan. Çağrı her seferinde panelden kod kopyalamak
+  // zorunda kalmasın diye. Normal kullanıcılar yine random kod alır.
+  const { data: testIdentity } = await sb
+    .from("admin_test_identities")
+    .select("id")
+    .eq("virtual_phone", input.phone)
+    .limit(1)
+    .maybeSingle();
+
+  const code = testIdentity ? "112233" : generateOtpCode();
+
   const { error: insErr } = await sb.from("otp_codes").insert({
     phone: input.phone,
     code,
@@ -120,16 +135,6 @@ export async function requestOtp(
     console.error("[otp:request] insert failed", insErr);
     return { ok: false, error: "internal", status: 500 };
   }
-
-  // Test identity bypass — phone admin_test_identities'te ise WA'ya gönderme,
-  // sadece o satıra last_otp_code/at yaz. Admin paneli 5sn polling ile
-  // kodu okur, tek-tık kopyalar. Sanal telefon flow (905552221122 vb).
-  const { data: testIdentity } = await sb
-    .from("admin_test_identities")
-    .select("id")
-    .eq("virtual_phone", input.phone)
-    .limit(1)
-    .maybeSingle();
 
   if (testIdentity) {
     const { error: updErr } = await sb
