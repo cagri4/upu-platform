@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     const supabase = getServiceClient();
     const { data: profile } = await supabase
       .from("profiles")
-      .select("display_name, whatsapp_phone, metadata, tenant_id")
+      .select("display_name, whatsapp_phone, metadata, tenant_id, tenants(saas_type)")
       .eq("id", auth.userId)
       .single();
 
@@ -31,9 +31,15 @@ export async function GET(req: NextRequest) {
     }
 
     const metadata = (profile.metadata as Record<string, unknown>) ?? {};
+    // 2026-06-08: profil-kurulum-mini sayfası response.saas_type'ı bekliyor;
+    // null kalırsa "Atla" sonrası panelPathFor(null)=/tr/panel default'a
+    // yönlendiriyor ve "Oturum bulunamadı" çıkıyordu. Top-level alan olarak ekle.
+    const saasType =
+      (profile as { tenants?: { saas_type?: string } | null }).tenants?.saas_type ?? null;
     return NextResponse.json({
       success: true,
       userId: auth.userId,
+      saas_type: saasType,
       profile: {
         display_name: profile.display_name || "",
         whatsapp_phone: profile.whatsapp_phone || "",
