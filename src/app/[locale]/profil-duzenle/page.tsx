@@ -16,27 +16,13 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { LoadingState } from "@/components/banking";
+import { panelPathFromHost } from "@/lib/panel-path-from-host";
 
 const BOT_WA_NUMBER = "31644967207";
 
 type Status = "loading" | "form" | "saving" | "done" | "error";
 
 const inputCls = "w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition";
-
-/**
- * Subdomain → tenant panel path. qr.ts TENANT_PANEL ile senkron — client
- * server config import edemediği için hardcoded. Bilinmeyen host → emlak.
- */
-function panelPathFromHost(): string {
-  if (typeof window === "undefined") return "/tr/panel";
-  const host = window.location.host;
-  if (host.startsWith("retailai.")) return "/tr/bayi-panel";
-  if (host.startsWith("marketai.")) return "/tr/market-panelim";
-  if (host.startsWith("hotelai.")) return "/tr/otel-panel";
-  if (host.startsWith("restoranai.")) return "/tr/restoran-panel";
-  if (host.startsWith("residenceai.")) return "/tr/site";
-  return "/tr/panel";
-}
 
 /**
  * Bu sayfa emlak agent profil (agent_profile + web_slug) düzenleme — tüm

@@ -30,8 +30,12 @@ const PANEL_PATH_BY_SAAS: Record<string, string> = {
 };
 
 function panelPathFor(saasType: string | null): string {
-  if (!saasType) return "/tr/panel";
-  return PANEL_PATH_BY_SAAS[saasType] || "/tr/panel";
+  // saas_type top-level /api/setup/init response'unda her durumda dönmeli;
+  // null/bilinmeyen değer defansif fallback. "/tr/panel" generic sayfası
+  // tenant resolve edilemediğinde "Oturum bulunamadı" gösteriyor — kullanıcıyı
+  // sade /tr/giris'e atıp yeni session kurmasına izin ver.
+  if (!saasType) return "/tr/giris";
+  return PANEL_PATH_BY_SAAS[saasType] || "/tr/giris";
 }
 
 export default function ProfilKurulumMiniPage() {

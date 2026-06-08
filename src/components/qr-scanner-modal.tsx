@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Html5Qrcode } from "html5-qrcode";
+import { panelPathFromHost } from "@/lib/panel-path-from-host";
 
 interface QrScannerModalProps {
   open: boolean;
@@ -56,11 +57,13 @@ export function QrScannerModal({ open, tenantKey, onClose }: QrScannerModalProps
     }
     onClose();
     if (typeof window !== "undefined") {
-      // Halen /tr/panel dışında bir yerden açıldıysa panele dön.
-      // /tr/panel'de zaten açıldıysa no-op (URL aynı, sayfa yeniden yüklenmez).
+      // Tenant-aware panel: host'tan tespit et (retailai → bayi, marketai →
+      // market, vb.). Tüm SaaS'larda QR scanner kapanınca doğru panele döner.
+      // Zaten doğru panel'deyse no-op (URL aynı, sayfa yeniden yüklenmez).
+      const target = panelPathFromHost();
       const path = window.location.pathname;
-      if (!path.endsWith("/panel") && !path.endsWith("/panel/")) {
-        window.location.href = "/tr/panel";
+      if (!path.endsWith(target) && !path.endsWith(target + "/")) {
+        window.location.href = target;
       }
     }
   }
