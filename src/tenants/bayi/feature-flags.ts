@@ -27,7 +27,12 @@ export type BayiFeatureFlag =
   | "bayi.takvim"            // bayi-takvim (MVP dışı, karmaşa)
   | "bayi.oneri_feedback"    // bayi-oneri singular feedback (WA üzerinden gelir)
   | "bayi.hakkinda"          // bayi-hakkinda (sidebar-only hide)
-  | "bayi.gizlilik";         // bayi-gizlilik (sidebar-only hide)
+  | "bayi.gizlilik"          // bayi-gizlilik (sidebar-only hide)
+  | "bayi.legacy_panel";     // (bayipanel) karma panel — Faz 2'de V3 (bayi-portal)
+                              // omurgasına geçildi. Flag true ise eski sayfalar
+                              // /tr/bayi-panel/* altında render edilir (admin
+                              // debug). Default OFF → /tr/bayi-panel girince
+                              // /tr/bayi'ye redirect.
 
 export function isBayiFeatureEnabled(flag: BayiFeatureFlag): boolean {
   return isFeatureEnabled(flag);

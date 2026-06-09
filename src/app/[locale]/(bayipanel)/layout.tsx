@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useSearchParams, usePathname, useParams } from "next/navigation";
+import { useSearchParams, usePathname, useParams, useRouter } from "next/navigation";
 import { AdminLayout } from "@/components/admin-layout";
 import { PanelAuthFail } from "@/components/panel-auth-fail";
 import { Forbidden } from "@/components/banking";
@@ -30,6 +30,7 @@ import {
   BAYI_ACCENT,
   BAYI_ROLE_REQUIREMENTS,
 } from "@/tenants/bayi/components/sidebar";
+import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
 
 type InitState = "loading" | "ready" | "error";
 
@@ -38,8 +39,20 @@ export default function BayiPanelGroupLayout({ children }: { children: ReactNode
   const token = searchParams.get("t") || searchParams.get("token");
   const pathname = usePathname() || "";
   const params = useParams();
+  const router = useRouter();
   const locale = typeof params?.locale === "string" ? params.locale : "tr";
   const helpDoc = useMemo(() => getBayiHelpDoc(locale), [locale]);
+
+  // Faz 2 cleanup (Sprint E): legacy panel flag default OFF → karma
+  // (bayipanel) yerine V3 (bayi-portal)'a yönlendir. Flag true ise eski
+  // davranış (admin debug için, env BAYI_LEGACY_PANEL=true ile açılır).
+  const legacyEnabled = isBayiFeatureEnabled("bayi.legacy_panel");
+  useEffect(() => {
+    if (legacyEnabled) return;
+    // /tr/bayi-panel ve alt sayfalardan /tr/bayi'ye redirect.
+    // İlk açılışta tek seferlik replace — back butonu kullanıcıyı bayi'de tutar.
+    router.replace(`/${locale}/bayi`);
+  }, [legacyEnabled, locale, router]);
 
   const [state, setState] = useState<InitState>("loading");
   const [error, setError] = useState("");
