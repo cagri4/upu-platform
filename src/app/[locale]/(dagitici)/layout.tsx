@@ -74,7 +74,9 @@ export default function DagiticiLayout({ children }: { children: ReactNode }) {
     return <PanelAuthFail tenantKey="bayi" message={error} />;
   }
 
-  const isAuthorized = role === "admin" || role === "satis";
+  // Bayi capability model: 'admin'/'user' = tenant sahibi, 'satis' = satış ekibi.
+  // 'muhasebe' / 'depocu' kendi sayfalarına gider.
+  const isAuthorized = role === "admin" || role === "user" || role === "satis";
   if (!isAuthorized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
@@ -83,7 +85,7 @@ export default function DagiticiLayout({ children }: { children: ReactNode }) {
             Bu alana erişiminiz yok
           </h2>
           <p className="mt-2 text-sm text-amber-800">
-            Dağıtıcı paneli yalnız admin veya satış rolü için açıktır. Mevcut
+            Dağıtıcı paneli tenant sahibi veya satış rolü için açıktır. Mevcut
             rolünüz: {role || "tanımsız"}.
           </p>
         </div>

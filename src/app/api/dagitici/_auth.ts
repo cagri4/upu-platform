@@ -37,10 +37,17 @@ export async function getDagiticiAuth(req: NextRequest): Promise<DagiticiAuth> {
     return { error: NextResponse.json({ error: lookup.error }, { status: lookup.status }) };
   }
 
+  // Bayi capabilities (CLAUDE.md): role='admin' veya role='user' = tenant
+  // sahibi (OWNER_ALL); 'satis' = sınırlı satış ekip üyesi. Dağıtıcı paneli
+  // üçüne de açık. 'muhasebe' / 'depocu' = kapalı (kendi panelleri var).
   const role = (lookup.profile.role || "user").toString();
-  if (role !== "admin" && role !== "satis") {
+  const ALLOWED = ["admin", "user", "satis"];
+  if (!ALLOWED.includes(role)) {
     return {
-      error: NextResponse.json({ error: "Yetki yok (admin/satis gerekli)." }, { status: 403 }),
+      error: NextResponse.json(
+        { error: "Yetki yok (tenant sahibi veya satış rolü gerekli)." },
+        { status: 403 },
+      ),
     };
   }
 
