@@ -23,6 +23,7 @@ import {
   BarChart3,
   FolderTree,
   Tag,
+  Megaphone,
 } from "lucide-react";
 
 interface NavItem {
@@ -85,6 +86,12 @@ export function Sidebar({
           href: `${base}/fiyat-listeleri`,
           match: `${base}/fiyat-listeleri`,
           icon: Tag,
+        },
+        {
+          label: "Kampanyalar",
+          href: `${base}/kampanyalar`,
+          match: `${base}/kampanyalar`,
+          icon: Megaphone,
         },
       ],
     },
