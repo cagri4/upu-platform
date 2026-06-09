@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, notFound } from "next/navigation";
+import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
 
 const BOT_WA_NUMBER = "31644967207";
 
@@ -11,6 +12,9 @@ interface Product { id: string; name: string; price: number }
 interface Dealer { id: string; name: string }
 
 export default function BayiKampanyaPage() {
+  // B2B Portal MVP Faz 0 — feature flag arkasında (eski hâli). Default OFF;
+  // Faz 1'de yeniden tasarlanacak.
+  if (!isBayiFeatureEnabled("bayi.kampanya_eski")) notFound();
   const searchParams = useSearchParams();
   const token = searchParams.get("t") || searchParams.get("token");
 

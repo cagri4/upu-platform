@@ -5,7 +5,8 @@
  * Filter: open / acted / dismissed / all.
  */
 import { useEffect, useState, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, notFound } from "next/navigation";
+import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
 
 interface Rec {
   id: string; rule_code: string; title: string; body: string;
@@ -28,6 +29,8 @@ const STATUS_TABS = [
 ];
 
 export default function BayiOnerilerPage() {
+  // B2B Portal MVP Faz 0 — feature flag arkasında. Default OFF.
+  if (!isBayiFeatureEnabled("bayi.cross_sell")) notFound();
   const params = useSearchParams();
   const token = params.get("t") || "";
   const [items, setItems] = useState<Rec[]>([]);

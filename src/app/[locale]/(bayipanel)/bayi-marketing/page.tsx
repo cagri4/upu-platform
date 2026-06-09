@@ -5,9 +5,10 @@
  * Liste + 5-step wizard. Admin-only.
  */
 import { useEffect, useState, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, notFound } from "next/navigation";
 import { Send } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
 
 interface DripStats { active: number; completed: number; total: number }
 interface Campaign {
@@ -43,6 +44,8 @@ const DEFAULT_STEPS: StepDraft[] = [
 ];
 
 export default function BayiMarketingPage() {
+  // B2B Portal MVP Faz 0 — feature flag arkasında. Default OFF.
+  if (!isBayiFeatureEnabled("bayi.marketing_auto")) notFound();
   const params = useSearchParams();
   const token = params.get("t") || "";
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);

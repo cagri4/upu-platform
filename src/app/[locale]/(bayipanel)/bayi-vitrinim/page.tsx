@@ -5,7 +5,8 @@
  * Bayinin mini-katalog konfigürasyonu: slug, başlık, renk, görünür ürünler.
  */
 import { useEffect, useState, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, notFound } from "next/navigation";
+import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
 
 interface Vitrine {
   id: string;
@@ -23,6 +24,8 @@ interface Vitrine {
 }
 
 export default function BayiVitrinimPage() {
+  // B2B Portal MVP Faz 0 — feature flag arkasında. Default OFF.
+  if (!isBayiFeatureEnabled("bayi.vitrin")) notFound();
   const params = useSearchParams();
   const token = params.get("t") || "";
 

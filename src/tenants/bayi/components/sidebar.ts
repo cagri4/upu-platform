@@ -19,6 +19,7 @@
  * vermesin diye).
  */
 import type { SidebarItem } from "@/components/admin-layout";
+import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
 
 const q = (path: string) => (t: string) =>
   t ? `${path}?t=${encodeURIComponent(t)}` : path;
@@ -55,7 +56,7 @@ export const BAYI_SIDEBAR: SidebarItem[] = [
       agentContext: "help:bayilerim",
     },
   },
-  { id: "risk",          label: "Churn Risk",      icon: "⚠️",  href: q("/tr/bayi-risk"),            matchPath: "/tr/bayi-risk",          requiredRoles: SALES,
+  { id: "risk",          label: "Churn Risk",      icon: "⚠️",  href: q("/tr/bayi-risk"),            matchPath: "/tr/bayi-risk",          requiredRoles: SALES, visible: () => isBayiFeatureEnabled("bayi.risk_score"),
     help: {
       title: "Churn Risk Nedir?",
       paragraph: "Sipariş vermeyi azaltan veya kesen bayileri 3 seviyede sınıflar: 🔴 Risk (60g+ sipariş yok / 30g+ vade), 🟡 Watch (30g/7g/hacim düşüşü), 🟢 Sağlıklı. Her bayi için recovery aksiyonu öneririz.",
@@ -118,26 +119,26 @@ export const BAYI_SIDEBAR: SidebarItem[] = [
   { id: "vade-hat",      label: "Vade Hatırlatma", icon: "⏰", href: q("/tr/bayi-vade-hatirlatma"), matchPath: "/tr/bayi-vade-hatirlatma", requiredRoles: ACCOUNTING },
   { id: "faturalarim",   label: "Faturalar",       icon: "🧾", href: q("/tr/bayi-faturalarim"),     matchPath: "/tr/bayi-faturalarim" },
   { id: "odeme",         label: "Online Ödeme",    icon: "💳", href: q("/tr/bayi-online-odeme"),    matchPath: "/tr/bayi-online-odeme" },
-  { id: "kampanyalarim", label: "Kampanyalarım",   icon: "📣", href: q("/tr/bayi-kampanya"),        matchPath: "/tr/bayi-kampanya",      requiredRoles: SALES },
+  { id: "kampanyalarim", label: "Kampanyalarım",   icon: "📣", href: q("/tr/bayi-kampanya"),        matchPath: "/tr/bayi-kampanya",      requiredRoles: SALES, visible: () => isBayiFeatureEnabled("bayi.kampanya_eski") },
   { id: "kamp-otomatik", label: "Otomatik Kural",  icon: "⚡", href: q("/tr/bayi-kampanya-otomatik"), matchPath: "/tr/bayi-kampanya-otomatik", requiredRoles: ADMIN_ONLY },
-  { id: "marketing",     label: "Drip Marketing",  icon: "📨", href: q("/tr/bayi-marketing"),       matchPath: "/tr/bayi-marketing",     requiredRoles: ADMIN_ONLY },
-  { id: "oneriler",      label: "Öneriler",        icon: "💡", href: q("/tr/bayi-oneriler"),         matchPath: "/tr/bayi-oneriler" },
-  { id: "vitrinim",      label: "Vitrinim",        icon: "🏪", href: q("/tr/bayi-vitrinim"),         matchPath: "/tr/bayi-vitrinim" },
-  { id: "talepler",      label: "Müşteri Talepleri", icon: "📥", href: q("/tr/bayi-musteri-talepleri"), matchPath: "/tr/bayi-musteri-talepleri" },
+  { id: "marketing",     label: "Drip Marketing",  icon: "📨", href: q("/tr/bayi-marketing"),       matchPath: "/tr/bayi-marketing",     requiredRoles: ADMIN_ONLY, visible: () => isBayiFeatureEnabled("bayi.marketing_auto") },
+  { id: "oneriler",      label: "Öneriler",        icon: "💡", href: q("/tr/bayi-oneriler"),         matchPath: "/tr/bayi-oneriler",       visible: () => isBayiFeatureEnabled("bayi.cross_sell") },
+  { id: "vitrinim",      label: "Vitrinim",        icon: "🏪", href: q("/tr/bayi-vitrinim"),         matchPath: "/tr/bayi-vitrinim",       visible: () => isBayiFeatureEnabled("bayi.vitrin") },
+  { id: "talepler",      label: "Müşteri Talepleri", icon: "📥", href: q("/tr/bayi-musteri-talepleri"), matchPath: "/tr/bayi-musteri-talepleri", visible: () => isBayiFeatureEnabled("bayi.musteri_talepleri") },
   { id: "davet-et",      label: "Davet Et",        icon: "🎁", href: q("/tr/bayi-davet-et"),         matchPath: "/tr/bayi-davet-et" },
   { id: "raporlar",      label: "Cirolarım",       icon: "📊", href: q("/tr/bayi-raporlar"),        matchPath: "/tr/bayi-raporlar",      requiredRoles: ["admin", "satis", "muhasebe"] },
-  { id: "takvim",        label: "Takvim",          icon: "📅", href: q("/tr/bayi-takvim"),          matchPath: "/tr/bayi-takvim" },
+  { id: "takvim",        label: "Takvim",          icon: "📅", href: q("/tr/bayi-takvim"),          matchPath: "/tr/bayi-takvim",        visible: () => isBayiFeatureEnabled("bayi.takvim") },
   { id: "profilim",      label: "Profilim",        icon: "👤", href: q("/tr/bayi-profilim"),        matchPath: "/tr/bayi-profilim" },
   { id: "bildirimler",   label: "Bildirimler",     icon: "🔔", href: q("/tr/bayi-bildirimler"),     matchPath: "/tr/bayi-bildirimler", separatorBefore: true },
   { id: "kullanicilar",  label: "Kullanıcılar",    icon: "👥", href: q("/tr/bayi-kullanicilar"),    matchPath: "/tr/bayi-kullanicilar", requiredRoles: ADMIN_ONLY },
   { id: "ayarlar",       label: "Tenant Ayarları", icon: "⚙️",  href: q("/tr/bayi-ayarlar"),         matchPath: "/tr/bayi-ayarlar" },
   { id: "billing",       label: "Faturalama",      icon: "💳", href: q("/tr/bayi-billing"),         matchPath: "/tr/bayi-billing",       requiredRoles: ADMIN_ONLY },
-  { id: "gizlilik",      label: "Gizlilik",        icon: "🔒", href: q("/tr/bayi-gizlilik"),        matchPath: "/tr/bayi-gizlilik", separatorBefore: true },
+  { id: "gizlilik",      label: "Gizlilik",        icon: "🔒", href: q("/tr/bayi-gizlilik"),        matchPath: "/tr/bayi-gizlilik", separatorBefore: true, visible: () => isBayiFeatureEnabled("bayi.gizlilik") },
   { id: "sistem-turu",   label: "📘 Sistem Turu",  icon: "📘", href: (t: string) => t ? `/tr/bayi-panel?t=${encodeURIComponent(t)}&onboarding=1` : "/tr/bayi-panel?onboarding=1", matchPath: "/tr/bayi-sistem-turu", separatorBefore: true },
   { id: "tanitim-turu",  label: "🎯 Tanıtım Turu", icon: "🎯", href: (t: string) => t ? `/tr/bayi-panel?t=${encodeURIComponent(t)}&tour=1` : "/tr/bayi-panel?tour=1", matchPath: "/tr/bayi-tanitim-turu" },
   { id: "sss",           label: "Sık Sorulan Sorular", icon: "❓", href: q("/tr/bayi-sss"),         matchPath: "/tr/bayi-sss" },
   { id: "wa-destek",     label: "WhatsApp Destek", icon: "💬", href: () => "https://wa.me/31644967207", matchPath: "/wa-destek" },
-  { id: "hakkinda",      label: "UPUDev Hakkında", icon: "ℹ️",  href: q("/tr/bayi-hakkinda"),        matchPath: "/tr/bayi-hakkinda", separatorBefore: true },
+  { id: "hakkinda",      label: "UPUDev Hakkında", icon: "ℹ️",  href: q("/tr/bayi-hakkinda"),        matchPath: "/tr/bayi-hakkinda", separatorBefore: true, visible: () => isBayiFeatureEnabled("bayi.hakkinda") },
   { id: "oneri",         label: "Öneri / Şikayet", icon: "💬", href: q("/tr/bayi-oneri"),           matchPath: "/tr/bayi-oneri" },
   { id: "destek",        label: "Destek Talebi",   icon: "🛟", href: q("/tr/bayi-destek"),          matchPath: "/tr/bayi-destek" },
 ];

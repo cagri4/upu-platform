@@ -50,6 +50,12 @@ export interface SidebarItem {
    */
   requiredRoles?: string[];
   /**
+   * Render-time görünürlük guard'ı. False dönerse item sidebar'dan
+   * tamamen atılır (requiredRoles ile birlikte değerlendirilir, ek katman).
+   * Feature flag bağımlı item'lar için kullanılır (B2B Portal MVP Faz 0).
+   */
+  visible?: () => boolean;
+  /**
    * "(?) Bu sayfa ne işe yarar" yardım modal'ı için içerik. Set edilirse
    * sidebar item label'ının yanında küçük (?) ikon render edilir; click →
    * modal açılır (title + paragraph + opsiyonel firstStep CTA + Kurucu link).
@@ -189,6 +195,8 @@ export function AdminLayout({
   // eşleşen kullanıcı görür. requiredRoles yoksa herkes görür. userRole
   // null/undefined ise sadece public item'lar görünür.
   const items = rawItems.filter((it) => {
+    // Feature flag guard — visible() çağrısıyla render-time false → sidebar'dan çıkar.
+    if (it.visible && !it.visible()) return false;
     if (!it.requiredRoles || it.requiredRoles.length === 0) return true;
     if (!userRole) return false;
     return it.requiredRoles.includes(userRole);

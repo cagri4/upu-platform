@@ -11,9 +11,10 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, notFound } from "next/navigation";
 import { ShieldCheck, AlertTriangle, Eye } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
 
 interface Risk {
   dealerId: string;
@@ -48,6 +49,8 @@ const LEVEL_META = {
 };
 
 export default function BayiRiskPage() {
+  // B2B Portal MVP Faz 0 — feature flag arkasında. Default OFF.
+  if (!isBayiFeatureEnabled("bayi.risk_score")) notFound();
   const params = useSearchParams();
   const token = params.get("t") || params.get("token") || "";
   const [data, setData] = useState<ListResp | null>(null);
