@@ -26,12 +26,17 @@ import {
   Megaphone,
 } from "lucide-react";
 
-interface NavItem {
+export interface SidebarNavItem {
   label: string;
   href: string;
   match: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
+}
+
+export interface SidebarNavSection {
+  section: string;
+  items: SidebarNavItem[];
 }
 
 export interface SidebarProps {
@@ -40,6 +45,17 @@ export interface SidebarProps {
   userName: string;
   mobileOpen: boolean;
   onMobileClose: () => void;
+  /**
+   * Opsiyonel nav override. Verilmezse default dağıtıcı nav'ı kullanılır.
+   * Buyer (alıcı) için BUYER_SIDEBAR_NAV ile çağrılır.
+   */
+  navSections?: SidebarNavSection[];
+  /** Sidebar header brand title — default "UPU Dağıtıcı". */
+  brandTitle?: string;
+  /** Brand letter logo (1 char ideal) — default "U". */
+  brandLetter?: string;
+  /** Aksanlı renk tonu — default emerald (dağıtıcı). Buyer indigo kullanır. */
+  accent?: "emerald" | "indigo";
 }
 
 export function Sidebar({
@@ -48,11 +64,15 @@ export function Sidebar({
   userName,
   mobileOpen,
   onMobileClose,
+  navSections,
+  brandTitle = "UPU Dağıtıcı",
+  brandLetter = "U",
+  accent = "emerald",
 }: SidebarProps) {
   const pathname = usePathname() || "";
 
   const base = `/${locale}/dagitici-panel`;
-  const nav: { section: string; items: NavItem[] }[] = [
+  const defaultNav: SidebarNavSection[] = [
     {
       section: "Genel",
       items: [
@@ -114,6 +134,15 @@ export function Sidebar({
     },
   ];
 
+  const nav = navSections ?? defaultNav;
+
+  const accentCls = {
+    activeBg: accent === "indigo" ? "bg-indigo-50" : "bg-emerald-50",
+    activeText: accent === "indigo" ? "text-indigo-700" : "text-emerald-700",
+    brandBg: accent === "indigo" ? "bg-indigo-600" : "bg-emerald-600",
+    avatarBg: accent === "indigo" ? "bg-indigo-600" : "bg-emerald-600",
+  };
+
   const isActive = (match: string) =>
     pathname === match || pathname.startsWith(match + "/");
 
@@ -129,10 +158,10 @@ export function Sidebar({
   const content = (
     <>
       <div className="flex h-14 items-center gap-2 border-b border-slate-200 px-4">
-        <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-xs font-bold text-white">
-          U
+        <span className={`inline-flex h-7 w-7 items-center justify-center rounded-lg ${accentCls.brandBg} text-xs font-bold text-white`}>
+          {brandLetter}
         </span>
-        <span className="text-sm font-semibold text-slate-900">UPU Dağıtıcı</span>
+        <span className="text-sm font-semibold text-slate-900">{brandTitle}</span>
       </div>
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
         {nav.map((group) => (
@@ -150,7 +179,7 @@ export function Sidebar({
                   onClick={onMobileClose}
                   className={`flex items-center justify-between rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
                     active
-                      ? "bg-emerald-50 text-emerald-700"
+                      ? `${accentCls.activeBg} ${accentCls.activeText}`
                       : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                   }`}
                 >
@@ -171,7 +200,7 @@ export function Sidebar({
       </nav>
       <div className="border-t border-slate-200 p-3">
         <div className="flex items-center gap-2.5 rounded-md bg-slate-50 px-2 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-xs font-semibold text-white">
+          <div className={`flex h-8 w-8 items-center justify-center rounded-full ${accentCls.avatarBg} text-xs font-semibold text-white`}>
             {userInitials}
           </div>
           <div className="flex-1 min-w-0">

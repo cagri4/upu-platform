@@ -12,5 +12,5 @@ export type { StatusTone } from "./StatusBadge";
 export type { KPICardProps } from "./KPICard";
 export type { DataTableColumn, DataTableProps } from "./DataTable";
 export type { AppShellProps } from "./AppShell";
-export type { SidebarProps } from "./Sidebar";
+export type { SidebarProps, SidebarNavItem, SidebarNavSection } from "./Sidebar";
 export type { TopBarProps } from "./TopBar";
