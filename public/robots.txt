@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Internal POC routes — Faz 0.5 tasarım dili karşılaştırması, mock data, indexlenmesin
+Disallow: /tr/poc/
+Disallow: /en/poc/
+Disallow: /nl/poc/
+Disallow: /de/poc/
