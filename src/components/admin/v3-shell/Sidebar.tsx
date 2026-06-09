@@ -21,6 +21,8 @@ import {
   Users,
   Receipt,
   BarChart3,
+  FolderTree,
+  Tag,
 } from "lucide-react";
 
 interface NavItem {
@@ -71,6 +73,18 @@ export function Sidebar({
           href: `${base}/urunler`,
           match: `${base}/urunler`,
           icon: Package,
+        },
+        {
+          label: "Kategoriler",
+          href: `${base}/kategoriler`,
+          match: `${base}/kategoriler`,
+          icon: FolderTree,
+        },
+        {
+          label: "Fiyat Listeleri",
+          href: `${base}/fiyat-listeleri`,
+          match: `${base}/fiyat-listeleri`,
+          icon: Tag,
         },
       ],
     },

@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronRight, Save, Trash2 } from "lucide-react";
 import { StatusBadge, type StatusTone } from "@/components/admin/v3-shell";
+import { DealerPricingTab } from "@/components/dagitici/DealerPricingTab";
 
 interface DealerDetail {
   id: string;
@@ -49,6 +50,7 @@ const TABS = [
   { id: "info", label: "Bilgiler" },
   { id: "classification", label: "Sınıflandırma" },
   { id: "financial", label: "Finansal" },
+  { id: "pricing", label: "Fiyat" },
   { id: "activity", label: "Aktivite" },
 ] as const;
 
@@ -338,6 +340,8 @@ export default function DealerDetailPage() {
           />
         </div>
       )}
+
+      {tab === "pricing" && <DealerPricingTab dealerId={id} />}
 
       {tab === "activity" && (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
