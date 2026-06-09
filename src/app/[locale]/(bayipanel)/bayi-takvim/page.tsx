@@ -7,7 +7,12 @@
  * tek takvim görünümünde toplanacak.
  */
 
+import { notFound } from "next/navigation";
+import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
+
 export default function TakvimPage() {
+  // B2B Portal MVP Faz 0 uzantısı — MVP omurgası dışı, default OFF.
+  if (!isBayiFeatureEnabled("bayi.takvim")) notFound();
   return (
     <div className="space-y-4">
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4">

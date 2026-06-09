@@ -4,7 +4,12 @@
  * Öneri / Şikayet — bayi tenant kopyası (placeholder).
  */
 
+import { notFound } from "next/navigation";
+import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
+
 export default function BayiOneriPage() {
+  // B2B Portal MVP Faz 0 uzantısı — feedback için WA var, default OFF.
+  if (!isBayiFeatureEnabled("bayi.oneri_feedback")) notFound();
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-sm text-center">

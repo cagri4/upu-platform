@@ -6,9 +6,10 @@
  * Aksiyonlar: İletişim kuruldu / Siparişe dönüştür / Reddet.
  */
 import { useEffect, useState, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, notFound } from "next/navigation";
 import { Inbox } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
 
 interface Lead {
   id: string;
@@ -38,6 +39,8 @@ const TABS = [
 ];
 
 export default function BayiMusteriTalepleriPage() {
+  // B2B Portal MVP Faz 0 uzantısı — B2C tarafı, default OFF.
+  if (!isBayiFeatureEnabled("bayi.musteri_talepleri")) notFound();
   const params = useSearchParams();
   const token = params.get("t") || "";
   const [tab, setTab] = useState("new");

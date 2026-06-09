@@ -139,7 +139,7 @@ export const BAYI_SIDEBAR: SidebarItem[] = [
   { id: "sss",           label: "Sık Sorulan Sorular", icon: "❓", href: q("/tr/bayi-sss"),         matchPath: "/tr/bayi-sss" },
   { id: "wa-destek",     label: "WhatsApp Destek", icon: "💬", href: () => "https://wa.me/31644967207", matchPath: "/wa-destek" },
   { id: "hakkinda",      label: "UPUDev Hakkında", icon: "ℹ️",  href: q("/tr/bayi-hakkinda"),        matchPath: "/tr/bayi-hakkinda", separatorBefore: true, visible: () => isBayiFeatureEnabled("bayi.hakkinda") },
-  { id: "oneri",         label: "Öneri / Şikayet", icon: "💬", href: q("/tr/bayi-oneri"),           matchPath: "/tr/bayi-oneri" },
+  { id: "oneri",         label: "Öneri / Şikayet", icon: "💬", href: q("/tr/bayi-oneri"),           matchPath: "/tr/bayi-oneri",         visible: () => isBayiFeatureEnabled("bayi.oneri_feedback") },
   { id: "destek",        label: "Destek Talebi",   icon: "🛟", href: q("/tr/bayi-destek"),          matchPath: "/tr/bayi-destek" },
 ];
 
