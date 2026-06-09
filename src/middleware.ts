@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTenantByDomain, isAdminDomain } from "@/tenants/config";
 
-const PUBLIC_PATHS = ["/api/", "/_next/", "/favicon.ico", "/icons/", "/d/", "/u/"];
+const PUBLIC_PATHS = ["/api/", "/_next/", "/favicon.ico", "/icons/", "/d/", "/u/", "/robots.txt", "/sitemap.xml"];
 const LOCALES = ["tr", "en", "nl"];
 const DEFAULT_LOCALE = "tr";
 
