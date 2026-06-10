@@ -15,19 +15,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBayiAuth } from "../../_auth";
 import { initCheckout } from "@/platform/payment/iyzico";
+import { resolveTenantOrigin } from "@/platform/tenant-origin";
 
 export const dynamic = "force-dynamic";
 
 interface StartBody {
   order_id?: string;
-}
-
-function getAppOrigin(req: NextRequest): string {
-  const env = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
-  if (env) return env;
-  const host = req.headers.get("host") || "retailai.upudev.nl";
-  const proto = req.headers.get("x-forwarded-proto") || "https";
-  return `${proto}://${host}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -90,7 +83,10 @@ export async function POST(req: NextRequest) {
   const [firstName, ...rest] = dealerName.split(/\s+/);
   const surname = rest.join(" ") || "—";
 
-  const origin = getAppOrigin(req);
+  // Tenant-aware origin: canonical_url > request host > env (trim'li).
+  // APP_URL tek domain'e işaret ediyor — multi-tenant'ta yanlış SaaS'a
+  // redirect üretirdi (audit 2026-06-10 P0 #1).
+  const origin = await resolveTenantOrigin(sb, tenantId, req);
   const callbackUrl = `${origin}/api/bayi/iyzico/callback`;
 
   const ip =

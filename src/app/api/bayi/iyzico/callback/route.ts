@@ -16,20 +16,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/platform/auth/supabase";
 import { retrievePayment } from "@/platform/payment/iyzico";
 import { transitionOrderStatus } from "@/platform/bayi/order-status";
+import { resolveTenantOrigin } from "@/platform/tenant-origin";
 
 export const dynamic = "force-dynamic";
 
-function appOrigin(req: NextRequest): string {
-  const env = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
-  if (env) return env;
-  const host = req.headers.get("host") || "retailai.upudev.nl";
-  const proto = req.headers.get("x-forwarded-proto") || "https";
-  return `${proto}://${host}`;
-}
-
 async function handle(req: NextRequest, token: string, conversationId: string | null) {
-  const origin = appOrigin(req);
   const sb = getServiceClient();
+  // Token henüz çözülmeden (tenant bilinmiyor) host-header origin'i kullan.
+  let origin = await resolveTenantOrigin(sb, null, req);
 
   if (!token) {
     return NextResponse.redirect(
@@ -54,6 +48,8 @@ async function handle(req: NextRequest, token: string, conversationId: string | 
   }
 
   const tenantId = payment.tenant_id as string;
+  // Tenant artık biliniyor — canonical_url tanımlıysa onu tercih et
+  origin = await resolveTenantOrigin(sb, tenantId, req);
   const orderId = (payment.order_id as string) || null;
 
   const result = await retrievePayment(sb, tenantId, token);
