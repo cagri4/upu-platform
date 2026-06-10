@@ -20,6 +20,7 @@ import { useParams } from "next/navigation";
 import { AppShell } from "@/components/admin/v3-shell";
 import { PanelAuthFail } from "@/components/panel-auth-fail";
 import { buyerNavSections } from "@/components/buyer/bayi-nav-config";
+import { AiElemanLauncher } from "@/components/buyer/AiElemanLauncher";
 
 type State = "loading" | "ready" | "error";
 
@@ -87,6 +88,8 @@ export default function BayiPortalLayout({ children }: { children: ReactNode }) 
       accent="indigo"
     >
       {children}
+      {/* Faz 4: AI Eleman roster — sağ-alt FAB (Kurucu/Yönetici/Eğitmen) */}
+      <AiElemanLauncher />
     </AppShell>
   );
 }
