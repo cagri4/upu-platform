@@ -32,7 +32,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   const { data: o, error } = await sb
     .from("bayi_orders")
     .select(
-      "id, order_number, dealer_id, status, subtotal, discount_amount, total_amount, coupon_code, notes, approved_at, rejected_at, reject_reason, created_at, updated_at",
+      "id, order_number, dealer_id, status, subtotal, discount_amount, total_amount, coupon_code, notes, approved_at, rejected_at, reject_reason, created_at, updated_at, shipment_carrier, shipment_tracking_no, shipment_status, shipped_at, invoice_id, payment_status, payment_method",
     )
     .eq("tenant_id", tenantId)
     .eq("id", id)
@@ -80,6 +80,16 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     .eq("order_id", id)
     .order("created_at", { ascending: true });
 
+  // Kargo takip URL'i hesapla (carrier'a göre)
+  const carrier = (o.shipment_carrier as string) || null;
+  const trackingNo = (o.shipment_tracking_no as string) || null;
+  let trackingUrl: string | null = null;
+  if (carrier && trackingNo) {
+    if (carrier === "aras") trackingUrl = `https://kargotakip.araskargo.com.tr/mainpage.aspx?code=${trackingNo}`;
+    else if (carrier === "yurtici") trackingUrl = `https://www.yurticikargo.com/tr/online-servisler/gonderi-sorgula?code=${trackingNo}`;
+    else if (carrier === "mng") trackingUrl = `https://service.mngkargo.com.tr/track/${trackingNo}`;
+  }
+
   return NextResponse.json({
     success: true,
     order: {
@@ -94,6 +104,14 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       approvedAt: (o.approved_at as string) || null,
       rejectedAt: (o.rejected_at as string) || null,
       rejectReason: (o.reject_reason as string) || null,
+      paymentMethod: (o.payment_method as string) || null,
+      paymentStatus: (o.payment_status as string) || null,
+      shipmentCarrier: carrier,
+      shipmentTrackingNo: trackingNo,
+      shipmentStatus: (o.shipment_status as string) || null,
+      shippedAt: (o.shipped_at as string) || null,
+      shipmentTrackingUrl: trackingUrl,
+      invoiceId: (o.invoice_id as string) || null,
       createdAt: o.created_at as string,
       updatedAt: o.updated_at as string,
     },

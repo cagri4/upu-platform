@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, Clock, Truck } from "lucide-react";
 import { StatusBadge, type StatusTone } from "@/components/admin/v3-shell";
 
 interface Order {
@@ -183,6 +183,36 @@ export default function SiparisDetayPage() {
   if (!order) return null;
 
   const canAct = order.status === "pending";
+  const canShip = order.status === "approved" || order.status === "preparing";
+
+  async function ship() {
+    if (!confirm("Bu sipariş kargoya verilsin mi?")) return;
+    const carrier = window.prompt(
+      "Kargo seç (aras / yurtici / mng). Boş bırakırsan ilk aktif olan kullanılır.",
+      "aras",
+    );
+    setActing(true);
+    try {
+      const res = await fetch(`/api/dagitici/siparisler/${id}/kargo`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(carrier ? { carrier } : {}),
+      });
+      const d = await res.json();
+      if (!res.ok || !d.success) {
+        alert(d.error || "Kargo oluşturulamadı.");
+        return;
+      }
+      alert(
+        `Kargo oluşturuldu.\nTaşıyıcı: ${d.carrier}\nTakip no: ${d.trackingNo}` +
+          (d.mocked ? "\n(MOCK — Çağrı API key verince canlı olur)" : ""),
+      );
+      load();
+    } finally {
+      setActing(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -220,6 +250,16 @@ export default function SiparisDetayPage() {
               {acting ? "İşleniyor…" : "Onayla"}
             </button>
           </div>
+        )}
+        {canShip && (
+          <button
+            onClick={ship}
+            disabled={acting}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+          >
+            <Truck className="h-4 w-4" />
+            {acting ? "İşleniyor…" : "Kargoya Ver"}
+          </button>
         )}
       </div>
 

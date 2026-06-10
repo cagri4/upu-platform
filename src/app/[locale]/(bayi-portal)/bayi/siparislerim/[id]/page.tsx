@@ -27,8 +27,20 @@ interface Order {
   approvedAt: string | null;
   rejectedAt: string | null;
   rejectReason: string | null;
+  shipmentCarrier?: string | null;
+  shipmentTrackingNo?: string | null;
+  shipmentTrackingUrl?: string | null;
+  shippedAt?: string | null;
+  paymentStatus?: string | null;
+  paymentMethod?: string | null;
   createdAt: string;
 }
+
+const CARRIER_LABEL: Record<string, string> = {
+  aras: "Aras Kargo",
+  yurtici: "Yurtiçi Kargo",
+  mng: "MNG Kargo",
+};
 
 interface OrderItem {
   id: string;
@@ -251,6 +263,44 @@ export default function BayiSiparisDetayPage() {
           </div>
         </div>
       </div>
+
+      {(order.shipmentTrackingNo || order.shipmentCarrier) && (
+        <section className="rounded-xl border border-indigo-200 bg-indigo-50 p-5">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-indigo-900">
+            <Clock className="h-4 w-4" />
+            Kargo Bilgileri
+          </h2>
+          <div className="mt-2 space-y-1 text-sm">
+            <p className="text-indigo-900">
+              <span className="font-medium">Taşıyıcı: </span>
+              {order.shipmentCarrier
+                ? CARRIER_LABEL[order.shipmentCarrier] || order.shipmentCarrier
+                : "—"}
+            </p>
+            {order.shipmentTrackingNo && (
+              <p className="text-indigo-900 tabular-nums">
+                <span className="font-medium">Takip No: </span>
+                {order.shipmentTrackingNo}
+              </p>
+            )}
+            {order.shippedAt && (
+              <p className="text-xs text-indigo-700 tabular-nums">
+                Kargoya verildi: {formatTarih(order.shippedAt)}
+              </p>
+            )}
+            {order.shipmentTrackingUrl && (
+              <a
+                href={order.shipmentTrackingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-medium text-white hover:bg-indigo-700"
+              >
+                Kargo Sayfasında Takip Et →
+              </a>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-5 py-3">
