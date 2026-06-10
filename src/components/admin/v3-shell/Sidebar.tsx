@@ -24,6 +24,7 @@ import {
   FolderTree,
   Tag,
   Megaphone,
+  Plug,
 } from "lucide-react";
 
 export interface SidebarNavItem {
@@ -129,6 +130,17 @@ export function Sidebar({
           href: `${base}/raporlar`,
           match: `${base}/raporlar`,
           icon: BarChart3,
+        },
+      ],
+    },
+    {
+      section: "Ayarlar",
+      items: [
+        {
+          label: "Entegrasyonlar",
+          href: `${base}/ayarlar/entegrasyonlar`,
+          match: `${base}/ayarlar/entegrasyonlar`,
+          icon: Plug,
         },
       ],
     },
