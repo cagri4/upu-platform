@@ -91,6 +91,22 @@ export async function transitionOrderStatus(
     console.error("[order:transition:history]", histErr);
   }
 
+  // Faz 3 Sprint H: sipariş onaylandığında otomatik e-Fatura kes.
+  // Hata olursa siparişi engellemez — fatura sonradan manuel kesilebilir.
+  // Dinamik import: efatura/emit, transitionOrderStatus'un tüm yer
+  // çağrıcılarına ek bundling yükü bindirmesin.
+  if (toStatus === "approved") {
+    try {
+      const { emitInvoiceForOrder } = await import("@/platform/efatura/emit");
+      const result = await emitInvoiceForOrder(sb, { tenantId, orderId });
+      if (!result.ok && !result.skipped) {
+        console.warn("[order:transition:invoice:failed]", result.errorMessage);
+      }
+    } catch (err) {
+      console.error("[order:transition:invoice:error]", err);
+    }
+  }
+
   // TODO Faz 4: emitOrderEvent({orderId, toStatus}) — WA bildirim tetiklenir
   return { ok: true, previousStatus: fromStatus };
 }
