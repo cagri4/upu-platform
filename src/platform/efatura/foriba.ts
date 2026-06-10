@@ -66,39 +66,17 @@ function mockInvoiceNo(orderNumber: string): string {
   return `MCK-${ym}-${orderNumber.replace(/-/g, "").slice(-6).padStart(6, "0")}`;
 }
 
-function mockPdfUrl(invoiceNo: string, args: IssueInvoiceArgs): string {
-  // Basit text "PDF" — gerçek Foriba canlıda binary PDF döner ve Supabase
-  // Storage'a upload edilir. Mock akışta data URL ile UI testlenir.
-  const summary = [
-    `MOCK E-FATURA`,
-    `=`.repeat(40),
-    `Fatura No: ${invoiceNo}`,
-    `Tarih: ${args.issueDate}`,
-    `Sipariş: ${args.orderNumber}`,
-    ``,
-    `Alıcı:`,
-    `  ${args.buyer.name}`,
-    args.buyer.taxNo ? `  VKN: ${args.buyer.taxNo}` : "",
-    args.buyer.address ? `  ${args.buyer.address}` : "",
-    ``,
-    `Kalemler:`,
-    ...args.lines.map(
-      (l) =>
-        `  ${l.productCode}  ${l.productName.slice(0, 30)}  ` +
-        `${l.quantity} x ${l.unitPrice.toFixed(2)} = ${l.lineTotal.toFixed(2)}`,
-    ),
-    ``,
-    `Ara toplam:   ${args.subtotal.toFixed(2)} ${args.currency}`,
-    `İndirim:     -${args.discountTotal.toFixed(2)} ${args.currency}`,
-    `KDV:          ${args.taxTotal.toFixed(2)} ${args.currency}`,
-    `TOPLAM:       ${args.total.toFixed(2)} ${args.currency}`,
-    ``,
-    `Faz 3 mock — gerçek PDF Foriba canlı bağlantısıyla gelecek.`,
-  ]
-    .filter(Boolean)
-    .join("\n");
-  const b64 = Buffer.from(summary, "utf-8").toString("base64");
-  return `data:text/plain;charset=utf-8;base64,${b64}`;
+async function mockPdfUrl(
+  sb: SupabaseClient,
+  invoiceNo: string,
+  args: IssueInvoiceArgs,
+): Promise<string> {
+  // Gerçek PDF (pdf-lib) + Supabase Storage public URL — eski data:text/plain
+  // "PDF"i düz metin indiriyordu (audit 2026-06-10 P0 #4). Gerçek Foriba
+  // canlıda kendi binary PDF'ini döndürecek.
+  const { buildMockInvoicePdf, uploadMockInvoicePdf } = await import("./mock-pdf");
+  const bytes = await buildMockInvoicePdf(invoiceNo, args);
+  return uploadMockInvoicePdf(sb, args.tenantId, invoiceNo, bytes);
 }
 
 export const foribaProvider: InvoiceProvider = {
@@ -113,7 +91,7 @@ export const foribaProvider: InvoiceProvider = {
       // Mock akış — provider yapılandırılmamış
       const invoiceNo = mockInvoiceNo(args.orderNumber);
       const externalRef = `mock-${crypto.randomUUID()}`;
-      const pdfUrl = mockPdfUrl(invoiceNo, args);
+      const pdfUrl = await mockPdfUrl(sb, invoiceNo, args);
       await recordSyncResult(sb, {
         tenantId: args.tenantId,
         provider: "foriba",
