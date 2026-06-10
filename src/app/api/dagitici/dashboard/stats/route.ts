@@ -21,13 +21,22 @@ export async function GET(req: NextRequest) {
   startOfToday.setUTCHours(0, 0, 0, 0);
   const startIso = startOfToday.toISOString();
 
-  // Pending status id'leri (code='pending')
-  const { data: pendingStatus } = await sb
+  // Status sözlüğü — id→code (legacy FK satırları) + code→name (TEXT status).
+  // Faz 1.3 motoru TEXT `status` yazar (status_id=NULL); migration öncesi
+  // legacy satırlarda gerçek durum status_id'dedir (TEXT default 'pending'
+  // yalan söyler). Audit 2026-06-10 P0 #2: buradaki eski status_id-only
+  // okuma yeni siparişleri "unknown" gösterip pendingApproval'ı 0 sayıyordu.
+  const { data: statusRows } = await sb
     .from("bayi_order_statuses")
-    .select("id")
-    .eq("code", "pending")
-    .maybeSingle();
-  const pendingStatusId = pendingStatus?.id ?? null;
+    .select("id, code, name");
+  const codeById = new Map<string, string>();
+  const nameByCode = new Map<string, string>();
+  for (const s of statusRows ?? []) {
+    codeById.set(s.id as string, s.code as string);
+    nameByCode.set(s.code as string, s.name as string);
+  }
+  const pendingStatusId =
+    (statusRows ?? []).find((s) => s.code === "pending")?.id ?? null;
 
   // Today orders + revenue (tek query, sum aggregate)
   const { data: todayOrders } = await sb
@@ -41,16 +50,19 @@ export async function GET(req: NextRequest) {
     0,
   );
 
-  // Pending approval count
-  let pendingCount = 0;
-  if (pendingStatusId) {
-    const { count } = await sb
-      .from("bayi_orders")
-      .select("*", { count: "exact", head: true })
-      .eq("tenant_id", tenantId)
-      .eq("status_id", pendingStatusId);
-    pendingCount = count ?? 0;
-  }
+  // Pending approval count — yeni sistem: TEXT status='pending' (status_id
+  // NULL); legacy: status_id=pending FK. İkisini tek or() ile say.
+  let pendingQuery = sb
+    .from("bayi_orders")
+    .select("*", { count: "exact", head: true })
+    .eq("tenant_id", tenantId);
+  pendingQuery = pendingStatusId
+    ? pendingQuery.or(
+        `and(status.eq.pending,status_id.is.null),status_id.eq.${pendingStatusId}`,
+      )
+    : pendingQuery.eq("status", "pending").is("status_id", null);
+  const { count: pendingCountRaw } = await pendingQuery;
+  const pendingCount = pendingCountRaw ?? 0;
 
   // Overdue dealer count — risk_status başlığında "overdue" veya "risk"
   const { count: overdueCount } = await sb
@@ -63,7 +75,7 @@ export async function GET(req: NextRequest) {
   const { data: recentOrders } = await sb
     .from("bayi_orders")
     .select(
-      "id, order_number, dealer_id, total_amount, status_id, created_at, bayi_dealers(name, company_name), bayi_order_statuses(code, name)",
+      "id, order_number, dealer_id, total_amount, status, status_id, created_at, bayi_dealers(name, company_name)",
     )
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false })
@@ -72,14 +84,18 @@ export async function GET(req: NextRequest) {
   const recent =
     (recentOrders ?? []).map((o) => {
       const dealer = (o as { bayi_dealers?: { name?: string; company_name?: string } | null }).bayi_dealers;
-      const status = (o as { bayi_order_statuses?: { code?: string; name?: string } | null }).bayi_order_statuses;
+      // Legacy satırda (status_id dolu) FK kodu gerçek; yeni satırda TEXT
+      // status gerçek. TEXT default 'pending' legacy satırlarda yalan
+      // söyleyebildiği için status_id öncelikli.
+      const legacyCode = o.status_id ? codeById.get(o.status_id as string) : null;
+      const statusCode = legacyCode || (o.status as string) || "pending";
       return {
         id: o.id as string,
         orderNumber: o.order_number as string,
         dealerName: dealer?.company_name || dealer?.name || "Bilinmeyen",
         totalAmount: Number(o.total_amount ?? 0),
-        statusCode: status?.code || "unknown",
-        statusName: status?.name || "—",
+        statusCode,
+        statusName: nameByCode.get(statusCode) || statusCode,
         createdAt: o.created_at as string,
       };
     }) ?? [];
