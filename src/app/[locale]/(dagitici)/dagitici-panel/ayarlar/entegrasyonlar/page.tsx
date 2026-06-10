@@ -28,6 +28,7 @@ import {
   ExternalLink,
   Clock,
   RefreshCw,
+  Bell,
 } from "lucide-react";
 import { StatusBadge, type StatusTone } from "@/components/admin/v3-shell";
 
@@ -43,7 +44,7 @@ interface FieldSchema {
 
 interface ProviderItem {
   provider: string;
-  category: "payment" | "efatura" | "kargo" | "erp";
+  category: "payment" | "efatura" | "kargo" | "erp" | "bildirim";
   label: string;
   description: string;
   docsUrl: string | null;
@@ -60,6 +61,7 @@ interface ProviderItem {
 }
 
 const CATEGORY_LABELS: Record<string, { label: string; icon: typeof CreditCard }> = {
+  bildirim: { label: "Bildirimler", icon: Bell },
   payment: { label: "Ödeme", icon: CreditCard },
   efatura: { label: "e-Fatura", icon: Receipt },
   kargo: { label: "Kargo", icon: Truck },

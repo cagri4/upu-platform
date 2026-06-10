@@ -153,6 +153,19 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   if (body.coupon_code !== undefined)
     update.coupon_code = body.coupon_code?.toString().trim() || null;
 
+  // Faz 4 kampanya bildirimi için: status draft/paused → active geçişini
+  // yakala (her PUT'ta değil, sadece aktive anında bildirim).
+  let wasActive = false;
+  if (update.status === "active") {
+    const { data: prev } = await sb
+      .from("bayi_campaigns")
+      .select("status")
+      .eq("tenant_id", tenantId)
+      .eq("id", id)
+      .maybeSingle();
+    wasActive = prev?.status === "active";
+  }
+
   const { error } = await sb
     .from("bayi_campaigns")
     .update(update)
@@ -163,7 +176,20 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     console.error("[dagitici:kampanyalar:update]", error);
     return NextResponse.json({ error: "Güncellenemedi." }, { status: 500 });
   }
-  return NextResponse.json({ success: true });
+
+  // Faz 4: kampanya yeni aktive edildi → hedef bayilere bildirim
+  let notifiedDealers: number | undefined;
+  if (update.status === "active" && !wasActive) {
+    try {
+      const { emitCampaignActivatedEvent } = await import("@/platform/bayi/events/dispatcher");
+      const r = await emitCampaignActivatedEvent(sb, { tenantId, campaignId: id });
+      notifiedDealers = r.notified;
+    } catch (err) {
+      console.error("[kampanyalar:activate:event]", err);
+    }
+  }
+
+  return NextResponse.json({ success: true, notifiedDealers });
 }
 
 export async function DELETE(req: NextRequest, { params }: RouteParams) {

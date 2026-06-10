@@ -89,6 +89,25 @@ async function handle(req: NextRequest, token: string, conversationId: string | 
         reason: `iyzico ödemesi alındı (${token.slice(0, 12)}…)`,
         profileId: null,
       });
+
+      // Faz 4: bayiye "ödemen alındı, teşekkürler" bildirimi
+      try {
+        const { emitPaymentReceivedEvent } = await import("@/platform/bayi/events/dispatcher");
+        const { data: orderRow } = await sb
+          .from("bayi_orders")
+          .select("dealer_id, total_amount")
+          .eq("tenant_id", tenantId)
+          .eq("id", orderId)
+          .maybeSingle();
+        await emitPaymentReceivedEvent(sb, {
+          tenantId,
+          orderId,
+          dealerId: (orderRow?.dealer_id as string) || null,
+          amount: Number(orderRow?.total_amount ?? payment.amount ?? 0),
+        });
+      } catch (err) {
+        console.error("[iyzico:callback:event]", err);
+      }
     }
 
     return NextResponse.redirect(

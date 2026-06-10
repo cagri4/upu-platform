@@ -107,6 +107,23 @@ export async function transitionOrderStatus(
     }
   }
 
-  // TODO Faz 4: emitOrderEvent({orderId, toStatus}) — WA bildirim tetiklenir
+  // Faz 4: sipariş status değişimi → in-app + WA bildirim (mock/canlı).
+  // approved → bayiye onay; rejected → bayiye sebep notuyla red.
+  // (created/shipped event'leri kendi tetik noktalarından emit edilir:
+  //  siparis-olustur ve kargo endpoint'i.)
+  if (toStatus === "approved" || toStatus === "rejected") {
+    try {
+      const { emitOrderEvent } = await import("@/platform/bayi/events/dispatcher");
+      await emitOrderEvent(sb, {
+        tenantId,
+        orderId,
+        kind: toStatus,
+        extra: toStatus === "rejected" ? { reason: reason ?? undefined } : undefined,
+      });
+    } catch (err) {
+      console.error("[order:transition:event:error]", err);
+    }
+  }
+
   return { ok: true, previousStatus: fromStatus };
 }

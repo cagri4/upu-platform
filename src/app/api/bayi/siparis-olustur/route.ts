@@ -247,8 +247,14 @@ export async function POST(req: NextRequest) {
       .eq("status", "open");
   }
 
-  // TODO Faz 4: emitOrderEvent({orderId, toStatus: 'pending', dealerId})
-  //   → dağıtıcıya WA bildirim ("Yeni sipariş geldi"); bayiye onay yolu
+  // Faz 4: sipariş oluşturuldu olayı — bayiye "alındı" + dağıtıcıya
+  // "yeni sipariş geldi" bildirimi (mock/canlı, dispatcher karar verir).
+  try {
+    const { emitOrderEvent } = await import("@/platform/bayi/events/dispatcher");
+    await emitOrderEvent(sb, { tenantId, orderId, kind: "created" });
+  } catch (err) {
+    console.error("[siparis-olustur:event]", err);
+  }
 
   return NextResponse.json({
     success: true,

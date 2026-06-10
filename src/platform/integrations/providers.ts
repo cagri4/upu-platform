@@ -13,7 +13,7 @@
  * görünecek.
  */
 
-export type ProviderCategory = "payment" | "efatura" | "kargo" | "erp";
+export type ProviderCategory = "payment" | "efatura" | "kargo" | "erp" | "bildirim";
 
 export interface FieldSchema {
   key: string;
@@ -37,6 +37,30 @@ export interface ProviderDef {
 }
 
 export const INTEGRATION_PROVIDERS: ProviderDef[] = [
+  {
+    id: "wa_bildirim",
+    category: "bildirim",
+    label: "WhatsApp Bildirimleri",
+    description:
+      "B2B portal olayları (sipariş, fatura, kargo, vade) bayilere ve sana WA'dan bildirilir. " +
+      "Mock modda gerçek WA gitmez, in-app bildirim merkezine düşer. " +
+      "Canlı mod Meta template onayları (24-48 saat) sonrası açılır.",
+    configSchema: [
+      {
+        key: "mode",
+        label: "Mod",
+        type: "select",
+        options: [
+          { value: "mock", label: "Mock (in-app only — template onayı bekleniyor)" },
+          { value: "live", label: "Canlı (Meta onaylı template'lerle WA gönder)" },
+        ],
+        required: true,
+        helper: "Kapatmak için karttaki toggle'ı kullan — in-app feed yine yazılır.",
+      },
+    ],
+    secretSchema: [],
+    status: "mock",
+  },
   {
     id: "iyzico",
     category: "payment",

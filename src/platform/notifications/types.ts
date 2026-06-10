@@ -16,7 +16,8 @@ export type NotificationCategory =
   | "sozlesme"
   | "sunum_websitem"
   | "sistem_destek"
-  | "ai";
+  | "ai"
+  | "bayi_b2b";
 
 export interface NotificationTypeDef {
   type: string;
@@ -35,6 +36,7 @@ export const CATEGORY_META: Record<NotificationCategory, { icon: string; label: 
   sunum_websitem: { icon: "🎤", label: "Sunum & Web Site" },
   sistem_destek: { icon: "🛟", label: "Sistem & Destek" },
   ai: { icon: "🤖", label: "AI Önerileri" },
+  bayi_b2b: { icon: "📦", label: "B2B Portal (Bayi)" },
 };
 
 export const NOTIFICATION_TYPES: NotificationTypeDef[] = [
@@ -83,6 +85,24 @@ export const NOTIFICATION_TYPES: NotificationTypeDef[] = [
 
   // AI
   { type: "ai_oneri_proaktif", label: "AI proaktif öneriler", description: "AI'ın günlük 1-2 stratejik öneri (kim arasın, hangi mülk fiyatı düşürmeli).", category: "ai", tier: "pro" },
+
+  // ── B2B Portal — Faz 4 (14 tip, hepsi free: işlemsel bildirimler) ──────
+  // Dağıtıcı → Bayi (10)
+  { type: "bayi_hosgeldin", label: "Hoşgeldin", description: "Bayi portala kayıt olduğunda karşılama.", category: "bayi_b2b", tier: "free", trigger: "signup" },
+  { type: "bayi_yeni_kampanya", label: "Yeni kampanya", description: "Hedeflemene uyan kampanya başladığında.", category: "bayi_b2b", tier: "free", trigger: "campaign activate" },
+  { type: "bayi_siparis_alindi", label: "Sipariş alındı", description: "Siparişin oluşturuldu, dağıtıcı onayı bekliyor.", category: "bayi_b2b", tier: "free", trigger: "order created" },
+  { type: "bayi_siparis_onaylandi", label: "Sipariş onaylandı", description: "Dağıtıcı siparişini onayladı.", category: "bayi_b2b", tier: "free", trigger: "order approved" },
+  { type: "bayi_siparis_reddedildi", label: "Sipariş reddedildi", description: "Dağıtıcı siparişini reddetti (sebep notuyla).", category: "bayi_b2b", tier: "free", trigger: "order rejected" },
+  { type: "bayi_kargo_cikti", label: "Kargo çıktı", description: "Siparişin kargoya verildi, takip no hazır.", category: "bayi_b2b", tier: "free", trigger: "order shipped" },
+  { type: "bayi_vade_yaklasti", label: "Vade yaklaşıyor", description: "Fatura vadesine 3 gün / 1 gün kala.", category: "bayi_b2b", tier: "free", trigger: "cron daily" },
+  { type: "bayi_vade_gecti", label: "Vade geçti", description: "Fatura vadesi geçti, ödeme bekleniyor.", category: "bayi_b2b", tier: "free", trigger: "cron daily" },
+  { type: "bayi_fatura_kesildi", label: "Fatura kesildi", description: "Sipariş faturan hazır, PDF linki ile.", category: "bayi_b2b", tier: "free", trigger: "invoice created" },
+  { type: "bayi_odeme_alindi", label: "Ödeme alındı", description: "Ödemen işlendi, teşekkürler.", category: "bayi_b2b", tier: "free", trigger: "payment received" },
+  // Dağıtıcı kendine (4)
+  { type: "dagitici_yeni_siparis", label: "Yeni sipariş geldi", description: "Bir bayi yeni sipariş verdi.", category: "bayi_b2b", tier: "free", trigger: "order created" },
+  { type: "dagitici_onay_bekleyen", label: "Onay bekleyen siparişler", description: "Bekleyen siparişlerin günlük hatırlatması.", category: "bayi_b2b", tier: "free", trigger: "cron daily" },
+  { type: "dagitici_kritik_stok", label: "Kritik stok", description: "Ürün stoğu eşiğin altına düştü.", category: "bayi_b2b", tier: "free", trigger: "stock check" },
+  { type: "dagitici_geciken_rapor", label: "Geciken bayi raporu", description: "Vadesi geçmiş bayilerin günlük özeti.", category: "bayi_b2b", tier: "free", trigger: "cron daily" },
 ];
 
 export const NOTIFICATION_TYPE_MAP: Record<string, NotificationTypeDef> = Object.fromEntries(
@@ -223,5 +243,105 @@ export const NOTIFICATION_TYPE_TEMPLATES: Record<string, NotificationTemplateMap
   takvim_yarinki_ozet: {
     name: "upu_gunluk_ozet",
     buildParams: (i) => [s(i.tenantName, 40), s(i.body || i.title, 250), s(i.panelUrl, 200)],
+  },
+
+  // ── B2B Portal — Faz 4 (14 tip → upu_bayi_* / upu_dagitici_* template) ──
+  // Template metinleri: src/platform/bayi/events/templates.ts (submission
+  // script ile birebir). Onaylanana kadar APPROVED set'inde olmadıkları
+  // için PATH C (wa-pending) düşer; mock modda zaten bu path'e gelinmez.
+  bayi_hosgeldin: {
+    name: "upu_bayi_hosgeldin",
+    buildParams: (i) => {
+      const p = i.payload as { dealer_name?: string };
+      return [s(p.dealer_name || "Bayi", 60), s(i.tenantName, 60), s(i.panelUrl, 200)];
+    },
+  },
+  bayi_yeni_kampanya: {
+    name: "upu_bayi_kampanya",
+    buildParams: (i) => [s(i.tenantName, 60), s(i.body || i.title, 200), s(i.panelUrl, 200)],
+  },
+  bayi_siparis_alindi: {
+    name: "upu_bayi_siparis_alindi",
+    buildParams: (i) => {
+      const p = i.payload as { order_number?: string; amount?: string };
+      return [s(p.order_number, 30), s(p.amount, 40), s(i.panelUrl, 200)];
+    },
+  },
+  bayi_siparis_onaylandi: {
+    name: "upu_bayi_siparis_onay",
+    buildParams: (i) => {
+      const p = i.payload as { order_number?: string; delivery_note?: string };
+      return [s(p.order_number, 30), s(p.delivery_note || "Hazırlanıyor", 100), s(i.panelUrl, 200)];
+    },
+  },
+  bayi_siparis_reddedildi: {
+    name: "upu_bayi_siparis_red",
+    buildParams: (i) => {
+      const p = i.payload as { order_number?: string; reason?: string };
+      return [s(p.order_number, 30), s(p.reason || "Belirtilmedi", 150), s(i.panelUrl, 200)];
+    },
+  },
+  bayi_kargo_cikti: {
+    name: "upu_bayi_kargo",
+    buildParams: (i) => {
+      const p = i.payload as { order_number?: string; carrier_label?: string; tracking_no?: string; tracking_url?: string };
+      return [s(p.order_number, 30), s(p.carrier_label, 40), s(p.tracking_no, 40), s(p.tracking_url || i.panelUrl, 200)];
+    },
+  },
+  bayi_vade_yaklasti: {
+    name: "upu_bayi_vade_yaklasti",
+    buildParams: (i) => {
+      const p = i.payload as { invoice_no?: string; days_left?: string; amount?: string };
+      return [s(p.invoice_no, 40), s(p.days_left || "3 gün", 20), s(p.amount, 40), s(i.panelUrl, 200)];
+    },
+  },
+  bayi_vade_gecti: {
+    name: "upu_bayi_vade_gecti",
+    buildParams: (i) => {
+      const p = i.payload as { invoice_no?: string; amount?: string };
+      return [s(p.invoice_no, 40), s(p.amount, 40), s(i.panelUrl, 200)];
+    },
+  },
+  bayi_fatura_kesildi: {
+    name: "upu_bayi_fatura",
+    buildParams: (i) => {
+      const p = i.payload as { invoice_no?: string; amount?: string; due_date?: string };
+      return [s(p.invoice_no, 40), s(p.amount, 40), s(p.due_date, 20), s(i.panelUrl, 200)];
+    },
+  },
+  bayi_odeme_alindi: {
+    name: "upu_bayi_odeme_tesekkur",
+    buildParams: (i) => {
+      const p = i.payload as { amount?: string };
+      return [s(p.amount, 40), s(i.panelUrl, 200)];
+    },
+  },
+  dagitici_yeni_siparis: {
+    name: "upu_dagitici_yeni_siparis",
+    buildParams: (i) => {
+      const p = i.payload as { dealer_name?: string; order_number?: string; amount?: string };
+      return [s(p.dealer_name, 60), s(p.order_number, 30), s(p.amount, 40), s(i.panelUrl, 200)];
+    },
+  },
+  dagitici_onay_bekleyen: {
+    name: "upu_dagitici_onay_bekleyen",
+    buildParams: (i) => {
+      const p = i.payload as { pending_count?: number | string };
+      return [s(p.pending_count, 10), s(i.panelUrl, 200)];
+    },
+  },
+  dagitici_kritik_stok: {
+    name: "upu_dagitici_kritik_stok",
+    buildParams: (i) => {
+      const p = i.payload as { product_label?: string; remaining?: string };
+      return [s(p.product_label, 80), s(p.remaining, 30), s(i.panelUrl, 200)];
+    },
+  },
+  dagitici_geciken_rapor: {
+    name: "upu_dagitici_geciken",
+    buildParams: (i) => {
+      const p = i.payload as { overdue_count?: number | string; total_amount?: string };
+      return [s(p.overdue_count, 10), s(p.total_amount, 40), s(i.panelUrl, 200)];
+    },
   },
 };

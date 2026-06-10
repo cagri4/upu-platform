@@ -53,6 +53,12 @@ export interface NotificationInput {
   /** Tam URL (https://...). Yoksa click_target + default tenant host birleştirilir. */
   panelUrl?: string;
   lang?: WaLang;
+  /**
+   * Faz 4 MOCK SEND: true ise gerçek WA gönderimi atlanır, channels'a
+   * 'wa-mock' yazılır. In-app feed (DB log) normal çalışır. Meta template
+   * onayları gelene kadar B2B event dispatcher'ı bu modda çalışır.
+   */
+  mockWa?: boolean;
 }
 
 export interface NotificationResult {
@@ -128,6 +134,20 @@ export async function sendNotification(input: NotificationInput): Promise<Notifi
 
   const notifId = notif.id as number;
   const channels = ["db"];
+
+  // 4a. MOCK SEND (Faz 4) — gerçek WA atlanır, log + channel işareti.
+  // Meta template onayı / canlı geçiş sonrası caller mockWa:false geçer.
+  if (input.mockWa) {
+    channels.push("wa-mock");
+    console.log(
+      `[sendNotification:MOCK-WA] type=${input.type} user=${input.userId} title="${input.title.slice(0, 60)}"`,
+    );
+    await sb
+      .from("notifications")
+      .update({ channels_sent: channels })
+      .eq("id", notifId);
+    return { notification_id: notifId, channels };
+  }
 
   // 4. WA gönder — window-aware
   try {

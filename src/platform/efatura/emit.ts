@@ -210,7 +210,21 @@ export async function emitInvoiceForOrder(
     .eq("tenant_id", tenantId)
     .eq("id", orderId);
 
-  // TODO Faz 4: emitInvoiceCreatedEvent({orderId, invoiceId, dealerUserId})
+  // Faz 4: bayiye "faturan hazır" bildirimi (PDF link ile)
+  try {
+    const { emitInvoiceCreatedEvent } = await import("@/platform/bayi/events/dispatcher");
+    await emitInvoiceCreatedEvent(sb, {
+      tenantId,
+      orderId,
+      invoiceId: invoice.id as string,
+      invoiceNo: issueResult.invoiceNo,
+      dealerId: (order.dealer_id as string) || null,
+      amount: total,
+      dueDate: dueDateStr,
+    });
+  } catch (err) {
+    console.error("[efatura:emit:event]", err);
+  }
 
   return {
     ok: true,

@@ -91,6 +91,26 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     changed_by_profile_id: profileId,
   });
 
+  // Faz 4: bayiye "kargon yola çıktı" bildirimi (takip linki ile)
+  try {
+    const { emitShipmentCreatedEvent } = await import("@/platform/bayi/events/dispatcher");
+    const CARRIER_LABELS: Record<string, string> = {
+      aras: "Aras Kargo",
+      yurtici: "Yurtiçi Kargo",
+      mng: "MNG Kargo",
+    };
+    await emitShipmentCreatedEvent(sb, {
+      tenantId,
+      orderId: id,
+      carrier: result.carrier || "aras",
+      carrierLabel: CARRIER_LABELS[result.carrier || ""] || result.carrier || "Kargo",
+      trackingNo: result.trackingNo || "—",
+      trackingUrl: result.trackingUrl ?? null,
+    });
+  } catch (err) {
+    console.error("[kargo:event]", err);
+  }
+
   return NextResponse.json({
     success: true,
     carrier: result.carrier,
