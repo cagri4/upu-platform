@@ -1,28 +1,26 @@
 /**
  * iyzico Checkout Form adapter — Faz 3 Sprint G.
  *
- * Tenant ayarlarından (tenant_integration_settings, provider='iyzico')
- * api_key + secret_key + mode (sandbox/live) okur. SDK iyzipay-node
- * üzerinden CF init + retrieve sarmalar.
+ * iyzipay SDK (CommonJS dynamic require) Turbopack ile uyumsuz; bu yüzden
+ * doğrudan REST API'yi çağırıyoruz. Auth pattern:
+ *   Authorization: IYZWS <apiKey>:<base64(HMAC-SHA1(secretKey, apiKey + randomString + bodyJson))>
+ *   x-iyzi-rnd: <randomString>
  *
- * Akış:
- *   1. start: cart + dealer + order_id → CF initialize → paymentPageUrl
- *   2. Kullanıcı paymentPageUrl'e redirect olur (iyzico 3DS sayfası)
- *   3. iyzico → callbackUrl'e POST (token + payment status)
- *   4. callback handler: CF retrieve → paymentStatus + paymentId → DB
+ * Endpoint'ler (iyzico docs):
+ *   POST /payment/iyzipos/checkoutform/initialize/auth/ecom  — CF init
+ *   POST /payment/iyzipos/checkoutform/auth/ecom/detail     — payment retrieve
  *
- * iyzipay paketi TypeScript types içermez; `unknown` cast'lerle sarmalanır.
+ * Tenant ayarlarından credential okur (mode=sandbox/live).
+ * Yapılandırılmamış / inactive ise mock token üretir (UI test edilebilir).
  */
+import crypto from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getIntegrationSetting } from "@/platform/integrations/tenant-settings";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const Iyzipay = require("iyzipay");
-
-interface IyzipayConfig {
+interface IyzicoConfig {
   apiKey: string;
   secretKey: string;
-  uri: string;
+  baseUri: string;
 }
 
 interface BuyerInfo {
@@ -62,6 +60,7 @@ export interface CheckoutInitResult {
   token?: string;
   paymentPageUrl?: string;
   conversationId?: string;
+  mocked?: boolean;
 }
 
 export interface RetrieveResult {
@@ -79,7 +78,7 @@ export interface RetrieveResult {
 async function getConfig(
   sb: SupabaseClient,
   tenantId: string,
-): Promise<IyzipayConfig | null> {
+): Promise<IyzicoConfig | null> {
   const setting = await getIntegrationSetting(sb, tenantId, "iyzico");
   if (!setting || !setting.isActive) return null;
 
@@ -88,55 +87,65 @@ async function getConfig(
   const mode = (setting.config.mode as string) || "sandbox";
   if (!apiKey || !secretKey) return null;
 
-  const uri =
+  const baseUri =
     mode === "live"
       ? "https://api.iyzipay.com"
       : "https://sandbox-api.iyzipay.com";
 
-  return { apiKey, secretKey, uri };
+  return { apiKey, secretKey, baseUri };
 }
 
-interface IyzipayInstance {
-  checkoutFormInitialize: {
-    create: (
-      req: Record<string, unknown>,
-      cb: (err: unknown, result: Record<string, unknown>) => void,
-    ) => void;
-  };
-  checkoutForm: {
-    retrieve: (
-      req: Record<string, unknown>,
-      cb: (err: unknown, result: Record<string, unknown>) => void,
-    ) => void;
-  };
+function randomString(): string {
+  return crypto.randomBytes(8).toString("hex");
 }
 
-function createClient(cfg: IyzipayConfig): IyzipayInstance {
-  return new Iyzipay({
-    apiKey: cfg.apiKey,
-    secretKey: cfg.secretKey,
-    uri: cfg.uri,
-  }) as unknown as IyzipayInstance;
+function buildAuthHeader(cfg: IyzicoConfig, rnd: string, body: string): string {
+  // iyzico v1 auth: base64(HMAC-SHA1(secretKey, apiKey + rnd + body))
+  const hmac = crypto.createHmac("sha1", cfg.secretKey);
+  hmac.update(cfg.apiKey + rnd + body);
+  const signature = hmac.digest("base64");
+  return `IYZWS ${cfg.apiKey}:${signature}`;
+}
+
+async function iyzicoPost(
+  cfg: IyzicoConfig,
+  path: string,
+  body: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const rnd = randomString();
+  const json = JSON.stringify(body);
+  const auth = buildAuthHeader(cfg, rnd, json);
+  const res = await fetch(`${cfg.baseUri}${path}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: auth,
+      "x-iyzi-rnd": rnd,
+      Accept: "application/json",
+    },
+    body: json,
+  });
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  return data;
 }
 
 export async function initCheckout(
   sb: SupabaseClient,
   args: CheckoutInitArgs,
-): Promise<CheckoutInitResult & { mocked?: boolean }> {
+): Promise<CheckoutInitResult> {
   const cfg = await getConfig(sb, args.tenantId);
   if (!cfg) {
-    // Provider yapılandırılmamış veya aktif değil — mock akış
-    // (Çağrı'nın sandbox/live key vermesi gelene kadar UI test edilebilir)
+    // Mock: provider yapılandırılmamış. Callback'e GET ile dönüyoruz.
+    const token = `mock-${args.orderId}`;
     return {
       status: "success",
-      token: `mock-${args.orderId}`,
-      paymentPageUrl: `${args.callbackUrl}?mocked=1&token=mock-${args.orderId}`,
+      token,
+      paymentPageUrl: `${args.callbackUrl}?token=${encodeURIComponent(token)}&mocked=1`,
       conversationId: args.conversationId,
       mocked: true,
     };
   }
 
-  const client = createClient(cfg);
   const request: Record<string, unknown> = {
     locale: "tr",
     conversationId: args.conversationId || args.orderId,
@@ -179,33 +188,35 @@ export async function initCheckout(
     })),
   };
 
-  return new Promise<CheckoutInitResult>((resolve) => {
-    client.checkoutFormInitialize.create(request, (err, result) => {
-      if (err || !result) {
-        resolve({
-          status: "failure",
-          errorMessage: String(err ?? "iyzico hata"),
-        });
-        return;
-      }
-      const status = (result.status as string) || "failure";
-      if (status !== "success") {
-        resolve({
-          status: "failure",
-          errorMessage: (result.errorMessage as string) || "iyzico reddetti",
-          errorCode: (result.errorCode as string) || undefined,
-          conversationId: (result.conversationId as string) || undefined,
-        });
-        return;
-      }
-      resolve({
-        status: "success",
-        token: result.token as string,
-        paymentPageUrl: result.paymentPageUrl as string,
-        conversationId: (result.conversationId as string) || undefined,
-      });
-    });
-  });
+  let result: Record<string, unknown>;
+  try {
+    result = await iyzicoPost(
+      cfg,
+      "/payment/iyzipos/checkoutform/initialize/auth/ecom",
+      request,
+    );
+  } catch (err) {
+    return {
+      status: "failure",
+      errorMessage: `iyzico bağlantı hatası: ${String(err)}`,
+    };
+  }
+
+  const status = (result.status as string) || "failure";
+  if (status !== "success") {
+    return {
+      status: "failure",
+      errorMessage: (result.errorMessage as string) || "iyzico reddetti",
+      errorCode: (result.errorCode as string) || undefined,
+      conversationId: (result.conversationId as string) || undefined,
+    };
+  }
+  return {
+    status: "success",
+    token: result.token as string,
+    paymentPageUrl: result.paymentPageUrl as string,
+    conversationId: (result.conversationId as string) || undefined,
+  };
 }
 
 export async function retrievePayment(
@@ -213,7 +224,6 @@ export async function retrievePayment(
   tenantId: string,
   token: string,
 ): Promise<RetrieveResult> {
-  // Mock token — config olmadığında start mock olarak imzaladı
   if (token.startsWith("mock-")) {
     return {
       status: "success",
@@ -239,35 +249,36 @@ export async function retrievePayment(
     };
   }
 
-  const client = createClient(cfg);
-  return new Promise<RetrieveResult>((resolve) => {
-    client.checkoutForm.retrieve({ token }, (err, result) => {
-      if (err || !result) {
-        resolve({
-          status: "failure",
-          paymentStatus: null,
-          paymentId: null,
-          paidPrice: null,
-          currency: null,
-          conversationId: null,
-          errorMessage: String(err ?? "iyzico retrieve hata"),
-        });
-        return;
-      }
-      const status = (result.status as string) || "failure";
-      const paymentStatus = (result.paymentStatus as string) || null;
-      resolve({
-        status: status === "success" ? "success" : "failure",
-        paymentStatus,
-        paymentId: (result.paymentId as string) || null,
-        paidPrice:
-          result.paidPrice != null ? Number(result.paidPrice) : null,
-        currency: (result.currency as string) || "TRY",
-        conversationId: (result.conversationId as string) || null,
-        errorMessage: (result.errorMessage as string) || undefined,
-        errorCode: (result.errorCode as string) || undefined,
-        raw: result as Record<string, unknown>,
-      });
-    });
-  });
+  let result: Record<string, unknown>;
+  try {
+    result = await iyzicoPost(
+      cfg,
+      "/payment/iyzipos/checkoutform/auth/ecom/detail",
+      { locale: "tr", token },
+    );
+  } catch (err) {
+    return {
+      status: "failure",
+      paymentStatus: null,
+      paymentId: null,
+      paidPrice: null,
+      currency: null,
+      conversationId: null,
+      errorMessage: `iyzico bağlantı hatası: ${String(err)}`,
+    };
+  }
+
+  const status = (result.status as string) || "failure";
+  const paymentStatus = (result.paymentStatus as string) || null;
+  return {
+    status: status === "success" ? "success" : "failure",
+    paymentStatus,
+    paymentId: (result.paymentId as string) || null,
+    paidPrice: result.paidPrice != null ? Number(result.paidPrice) : null,
+    currency: (result.currency as string) || "TRY",
+    conversationId: (result.conversationId as string) || null,
+    errorMessage: (result.errorMessage as string) || undefined,
+    errorCode: (result.errorCode as string) || undefined,
+    raw: result,
+  };
 }
