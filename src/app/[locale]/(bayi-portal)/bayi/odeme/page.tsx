@@ -207,6 +207,29 @@ export default function BayiOdemePage() {
       if (typeof window !== "undefined") {
         sessionStorage.removeItem("upu-cart-coupon");
       }
+
+      // Faz 3 Sprint G: kart ödemesi → iyzico checkout başlat ve redirect
+      if (paymentMethod === "card") {
+        const iyzRes = await fetch("/api/bayi/iyzico/start", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_id: d.orderId }),
+        });
+        const iyzData = await iyzRes.json();
+        if (!iyzRes.ok || !iyzData.success || !iyzData.paymentPageUrl) {
+          alert(
+            iyzData.error ||
+              "Kart ödeme başlatılamadı. Sipariş kaydedildi, siparişlerinden tekrar dene veya farklı ödeme yöntemi seç.",
+          );
+          setSuccess({ orderId: d.orderId, orderNumber: d.orderNumber });
+          return;
+        }
+        // Mock URL ise direkt callback'e GET (sandbox/canlı key yokken UI test)
+        window.location.href = iyzData.paymentPageUrl;
+        return;
+      }
+
       setSuccess({ orderId: d.orderId, orderNumber: d.orderNumber });
     } finally {
       setPlacing(false);
