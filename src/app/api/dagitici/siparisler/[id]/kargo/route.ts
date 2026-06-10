@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDagiticiAuth } from "../../../_auth";
 import { emitShipmentForOrder } from "@/platform/kargo/emit";
 import { transitionOrderStatus } from "@/platform/bayi/order-status";
+import { resolveTenantOrigin } from "@/platform/tenant-origin";
 
 export const dynamic = "force-dynamic";
 
@@ -105,7 +106,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       carrier: result.carrier || "aras",
       carrierLabel: CARRIER_LABELS[result.carrier || ""] || result.carrier || "Kargo",
       trackingNo: result.trackingNo || "—",
-      trackingUrl: result.trackingUrl ?? null,
+      // İç takip sayfası — mock takip no'yu gerçek kargo sitesine
+      // göndermemek için (audit P0 #5). Canlı carrier durumu da bu
+      // sayfadan sunulacak.
+      trackingUrl: result.trackingNo
+        ? `${await resolveTenantOrigin(sb, tenantId, req)}/tr/bayi/takip/${encodeURIComponent(result.trackingNo)}`
+        : null,
     });
   } catch (err) {
     console.error("[kargo:event]", err);

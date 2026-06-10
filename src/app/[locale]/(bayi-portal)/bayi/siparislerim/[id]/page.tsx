@@ -288,15 +288,16 @@ export default function BayiSiparisDetayPage() {
                 Kargoya verildi: {formatTarih(order.shippedAt)}
               </p>
             )}
-            {order.shipmentTrackingUrl && (
-              <a
-                href={order.shipmentTrackingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+            {order.shipmentTrackingNo && (
+              // Kendi takip sayfamız — mock takip no'yu gerçek kargo
+              // sitesine gönderip 404 göstermemek için (audit P0 #5).
+              <Link
+                href={`/${locale}/bayi/takip/${encodeURIComponent(order.shipmentTrackingNo)}`}
                 className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-medium text-white hover:bg-indigo-700"
+                data-testid="takip-link"
               >
-                Kargo Sayfasında Takip Et →
-              </a>
+                Sayfada Takip Et →
+              </Link>
             )}
           </div>
         </section>
