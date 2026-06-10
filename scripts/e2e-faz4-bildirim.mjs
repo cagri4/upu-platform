@@ -93,7 +93,8 @@ async function notifCount(profileId, type, sinceIso) {
   if (!profileId) { fail("profile lookup"); process.exit(1); }
   pass("kimlik", `tenant=${tenantId.slice(0, 8)} profile=${profileId.slice(0, 8)}`);
 
-  // 3) Dealer bağla (yoksa) — mock Logo bayisine user_id ata
+  // 3) Dealer bağla (yoksa) — boş dealer'a user_id ata, hiç yoksa test
+  //    dealer'ı INSERT et (test tenant'ına ekleme — E2E brief kapsamı)
   if (!me.json.dealer) {
     const { data: candidate } = await sb
       .from("bayi_dealers")
@@ -102,13 +103,42 @@ async function notifCount(profileId, type, sinceIso) {
       .is("user_id", null)
       .limit(1)
       .maybeSingle();
-    if (!candidate) { fail("setup: boş dealer yok"); process.exit(1); }
-    // auth uid'yi cookie'deki uid ile değil profile id ile bağla — _auth
-    // requireAuth.userId döner; profiles.id ile aynı (cookie uid=profile.id)
-    await sb.from("bayi_dealers").update({ user_id: profileId }).eq("id", candidate.id);
-    pass("setup: dealer bağlandı", candidate.name);
+    if (candidate) {
+      await sb.from("bayi_dealers").update({ user_id: profileId }).eq("id", candidate.id);
+      pass("setup: dealer bağlandı", candidate.name);
+    } else {
+      const { data: created, error } = await sb.from("bayi_dealers").insert({
+        tenant_id: tenantId,
+        name: "E2E Test Bayi (Faz4)",
+        company_name: "E2E Test Bayi (Faz4)",
+        email: "e2e-faz4@test.upudev.nl",
+        phone: "+31600000001",
+        user_id: profileId,
+        is_active: true,
+        status: "active",
+        segment: "A",
+      }).select("id").single();
+      if (error || !created) { fail("setup: dealer insert", error?.message); process.exit(1); }
+      pass("setup: test dealer oluşturuldu");
+    }
   } else {
     pass("setup: dealer mevcut", me.json.dealer.name);
+  }
+
+  // 3b) Katalogda aktif ürün yoksa test ürünü ekle
+  const katCheck = await api("/api/bayi/katalog?status=active&pageSize=3");
+  if (!katCheck.json?.items?.length) {
+    const { error } = await sb.from("bayi_products").insert({
+      tenant_id: tenantId,
+      code: "E2E-FAZ4-001",
+      name: "E2E Test Ürünü (Faz4)",
+      base_price: 25,
+      stock_quantity: 500,
+      unit: "koli",
+      is_active: true,
+    });
+    if (error) { fail("setup: ürün insert", error.message); process.exit(1); }
+    pass("setup: test ürünü oluşturuldu");
   }
 
   // 4) Katalogdan ürün al + sipariş ver
