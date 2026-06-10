@@ -27,6 +27,7 @@ import {
   Settings,
   ExternalLink,
   Clock,
+  RefreshCw,
 } from "lucide-react";
 import { StatusBadge, type StatusTone } from "@/components/admin/v3-shell";
 
@@ -194,6 +195,49 @@ export default function EntegrasyonlarPage() {
                     item={it}
                     onToggle={() => toggle(it)}
                     onEdit={() => setEditTarget(it)}
+                    onSync={
+                      it.provider === "logo_tiger"
+                        ? async () => {
+                            if (
+                              !confirm(
+                                "Logo Tiger sync başlatılsın mı? Ürünler/stok/fiyatlar/bayiler güncellenir.",
+                              )
+                            )
+                              return;
+                            const r = await fetch("/api/dagitici/logo/sync", {
+                              method: "POST",
+                              credentials: "same-origin",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({}),
+                            });
+                            const d = await r.json();
+                            if (!r.ok) {
+                              alert(d.errorMessage || "Sync başarısız.");
+                              return;
+                            }
+                            const mocked = d.stats?.some(
+                              (s: { mocked: boolean }) => s.mocked,
+                            );
+                            const summary = (d.stats || [])
+                              .map(
+                                (s: {
+                                  entity: string;
+                                  fetched: number;
+                                  upserted: number;
+                                  errors: number;
+                                }) =>
+                                  `${s.entity}: ${s.upserted}/${s.fetched} (${s.errors} hata)`,
+                              )
+                              .join("\n");
+                            alert(
+                              `Sync ${d.success ? "tamam" : "kısmen başarısız"}.\n\n${summary}${
+                                mocked ? "\n\n(MOCK veri — canlı API key girin)" : ""
+                              }`,
+                            );
+                            load();
+                          }
+                        : undefined
+                    }
                   />
                 ))}
               </div>
@@ -220,11 +264,14 @@ function ProviderCard({
   item,
   onToggle,
   onEdit,
+  onSync,
 }: {
   item: ProviderItem;
   onToggle: () => void;
   onEdit: () => void;
+  onSync?: () => Promise<void>;
 }) {
+  const [syncing, setSyncing] = useState(false);
   const canActivate = item.status !== "planned";
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -281,6 +328,23 @@ function ProviderCard({
           <Settings className="h-3.5 w-3.5" />
           Yapılandır
         </button>
+        {onSync && (
+          <button
+            onClick={async () => {
+              setSyncing(true);
+              try {
+                await onSync();
+              } finally {
+                setSyncing(false);
+              }
+            }}
+            disabled={syncing}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Sync…" : "Şimdi Sync"}
+          </button>
+        )}
         {item.docsUrl && (
           <a
             href={item.docsUrl}

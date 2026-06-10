@@ -177,7 +177,7 @@ export const INTEGRATION_PROVIDERS: ProviderDef[] = [
       { key: "username", label: "Kullanıcı adı", type: "text", required: true },
       { key: "password", label: "Şifre", type: "password", required: true },
     ],
-    status: "planned",
+    status: "mock",
   },
   {
     id: "parasut",
