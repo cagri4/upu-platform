@@ -31,6 +31,10 @@ export const dynamic = "force-dynamic";
 const PAYMENT_METHODS = ["card", "transfer", "open_account"] as const;
 type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
+// B2B koli siparişi için makul satır-başı üst sınır (H-03). Absürt/taşma
+// siparişlerini ve onay kuyruğu flood'unu engeller.
+const MAX_LINE_QTY = 100000;
+
 interface OrderBody {
   lines?: Array<{ product_id?: string; quantity?: number | string }>;
   payment_method?: string;
@@ -114,7 +118,27 @@ export async function POST(req: NextRequest) {
 
   for (const l of lineInput) {
     const pid = (l.product_id || "").trim();
-    const qty = Math.max(1, Math.floor(Number(l.quantity ?? 1)));
+    // H-03 input validation (2026-06-11 hardening audit): miktar artık
+    // sessizce 1'e clamp'lenmiyor — ≤0 / NaN açıkça reddedilir ve üst sınır
+    // uygulanır. Önce 999999999 gibi absürt miktarlar kabul edilip onay
+    // kuyruğunu floodlayabiliyor + total taşması riski taşıyordu.
+    const rawQty = Number(l.quantity ?? 1);
+    if (!Number.isFinite(rawQty)) {
+      return NextResponse.json({ error: "Geçersiz miktar." }, { status: 400 });
+    }
+    const qty = Math.floor(rawQty);
+    if (qty < 1) {
+      return NextResponse.json(
+        { error: "Miktar en az 1 olmalı." },
+        { status: 400 },
+      );
+    }
+    if (qty > MAX_LINE_QTY) {
+      return NextResponse.json(
+        { error: `Miktar çok yüksek (satır başına en fazla ${MAX_LINE_QTY}).` },
+        { status: 400 },
+      );
+    }
     const p = prodMap.get(pid);
     if (!p || !p.is_active) continue;
 
