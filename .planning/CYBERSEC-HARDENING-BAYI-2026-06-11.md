@@ -119,7 +119,12 @@ cybersec-skills/skills/ (754) frontmatter taraması → yüklenen workflow'lar:
 | **H-02** | ✅ FIXED | `5aab26c` | `next.config` headers() + poweredByHeader:false. Canlı `curl -I` ×3 sayfa: X-Frame-Options: DENY, CSP frame-ancestors 'none', X-Content-Type-Options: nosniff, Referrer-Policy, Permissions-Policy → hepsi mevcut; x-powered-by kalktı; app kırılmadı (sayfalar 200, chat çalışıyor). |
 | **H-07** | ✅ FIXED | `5aab26c` | x-powered-by header'ı kaldırıldı (H-02 ile birlikte). |
 
-Prod deploy `mh9n1o8qo` = `5aab26c` Ready (her iki fix canlıda). Kalan bulgular (H-03..H-06, H-08..H-11) açık.
+| **H-03** | ✅ FIXED | `dbb31ad` | Sipariş miktarı: ≤0/NaN → 400, üst sınır 100000 → 400. Canlı: quantity=-5/0/999999999 → 400 (net hata mesajı); quantity=3 → 200 no-regression. |
+| **H-04** | ✅ FIXED | `4d4488f` | 11 cron route fail-closed (`!process.env.CRON_SECRET \|\| ...`). Canlı: bayi-drip/bayi-scoring/quota-renewal yanlış-bearer → 401. |
+| **H-05** | ✅ FIXED | `4c6b485` | `sanitizePromptField` (codepoint-bazlı) — kontrol/satır/görünmez karakter temizliği; displayName/firmaUnvani/callerContext bundan geçer. 7/7 unit test (çok-satırlı + zero-width/bidi payload). Canlı: AI chat normal isimle çalışıyor (sanitizer kırmadı). |
+| **H-06** | ✅ FIXED | `a0beece` | npm audit high 4→0. Next.js 16.2.1→16.2.9 (Middleware/Proxy bypass patch — tenant izolasyonu için kritik) + non-breaking audit fix. Vercel build hatasız (Next bump app'i kırmadı: tüm sayfalar 200, tenant izolasyon hâlâ 404). Kalan 6 moderate transitive/build-time/kullanılmayan-özellik (kabul edilen artık risk). |
+
+Prod deploy'lar: `5aab26c` (H-01/02/07) + `dbb31ad` (H-03) + `4d4488f` (H-04) + `4c6b485` (H-05) + `a0beece` (H-06) hepsi Ready, canlıda doğrulandı. **Kalan açık bulgular: yalnız P3 (H-08..H-11).**
 
 ---
 
