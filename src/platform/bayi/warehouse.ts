@@ -29,6 +29,7 @@ export interface StockChangeArgs {
   referenceId?: string | null;
   createdBy?: string | null;
   unitCost?: number | null;
+  supplierName?: string | null;
 }
 
 export interface StockChangeResult {
@@ -89,6 +90,7 @@ export async function applyStockChange(
     reference_type: args.referenceType ?? null,
     reference_id: args.referenceId ?? null,
     unit_cost: args.unitCost ?? null,
+    supplier_name: args.supplierName ?? null,
     created_by: args.createdBy ?? null,
   });
 

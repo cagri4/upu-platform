@@ -67,6 +67,7 @@ interface UpdateUrunBody {
   base_price?: number | string;
   stock_quantity?: number | string;
   low_stock_threshold?: number | string | null;
+  max_stock_threshold?: number | string | null;
   min_order?: number | string;
   brand?: string | null;
   image_url?: string | null;
@@ -106,6 +107,12 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       body.low_stock_threshold == null || body.low_stock_threshold === ""
         ? null
         : Number(body.low_stock_threshold);
+  // Faz 5 — Depo: max stok eşiği (fazla stok uyarısı için)
+  if (body.max_stock_threshold !== undefined)
+    update.max_stock_threshold =
+      body.max_stock_threshold == null || body.max_stock_threshold === ""
+        ? null
+        : Number(body.max_stock_threshold);
   if (body.min_order !== undefined)
     update.min_order =
       body.min_order === "" || body.min_order == null

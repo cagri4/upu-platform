@@ -25,6 +25,7 @@ import { getDealerScoreTool } from "../bayi/get-dealer-score";
 import { getChurnRisksTool } from "../bayi/get-churn-risks";
 import { suggestCrossSellTool } from "../bayi/suggest-cross-sell";
 import { getRecommendationsTool } from "../bayi/get-recommendations";
+import { warehouseCriticalStockTool } from "../bayi/warehouse-critical-stock";
 
 export const BAYI_YONETICI_TOOLS: ToolDef[] = [
   listOrdersTool,
@@ -35,6 +36,7 @@ export const BAYI_YONETICI_TOOLS: ToolDef[] = [
   getChurnRisksTool,
   suggestCrossSellTool,
   getRecommendationsTool,
+  warehouseCriticalStockTool,
 ];
 
 export const BAYI_YONETICI_TOOLS_BY_NAME: Record<string, ToolDef> = Object.fromEntries(
