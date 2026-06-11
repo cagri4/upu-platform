@@ -124,7 +124,12 @@ cybersec-skills/skills/ (754) frontmatter taraması → yüklenen workflow'lar:
 | **H-05** | ✅ FIXED | `4c6b485` | `sanitizePromptField` (codepoint-bazlı) — kontrol/satır/görünmez karakter temizliği; displayName/firmaUnvani/callerContext bundan geçer. 7/7 unit test (çok-satırlı + zero-width/bidi payload). Canlı: AI chat normal isimle çalışıyor (sanitizer kırmadı). |
 | **H-06** | ✅ FIXED | `a0beece` | npm audit high 4→0. Next.js 16.2.1→16.2.9 (Middleware/Proxy bypass patch — tenant izolasyonu için kritik) + non-breaking audit fix. Vercel build hatasız (Next bump app'i kırmadı: tüm sayfalar 200, tenant izolasyon hâlâ 404). Kalan 6 moderate transitive/build-time/kullanılmayan-özellik (kabul edilen artık risk). |
 
-Prod deploy'lar: `5aab26c` (H-01/02/07) + `dbb31ad` (H-03) + `4d4488f` (H-04) + `4c6b485` (H-05) + `a0beece` (H-06) hepsi Ready, canlıda doğrulandı. **Kalan açık bulgular: yalnız P3 (H-08..H-11).**
+| **H-08** | ✅ FIXED | `2620xxx`/`bw7dhx5cm` | agent_conversations history sorgusuna explicit `tenant_id` filtresi (belt-and-suspenders; user_id zaten tenant-scope). Canlı: AI chat çalışıyor. |
+| **H-09** | ✅ FIXED | `23a5d2d` | Migration: notifications.tenant_id + backfill (45/48, 3 orphan admin) + index. sendNotification tenant_id yazıyor (tek profil lookup). bayi/bildirim GET+count+PATCH tenant filtreli. Canlı: yeni sipariş bildirimleri `tenant_id` dolu ✓; bildirim merkezi 200. |
+| **H-10** | ✅ FIXED | `f26a9f7` | Migration: profiles.sessions_revoked_at. `isSessionRevoked(iat, revokedAt)` — token revoke damgasından önceyse 401. getBayiAuth+getDagiticiAuth kontrol (ek sorgu yok). /api/auth/logout cookie temizler + damga atar. **Canlı kanıt: logout → eski cookie /me+dağıtıcı 401 (REVOKED), yeni login 200 (kalıcı kilit yok).** Default null → sıfır regresyon. |
+| **H-11** | ✅ FIXED | `c10e94d` | Legacy (bayipanel) layout token'ı ilk render'da yakalar (stable, init kırılmaz), `history.replaceState` ile ?t=/?token= landing URL'den silinir. Cross-origin referer zaten H-02 ile kapalıydı. Canlı: legacy route 200 (crash yok). |
+
+Prod deploy'lar: `5aab26c` (H-01/02/07) + `dbb31ad` (H-03) + `4d4488f` (H-04) + `4c6b485` (H-05) + `a0beece` (H-06) + `23a5d2d` (H-08/09) + `f26a9f7` (H-10) + `c10e94d` (H-08/11 final) hepsi Ready, canlıda doğrulandı. **Açık bulgu kalmadı — 11/11 kapatıldı.**
 
 ---
 
