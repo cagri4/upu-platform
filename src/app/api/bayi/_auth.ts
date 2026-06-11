@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/platform/auth/require-auth";
 import { resolveTenantProfile } from "@/platform/auth/tenant-profile";
 import { getServiceClient } from "@/platform/auth/supabase";
+import { getSessionFromCookies, isSessionRevoked } from "@/platform/auth/session";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type BayiAuth =
@@ -37,14 +38,26 @@ export async function getBayiAuth(req: NextRequest): Promise<BayiAuth> {
     tenant_id: string;
     role: string | null;
     display_name: string | null;
+    sessions_revoked_at: string | null;
   }>(sb, {
     userId: auth.userId,
     tenantKey: "bayi",
-    select: "id, tenant_id, role, display_name",
+    select: "id, tenant_id, role, display_name, sessions_revoked_at",
   });
   if ("error" in lookup) {
     return {
       error: NextResponse.json({ error: lookup.error }, { status: lookup.status }),
+    };
+  }
+
+  // H-10: cookie session token, kullanıcının revoke damgasından önce
+  // üretildiyse reddet (logout / "tüm oturumları kapat"). Ek sorgu yok —
+  // sessions_revoked_at mevcut profil select'ine eklendi. Default null →
+  // hiçbir token etkilenmez.
+  const sess = await getSessionFromCookies();
+  if (isSessionRevoked(sess?.iat, lookup.profile.sessions_revoked_at)) {
+    return {
+      error: NextResponse.json({ error: "Oturum sonlandırılmış." }, { status: 401 }),
     };
   }
 

@@ -31,6 +31,21 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 gün
 export interface PanelSession {
   uid: string;
   tenantId: string | null;
+  /** JWT issued-at (unix saniye). H-10 session revocation karşılaştırması için. */
+  iat?: number;
+}
+
+/**
+ * H-10 (2026-06-11 hardening): token, kullanıcının sessions_revoked_at
+ * damgasından ÖNCE üretildiyse iptal edilmiş sayılır (logout / "tüm
+ * oturumları kapat"). revokedAt null ise hiçbir token etkilenmez (default).
+ */
+export function isSessionRevoked(
+  iat: number | undefined,
+  revokedAt: string | null | undefined,
+): boolean {
+  if (!revokedAt || typeof iat !== "number") return false;
+  return iat * 1000 < new Date(revokedAt).getTime();
 }
 
 function getSecret(): Uint8Array {
@@ -64,6 +79,7 @@ export async function verifySession(token: string): Promise<PanelSession | null>
     return {
       uid: payload.uid,
       tenantId: typeof payload.tenantId === "string" ? payload.tenantId : null,
+      iat: typeof payload.iat === "number" ? payload.iat : undefined,
     };
   } catch (err) {
     // Observability — JWT verify failure'ları sessizce yutmak Bug 2/3 (2026-06-05)
