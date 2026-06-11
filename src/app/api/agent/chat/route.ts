@@ -259,12 +259,31 @@ export async function POST(req: NextRequest) {
     firmaUnvani,
     role: lookup.profile.role,
   };
+
+  // H-01 güvenlik fix'i (2026-06-11 hardening audit): agentRole client'tan
+  // (body.role) geliyor, fakat "kurucu" personası dağıtıcı yönetimiyle AYNI
+  // yazma araçlarını taşır (bayi/ürün ekleme, toplu CSV import). Bu yüzden
+  // istenen rol, profilin GERÇEK yetkisine göre kısılır — getDagiticiAuth
+  // ile simetrik: yalnız admin/user/satis kurucu yazma araçlarına erişir;
+  // muhasebe/depocu güvenli şekilde read-only "yonetici" personasına düşer.
+  // Aksi halde düşük yetkili bir bayi kullanıcısı {role:"kurucu"} göndererek
+  // yönetim yetkisini bypass edebiliyordu (tenant-içi privilege escalation).
+  const KURUCU_ALLOWED_ROLES = new Set(["admin", "user", "satis"]);
+  const profileRole = (lookup.profile.role || "user").toString();
+  let effectiveAgentRole = agentRole;
+  if (agentRole === "kurucu" && !KURUCU_ALLOWED_ROLES.has(profileRole)) {
+    console.warn(
+      `[agent/chat] kurucu personası reddedildi — role='${profileRole}' yetkisiz, yonetici'ye düşürüldü (user=${lookup.profile.id.slice(0, 8)})`,
+    );
+    effectiveAgentRole = "yonetici";
+  }
+
   // Faz 3F — rol-bazlı sistem promptu (kod düzeyinde tool gating ile
   // simetrik). Her rol kendi karakter+yetki sınırını promptta okur.
   let systemPrompt: string;
   if (tenantKey === "emlak") {
     systemPrompt = buildUpuEmlakSystemPrompt(promptInput);
-  } else if (agentRole === "kurucu") {
+  } else if (effectiveAgentRole === "kurucu") {
     systemPrompt = buildKurucuSystemPrompt({
       displayName: promptInput.displayName,
       firmaUnvani: promptInput.firmaUnvani,
@@ -272,9 +291,9 @@ export async function POST(req: NextRequest) {
       status: null,
       callerContext: promptContext || null,
     });
-  } else if (agentRole === "yonetici") {
+  } else if (effectiveAgentRole === "yonetici") {
     systemPrompt = buildYoneticiSystemPrompt(promptInput);
-  } else if (agentRole === "egitmen") {
+  } else if (effectiveAgentRole === "egitmen") {
     systemPrompt = buildEgitmenSystemPrompt({
       displayName: promptInput.displayName,
       firmaUnvani: promptInput.firmaUnvani,
@@ -299,7 +318,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
 
-  const { list: TOOL_LIST, byName: TOOL_BY_NAME } = getToolsForTenant(tenantKey, agentRole);
+  const { list: TOOL_LIST, byName: TOOL_BY_NAME } = getToolsForTenant(tenantKey, effectiveAgentRole);
   const toolDefs = TOOL_LIST.map((t) => ({
     name: t.name,
     description: t.description,
