@@ -30,6 +30,7 @@ import { buildYoneticiSystemPrompt } from "@/platform/agent/prompts/bayi-yonetic
 import { buildEgitmenSystemPrompt } from "@/platform/agent/prompts/bayi-egitmen";
 import type { ToolContext, ToolDef, TenantKey } from "@/platform/agent/types";
 import { getOrCreateQuota, incrementQuota, logUsageEvent } from "@/platform/agent/quota";
+import { sanitizePromptField } from "@/platform/agent/sanitize";
 import { calculateCostUsd } from "@/platform/agent/cost";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -154,8 +155,8 @@ export async function POST(req: NextRequest) {
   // "empty-state:bayi-stok:critical"). Kurucu prompt'unun sonuna
   // HALİHAZIR DURUM satırı yapıştırılır. Sanitize: max 240 char + linefeed
   // kaldır, prompt enjeksiyonu (system override) riski olmasın.
-  const ctxRaw = typeof body.context === "string" ? body.context.slice(0, 240) : "";
-  const promptContext = ctxRaw.replace(/[\r\n]+/g, " ").trim();
+  // H-05: caller context da prompta giriyor — kontrol/görünmez karakter temizliği.
+  const promptContext = sanitizePromptField(body.context as string | undefined, 240);
   // Faz 1C: rol bilgisi kabul edilir. Faz 2: rol === 'kurucu' ise
   // Kurucu sistem promptu + Kurucu tool seti aktif. Diğer rolller
   // (yonetici, egitmen) Faz 3'te full implement; şimdilik yonetici
@@ -203,7 +204,12 @@ export async function POST(req: NextRequest) {
 
   const meta = (lookup.profile.metadata as Record<string, unknown>) || {};
   const firma = (meta.firma_profili as { ticari_unvan?: string } | null) || null;
-  const firmaUnvani = firma?.ticari_unvan || (meta.company_name as string) || null;
+  const firmaUnvaniRaw = firma?.ticari_unvan || (meta.company_name as string) || null;
+  // H-05 prompt-injection savunması (2026-06-11): display_name + firma ünvanı
+  // sisteme promptuna inline giriyor; kontrol/satır/görünmez karakterler
+  // temizlenir ki çok-satırlı talimat enjeksiyonu prompt yapısını kıramasın.
+  const firmaUnvani = firmaUnvaniRaw ? sanitizePromptField(firmaUnvaniRaw, 120) || null : null;
+  const safeDisplayName = sanitizePromptField(lookup.profile.display_name, 80);
 
   // Upsert agent_profiles
   await sb.from("agent_profiles").upsert({
@@ -255,7 +261,7 @@ export async function POST(req: NextRequest) {
   }
 
   const promptInput = {
-    displayName: lookup.profile.display_name || "Kullanıcı",
+    displayName: safeDisplayName || "Kullanıcı",
     firmaUnvani,
     role: lookup.profile.role,
   };
