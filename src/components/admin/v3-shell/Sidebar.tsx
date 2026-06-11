@@ -25,7 +25,9 @@ import {
   Tag,
   Megaphone,
   Plug,
+  Warehouse,
 } from "lucide-react";
+import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
 
 export interface SidebarNavItem {
   label: string;
@@ -114,6 +116,17 @@ export function Sidebar({
           match: `${base}/kampanyalar`,
           icon: Megaphone,
         },
+        // Faz 5 — Depo modülü (feature flag: bayi.depo)
+        ...(isBayiFeatureEnabled("bayi.depo")
+          ? [
+              {
+                label: "Depo",
+                href: `${base}/depo`,
+                match: `${base}/depo`,
+                icon: Warehouse,
+              },
+            ]
+          : []),
       ],
     },
     {

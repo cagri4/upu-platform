@@ -161,6 +161,41 @@ const formatPara = (n: number) =>
   new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(n);
 
 // ──────────────────────────────────────────────────────────────────────
+// Faz 5 — Depo: kritik stok eventi (dağıtıcıya)
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Ürün toplam stoğu min eşiğin altına düştü → dağıtıcıya "kritik stok"
+ * bildirimi (in-app + WA-mock). Mevcut dagitici_kritik_stok event tipi.
+ */
+export async function emitWarehouseCriticalStockEvent(
+  sb: SupabaseClient,
+  args: {
+    tenantId: string;
+    warehouseId: string;
+    productId: string;
+    productName: string;
+    currentQuantity: number;
+    threshold: number;
+  },
+): Promise<void> {
+  await dispatchBayiEvent(sb, {
+    tenantId: args.tenantId,
+    type: "dagitici_kritik_stok",
+    title: `Kritik stok: ${args.productName}`,
+    body: `${args.productName} stoğu kritik eşiğin altına düştü — kalan ${args.currentQuantity}, eşik ${args.threshold}. Sipariş/sevkiyat planını gözden geçir.`,
+    payload: {
+      warehouse_id: args.warehouseId,
+      product_id: args.productId,
+      product_name: args.productName,
+      current_quantity: args.currentQuantity,
+      threshold: args.threshold,
+    },
+    clickTarget: "/tr/dagitici-panel/depo",
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // Faz 3 hook'larının çağıracağı yüzeyler
 // ──────────────────────────────────────────────────────────────────────
 

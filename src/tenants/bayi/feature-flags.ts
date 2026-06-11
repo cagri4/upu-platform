@@ -28,6 +28,7 @@ export type BayiFeatureFlag =
   | "bayi.oneri_feedback"    // bayi-oneri singular feedback (WA üzerinden gelir)
   | "bayi.hakkinda"          // bayi-hakkinda (sidebar-only hide)
   | "bayi.gizlilik"          // bayi-gizlilik (sidebar-only hide)
+  | "bayi.depo"              // Faz 5 — Depo modülü (multi-depo + sayım + mal kabul)
   | "bayi.legacy_panel";     // (bayipanel) karma panel — Faz 2'de V3 (bayi-portal)
                               // omurgasına geçildi. Flag true ise eski sayfalar
                               // /tr/bayi-panel/* altında render edilir (admin
