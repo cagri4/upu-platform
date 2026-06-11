@@ -15,7 +15,7 @@ const PAGE_SIZE_DEFAULT = 30;
 export async function GET(req: NextRequest) {
   const auth = await getBayiAuth(req);
   if ("error" in auth) return auth.error;
-  const { sb, userId } = auth;
+  const { sb, userId, tenantId } = auth;
 
   const url = new URL(req.url);
   const unread = url.searchParams.get("unread") === "1";
@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
     .select("id, type, title, body, payload, is_read, channels_sent, created_at, read_at", {
       count: "exact",
     })
+    .eq("tenant_id", tenantId)
     .eq("user_id", userId);
 
   if (unread) query = query.eq("is_read", false);
@@ -47,6 +48,7 @@ export async function GET(req: NextRequest) {
   const { count: unreadCount } = await sb
     .from("notifications")
     .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenantId)
     .eq("user_id", userId)
     .eq("is_read", false);
 
@@ -77,7 +79,7 @@ interface PatchBody {
 export async function PATCH(req: NextRequest) {
   const auth = await getBayiAuth(req);
   if ("error" in auth) return auth.error;
-  const { sb, userId } = auth;
+  const { sb, userId, tenantId } = auth;
 
   const body = (await req.json().catch(() => ({}))) as PatchBody;
   const ids = Array.isArray(body.ids)
@@ -92,6 +94,7 @@ export async function PATCH(req: NextRequest) {
   let query = sb
     .from("notifications")
     .update(update)
+    .eq("tenant_id", tenantId)
     .eq("user_id", userId)
     .eq("is_read", false);
 

@@ -113,11 +113,22 @@ export async function sendNotification(input: NotificationInput): Promise<Notifi
     return { notification_id: null, channels: [], skipped: "tier" };
   }
 
+  // Sahibin profili — tenant_id (H-09) + WA path için whatsapp_phone tek
+  // lookup'ta alınır (eskiden WA path ayrı sorgu atıyordu).
+  const { data: ownerProfile } = await sb
+    .from("profiles")
+    .select("whatsapp_phone, tenant_id")
+    .eq("id", input.userId)
+    .maybeSingle();
+
   // 3. DB insert
   const { data: notif, error: insErr } = await sb
     .from("notifications")
     .insert({
       user_id: input.userId,
+      // H-09 (2026-06-11 hardening): explicit tenant_id (defense-in-depth;
+      // user_id zaten tenant-unique). profili yoksa null (orphan).
+      tenant_id: (ownerProfile?.tenant_id as string | null) ?? null,
       type: input.type,
       title: input.title.slice(0, 200),
       body: input.body.slice(0, 4000),
@@ -149,13 +160,9 @@ export async function sendNotification(input: NotificationInput): Promise<Notifi
     return { notification_id: notifId, channels };
   }
 
-  // 4. WA gönder — window-aware
+  // 4. WA gönder — window-aware (profil yukarıda tek lookup'ta alındı)
   try {
-    const { data: profile } = await sb
-      .from("profiles")
-      .select("whatsapp_phone, tenant_id")
-      .eq("id", input.userId)
-      .single();
+    const profile = ownerProfile;
     const phone = profile?.whatsapp_phone as string | undefined;
     if (!phone) {
       return { notification_id: notifId, channels };
