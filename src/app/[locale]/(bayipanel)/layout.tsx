@@ -36,7 +36,23 @@ type InitState = "loading" | "ready" | "error";
 
 export default function BayiPanelGroupLayout({ children }: { children: ReactNode }) {
   const searchParams = useSearchParams();
-  const token = searchParams.get("t") || searchParams.get("token");
+  // H-11 (2026-06-11 hardening): token'ı İLK render'da bir kez yakala (stable),
+  // sonra URL'den temizle. Eski WA link'leri token'ı ?t= ile taşıyordu →
+  // address-bar/history/log/referer sızıntısı. Cookie session'a geçildiği için
+  // (init bir kez cookie attach eder) token URL'de kalmamalı. Capture stable
+  // olduğundan init fetch kırılmaz.
+  const [token] = useState<string | null>(
+    () => searchParams.get("t") || searchParams.get("token"),
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("t") || url.searchParams.has("token")) {
+      url.searchParams.delete("t");
+      url.searchParams.delete("token");
+      window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+    }
+  }, []);
   const pathname = usePathname() || "";
   const params = useParams();
   const router = useRouter();
