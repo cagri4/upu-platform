@@ -220,9 +220,13 @@ export async function POST(req: NextRequest) {
   }, { onConflict: "user_id" });
 
   // History (son 20 mesaj — assistant + user + tool)
+  // H-08 (2026-06-11 hardening): explicit tenant_id filtresi — user_id zaten
+  // tenant-scope'lu çözülüyor (resolveTenantProfile) ama service-role RLS'i
+  // bypass ettiği için belt-and-suspenders olarak tenant filtresi de eklenir.
   const { data: historyRows } = await sb
     .from("agent_conversations")
     .select("role, content, tool_use_id")
+    .eq("tenant_id", lookup.tenantId)
     .eq("user_id", lookup.profile.id)
     .order("created_at", { ascending: false })
     .limit(20);
