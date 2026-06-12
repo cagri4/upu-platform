@@ -15,8 +15,10 @@ import {
   Receipt,
   Bell,
   User,
+  ScanLine,
 } from "lucide-react";
 import type { SidebarNavSection } from "@/components/admin/v3-shell";
+import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
 
 export function buyerNavSections(
   locale: string,
@@ -84,6 +86,18 @@ export function buyerNavSections(
           match: `${base}/profil`,
           icon: User,
         },
+        // Faz 5 — Depo: mobil sayım (flag bayi.depo). Depo personeli telefonla
+        // barkod tarayıp sayar.
+        ...(isBayiFeatureEnabled("bayi.depo")
+          ? [
+              {
+                label: "Mobil Sayım",
+                href: `${base}/sayim`,
+                match: `${base}/sayim`,
+                icon: ScanLine,
+              },
+            ]
+          : []),
       ],
     },
   ];
