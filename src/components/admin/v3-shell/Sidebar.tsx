@@ -27,6 +27,7 @@ import {
   Plug,
   Warehouse,
   MapPin,
+  ShoppingCart,
 } from "lucide-react";
 import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
 
@@ -136,6 +137,17 @@ export function Sidebar({
                 href: `${base}/saha`,
                 match: `${base}/saha`,
                 icon: MapPin,
+              },
+            ]
+          : []),
+        // Faz 7 — Satın Alma modülü (feature flag: bayi.satinalma)
+        ...(isBayiFeatureEnabled("bayi.satinalma")
+          ? [
+              {
+                label: "Satın Alma",
+                href: `${base}/satinalma`,
+                match: `${base}/satinalma`,
+                icon: ShoppingCart,
               },
             ]
           : []),

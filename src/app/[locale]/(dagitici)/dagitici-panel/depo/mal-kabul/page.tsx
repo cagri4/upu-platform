@@ -109,7 +109,14 @@ export default function MalKabulPage() {
       <Link href={`/${locale}/dagitici-panel/depo`} className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900">
         <ArrowLeft className="h-4 w-4" /> Depolar
       </Link>
-      <h1 className="text-2xl font-semibold text-slate-900">Mal Kabul</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-slate-900">Mal Kabul</h1>
+        {isBayiFeatureEnabled("bayi.satinalma") && (
+          <Link href={`/${locale}/dagitici-panel/satinalma`} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            <PackagePlus className="h-4 w-4" /> PO&apos;dan Mal Kabul
+          </Link>
+        )}
+      </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
