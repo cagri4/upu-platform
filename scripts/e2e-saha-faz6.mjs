@@ -1,6 +1,7 @@
 // Faz 6 Saha Satış E2E — production, dağıtıcı 31600000001 + saha eleman 31600000077
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
+import { randomUUID } from "crypto";
 const env={};for(const l of readFileSync(".env.local","utf-8").split("\n")){const m=l.match(/^([A-Z0-9_]+)=(.*)$/);if(m)env[m[1]]=m[2].replace(/^["']|["']$/g,"")}
 const sb=createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 const BASE="https://retailai.upudev.nl";
@@ -8,25 +9,31 @@ const jars={admin:"",rep:""};
 const R=[]; const ok=(n,d="")=>{R.push(1);console.log(`  ✓ ${n}${d?" — "+d:""}`)}; const no=(n,d="")=>{R.push(0);console.log(`  ✗ ${n}${d?" — "+d:""}`)};
 async function api(p,o={},jar="admin"){const r=await fetch(BASE+p,{...o,headers:{"Content-Type":"application/json",...(jars[jar]?{Cookie:jars[jar]}:{}),...(o.headers||{})}});for(const c of r.headers.getSetCookie?.()||[])if(c.startsWith("upu_session="))jars[jar]=c.split(";")[0];let j=null;try{j=await r.json()}catch{}return{s:r.status,j}}
 const REP_PHONE="31600000077";
+// Deterministik login: otp_codes satırını servis client ile ekle (rate-limit
+// bypass; rapid re-run güvenli), sonra verify endpoint'iyle cookie al.
+async function login(phone,jar){
+  await sb.from("otp_codes").insert({phone,code:"112233",purpose:"login",expires_at:new Date(Date.now()+600000).toISOString()});
+  return api("/api/auth/otp/verify",{method:"POST",body:JSON.stringify({phone,code:"112233",purpose:"login",locale:"tr"})},jar);
+}
 
 console.log("Faz 6 Saha Satış E2E\n");
 
 // dağıtıcı login
-await api("/api/auth/otp/request",{method:"POST",body:JSON.stringify({phone:"31600000001",purpose:"login",locale:"tr"})},"admin");
-const v=await api("/api/auth/otp/verify",{method:"POST",body:JSON.stringify({phone:"31600000001",code:"112233",purpose:"login",locale:"tr"})},"admin");
+const v=await login("31600000001","admin");
 v.s===200&&jars.admin?ok("dağıtıcı OTP login"):no("dağıtıcı login",JSON.stringify(v.j));
 const me=await api("/api/bayi/me",{},"admin"); const tenantId=me.j.tenant.id;
 // admin auth id (test identity FK için)
 const {data:adminProf}=await sb.from("profiles").select("id,auth_user_id").eq("whatsapp_phone","31600000001").eq("tenant_id",tenantId).maybeSingle();
 const adminUserId=adminProf?.auth_user_id||adminProf?.id;
 
-// 2 bayi hazırla (mevcut varsa kullan, yoksa oluştur)
-const bl=await api("/api/dagitici/bayiler?pageSize=10",{},"admin");
-let dealerIds=(bl.j.items||[]).slice(0,2).map(d=>d.id);
+// 2 bayi hazırla (test scaffolding — service client, additive)
+const {data:existDealers}=await sb.from("bayi_dealers").select("id").eq("tenant_id",tenantId).eq("is_active",true).limit(2);
+let dealerIds=(existDealers||[]).map(d=>d.id);
 let lastErr="";
 while(dealerIds.length<2){
-  const c=await api("/api/dagitici/bayiler",{method:"POST",body:JSON.stringify({name:"E2E Saha Bayi "+(dealerIds.length+1),phone:"+90555"+String(Date.now()).slice(-8),segment:"B"})},"admin");
-  if(c.j?.id)dealerIds.push(c.j.id); else { lastErr=JSON.stringify(c.j); break; }
+  const tag=String(Date.now()).slice(-7)+dealerIds.length;
+  const {data:nd,error:de}=await sb.from("bayi_dealers").insert({tenant_id:tenantId,name:"E2E Saha Bayi "+(dealerIds.length+1),company_name:"E2E Saha Bayi "+(dealerIds.length+1),phone:"+90555"+tag,email:"e2e-saha-"+tag+"@test.local",segment:"B",is_active:true,status:"active"}).select("id").single();
+  if(nd)dealerIds.push(nd.id); else { lastErr=de?.message||""; break; }
 }
 dealerIds.length>=2?ok("2 bayi hazır",dealerIds.join(",").slice(0,30)):no("bayi hazırlık",dealerIds.length+" "+lastErr);
 
@@ -34,6 +41,10 @@ dealerIds.length>=2?ok("2 bayi hazır",dealerIds.join(",").slice(0,30)):no("bayi
 const rep=await api("/api/dagitici/saha",{method:"POST",body:JSON.stringify({name:"E2E Saha Elemanı",phone:REP_PHONE,region:"Marmara",dealer_ids:dealerIds})},"admin");
 rep.j?.success?ok("saha eleman oluşturuldu",`login=${rep.j.loginMode}`):no("saha eleman",JSON.stringify(rep.j));
 const repId=rep.j.id;
+
+// test cleanup: bu rep'in eski plan/ziyaretlerini temizle (idempotent re-run)
+await sb.from("bayi_visits").delete().eq("tenant_id",tenantId).eq("sales_rep_id",repId);
+await sb.from("bayi_visit_plans").delete().eq("tenant_id",tenantId).eq("sales_rep_id",repId);
 
 // test identity ekle (OTP 112233) — rep telefonu
 const {data:ti}=await sb.from("admin_test_identities").select("id").eq("virtual_phone",REP_PHONE).maybeSingle();
@@ -49,9 +60,8 @@ for(const did of dealerIds){
 }
 planOk===2?ok("2 ziyaret planı (bugün)"):no("ziyaret planı",planOk+"/2");
 
-// 3) saha eleman login (/tr/saha akışı = aynı OTP)
-await api("/api/auth/otp/request",{method:"POST",body:JSON.stringify({phone:REP_PHONE,purpose:"login",locale:"tr"})},"rep");
-const rv=await api("/api/auth/otp/verify",{method:"POST",body:JSON.stringify({phone:REP_PHONE,code:"112233",purpose:"login",locale:"tr"})},"rep");
+// 3) saha eleman login (/tr/saha akışı = aynı OTP verify endpoint'i)
+const rv=await login(REP_PHONE,"rep");
 rv.s===200&&jars.rep?ok("saha eleman OTP login"):no("saha login",JSON.stringify(rv.j));
 const sahaMe=await api("/api/saha/me",{},"rep");
 sahaMe.j?.success?ok("saha /me",`${sahaMe.j.repName} · ${sahaMe.j.dealerCount} bayi`):no("saha /me",JSON.stringify(sahaMe.j));
@@ -62,7 +72,7 @@ const vis=await api("/api/saha/visits",{},"rep");
 
 // 5) ziyaret 1: check-in → not → sipariş → check-out
 const card1=vis.j.plans[0];
-const ci=await api("/api/saha/visits",{method:"POST",body:JSON.stringify({dealer_id:card1.dealerId,plan_id:card1.planId,gps_lat:40.99,gps_lng:29.02,client_uuid:"e2e-visit1-"+Date.now()})},"rep");
+const ci=await api("/api/saha/visits",{method:"POST",body:JSON.stringify({dealer_id:card1.dealerId,plan_id:card1.planId,gps_lat:40.99,gps_lng:29.02,client_uuid:randomUUID()})},"rep");
 ci.j?.success?ok("ziyaret 1 check-in"):no("check-in",JSON.stringify(ci.j));
 const visit1=ci.j.id;
 await api(`/api/saha/visits/${visit1}`,{method:"PATCH",body:JSON.stringify({note:"E2E ziyaret notu"})},"rep");
@@ -80,7 +90,7 @@ co.j?.success?ok("ziyaret 1 check-out"):no("check-out",JSON.stringify(co.j));
 
 // 6) ziyaret 2: offline check-in simülasyonu (aynı client_uuid 2× → idempotent)
 const card2=vis.j.plans[1];
-const cu="e2e-offline-"+Date.now();
+const cu=randomUUID();
 const off1=await api("/api/saha/visits",{method:"POST",body:JSON.stringify({dealer_id:card2.dealerId,plan_id:card2.planId,client_uuid:cu})},"rep");
 const off2=await api("/api/saha/visits",{method:"POST",body:JSON.stringify({dealer_id:card2.dealerId,plan_id:card2.planId,client_uuid:cu})},"rep");
 (off1.j?.success&&off2.j?.success&&off1.j.id===off2.j.id&&off2.j.deduped)?ok("offline check-in idempotent (senkron 2× → tek ziyaret)",off1.j.id.slice(0,8)):no("offline idempotent",JSON.stringify([off1.j,off2.j]));
