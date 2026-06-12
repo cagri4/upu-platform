@@ -52,77 +52,45 @@ export async function applyStockChange(
 ): Promise<StockChangeResult> {
   const { tenantId, warehouseId, productId, delta } = args;
 
-  // 1) Mevcut depo stoğu
-  const { data: existing } = await sb
-    .from("bayi_warehouse_stock")
-    .select("id, quantity")
-    .eq("tenant_id", tenantId)
-    .eq("warehouse_id", warehouseId)
-    .eq("product_id", productId)
-    .maybeSingle();
-
-  const current = existing ? Number(existing.quantity) || 0 : 0;
-  const warehouseQty = Math.max(0, current + delta);
-
-  // 2) Upsert depo stoğu
-  if (existing) {
-    await sb
-      .from("bayi_warehouse_stock")
-      .update({ quantity: warehouseQty, updated_at: new Date().toISOString() })
-      .eq("id", existing.id);
-  } else {
-    await sb.from("bayi_warehouse_stock").insert({
-      tenant_id: tenantId,
-      warehouse_id: warehouseId,
-      product_id: productId,
-      quantity: warehouseQty,
-    });
-  }
-
-  // 3) Hareket/audit kaydı (mevcut tablo reuse)
-  await sb.from("bayi_stock_movements").insert({
-    tenant_id: tenantId,
-    warehouse_id: warehouseId,
-    product_id: productId,
-    movement_type: args.movementType,
-    quantity: Math.abs(delta),
-    reason: args.reason ?? null,
-    reference_type: args.referenceType ?? null,
-    reference_id: args.referenceId ?? null,
-    unit_cost: args.unitCost ?? null,
-    supplier_name: args.supplierName ?? null,
-    created_by: args.createdBy ?? null,
+  // H-12 fix: stok değişimi TEK atomik RPC'de (bayi_apply_stock_change).
+  // Eski JS read-modify-write eşzamanlı çağrılarda kayıp güncelleme üretiyordu
+  // (10 paralel +10 → 60). RPC içinde ON CONFLICT DO UPDATE quantity = quantity
+  // + delta ile DB-level atomic increment; movement + ürün toplamı tek
+  // transaction. Tenant scoping (p_tenant) RPC içinde uygulanır (H-14).
+  const { data, error } = await sb.rpc("bayi_apply_stock_change", {
+    p_tenant: tenantId,
+    p_warehouse: warehouseId,
+    p_product: productId,
+    p_delta: delta,
+    p_movement_type: args.movementType,
+    p_reason: args.reason ?? null,
+    p_reference_type: args.referenceType ?? null,
+    p_reference_id: args.referenceId ?? null,
+    p_unit_cost: args.unitCost ?? null,
+    p_supplier_name: args.supplierName ?? null,
+    p_created_by: args.createdBy ?? null,
   });
 
-  // 4) Ürün toplamını tüm depolardan yeniden hesapla (backward-compat)
-  const { data: allStock } = await sb
-    .from("bayi_warehouse_stock")
-    .select("quantity")
-    .eq("tenant_id", tenantId)
-    .eq("product_id", productId);
-  const productTotal = (allStock ?? []).reduce(
-    (s, r) => s + (Number(r.quantity) || 0),
-    0,
-  );
+  if (error) {
+    console.error("[warehouse:applyStockChange:rpc]", error);
+    throw new Error(`Stok güncellenemedi: ${error.message}`);
+  }
 
-  // 5) Ürün bilgisi + eşikler
-  const { data: prod } = await sb
-    .from("bayi_products")
-    .select("name, low_stock_threshold, max_stock_threshold")
-    .eq("tenant_id", tenantId)
-    .eq("id", productId)
-    .maybeSingle();
+  // RPC RETURNS TABLE → tek satırlık dizi
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | {
+        warehouse_qty: number | string;
+        product_total: number | string;
+        product_name: string | null;
+        min_threshold: number | string | null;
+        max_threshold: number | string | null;
+      }
+    | undefined;
 
-  await sb
-    .from("bayi_products")
-    .update({ stock_quantity: productTotal, updated_at: new Date().toISOString() })
-    .eq("tenant_id", tenantId)
-    .eq("id", productId);
-
-  const minThreshold =
-    prod?.low_stock_threshold != null ? Number(prod.low_stock_threshold) : null;
-  const maxThreshold =
-    prod?.max_stock_threshold != null ? Number(prod.max_stock_threshold) : null;
+  const warehouseQty = Number(row?.warehouse_qty ?? 0);
+  const productTotal = Number(row?.product_total ?? 0);
+  const minThreshold = row?.min_threshold != null ? Number(row.min_threshold) : null;
+  const maxThreshold = row?.max_threshold != null ? Number(row.max_threshold) : null;
   const belowMin = minThreshold != null && productTotal <= minThreshold;
   const aboveMax = maxThreshold != null && productTotal >= maxThreshold;
 
@@ -131,7 +99,7 @@ export async function applyStockChange(
     productTotal,
     belowMin,
     aboveMax,
-    productName: (prod?.name as string) ?? null,
+    productName: row?.product_name ?? null,
     minThreshold,
     maxThreshold,
   };
