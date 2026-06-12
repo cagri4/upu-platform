@@ -176,3 +176,21 @@ Sayılan adetler cihazda IndexedDB'de düz (şifresiz) duruyor. Hassasiyet düş
 3. **H-14/H-15/H-16** — defense-in-depth explicit tenant doğrulamaları (exploit yok, refactor bariyeri).
 4. **H-17** — atomik sayım-kapatma durum geçişi (mevcut idempotent, tam-kuşatma).
 5. **H-18** — bilgilendirme; aksiyon opsiyonel.
+
+---
+
+## Fix Log (2026-06-12)
+
+Tüm 7 bulgu fixlendi, canlıda doğrulandı. Prod deploy `ek7ovu1jz` Ready.
+
+| ID | Commit | Fix | Canlı doğrulama |
+|----|--------|-----|-----------------|
+| **H-12** | `a5c9ac9` | `bayi_apply_stock_change` RPC (atomik increment); warehouse.ts sb.rpc | **10× paralel +10 → 100** (önce 60) ✓ |
+| **H-13** | `d1ae292` | MAX_STOCK_QTY (10M) + MAX_UNIT_COST, 4 endpoint | **qty=10^13 → 400** (önce 200) ✓ |
+| **H-14** | `a5c9ac9` | RPC tenant scoping (read-modify-write kalktı) | RPC içinde p_tenant ✓ |
+| **H-15** | `d1ae292` | transfer'de explicit product tenant doğrulaması | foreign product → 404 ✓ |
+| **H-16** | `d1ae292` | AI tool warehouse_id tenant doğrulaması | salt-oku + tenant filter ✓ |
+| **H-17** | `d1ae292` | Atomik kapatma claim (UPDATE WHERE status='open' RETURNING) | **2× paralel → [409,200], 1 movement** ✓ |
+| **H-18** | `d1ae292` | clearSynced — senkron sonrası IndexedDB taslağı silinir | sayfa clearSynced kullanıyor ✓ |
+
+**Regresyon:** cross-tenant 4/4 → 404 (değişmedi); **E2E 12/12 geçti**. TypeScript strict + lint clean + Vercel build green.
