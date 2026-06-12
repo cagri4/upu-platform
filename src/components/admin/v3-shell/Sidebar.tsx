@@ -26,6 +26,7 @@ import {
   Megaphone,
   Plug,
   Warehouse,
+  MapPin,
 } from "lucide-react";
 import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
 
@@ -124,6 +125,17 @@ export function Sidebar({
                 href: `${base}/depo`,
                 match: `${base}/depo`,
                 icon: Warehouse,
+              },
+            ]
+          : []),
+        // Faz 6 — Saha Satış modülü (feature flag: bayi.saha)
+        ...(isBayiFeatureEnabled("bayi.saha")
+          ? [
+              {
+                label: "Saha Satış",
+                href: `${base}/saha`,
+                match: `${base}/saha`,
+                icon: MapPin,
               },
             ]
           : []),

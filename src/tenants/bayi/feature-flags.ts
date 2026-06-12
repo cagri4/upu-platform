@@ -29,6 +29,8 @@ export type BayiFeatureFlag =
   | "bayi.hakkinda"          // bayi-hakkinda (sidebar-only hide)
   | "bayi.gizlilik"          // bayi-gizlilik (sidebar-only hide)
   | "bayi.depo"              // Faz 5 — Depo modülü (multi-depo + sayım + mal kabul)
+  | "bayi.saha"              // Faz 6 — Saha Satış modülü (sales rep + ziyaret + mobil portal)
+  | "bayi.satinalma"         // Faz 7 — Satın Alma modülü (tedarikçi + PO + cari)
   | "bayi.legacy_panel";     // (bayipanel) karma panel — Faz 2'de V3 (bayi-portal)
                               // omurgasına geçildi. Flag true ise eski sayfalar
                               // /tr/bayi-panel/* altında render edilir (admin
