@@ -8,7 +8,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getDagiticiAuth } from "../../_auth";
-import { applyStockChange, maybeEmitStockAlert } from "@/platform/bayi/warehouse";
+import { applyStockChange, maybeEmitStockAlert, MAX_STOCK_QTY } from "@/platform/bayi/warehouse";
 
 export const dynamic = "force-dynamic";
 
@@ -94,8 +94,11 @@ export async function POST(req: NextRequest) {
   if (!Number.isFinite(qty) || qty < 1) {
     return NextResponse.json({ error: "Geçerli bir miktar gir (≥1)." }, { status: 400 });
   }
+  if (qty > MAX_STOCK_QTY) {
+    return NextResponse.json({ error: `Miktar çok yüksek (en fazla ${MAX_STOCK_QTY}).` }, { status: 400 });
+  }
 
-  // Depolar + ürün tenant'a ait mi
+  // Depolar tenant'a ait mi
   const { data: whs } = await sb
     .from("bayi_warehouses")
     .select("id")
@@ -103,6 +106,18 @@ export async function POST(req: NextRequest) {
     .in("id", [fromId, toId]);
   if ((whs ?? []).length !== 2) {
     return NextResponse.json({ error: "Depo bulunamadı." }, { status: 404 });
+  }
+
+  // H-15: ürün tenant'a ait mi (explicit — eski hâli yalnız stok-kontrolüyle
+  // implicit eliyordu; refactor'a karşı + net hata için açık doğrulama).
+  const { data: prod } = await sb
+    .from("bayi_products")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("id", productId)
+    .maybeSingle();
+  if (!prod) {
+    return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });
   }
 
   // Kaynak stok yeterli mi

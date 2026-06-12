@@ -5,6 +5,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getDagiticiAuth } from "../../../_auth";
+import { MAX_STOCK_QTY } from "@/platform/bayi/warehouse";
 
 export const dynamic = "force-dynamic";
 
@@ -101,7 +102,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     const counted =
       it.counted_qty == null || it.counted_qty === ""
         ? null
-        : Math.max(0, Math.floor(Number(it.counted_qty)));
+        : Math.min(MAX_STOCK_QTY, Math.max(0, Math.floor(Number(it.counted_qty))));
     await sb
       .from("bayi_stocktake_items")
       .update({ counted_qty: counted, updated_at: new Date().toISOString() })

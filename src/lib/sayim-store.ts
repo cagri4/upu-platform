@@ -92,6 +92,25 @@ export async function listUnsynced(sessionId: string): Promise<CountDraft[]> {
   return (await listDrafts(sessionId)).filter((d) => !d.synced);
 }
 
+/**
+ * H-18: senkronlanmış taslakları cihazdan SİL (synced=true işaretlemek yerine).
+ * Sayılan adetler IndexedDB'de düz duruyor; sunucuya gittikten sonra cihazda
+ * kalmasına gerek yok (paylaşılan depo cihazında artık veri bırakma). Server
+ * artık tek doğruluk kaynağı.
+ */
+export async function clearSynced(sessionId: string, productIds: string[]): Promise<void> {
+  if (productIds.length === 0) return;
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE, "readwrite");
+    const os = tx.objectStore(STORE);
+    for (const pid of productIds) os.delete(`${sessionId}:${pid}`);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
 /** Verilen ürün anahtarlarını synced=true işaretle. */
 export async function markSynced(sessionId: string, productIds: string[]): Promise<void> {
   if (productIds.length === 0) return;

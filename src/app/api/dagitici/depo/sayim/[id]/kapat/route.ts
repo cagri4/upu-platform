@@ -22,17 +22,33 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   const { sb, tenantId, profileId } = auth;
   const { id } = await params;
 
-  const { data: s } = await sb
+  // H-17: atomik durum geçişi — kapatmayı TEK statement'ta "kazan"
+  // (WHERE status='open' RETURNING). İki paralel kapatmadan yalnız biri
+  // satır döndürür; diğeri 0 satır → 409. Check-then-act TOCTOU penceresi
+  // kapanır (düzeltmeler ancak kapatmayı kazandıktan sonra uygulanır).
+  const { data: claimed } = await sb
     .from("bayi_stocktake_sessions")
-    .select("id, status, warehouse_id, title")
+    .update({ status: "closed", closed_by: profileId, closed_at: new Date().toISOString() })
     .eq("tenant_id", tenantId)
     .eq("id", id)
-    .maybeSingle();
-  if (!s) return NextResponse.json({ error: "Sayım bulunamadı." }, { status: 404 });
-  if (s.status !== "open") {
-    return NextResponse.json({ error: "Sayım zaten kapalı." }, { status: 409 });
+    .eq("status", "open")
+    .select("id, warehouse_id, title");
+
+  const s = (claimed ?? [])[0] as { id: string; warehouse_id: string; title: string } | undefined;
+  if (!s) {
+    // Ya yok ya da zaten kapalı/başka istek kazandı
+    const { data: exists } = await sb
+      .from("bayi_stocktake_sessions")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .eq("id", id)
+      .maybeSingle();
+    return NextResponse.json(
+      { error: exists ? "Sayım zaten kapalı." : "Sayım bulunamadı." },
+      { status: exists ? 409 : 404 },
+    );
   }
-  const warehouseId = s.warehouse_id as string;
+  const warehouseId = s.warehouse_id;
 
   const { data: items } = await sb
     .from("bayi_stocktake_items")
@@ -73,11 +89,6 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     await maybeEmitStockAlert(sb, { tenantId, warehouseId, productId, result });
   }
 
-  await sb
-    .from("bayi_stocktake_sessions")
-    .update({ status: "closed", closed_by: profileId, closed_at: new Date().toISOString() })
-    .eq("tenant_id", tenantId)
-    .eq("id", id);
-
+  // Durum zaten başta atomik olarak 'closed' yapıldı (H-17).
   return NextResponse.json({ success: true, corrections });
 }

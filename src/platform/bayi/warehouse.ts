@@ -17,6 +17,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type MovementType = "in" | "out" | "adjust";
 
+/**
+ * Satır başına makul stok üst sınırı (H-13). Absürt/taşma değerlerini (örn.
+ * 10^13) ve NUMERIC overflow'u engeller. B2B koli envanteri için 10M fazlasıyla
+ * yeterli. mal-kabul/transfer/sayım girdileri bunu aşamaz.
+ */
+export const MAX_STOCK_QTY = 10_000_000;
+
+/** Birim maliyet üst sınırı (H-13) — absürt unit_cost engeli. */
+export const MAX_UNIT_COST = 1_000_000_000;
+
 export interface StockChangeArgs {
   tenantId: string;
   warehouseId: string;

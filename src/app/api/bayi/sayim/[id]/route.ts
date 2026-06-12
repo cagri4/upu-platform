@@ -9,6 +9,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getBayiAuth } from "../../_auth";
+import { MAX_STOCK_QTY } from "@/platform/bayi/warehouse";
 
 export const dynamic = "force-dynamic";
 
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     const counted =
       it.counted_qty == null || it.counted_qty === ""
         ? null
-        : Math.max(0, Math.floor(Number(it.counted_qty)));
+        : Math.min(MAX_STOCK_QTY, Math.max(0, Math.floor(Number(it.counted_qty))));
     const { error } = await sb
       .from("bayi_stocktake_items")
       .update({ counted_qty: counted, updated_at: new Date().toISOString() })

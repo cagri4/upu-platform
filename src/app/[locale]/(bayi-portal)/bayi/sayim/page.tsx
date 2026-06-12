@@ -15,7 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { notFound } from "next/navigation";
 import { Camera, CameraOff, RefreshCw, Check, Search, WifiOff } from "lucide-react";
 import { isBayiFeatureEnabled } from "@/tenants/bayi/feature-flags";
-import { saveDraft, listDrafts, listUnsynced, markSynced } from "@/lib/sayim-store";
+import { saveDraft, listDrafts, listUnsynced, clearSynced } from "@/lib/sayim-store";
 
 interface Session { id: string; title: string; warehouse: string }
 interface Item {
@@ -166,7 +166,7 @@ export default function MobilSayimPage() {
       });
       const d = await res.json();
       if (res.ok && d.success) {
-        try { await markSynced(sessionId, unsynced.map((u) => u.productId)); } catch { /* */ }
+        try { await clearSynced(sessionId, unsynced.map((u) => u.productId)); } catch { /* */ }
         setSyncMsg(`${d.synced} ürün senkronlandı ✓`);
       } else {
         setSyncMsg(d.error || "Senkronizasyon başarısız.");

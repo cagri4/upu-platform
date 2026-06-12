@@ -9,7 +9,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getDagiticiAuth } from "../../_auth";
-import { applyStockChange } from "@/platform/bayi/warehouse";
+import { applyStockChange, MAX_STOCK_QTY, MAX_UNIT_COST } from "@/platform/bayi/warehouse";
 
 export const dynamic = "force-dynamic";
 
@@ -82,6 +82,14 @@ export async function POST(req: NextRequest) {
   if (!Number.isFinite(qty) || qty < 1) {
     return NextResponse.json({ error: "Geçerli bir miktar gir (≥1)." }, { status: 400 });
   }
+  if (qty > MAX_STOCK_QTY) {
+    return NextResponse.json({ error: `Miktar çok yüksek (en fazla ${MAX_STOCK_QTY}).` }, { status: 400 });
+  }
+  const unitCost =
+    body.unit_cost != null && body.unit_cost !== "" ? Number(body.unit_cost) : null;
+  if (unitCost != null && (!Number.isFinite(unitCost) || unitCost < 0 || unitCost > MAX_UNIT_COST)) {
+    return NextResponse.json({ error: "Geçersiz birim maliyet." }, { status: 400 });
+  }
 
   // Depo + ürün tenant doğrulama
   const [{ data: wh }, { data: prod }] = await Promise.all([
@@ -103,7 +111,7 @@ export async function POST(req: NextRequest) {
     reason,
     referenceType: "receiving",
     createdBy: profileId,
-    unitCost: body.unit_cost != null && body.unit_cost !== "" ? Number(body.unit_cost) : null,
+    unitCost,
     supplierName: body.supplier_name?.trim() || null,
   });
 

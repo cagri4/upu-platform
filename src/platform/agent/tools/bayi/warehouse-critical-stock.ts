@@ -23,7 +23,20 @@ export const warehouseCriticalStockTool: ToolDef = {
   },
   async handler(input, ctx) {
     assertTenant(ctx, "bayi", "warehouse_critical_stock_report");
-    const warehouseId = (input.warehouse_id as string | undefined) || null;
+    let warehouseId = (input.warehouse_id as string | undefined) || null;
+
+    // H-16: warehouse_id verilmişse tenant'a ait mi doğrula (defense-in-depth;
+    // tenant filtresi zaten sızıntıyı keser, ama yabancı id'yi sessizce filtreye
+    // sokmak yerine yok say → net davranış).
+    if (warehouseId) {
+      const { data: wh } = await ctx.sb
+        .from("bayi_warehouses")
+        .select("id")
+        .eq("tenant_id", ctx.tenantId)
+        .eq("id", warehouseId)
+        .maybeSingle();
+      if (!wh) warehouseId = null; // yabancı/geçersiz id → tüm depolar
+    }
 
     // Min eşiği tanımlı + toplam stok eşik altı ürünler
     const { data: products } = await ctx.sb
