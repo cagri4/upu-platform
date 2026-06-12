@@ -1,0 +1,8 @@
+Ölü tablo veri yedeği — 2026-06-12
+xp_events: 41 satır → xp_events.sql
+user_employee_progress: 17 satır → user_employee_progress.sql
+recommendation_rules: 0 satır → recommendation_rules.sql
+seasonal_events: 4 satır → seasonal_events.sql
+otel_guest_hotels: 0 satır → otel_guest_hotels.sql
+sy_meeting_decisions: 0 satır → sy_meeting_decisions.sql
+sy_announcement_reads: 0 satır → sy_announcement_reads.sql

@@ -1,0 +1,7 @@
+-- Backup seasonal_events — 2026-06-12 — 4 satır
+-- Geri yükleme: bu dosyayı psql/supabase'e uygula (tablo zzz_deprecated_ ise önce RENAME geri).
+
+INSERT INTO public.seasonal_events (id, key, title, description, start_date, end_date, tenant_key, bonus_xp_multiplier, employee_focus, active) VALUES ('7e556bcd-a498-4307-8429-f69f083e8bc8', 'bahar_tazeleme', '🌸 Bahar Tazeleme', 'Fotoğraf güncelleme ve portföy yenileme dönemi', '2026-03-01', '2026-04-30', 'emlak', 1.5, '["portfoy"]', true);
+INSERT INTO public.seasonal_events (id, key, title, description, start_date, end_date, tenant_key, bonus_xp_multiplier, employee_focus, active) VALUES ('61fd75f4-55b4-49db-be5c-0dda3b831f7c', 'yazlik_sezonu', '🏖 Yazlık Sezonu', 'Bodrum/Çeşme/Alaçatı yazlık odaklı portföy ve medya', '2026-06-01', '2026-08-31', 'emlak', 1.5, '["portfoy","medya"]', true);
+INSERT INTO public.seasonal_events (id, key, title, description, start_date, end_date, tenant_key, bonus_xp_multiplier, employee_focus, active) VALUES ('eff741db-6cf6-48e4-ad5b-168ac5021cca', 'ogrenci_evi', '🎓 Öğrenci Evi Sezonu', 'Stüdyo ve 1+1 kiralık odaklı satış dönemi', '2026-09-01', '2026-09-30', 'emlak', 1.5, '["satis"]', true);
+INSERT INTO public.seasonal_events (id, key, title, description, start_date, end_date, tenant_key, bonus_xp_multiplier, employee_focus, active) VALUES ('f61b1681-2097-4209-a507-8f6dd15a9851', 'yilbasi_ivme', '🎊 Yılbaşı Satış İvmesi', 'İndirimli ilan kampanyaları ve medya odağı', '2027-01-01', '2027-01-31', 'emlak', 1.5, '["medya"]', true);
