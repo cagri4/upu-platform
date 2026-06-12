@@ -10,7 +10,13 @@
  * yüzden:
  *   - aynı tenant'ta zaten profil varsa → linkle (idempotent)
  *   - BAŞKA tenant'ta profil varsa → reddet (phone_taken)
- *   - hiç yoksa → auth user + profile yarat (role='saha')
+ *   - hiç yoksa → auth user + profile yarat (role='employee')
+ *
+ * NOT: role='employee' kullanılır (profiles_role_check izinli set'i: admin/
+ * employee/dealer/system/user/guest/site-rolleri — 'saha' YOK). 'employee'
+ * ayrıca getDagiticiAuth allowlist'inde (admin/user/satis) DEĞİL → saha
+ * elemanı dağıtıcı paneline giremez. Saha kimliği rol değil bayi_sales_reps
+ * linki ile belirlenir (getSahaAuth).
  *
  * OTP signup akışındaki (otp/verify) provizyon pattern'ini izler ama yeni
  * tenant YARATMAZ — eleman dağıtıcının mevcut tenant'ına bağlanır.
@@ -70,7 +76,7 @@ export async function provisionSalesRepLogin(
         whatsapp_phone: phone,
         tenant_id: tenantId,
         display_name: name,
-        role: "saha",
+        role: "employee",
         preferred_locale: locale,
       })
       .select("id")

@@ -16,15 +16,19 @@ await api("/api/auth/otp/request",{method:"POST",body:JSON.stringify({phone:"316
 const v=await api("/api/auth/otp/verify",{method:"POST",body:JSON.stringify({phone:"31600000001",code:"112233",purpose:"login",locale:"tr"})},"admin");
 v.s===200&&jars.admin?ok("dağıtıcı OTP login"):no("dağıtıcı login",JSON.stringify(v.j));
 const me=await api("/api/bayi/me",{},"admin"); const tenantId=me.j.tenant.id;
+// admin auth id (test identity FK için)
+const {data:adminProf}=await sb.from("profiles").select("id,auth_user_id").eq("whatsapp_phone","31600000001").eq("tenant_id",tenantId).maybeSingle();
+const adminUserId=adminProf?.auth_user_id||adminProf?.id;
 
 // 2 bayi hazırla (mevcut varsa kullan, yoksa oluştur)
-const bl=await api("/api/dagitici/bayiler?pageSize=5",{},"admin");
+const bl=await api("/api/dagitici/bayiler?pageSize=10",{},"admin");
 let dealerIds=(bl.j.items||[]).slice(0,2).map(d=>d.id);
+let lastErr="";
 while(dealerIds.length<2){
-  const c=await api("/api/dagitici/bayiler",{method:"POST",body:JSON.stringify({name:"E2E Saha Bayi "+(dealerIds.length+1)+"-"+(Date.now()%10000),phone:"+9055500"+(1000+dealerIds.length),segment:"B"})},"admin");
-  if(c.j?.id)dealerIds.push(c.j.id); else break;
+  const c=await api("/api/dagitici/bayiler",{method:"POST",body:JSON.stringify({name:"E2E Saha Bayi "+(dealerIds.length+1),phone:"+90555"+String(Date.now()).slice(-8),segment:"B"})},"admin");
+  if(c.j?.id)dealerIds.push(c.j.id); else { lastErr=JSON.stringify(c.j); break; }
 }
-dealerIds.length>=2?ok("2 bayi hazır",dealerIds.join(",").slice(0,30)):no("bayi hazırlık",dealerIds.length);
+dealerIds.length>=2?ok("2 bayi hazır",dealerIds.join(",").slice(0,30)):no("bayi hazırlık",dealerIds.length+" "+lastErr);
 
 // 1) saha eleman oluştur (2 bayi atanmış)
 const rep=await api("/api/dagitici/saha",{method:"POST",body:JSON.stringify({name:"E2E Saha Elemanı",phone:REP_PHONE,region:"Marmara",dealer_ids:dealerIds})},"admin");
@@ -33,7 +37,7 @@ const repId=rep.j.id;
 
 // test identity ekle (OTP 112233) — rep telefonu
 const {data:ti}=await sb.from("admin_test_identities").select("id").eq("virtual_phone",REP_PHONE).maybeSingle();
-if(!ti){await sb.from("admin_test_identities").insert({virtual_phone:REP_PHONE,label:"E2E Saha"}).then(({error})=>{if(error)console.log("  (test identity insert hatası:",error.message,")")});}
+if(!ti){const{error:tiErr}=await sb.from("admin_test_identities").insert({virtual_phone:REP_PHONE,display_name:"E2E Saha",target_tenant:"bayi",admin_user_id:adminUserId});if(tiErr)console.log("  (test identity insert hatası:",tiErr.message,")");}
 ok("test identity hazır");
 
 // 2) 2 ziyaret planı (bugün)
