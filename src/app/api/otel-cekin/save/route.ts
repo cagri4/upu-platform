@@ -33,6 +33,15 @@ interface Body {
   preferences?: Record<string, unknown>;
   kvkk_accepted?: boolean;
   marketing_opt_in?: boolean;
+  // FAZ 3 — KBS kimlik alanları
+  tc_no?: string;
+  birth_date?: string;
+  nationality?: string;
+  mother_name?: string;
+  father_name?: string;
+  id_type?: string;
+  id_number?: string;
+  gender?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -88,6 +97,15 @@ export async function POST(req: NextRequest) {
       marketing_opt_in: !!body.marketing_opt_in,
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      // FAZ 3 — KBS kimlik alanları
+      tc_no: body.tc_no?.trim() || null,
+      birth_date: body.birth_date || null,
+      nationality: body.nationality?.trim() || null,
+      mother_name: body.mother_name?.trim() || null,
+      father_name: body.father_name?.trim() || null,
+      id_type: body.id_type?.trim() || null,
+      id_number: body.id_number?.trim() || null,
+      gender: body.gender?.trim() || null,
     };
 
     if (existing) {
@@ -113,6 +131,62 @@ export async function POST(req: NextRequest) {
       .from("otel_reservations")
       .update({ pre_checkin_complete: true })
       .eq("id", reservationId);
+
+    // FAZ 3 — Online check-in tamamlanınca otomatik KBS submission (mock)
+    // Best-effort: hata olsa dahi misafir formu tamamlanır.
+    try {
+      const hasIdentity = body.tc_no || body.id_number;
+      if (hasIdentity) {
+        const { data: existingSub } = await supabase
+          .from("otel_kbs_submissions")
+          .select("id, status")
+          .eq("reservation_id", reservationId)
+          .in("status", ["accepted", "pending", "sent"])
+          .maybeSingle();
+        if (!existingSub) {
+          const { data: hotelRow } = await supabase
+            .from("otel_hotels").select("name").eq("id", rez.hotel_id).maybeSingle();
+          const { data: rezFull } = await supabase
+            .from("otel_reservations").select("check_out").eq("id", reservationId).maybeSingle();
+          const { submitKbsMock } = await import("@/platform/kbs/mock-client");
+          const result = await submitKbsMock({
+            guest: {
+              guest_name: rez.guest_name || "—",
+              tc_no: body.tc_no || null,
+              id_type: body.id_type || null,
+              id_number: body.id_number || null,
+              birth_date: body.birth_date || null,
+              nationality: body.nationality || null,
+              mother_name: body.mother_name || null,
+              father_name: body.father_name || null,
+              gender: body.gender || null,
+            },
+            stay: {
+              check_in: rez.check_in,
+              check_out: rezFull?.check_out || rez.check_in,
+              room_name: null,
+            },
+            hotel: { hotel_name: hotelRow?.name || "—", hotel_id: rez.hotel_id },
+          });
+          const now = new Date().toISOString();
+          await supabase.from("otel_kbs_submissions").insert({
+            reservation_id: reservationId,
+            hotel_id: rez.hotel_id,
+            status: result.status,
+            payload: { guest: { guest_name: rez.guest_name, tc_no: body.tc_no, birth_date: body.birth_date } },
+            kbs_response: result.raw_response,
+            kbs_reference: result.reference_no,
+            error_message: result.error_message,
+            is_mock: true,
+            sent_at: now,
+            accepted_at: result.status === "accepted" ? now : null,
+            rejected_at: result.status === "rejected" ? now : null,
+          });
+        }
+      }
+    } catch (err) {
+      console.error("[otel-cekin:save] kbs mock submit error", err);
+    }
 
     if (body.marketing_opt_in && rez.guest_profile_id) {
       // profile.metadata içinde marketing_opt_in flag güncelle

@@ -27,6 +27,7 @@ const OTEL_SIDEBAR_ITEMS: SidebarItem[] = [
   { id: "fiyat",         label: "Fiyat Takvimi",      icon: "💲", href: t => `/tr/otel-fiyat?t=${encodeURIComponent(t)}`,           matchPath: "/tr/otel-fiyat" },
   { id: "gelir",         label: "Gelir Raporu",       icon: "📊", href: t => `/tr/otel-gelir?t=${encodeURIComponent(t)}`,           matchPath: "/tr/otel-gelir" },
   { id: "website",       label: "Web Sitesi",         icon: "🌐", href: t => `/tr/otel-website?t=${encodeURIComponent(t)}`,         matchPath: "/tr/otel-website" },
+  { id: "kbs",           label: "KBS Bildirim",       icon: "🛡️", href: t => `/tr/otel-kbs?t=${encodeURIComponent(t)}`,             matchPath: "/tr/otel-kbs" },
   { id: "odemeler",      label: "Ödemeler",           icon: "💰", href: t => `/tr/otel-odemeler?t=${encodeURIComponent(t)}`,        matchPath: "/tr/otel-odemeler" },
   { id: "mesaj-taslak",  label: "Mesaj Taslakları",   icon: "✉️",  href: t => `/tr/otel-mesajlar?t=${encodeURIComponent(t)}`,        matchPath: "/tr/otel-mesajlar" },
   { id: "profil",        label: "Profilim",           icon: "⚙️",  href: t => `/tr/otel-profil?t=${encodeURIComponent(t)}`,          matchPath: "/tr/otel-profil" },
