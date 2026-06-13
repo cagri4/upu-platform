@@ -55,6 +55,11 @@ export async function POST(req: NextRequest) {
   // body.hotel_id yoksa ilk oteli kullan
   const hotelId = body.hotel_id && hotelIds.includes(body.hotel_id) ? body.hotel_id : hotelIds[0];
 
+  // tenant_id (NOT NULL)
+  const { data: hotelRow } = await sb
+    .from("otel_hotels").select("tenant_id").eq("id", hotelId).single();
+  const tenantId = hotelRow?.tenant_id;
+
   // sort_order: mevcut max + 1
   const { data: maxRow } = await sb
     .from("otel_rooms")
@@ -69,6 +74,7 @@ export async function POST(req: NextRequest) {
     .from("otel_rooms")
     .insert({
       hotel_id: hotelId,
+      tenant_id: tenantId,
       name: body.name.trim(),
       room_type: body.room_type.trim(),
       bed_type: body.bed_type?.trim() || null,

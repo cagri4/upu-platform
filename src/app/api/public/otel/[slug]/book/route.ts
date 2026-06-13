@@ -52,6 +52,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
     .eq("web_published", true)
     .single();
   if (!hotel) return NextResponse.json({ error: "Otel bulunamadı" }, { status: 404 });
+  const hotelTenantId = hotel.tenant_id;
 
   // Oda bu otele mi ait?
   const { data: room } = await sb
@@ -89,6 +90,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
     .from("otel_reservations")
     .insert({
       hotel_id: hotel.id,
+      tenant_id: hotelTenantId,
       room_id: room.id,
       guest_name: body.guest_name.trim(),
       guest_phone: body.guest_phone.trim(),

@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   // Oda + scope check
   const { data: room } = await sb
     .from("otel_rooms")
-    .select("id, hotel_id, name, base_price")
+    .select("id, hotel_id, name, base_price, tenant_id")
     .eq("id", body.room_id)
     .single();
   if (!room) return NextResponse.json({ error: "Oda bulunamadı" }, { status: 404 });
@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
     .from("otel_reservations")
     .insert({
       hotel_id: room.hotel_id,
+      tenant_id: room.tenant_id,
       room_id: body.room_id,
       guest_name: body.guest_name.trim(),
       guest_phone: body.guest_phone?.trim() || null,

@@ -102,8 +102,11 @@ export const otelTools: OtelTool[] = [
       });
       const totalPrice = Number(t) || 0;
 
+      const { data: hotelRow } = await ctx.sb
+        .from("otel_hotels").select("tenant_id").eq("id", ctx.hotelId).single();
       const { data: rez, error } = await ctx.sb.from("otel_reservations").insert({
         hotel_id: ctx.hotelId,
+        tenant_id: hotelRow?.tenant_id,
         room_id: input.room_id,
         guest_name: input.guest_name,
         guest_phone: input.guest_phone,
