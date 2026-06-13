@@ -170,6 +170,18 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error || !visit) {
+    // H-22: client_uuid yarış durumu (SELECT-then-INSERT TOCTOU). UNIQUE
+    // (tenant_id, client_uuid) çift satırı zaten engelliyor; eşzamanlı offline
+    // senkronda 23505 gelirse generic 400 yerine mevcut satırı dedupe dön.
+    if (clientUuid && (error as { code?: string } | null)?.code === "23505") {
+      const { data: ex } = await sb
+        .from("bayi_visits")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .eq("client_uuid", clientUuid)
+        .maybeSingle();
+      if (ex) return NextResponse.json({ success: true, id: ex.id as string, deduped: true });
+    }
     console.error("[saha:visits:checkin]", error);
     return NextResponse.json({ error: "Check-in kaydedilemedi." }, { status: 400 });
   }

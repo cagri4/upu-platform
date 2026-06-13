@@ -45,6 +45,20 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   if (!visit) return NextResponse.json({ error: "Ziyaret bulunamadı." }, { status: 404 });
   const dealerId = visit.dealer_id as string;
 
+  // H-21: bayi HÂLÂ bu elemana atanmış mı (taze) doğrula. Ziyaret geçmişte
+  // açılmış olabilir; atama sonradan kaldırıldıysa (eleman ayrıldı vb.) eski
+  // ziyaret üzerinden sipariş açılmasını engelle — bayat yetki kapatılır.
+  const { data: assign } = await sb
+    .from("bayi_sales_rep_dealers")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("sales_rep_id", salesRepId)
+    .eq("dealer_id", dealerId)
+    .maybeSingle();
+  if (!assign) {
+    return NextResponse.json({ error: "Bu bayi sana atanmamış." }, { status: 403 });
+  }
+
   const body = (await req.json().catch(() => ({}))) as OrderBody;
   const lineInput = Array.isArray(body.lines) ? body.lines : [];
   if (lineInput.length === 0) {

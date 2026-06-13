@@ -63,58 +63,55 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     .maybeSingle();
   if (!wh) return NextResponse.json({ error: "Depo bulunamadı." }, { status: 404 });
 
-  // PO satırları
+  // PO satırları — yalnız bu PO'ya ait line id'lerini doğrulamak için (tenant scoped)
   const { data: poLines } = await sb
     .from("bayi_purchase_order_lines")
-    .select("id, product_id, quantity, received_qty, unit_price")
+    .select("id")
     .eq("tenant_id", tenantId)
     .eq("po_id", id);
-  const lineMap = new Map<string, { id: string; product_id: string; quantity: number; received_qty: number; unit_price: number }>();
-  for (const l of poLines ?? []) {
-    lineMap.set(l.id as string, {
-      id: l.id as string,
-      product_id: l.product_id as string,
-      quantity: Number(l.quantity) || 0,
-      received_qty: Number(l.received_qty) || 0,
-      unit_price: Number(l.unit_price) || 0,
-    });
-  }
+  const validLineIds = new Set((poLines ?? []).map((l) => l.id as string));
 
   let appliedCount = 0;
   for (const r of recvLines) {
     const lineId = (r.line_id || "").trim();
-    const line = lineMap.get(lineId);
-    if (!line) continue; // PO'ya ait olmayan satır → atla
+    if (!validLineIds.has(lineId)) continue; // PO'ya ait olmayan satır → atla
     const recv = Math.floor(Number(r.received_qty ?? 0));
     if (!Number.isFinite(recv) || recv <= 0) continue;
     if (recv > MAX_STOCK_QTY) {
       return NextResponse.json({ error: `Miktar çok yüksek (en fazla ${MAX_STOCK_QTY}).` }, { status: 400 });
     }
-    const remaining = Math.max(0, line.quantity - line.received_qty);
-    const toReceive = Math.min(recv, remaining);
-    if (toReceive <= 0) continue;
 
-    // Faz 5 atomik stok artışı
+    // H-19: received_qty'yi atomik + üst-sınırlı artır (FOR UPDATE), GERÇEK
+    // uygulanan delta'yı al. Eşzamanlı çağrılarda over-receive + stok şişmesi
+    // engellenir; tekrar gelen istek applied=0 → stok değişmez (idempotent).
+    const { data: rpc, error: rpcErr } = await sb.rpc("bayi_receive_po_line", {
+      p_tenant: tenantId,
+      p_line: lineId,
+      p_recv: recv,
+    });
+    if (rpcErr) {
+      console.error("[dagitici:satinalma:mal-kabul:rpc]", rpcErr);
+      return NextResponse.json({ error: "Mal kabul kaydedilemedi." }, { status: 500 });
+    }
+    const row = (Array.isArray(rpc) ? rpc[0] : rpc) as
+      | { applied: number | string; product_id: string; unit_price: number | string | null }
+      | undefined;
+    const applied = Number(row?.applied ?? 0);
+    if (!row || applied <= 0) continue; // zaten tam alınmış / kilitli satır yok
+
+    // Faz 5 atomik stok artışı — yalnız gerçekten kabul edilen delta kadar
     await applyStockChange(sb, {
       tenantId,
       warehouseId,
-      productId: line.product_id,
-      delta: toReceive,
+      productId: row.product_id,
+      delta: applied,
       movementType: "in",
       reason: `Mal kabul — PO #${po.po_number}`,
       referenceType: "purchase",
       referenceId: id,
-      unitCost: line.unit_price || null,
+      unitCost: row.unit_price != null ? Number(row.unit_price) : null,
       createdBy: profileId,
     });
-
-    // Satır gelen adedi güncelle
-    await sb
-      .from("bayi_purchase_order_lines")
-      .update({ received_qty: line.received_qty + toReceive, updated_at: new Date().toISOString() })
-      .eq("tenant_id", tenantId)
-      .eq("id", line.id);
-    line.received_qty += toReceive;
     appliedCount += 1;
   }
 
@@ -122,10 +119,15 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Uygulanabilir mal kabul satırı yok." }, { status: 400 });
   }
 
-  // PO durumunu yeniden hesapla
-  const allLines = Array.from(lineMap.values());
-  const fullyReceived = allLines.every((l) => l.received_qty >= l.quantity);
-  const anyReceived = allLines.some((l) => l.received_qty > 0);
+  // H-20: PO durumunu DB'den TAZE oku (snapshot değil) → eşzamanlılıkta tutarlı
+  const { data: freshLines } = await sb
+    .from("bayi_purchase_order_lines")
+    .select("quantity, received_qty")
+    .eq("tenant_id", tenantId)
+    .eq("po_id", id);
+  const fl = freshLines ?? [];
+  const fullyReceived = fl.length > 0 && fl.every((l) => Number(l.received_qty) >= Number(l.quantity));
+  const anyReceived = fl.some((l) => Number(l.received_qty) > 0);
   const newStatus = fullyReceived ? "received" : anyReceived ? "partial" : po.status;
   if (newStatus !== po.status) {
     await sb
@@ -139,6 +141,6 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     success: true,
     status: newStatus,
     appliedLines: appliedCount,
-    lines: allLines.map((l) => ({ id: l.id, quantity: l.quantity, receivedQty: l.received_qty, remaining: Math.max(0, l.quantity - l.received_qty) })),
+    lines: fl.map((l) => ({ quantity: Number(l.quantity), receivedQty: Number(l.received_qty), remaining: Math.max(0, Number(l.quantity) - Number(l.received_qty)) })),
   });
 }
