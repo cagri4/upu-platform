@@ -19,6 +19,7 @@ type InitState = "loading" | "ready" | "error";
 
 const OTEL_SIDEBAR_ITEMS: SidebarItem[] = [
   { id: "dashboard",     label: "Dashboard",          icon: "🏠", href: t => `/tr/otel-panel?t=${encodeURIComponent(t)}`,           matchPath: "/tr/otel-panel" },
+  { id: "asistan",       label: "AI Asistan",         icon: "🤖", href: t => `/tr/otel-asistan?t=${encodeURIComponent(t)}`,         matchPath: "/tr/otel-asistan" },
   { id: "rezervasyon",   label: "Rezervasyonlar",     icon: "📅", href: t => `/tr/otel-rezervasyonlar?t=${encodeURIComponent(t)}`,  matchPath: "/tr/otel-rezervasyonlar" },
   { id: "konuklar",      label: "Müşteriler",         icon: "👥", href: t => `/tr/otel-konuklar?t=${encodeURIComponent(t)}`,        matchPath: "/tr/otel-konuklar" },
   { id: "takvim",        label: "Müsaitlik Takvimi",  icon: "🗓",  href: t => `/tr/otel-takvim?t=${encodeURIComponent(t)}`,          matchPath: "/tr/otel-takvim" },
