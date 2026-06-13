@@ -6,7 +6,8 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Users, Mail, Phone, Calendar } from "lucide-react";
+import Link from "next/link";
+import { Users, Mail, Phone, Calendar, ChevronRight } from "lucide-react";
 import { HeroBanner, Skeleton } from "@/components/banking";
 
 interface Guest {
@@ -63,12 +64,14 @@ export default function OtelKonuklarPage() {
             const meta = g.metadata || {};
             const optIn = meta.marketing_opt_in === true;
             const date = new Date(g.created_at).toLocaleDateString("tr-TR");
+            const detailHref = `/tr/otel-konuklar/${g.id}${token ? `?t=${encodeURIComponent(token)}` : ""}`;
             return (
-              <div
+              <Link
                 key={g.id}
-                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 px-4 py-3.5 shadow-sm hover:shadow-md transition"
+                href={detailHref}
+                className="block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 px-4 py-3.5 shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-700 transition"
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
                     <Users className="w-5 h-5" strokeWidth={2.2} />
                   </div>
@@ -88,8 +91,9 @@ export default function OtelKonuklarPage() {
                       <span className="inline-flex items-center gap-1"><Calendar className="w-3 h-3" /> İlk kayıt: {date}</span>
                     </div>
                   </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
